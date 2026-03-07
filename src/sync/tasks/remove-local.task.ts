@@ -1,33 +1,33 @@
-import logger from '~/utils/logger'
-import { statVaultItem } from '~/utils/stat-vault-item'
-import { BaseTask, BaseTaskOptions, toTaskError } from './task.interface'
+import logger from '~/utils/logger';
+import { statVaultItem } from '~/utils/stat-vault-item';
+import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask {
 	constructor(
 		public readonly options: BaseTaskOptions & {
-			recursive?: boolean
+			recursive?: boolean;
 		},
 	) {
-		super(options)
+		super(options);
 	}
 
 	async exec() {
 		try {
-			const stat = await statVaultItem(this.vault, this.localPath)
+			const stat = await statVaultItem(this.vault, this.localPath);
 			if (!stat) {
 				return {
 					success: true,
-				} as const
+				} as const;
 			}
-			const file = this.vault.getAbstractFileByPath(this.localPath)
+			const file = this.vault.getAbstractFileByPath(this.localPath);
 			if (!file) {
-				throw new Error('cannot find file in local fs: ' + this.localPath)
+				throw new Error('cannot find file in local fs: ' + this.localPath);
 			}
-			await this.vault.trash(file, false)
-			return { success: true } as const
+			await this.vault.trash(file, false);
+			return { success: true } as const;
 		} catch (e) {
-			logger.error(e)
-			return { success: false, error: toTaskError(e, this) }
+			logger.error(e);
+			return { success: false, error: toTaskError(e, this) };
 		}
 	}
 }

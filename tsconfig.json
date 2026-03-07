@@ -1,22 +1,25 @@
 {
 	"compilerOptions": {
-		"baseUrl": ".",
 		"paths": {
 			"~/*": ["./src/*"],
 			"~": ["./src"]
 		},
-		"inlineSourceMap": true,
-		"inlineSources": true,
-		"module": "ESNext",
-		"target": "ES6",
-		"allowJs": true,
-		"noImplicitAny": true,
-		"moduleResolution": "bundler",
-		"importHelpers": true,
-		"isolatedModules": true,
-		"strictNullChecks": true,
 		"allowSyntheticDefaultImports": true,
-		"lib": ["DOM", "ES5", "ES6", "ES7"]
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"strictNullChecks": true,
+		"resolveJsonModule": true,
+		"noEmit": true,
+		"jsx": "preserve",
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"outDir": "dist"
 	},
 	"include": ["**/*.ts"]
 }

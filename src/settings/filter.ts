@@ -1,14 +1,12 @@
-import { Setting } from 'obsidian'
-import FilterEditorModal from '~/components/FilterEditorModal'
-import i18n from '~/i18n'
-import BaseSettings from './settings.base'
+import { Setting } from 'obsidian';
+import FilterEditorModal from '~/components/FilterEditorModal';
+import i18n from '~/i18n';
+import BaseSettings from './settings.base';
 
 export default class FilterSettings extends BaseSettings {
 	async display() {
-		this.containerEl.empty()
-		new Setting(this.containerEl)
-			.setName(i18n.t('settings.sections.filters'))
-			.setHeading()
+		this.containerEl.empty();
+		new Setting(this.containerEl).setName(i18n.t('settings.sections.filters')).setHeading();
 
 		// Inclusion
 		new Setting(this.containerEl)
@@ -20,14 +18,14 @@ export default class FilterSettings extends BaseSettings {
 						this.plugin,
 						this.plugin.settings.filterRules.inclusionRules,
 						async (filters) => {
-							this.plugin.settings.filterRules.inclusionRules = filters
-							await this.plugin.saveSettings()
-							this.display()
+							this.plugin.settings.filterRules.inclusionRules = filters;
+							await this.plugin.saveSettings();
+							void this.display();
 						},
 						FilterEditorModal.FilterType.Include,
-					).open()
-				})
-			})
+					).open();
+				});
+			});
 
 		// Exclusion
 		new Setting(this.containerEl)
@@ -39,13 +37,13 @@ export default class FilterSettings extends BaseSettings {
 						this.plugin,
 						this.plugin.settings.filterRules.exclusionRules,
 						async (filters) => {
-							this.plugin.settings.filterRules.exclusionRules = filters
-							await this.plugin.saveSettings()
-							this.display()
+							this.plugin.settings.filterRules.exclusionRules = filters;
+							await this.plugin.saveSettings();
+							void this.display();
 						},
 						FilterEditorModal.FilterType.Exclude,
-					).open()
-				})
-			})
+					).open();
+				});
+			});
 	}
 }

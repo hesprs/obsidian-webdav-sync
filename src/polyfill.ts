@@ -1,7 +1,7 @@
 const _process = globalThis.process ?? {
 	cwd() {
-		return '/'
+		return '/';
 	},
-}
+};
 
-globalThis.process = _process
+globalThis.process = _process;

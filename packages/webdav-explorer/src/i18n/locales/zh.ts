@@ -4,6 +4,6 @@ const zh = {
 	confirm: '确定',
 	cancel: '取消',
 	currentPath: '当前路径',
-}
+};
 
-export default zh
+export default zh;

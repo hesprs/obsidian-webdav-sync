@@ -1,24 +1,22 @@
 {
 	"compilerOptions": {
-		"lib": ["DOM", "ES2020"],
-		"jsx": "preserve",
-		"target": "ES2020",
-		"noEmit": true,
-		"skipLibCheck": true,
-		"jsxImportSource": "solid-js",
-		"useDefineForClassFields": true,
-
-		/* modules */
+		"allowSyntheticDefaultImports": true,
+		"target": "ESNext",
 		"module": "ESNext",
-		"isolatedModules": true,
-		"resolveJsonModule": true,
 		"moduleResolution": "bundler",
-		"allowImportingTsExtensions": true,
-
-		/* type checking */
 		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+		"strictNullChecks": true,
+		"resolveJsonModule": true,
+		"noEmit": true,
+		"jsx": "preserve",
+        "jsxImportSource": "solid-js",
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
+		"lib": ["ESNext", "DOM", "DOM.Iterable"],
+		"outDir": "dist"
 	},
 	"include": ["src"]
 }

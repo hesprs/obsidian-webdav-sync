@@ -1,5 +1,5 @@
-import { FsWalkResult } from '~/fs/fs.interface'
-import { isSub } from '../../utils/is-sub'
+import type { FsWalkResult } from '~/fs/fs.interface';
+import { isSub } from '../../utils/is-sub';
 
 /**
  * Check if there are any ignored files/folders within a directory
@@ -7,19 +7,16 @@ import { isSub } from '../../utils/is-sub'
  * @param stats FsWalkResult array from walk operation
  * @returns true if any ignored items exist in the directory, false otherwise
  */
-export function hasIgnoredInFolder(
-	dirPath: string,
-	stats: FsWalkResult[],
-): boolean {
+export function hasIgnoredInFolder(dirPath: string, stats: FsWalkResult[]): boolean {
 	for (const item of stats) {
 		if (isSub(dirPath, item.stat.path) || item.stat.path === dirPath) {
 			if (item.ignored) {
-				return true
+				return true;
 			}
 		}
 	}
 
-	return false
+	return false;
 }
 
 /**
@@ -28,19 +25,16 @@ export function hasIgnoredInFolder(
  * @param stats FsWalkResult array from walk operation
  * @returns array of ignored paths within the directory
  */
-export function getIgnoredPathsInFolder(
-	dirPath: string,
-	stats: FsWalkResult[],
-): string[] {
-	const ignoredPaths: string[] = []
+export function getIgnoredPathsInFolder(dirPath: string, stats: FsWalkResult[]): string[] {
+	const ignoredPaths: string[] = [];
 
 	for (const item of stats) {
 		if (isSub(dirPath, item.stat.path) || item.stat.path === dirPath) {
 			if (item.ignored) {
-				ignoredPaths.push(item.stat.path)
+				ignoredPaths.push(item.stat.path);
 			}
 		}
 	}
 
-	return ignoredPaths
+	return ignoredPaths;
 }

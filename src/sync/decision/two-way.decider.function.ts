@@ -1,23 +1,18 @@
-import { parse as bytesParse } from 'bytes-iec'
-import { SyncMode } from '~/settings'
-import { hasInvalidChar } from '~/utils/has-invalid-char'
-import { isSameTime } from '~/utils/is-same-time'
-import logger from '~/utils/logger'
-import remotePathToAbsolute from '~/utils/remote-path-to-absolute'
-import { remotePathToLocalPath } from '~/utils/remote-path-to-local-path'
-import { ConflictStrategy } from '../tasks/conflict-resolve.task'
-import { SkipReason } from '../tasks/skipped.task'
-import { BaseTask } from '../tasks/task.interface'
-import {
-	getIgnoredPathsInFolder,
-	hasIgnoredInFolder,
-} from '../utils/has-ignored-in-folder'
-import { hasFolderContentChanged } from './has-folder-content-changed'
-import { SyncDecisionInput } from './sync-decision.interface'
+import { parse as bytesParse } from 'bytes-iec';
+import { SyncMode } from '~/settings';
+import { hasInvalidChar } from '~/utils/has-invalid-char';
+import { isSameTime } from '~/utils/is-same-time';
+import logger from '~/utils/logger';
+import remotePathToAbsolute from '~/utils/remote-path-to-absolute';
+import { remotePathToLocalPath } from '~/utils/remote-path-to-local-path';
+import { ConflictStrategy } from '../tasks/conflict-resolve.task';
+import { SkipReason } from '../tasks/skipped.task';
+import { BaseTask } from '../tasks/task.interface';
+import { getIgnoredPathsInFolder, hasIgnoredInFolder } from '../utils/has-ignored-in-folder';
+import { hasFolderContentChanged } from './has-folder-content-changed';
+import type { SyncDecisionInput } from './sync-decision.interface';
 
-export async function twoWayDecider(
-	input: SyncDecisionInput,
-): Promise<BaseTask[]> {
+export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {
 		settings,
 		localStats,
@@ -27,29 +22,23 @@ export async function twoWayDecider(
 		getBaseContent,
 		compareFileContent,
 		taskFactory,
-	} = input
+	} = input;
 
-	let maxFileSize = Infinity
-	const maxFileSizeStr = settings.skipLargeFiles.maxSize.trim()
+	let maxFileSize = Infinity;
+	const maxFileSizeStr = settings.skipLargeFiles.maxSize.trim();
 	if (maxFileSizeStr !== '') {
-		maxFileSize = bytesParse(maxFileSizeStr, { mode: 'jedec' }) ?? Infinity
+		maxFileSize = bytesParse(maxFileSizeStr, { mode: 'jedec' }) ?? Infinity;
 	}
 
 	// Filter out ignored files and extract StatModel from FsWalkResult
-	const localStatsFiltered = localStats
-		.filter((item) => !item.ignored)
-		.map((item) => item.stat)
+	const localStatsFiltered = localStats.filter((item) => !item.ignored).map((item) => item.stat);
 	const remoteStatsFiltered = remoteStats
 		.filter((item) => !item.ignored)
-		.map((item) => item.stat)
+		.map((item) => item.stat);
 
-	const localStatsMap = new Map(
-		localStatsFiltered.map((item) => [item.path, item]),
-	)
-	const remoteStatsMap = new Map(
-		remoteStatsFiltered.map((item) => [item.path, item]),
-	)
-	const mixedPath = new Set([...localStatsMap.keys(), ...remoteStatsMap.keys()])
+	const localStatsMap = new Map(localStatsFiltered.map((item) => [item.path, item]));
+	const remoteStatsMap = new Map(remoteStatsFiltered.map((item) => [item.path, item]));
+	const mixedPath = new Set([...localStatsMap.keys(), ...remoteStatsMap.keys()]);
 
 	logger.debug(
 		'local Stats',
@@ -58,7 +47,7 @@ export async function twoWayDecider(
 			size: d.isDir ? undefined : d.size,
 			isDir: d.isDir,
 		})),
-	)
+	);
 	logger.debug(
 		'remote Stats',
 		remoteStatsFiltered.map((d) => ({
@@ -66,40 +55,37 @@ export async function twoWayDecider(
 			size: d.isDir ? undefined : d.size,
 			isDir: d.isDir,
 		})),
-	)
+	);
 
-	const tasks: BaseTask[] = []
-	const removeRemoteFolderTasks: BaseTask[] = []
-	const removeLocalFolderTasks: BaseTask[] = []
-	const mkdirLocalTasks: BaseTask[] = []
-	const mkdirRemoteTasks: BaseTask[] = []
-	const noopFolderTasks: BaseTask[] = []
+	const tasks: BaseTask[] = [];
+	const removeRemoteFolderTasks: BaseTask[] = [];
+	const removeLocalFolderTasks: BaseTask[] = [];
+	const mkdirLocalTasks: BaseTask[] = [];
+	const mkdirRemoteTasks: BaseTask[] = [];
+	const noopFolderTasks: BaseTask[] = [];
 
 	// * sync files
 	for (const p of mixedPath) {
-		const remote = remoteStatsMap.get(p)
-		const local = localStatsMap.get(p)
-		const record = syncRecords.get(p)
+		const remote = remoteStatsMap.get(p);
+		const local = localStatsMap.get(p);
+		const record = syncRecords.get(p);
 		const options = {
 			remotePath: p,
 			localPath: p,
 			remoteBaseDir,
-		}
+		};
 		if (local?.isDir || remote?.isDir) {
-			continue
+			continue;
 		}
 		if (record) {
 			if (remote) {
-				const remoteChanged = !isSameTime(remote.mtime, record.remote.mtime)
+				const remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
 				if (local) {
-					let localChanged = !isSameTime(local.mtime, record.local.mtime)
+					let localChanged = !isSameTime(local.mtime, record.local.mtime);
 					if (localChanged && record.base?.key) {
-						const baseContent = await getBaseContent(record.base.key)
+						const baseContent = await getBaseContent(record.base.key);
 						if (baseContent) {
-							localChanged = !(await compareFileContent(
-								local.path,
-								baseContent,
-							))
+							localChanged = !(await compareFileContent(local.path, baseContent));
 						}
 					}
 					if (remoteChanged) {
@@ -115,7 +101,7 @@ export async function twoWayDecider(
 									remoteExists: !!remote,
 									localExists: !!local,
 								},
-							})
+							});
 							if (remote.size > maxFileSize || local.size > maxFileSize) {
 								tasks.push(
 									taskFactory.createSkippedTask({
@@ -125,12 +111,12 @@ export async function twoWayDecider(
 										remoteSize: remote.size,
 										localSize: local.size,
 									}),
-								)
-								continue
+								);
+								continue;
 							}
 
 							if (hasInvalidChar(local.path)) {
-								tasks.push(taskFactory.createFilenameErrorTask(options))
+								tasks.push(taskFactory.createFilenameErrorTask(options));
 							} else {
 								tasks.push(
 									taskFactory.createConflictResolveTask({
@@ -144,10 +130,10 @@ export async function twoWayDecider(
 										remoteStat: remote,
 										useGitStyle: settings.useGitStyle,
 									}),
-								)
+								);
 							}
 
-							continue
+							continue;
 						} else {
 							logger.debug({
 								reason: 'remote file changed',
@@ -159,7 +145,7 @@ export async function twoWayDecider(
 									remoteExists: !!remote,
 									localExists: !!local,
 								},
-							})
+							});
 							if (remote.size > maxFileSize) {
 								tasks.push(
 									taskFactory.createSkippedTask({
@@ -169,16 +155,16 @@ export async function twoWayDecider(
 										remoteSize: remote.size,
 										localSize: local.size,
 									}),
-								)
-								continue
+								);
+								continue;
 							}
 							tasks.push(
 								taskFactory.createPullTask({
 									...options,
 									remoteSize: remote.size,
 								}),
-							)
-							continue
+							);
+							continue;
 						}
 					} else {
 						if (localChanged) {
@@ -192,7 +178,7 @@ export async function twoWayDecider(
 									remoteExists: !!remote,
 									localExists: !!local,
 								},
-							})
+							});
 							if (local.size > maxFileSize) {
 								tasks.push(
 									taskFactory.createSkippedTask({
@@ -202,15 +188,15 @@ export async function twoWayDecider(
 										remoteSize: remote.size,
 										localSize: local.size,
 									}),
-								)
-								continue
+								);
+								continue;
 							}
 							if (hasInvalidChar(local.path)) {
-								tasks.push(taskFactory.createFilenameErrorTask(options))
+								tasks.push(taskFactory.createFilenameErrorTask(options));
 							} else {
-								tasks.push(taskFactory.createPushTask(options))
+								tasks.push(taskFactory.createPushTask(options));
 							}
-							continue
+							continue;
 						}
 					}
 				} else {
@@ -225,7 +211,7 @@ export async function twoWayDecider(
 								remoteExists: !!remote,
 								localExists: !!local,
 							},
-						})
+						});
 						if (remote.size > maxFileSize) {
 							tasks.push(
 								taskFactory.createSkippedTask({
@@ -234,16 +220,16 @@ export async function twoWayDecider(
 									maxSize: maxFileSize,
 									remoteSize: remote.size,
 								}),
-							)
-							continue
+							);
+							continue;
 						}
 						tasks.push(
 							taskFactory.createPullTask({
 								...options,
 								remoteSize: remote.size,
 							}),
-						)
-						continue
+						);
+						continue;
 					} else {
 						logger.debug({
 							reason: 'remote file is removable',
@@ -254,13 +240,13 @@ export async function twoWayDecider(
 								remoteExists: !!remote,
 								localExists: !!local,
 							},
-						})
-						tasks.push(taskFactory.createRemoveRemoteTask(options))
-						continue
+						});
+						tasks.push(taskFactory.createRemoveRemoteTask(options));
+						continue;
 					}
 				}
 			} else if (local) {
-				const localChanged = !isSameTime(local.mtime, record.local.mtime)
+				const localChanged = !isSameTime(local.mtime, record.local.mtime);
 				if (localChanged) {
 					logger.debug({
 						reason: 'local file changed and remote file does not exist',
@@ -272,7 +258,7 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					})
+					});
 					if (local.size > maxFileSize) {
 						tasks.push(
 							taskFactory.createSkippedTask({
@@ -281,15 +267,15 @@ export async function twoWayDecider(
 								localSize: local.size,
 								maxSize: maxFileSize,
 							}),
-						)
-						continue
+						);
+						continue;
 					}
 					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options))
+						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
-						tasks.push(taskFactory.createPushTask(options))
+						tasks.push(taskFactory.createPushTask(options));
 					}
-					continue
+					continue;
 				} else {
 					logger.debug({
 						reason: 'local file is removable',
@@ -300,9 +286,9 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					})
-					tasks.push(taskFactory.createRemoveLocalTask(options))
-					continue
+					});
+					tasks.push(taskFactory.createRemoveLocalTask(options));
+					continue;
 				}
 			}
 		} else {
@@ -318,8 +304,8 @@ export async function twoWayDecider(
 							taskFactory.createNoopTask({
 								...options,
 							}),
-						)
-						continue
+						);
+						continue;
 					}
 					logger.debug({
 						reason: 'both local and remote files exist without a record',
@@ -330,7 +316,7 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					})
+					});
 
 					if (remote.size > maxFileSize || local.size > maxFileSize) {
 						tasks.push(
@@ -341,12 +327,12 @@ export async function twoWayDecider(
 								localSize: local.size,
 								maxSize: maxFileSize,
 							}),
-						)
-						continue
+						);
+						continue;
 					}
 
 					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options))
+						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
 						tasks.push(
 							taskFactory.createConflictResolveTask({
@@ -356,10 +342,10 @@ export async function twoWayDecider(
 								remoteStat: remote,
 								useGitStyle: settings.useGitStyle,
 							}),
-						)
+						);
 					}
 
-					continue
+					continue;
 				} else {
 					logger.debug({
 						reason: 'remote file exists without a local file',
@@ -370,7 +356,7 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					})
+					});
 
 					if (remote.size > maxFileSize) {
 						tasks.push(
@@ -380,13 +366,11 @@ export async function twoWayDecider(
 								remoteSize: remote.size,
 								maxSize: maxFileSize,
 							}),
-						)
-						continue
+						);
+						continue;
 					}
-					tasks.push(
-						taskFactory.createPullTask({ ...options, remoteSize: remote.size }),
-					)
-					continue
+					tasks.push(taskFactory.createPullTask({ ...options, remoteSize: remote.size }));
+					continue;
 				}
 			} else {
 				if (local) {
@@ -399,7 +383,7 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					})
+					});
 
 					if (local.size > maxFileSize) {
 						tasks.push(
@@ -409,15 +393,15 @@ export async function twoWayDecider(
 								localSize: local.size,
 								maxSize: maxFileSize,
 							}),
-						)
-						continue
+						);
+						continue;
 					}
 					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options))
+						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
-						tasks.push(taskFactory.createPushTask(options))
+						tasks.push(taskFactory.createPushTask(options));
 					}
-					continue
+					continue;
 				}
 			}
 		}
@@ -425,8 +409,8 @@ export async function twoWayDecider(
 
 	// * clean orphaned records (both local and remote deleted)
 	for (const [recordPath, record] of syncRecords) {
-		const local = localStatsMap.get(recordPath)
-		const remote = remoteStatsMap.get(recordPath)
+		const local = localStatsMap.get(recordPath);
+		const remote = remoteStatsMap.get(recordPath);
 
 		// If both local and remote don't exist, but record exists, clean the record
 		if (!local && !remote) {
@@ -439,7 +423,7 @@ export async function twoWayDecider(
 					remoteExists: !!remote,
 					recordExists: !!record,
 				},
-			})
+			});
 
 			tasks.push(
 				taskFactory.createCleanRecordTask({
@@ -447,23 +431,23 @@ export async function twoWayDecider(
 					localPath: recordPath,
 					remoteBaseDir,
 				}),
-			)
+			);
 		}
 	}
 
 	// * sync folder: remote -> local
 	for (const remote of remoteStatsFiltered) {
 		if (!remote.isDir) {
-			continue
+			continue;
 		}
-		const localPath = remotePathToLocalPath(remoteBaseDir, remote.path)
-		const local = localStatsMap.get(localPath)
-		const record = syncRecords.get(localPath)
+		const localPath = remotePathToLocalPath(remoteBaseDir, remote.path);
+		const local = localStatsMap.get(localPath);
+		const record = syncRecords.get(localPath);
 		if (local) {
 			if (!local.isDir) {
 				throw new Error(
 					`Folder conflict: remote path ${remote.path} is a folder but local path ${localPath} is a file`,
-				)
+				);
 			}
 			if (!record) {
 				noopFolderTasks.push(
@@ -472,8 +456,8 @@ export async function twoWayDecider(
 						remotePath: remote.path,
 						remoteBaseDir,
 					}),
-				)
-				continue
+				);
+				continue;
 			}
 		} else if (record) {
 			// Use sub-items check instead of mtime check
@@ -482,7 +466,7 @@ export async function twoWayDecider(
 				remoteStatsFiltered,
 				syncRecords,
 				'remote',
-			)
+			);
 
 			if (remoteChanged) {
 				logger.debug({
@@ -494,7 +478,7 @@ export async function twoWayDecider(
 						localExists: !!local,
 						recordExists: !!record,
 					},
-				})
+				});
 
 				mkdirLocalTasks.push(
 					taskFactory.createMkdirLocalTask({
@@ -502,12 +486,12 @@ export async function twoWayDecider(
 						remotePath: remote.path,
 						remoteBaseDir,
 					}),
-				)
-				continue
+				);
+				continue;
 			}
 
 			if (hasIgnoredInFolder(remote.path, remoteStats)) {
-				const ignoredPaths = getIgnoredPathsInFolder(remote.path, remoteStats)
+				const ignoredPaths = getIgnoredPathsInFolder(remote.path, remoteStats);
 				logger.debug({
 					reason: 'skip removing remote folder (contains ignored items)',
 					remotePath: remotePathToAbsolute(remoteBaseDir, remote.path),
@@ -518,7 +502,7 @@ export async function twoWayDecider(
 						recordExists: !!record,
 					},
 					ignoredPaths,
-				})
+				});
 				tasks.push(
 					taskFactory.createSkippedTask({
 						localPath,
@@ -527,8 +511,8 @@ export async function twoWayDecider(
 						reason: SkipReason.FolderContainsIgnoredItems,
 						ignoredPaths,
 					}),
-				)
-				continue
+				);
+				continue;
 			}
 
 			logger.debug({
@@ -540,15 +524,15 @@ export async function twoWayDecider(
 					localExists: !!local,
 					recordExists: !!record,
 				},
-			})
+			});
 			removeRemoteFolderTasks.push(
 				taskFactory.createRemoveRemoteTask({
 					localPath: remote.path,
 					remotePath: remote.path,
 					remoteBaseDir,
 				}),
-			)
-			continue
+			);
+			continue;
 		} else {
 			logger.debug({
 				reason: 'remote folder does not exist locally',
@@ -558,7 +542,7 @@ export async function twoWayDecider(
 					localExists: !!local,
 					recordExists: !!record,
 				},
-			})
+			});
 
 			mkdirLocalTasks.push(
 				taskFactory.createMkdirLocalTask({
@@ -566,19 +550,19 @@ export async function twoWayDecider(
 					remotePath: remote.path,
 					remoteBaseDir,
 				}),
-			)
+			);
 
-			continue
+			continue;
 		}
 	}
 
 	// * sync folder: local -> remote
 	for (const local of localStatsFiltered) {
 		if (!local.isDir) {
-			continue
+			continue;
 		}
-		const remote = remoteStatsMap.get(local.path)
-		const record = syncRecords.get(local.path)
+		const remote = remoteStatsMap.get(local.path);
+		const record = syncRecords.get(local.path);
 		if (remote) {
 			if (!record) {
 				noopFolderTasks.push(
@@ -587,8 +571,8 @@ export async function twoWayDecider(
 						remotePath: remote.path,
 						remoteBaseDir,
 					}),
-				)
-				continue
+				);
+				continue;
 			}
 		} else {
 			if (record) {
@@ -598,7 +582,7 @@ export async function twoWayDecider(
 					localStatsFiltered,
 					syncRecords,
 					'local',
-				)
+				);
 
 				if (localChanged) {
 					logger.debug({
@@ -610,7 +594,7 @@ export async function twoWayDecider(
 							remoteExists: !!remote,
 							recordExists: !!record,
 						},
-					})
+					});
 					if (hasInvalidChar(local.path)) {
 						tasks.push(
 							taskFactory.createFilenameErrorTask({
@@ -618,7 +602,7 @@ export async function twoWayDecider(
 								remotePath: local.path,
 								remoteBaseDir,
 							}),
-						)
+						);
 					} else {
 						mkdirRemoteTasks.push(
 							taskFactory.createMkdirRemoteTask({
@@ -626,13 +610,13 @@ export async function twoWayDecider(
 								remotePath: local.path,
 								remoteBaseDir,
 							}),
-						)
+						);
 					}
-					continue
+					continue;
 				}
 
 				if (hasIgnoredInFolder(local.path, localStats)) {
-					const ignoredPaths = getIgnoredPathsInFolder(local.path, localStats)
+					const ignoredPaths = getIgnoredPathsInFolder(local.path, localStats);
 					logger.debug({
 						reason: 'skip removing local folder (contains ignored items)',
 						remotePath: remotePathToAbsolute(remoteBaseDir, local.path),
@@ -643,7 +627,7 @@ export async function twoWayDecider(
 							recordExists: !!record,
 						},
 						ignoredPaths,
-					})
+					});
 					tasks.push(
 						taskFactory.createSkippedTask({
 							localPath: local.path,
@@ -652,8 +636,8 @@ export async function twoWayDecider(
 							reason: SkipReason.FolderContainsIgnoredItems,
 							ignoredPaths,
 						}),
-					)
-					continue
+					);
+					continue;
 				}
 
 				logger.debug({
@@ -665,14 +649,14 @@ export async function twoWayDecider(
 						remoteExists: !!remote,
 						recordExists: !!record,
 					},
-				})
+				});
 				removeLocalFolderTasks.push(
 					taskFactory.createRemoveLocalTask({
 						localPath: local.path,
 						remotePath: local.path,
 						remoteBaseDir,
 					}),
-				)
+				);
 			} else {
 				logger.debug({
 					reason: 'local folder does not exist remotely',
@@ -682,7 +666,7 @@ export async function twoWayDecider(
 						remoteExists: !!remote,
 						recordExists: !!record,
 					},
-				})
+				});
 				if (hasInvalidChar(local.path)) {
 					tasks.push(
 						taskFactory.createFilenameErrorTask({
@@ -690,7 +674,7 @@ export async function twoWayDecider(
 							remotePath: local.path,
 							remoteBaseDir,
 						}),
-					)
+					);
 				} else {
 					mkdirRemoteTasks.push(
 						taskFactory.createMkdirRemoteTask({
@@ -698,32 +682,30 @@ export async function twoWayDecider(
 							remotePath: local.path,
 							remoteBaseDir,
 						}),
-					)
+					);
 				}
-				continue
+				continue;
 			}
-			continue
+			continue;
 		}
 		if (!remote.isDir) {
 			throw new Error(
 				`Folder conflict: local path ${local.path} is a folder but remote path ${remote.path} is a file`,
-			)
+			);
 		}
 	}
 
 	// Sort folder tasks to ensure correct execution order
-	removeRemoteFolderTasks.sort(
-		(a, b) => b.remotePath.length - a.remotePath.length,
-	)
-	removeLocalFolderTasks.sort((a, b) => b.localPath.length - a.localPath.length)
+	removeRemoteFolderTasks.sort((a, b) => b.remotePath.length - a.remotePath.length);
+	removeLocalFolderTasks.sort((a, b) => b.localPath.length - a.localPath.length);
 	const allFolderTasks = [
 		...removeRemoteFolderTasks,
 		...removeLocalFolderTasks,
 		...mkdirLocalTasks,
 		...mkdirRemoteTasks,
 		...noopFolderTasks,
-	]
+	];
 
-	tasks.splice(0, 0, ...allFolderTasks)
-	return tasks
+	tasks.splice(0, 0, ...allFolderTasks);
+	return tasks;
 }

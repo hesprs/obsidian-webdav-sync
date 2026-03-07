@@ -1,44 +1,43 @@
-import { XMLParser } from 'fast-xml-parser'
-import { isNil, partial } from 'lodash-es'
-import { basename, join } from 'path-browserify'
-import { FileStat } from 'webdav'
-import { NS_DAV_ENDPOINT } from '~/consts'
-import { is503Error } from '~/utils/is-503-error'
-import logger from '~/utils/logger'
-import requestUrl from '~/utils/request-url'
+import { XMLParser } from 'fast-xml-parser';
+import { isNil, partial } from 'lodash-es';
+import { basename, join } from 'path-browserify';
+import type { FileStat } from 'webdav';
+import { NS_DAV_ENDPOINT } from '~/consts';
+import { is503Error } from '~/utils/is-503-error';
+import logger from '~/utils/logger';
+import requestUrl from '~/utils/request-url';
 
 interface WebDAVResponse {
 	multistatus: {
 		response: Array<{
-			href: string
+			href: string;
 			propstat: {
 				prop: {
-					displayname: string
-					resourcetype: { collection?: any }
-					getlastmodified?: string
-					getcontentlength?: string
-					getcontenttype?: string
-				}
-				status: string
-			}
-		}>
-	}
+					displayname: string;
+					resourcetype: { collection?: any };
+					getlastmodified?: string;
+					getcontentlength?: string;
+					getcontenttype?: string;
+				};
+				status: string;
+			};
+		}>;
+	};
 }
 
 function extractNextLink(linkHeader: string): string | null {
-	const matches = linkHeader.match(/<([^>]+)>;\s*rel="next"/)
-	return matches ? matches[1] : null
+	const matches = linkHeader.match(/<([^>]+)>;\s*rel="next"/);
+	return matches ? matches[1] : null;
 }
 
 function convertToFileStat(
 	serverBase: string,
 	item: WebDAVResponse['multistatus']['response'][number],
 ): FileStat {
-	const props = item.propstat.prop
-	const isDir = !isNil(props.resourcetype?.collection)
-	const href = decodeURIComponent(item.href)
-	const filename =
-		serverBase === '/' ? href : join('/', href.replace(serverBase, ''))
+	const props = item.propstat.prop;
+	const isDir = !isNil(props.resourcetype?.collection);
+	const href = decodeURIComponent(item.href);
+	const filename = serverBase === '/' ? href : join('/', href.replace(serverBase, ''));
 
 	return {
 		filename,
@@ -48,19 +47,16 @@ function convertToFileStat(
 		type: isDir ? 'directory' : 'file',
 		etag: null,
 		mime: props.getcontenttype,
-	}
+	};
 }
 
-export async function getDirectoryContents(
-	token: string,
-	path: string,
-): Promise<FileStat[]> {
-	const contents: FileStat[] = []
-	path = path.split('/').map(encodeURIComponent).join('/')
+export async function getDirectoryContents(token: string, path: string): Promise<FileStat[]> {
+	const contents: FileStat[] = [];
+	path = path.split('/').map(encodeURIComponent).join('/');
 	if (!path.startsWith('/')) {
-		path = '/' + path
+		path = '/' + path;
 	}
-	let currentUrl = `${NS_DAV_ENDPOINT}${path}`
+	let currentUrl = `${NS_DAV_ENDPOINT}${path}`;
 
 	while (true) {
 		try {
@@ -82,7 +78,7 @@ export async function getDirectoryContents(
             <getcontenttype/>
           </prop>
         </propfind>`,
-			})
+			});
 			const parseXml = new XMLParser({
 				attributeNamePrefix: '',
 				removeNSPrefix: true,
@@ -93,36 +89,36 @@ export async function getDirectoryContents(
 					leadingZeros: true,
 				},
 				processEntities: false,
-			})
-			const result: WebDAVResponse = parseXml.parse(response.text)
+			});
+			const result: WebDAVResponse = parseXml.parse(response.text);
 			const items = Array.isArray(result.multistatus.response)
 				? result.multistatus.response
-				: [result.multistatus.response]
+				: [result.multistatus.response];
 
 			// 跳过第一个条目（当前目录）
-			contents.push(...items.slice(1).map(partial(convertToFileStat, '/dav')))
+			contents.push(...items.slice(1).map(partial(convertToFileStat, '/dav')));
 
-			const linkHeader = response.headers['link'] || response.headers['Link']
+			const linkHeader = response.headers['link'] || response.headers['Link'];
 			if (!linkHeader) {
-				break
+				break;
 			}
 
-			const nextLink = extractNextLink(linkHeader)
+			const nextLink = extractNextLink(linkHeader);
 			if (!nextLink) {
-				break
+				break;
 			}
-			const nextUrl = new URL(nextLink)
-			nextUrl.pathname = decodeURI(nextUrl.pathname)
-			currentUrl = nextUrl.toString()
+			const nextUrl = new URL(nextLink);
+			nextUrl.pathname = decodeURI(nextUrl.pathname);
+			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (is503Error(e as Error)) {
-				logger.error('503 error, retrying...')
-				await sleep(60_000)
-				continue
+				logger.error('503 error, retrying...');
+				await sleep(60_000);
+				continue;
 			}
-			throw e
+			throw e;
 		}
 	}
 
-	return contents
+	return contents;
 }

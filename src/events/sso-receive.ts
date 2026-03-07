@@ -1,10 +1,10 @@
-import { Subject } from 'rxjs'
+import { Subject } from 'rxjs';
 
 interface SsoRxProps {
-	token: string
+	token: string;
 }
 
-const ssoReceive = new Subject<SsoRxProps>()
+const ssoReceive = new Subject<SsoRxProps>();
 
-export const onSsoReceive = () => ssoReceive.asObservable()
-export const emitSsoReceive = (props: SsoRxProps) => ssoReceive.next(props)
+export const onSsoReceive = () => ssoReceive.asObservable();
+export const emitSsoReceive = (props: SsoRxProps) => ssoReceive.next(props);

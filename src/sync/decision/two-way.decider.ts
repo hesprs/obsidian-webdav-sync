@@ -1,35 +1,35 @@
-import { isEqual } from 'ohash'
-import { blobStore } from '~/storage/blob'
-import CleanRecordTask from '../tasks/clean-record.task'
-import ConflictResolveTask from '../tasks/conflict-resolve.task'
-import FilenameErrorTask from '../tasks/filename-error.task'
-import MkdirLocalTask from '../tasks/mkdir-local.task'
-import MkdirRemoteTask from '../tasks/mkdir-remote.task'
-import NoopTask from '../tasks/noop.task'
-import PullTask from '../tasks/pull.task'
-import PushTask from '../tasks/push.task'
-import RemoveLocalTask from '../tasks/remove-local.task'
-import RemoveRemoteTask from '../tasks/remove-remote.task'
-import SkippedTask from '../tasks/skipped.task'
-import { BaseTask } from '../tasks/task.interface'
-import BaseSyncDecider from './base.decider'
-import {
+import { isEqual } from 'ohash';
+import { blobStore } from '~/storage/blob';
+import CleanRecordTask from '../tasks/clean-record.task';
+import ConflictResolveTask from '../tasks/conflict-resolve.task';
+import FilenameErrorTask from '../tasks/filename-error.task';
+import MkdirLocalTask from '../tasks/mkdir-local.task';
+import MkdirRemoteTask from '../tasks/mkdir-remote.task';
+import NoopTask from '../tasks/noop.task';
+import PullTask from '../tasks/pull.task';
+import PushTask from '../tasks/push.task';
+import RemoveLocalTask from '../tasks/remove-local.task';
+import RemoveRemoteTask from '../tasks/remove-remote.task';
+import SkippedTask from '../tasks/skipped.task';
+import { BaseTask } from '../tasks/task.interface';
+import BaseSyncDecider from './base.decider';
+import type {
 	ConflictTaskOptions,
 	PullTaskOptions,
 	SkippedTaskOptions,
 	TaskFactory,
 	TaskOptions,
-} from './sync-decision.interface'
-import { twoWayDecider } from './two-way.decider.function'
+} from './sync-decision.interface';
+import { twoWayDecider } from './two-way.decider.function';
 
 export default class TwoWaySyncDecider extends BaseSyncDecider {
 	async decide(): Promise<BaseTask[]> {
-		const syncRecordStorage = this.getSyncRecordStorage()
+		const syncRecordStorage = this.getSyncRecordStorage();
 		const [records, localStats, remoteStats] = await Promise.all([
 			syncRecordStorage.getRecords(),
 			this.sync.localFS.walk(),
 			this.sync.remoteFs.walk(),
-		])
+		]);
 
 		// 创建共用的task选项
 		const commonTaskOptions = {
@@ -37,7 +37,7 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 			vault: this.vault,
 			remoteBaseDir: this.remoteBaseDir,
 			syncRecord: syncRecordStorage,
-		}
+		};
 
 		// 创建Task工厂
 		const taskFactory: TaskFactory = {
@@ -63,25 +63,25 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 				new FilenameErrorTask({ ...commonTaskOptions, ...options }),
 			createSkippedTask: (options: SkippedTaskOptions) =>
 				new SkippedTask({ ...commonTaskOptions, ...options }),
-		}
+		};
 
 		// 文件内容比较函数
 		const compareFileContent = async (
 			filePath: string,
 			baseContent: ArrayBuffer,
 		): Promise<boolean> => {
-			const file = this.vault.getFileByPath(filePath)
-			if (!file) return false
-			const currentContent = await this.vault.readBinary(file)
-			return isEqual(baseContent, currentContent)
-		}
+			const file = this.vault.getFileByPath(filePath);
+			if (!file) return false;
+			const currentContent = await this.vault.readBinary(file);
+			return isEqual(baseContent, currentContent);
+		};
 		const getBaseContent = async (key: string): Promise<ArrayBuffer | null> => {
-			const blob = await blobStore.get(key)
+			const blob = await blobStore.get(key);
 			if (!blob) {
-				return null
+				return null;
 			}
-			return await blob.arrayBuffer()
-		}
+			return await blob.arrayBuffer();
+		};
 
 		// 调用纯函数进行决策
 		return await twoWayDecider({
@@ -98,6 +98,6 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 			getBaseContent,
 			compareFileContent,
 			taskFactory,
-		})
+		});
 	}
 }

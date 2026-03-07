@@ -1,10 +1,10 @@
-import { Subject } from 'rxjs'
+import { Subject } from 'rxjs';
 
 interface SyncStartProps {
-	showNotice: boolean
+	showNotice: boolean;
 }
 
-const startSync = new Subject<SyncStartProps>()
+const startSync = new Subject<SyncStartProps>();
 
-export const onStartSync = () => startSync.asObservable()
-export const emitStartSync = (props: SyncStartProps) => startSync.next(props)
+export const onStartSync = () => startSync.asObservable();
+export const emitStartSync = (props: SyncStartProps) => startSync.next(props);

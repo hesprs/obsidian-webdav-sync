@@ -1,15 +1,15 @@
-import { isNil } from 'lodash-es'
-import { Vault } from 'obsidian'
-import { dirname, normalize } from 'path-browserify'
+import { isNil } from 'lodash-es';
+import { Vault } from 'obsidian';
+import { dirname, normalize } from 'path-browserify';
 
 export async function mkdirsVault(vault: Vault, path: string) {
-	const stack: string[] = []
-	let currentPath = normalize(path)
+	const stack: string[] = [];
+	let currentPath = normalize(path);
 	if (currentPath === '/' || currentPath === '.') {
-		return
+		return;
 	}
 	if (vault.getAbstractFileByPath(currentPath)) {
-		return
+		return;
 	}
 	while (
 		currentPath !== '' &&
@@ -17,14 +17,14 @@ export async function mkdirsVault(vault: Vault, path: string) {
 		currentPath !== '.' &&
 		isNil(vault.getAbstractFileByPath(currentPath))
 	) {
-		stack.push(currentPath)
-		currentPath = dirname(currentPath)
+		stack.push(currentPath);
+		currentPath = dirname(currentPath);
 	}
 	while (stack.length) {
-		const pop = stack.pop()
+		const pop = stack.pop();
 		if (!pop) {
-			continue
+			continue;
 		}
-		await vault.createFolder(pop)
+		await vault.createFolder(pop);
 	}
 }

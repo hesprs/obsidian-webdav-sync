@@ -122,8 +122,7 @@ export default {
 			save: '保存',
 			cancel: '取消',
 			placeholder: '例如: .DS_Store, *.pdf',
-			description:
-				'符合这些规则的文件或文件夹在同步时会被忽略。使用 * 作为通配符。',
+			description: '符合这些规则的文件或文件夹在同步时会被忽略。使用 * 作为通配符。',
 			exclude: {
 				name: '排除规则',
 				desc: '符合规则的文件/文件夹将不会被同步',
@@ -206,8 +205,7 @@ export default {
 			},
 			saveModal: {
 				title: '保存缓存',
-				description:
-					'输入文件名以保存当前缓存状态。文件将保存在远程缓存目录中。',
+				description: '输入文件名以保存当前缓存状态。文件将保存在远程缓存目录中。',
 				filename: '文件名',
 				save: '保存',
 				cancel: '取消',
@@ -346,4 +344,4 @@ export default {
 		daysAgo: '{{count}}天前',
 		longAgo: '很久前',
 	},
-}
+};

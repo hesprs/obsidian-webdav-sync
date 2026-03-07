@@ -1,11 +1,11 @@
-import { normalize } from 'path-browserify'
+import { normalize } from 'path-browserify';
 
 export function stdRemotePath(remotePath: string): `/${string}/` {
 	if (!remotePath.startsWith('/')) {
-		remotePath = `/${remotePath}`
+		remotePath = `/${remotePath}`;
 	}
 	if (!remotePath.endsWith('/')) {
-		remotePath = `${remotePath}/`
+		remotePath = `${remotePath}/`;
 	}
-	return normalize(remotePath) as `/${string}/`
+	return normalize(remotePath) as `/${string}/`;
 }

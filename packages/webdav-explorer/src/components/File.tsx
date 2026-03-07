@@ -1,5 +1,5 @@
 export interface FolderProps {
-	name: string
+	name: string;
 }
 
 function File(props: FolderProps) {
@@ -8,7 +8,7 @@ function File(props: FolderProps) {
 			<div class="i-custom:file size-10" />
 			<span class="truncate flex-1">{props.name}</span>
 		</div>
-	)
+	);
 }
 
-export default File
+export default File;

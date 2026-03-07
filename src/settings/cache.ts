@@ -1,60 +1,57 @@
-import { Notice, Setting } from 'obsidian'
-import { join } from 'path-browserify'
-import CacheClearModal from '~/components/CacheClearModal'
-import CacheRestoreModal from '~/components/CacheRestoreModal'
-import CacheSaveModal from '~/components/CacheSaveModal'
-import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal'
-import i18n from '~/i18n'
-import { TraverseWebDAVCache } from '~/storage'
-import { getDBKey } from '~/utils/get-db-key'
-import logger from '~/utils/logger'
-import { stdRemotePath } from '~/utils/std-remote-path'
-import BaseSettings from './settings.base'
+import { Notice, Setting } from 'obsidian';
+import { join } from 'path-browserify';
+import CacheClearModal from '~/components/CacheClearModal';
+import CacheRestoreModal from '~/components/CacheRestoreModal';
+import CacheSaveModal from '~/components/CacheSaveModal';
+import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
+import i18n from '~/i18n';
+import type { TraverseWebDAVCache } from '~/storage';
+import { getDBKey } from '~/utils/get-db-key';
+import logger from '~/utils/logger';
+import { stdRemotePath } from '~/utils/std-remote-path';
+import BaseSettings from './settings.base';
 
 export interface ExportedStorage {
-	exportedAt: string
-	traverseWebDAVCache?: TraverseWebDAVCache
+	exportedAt: string;
+	traverseWebDAVCache?: TraverseWebDAVCache;
 }
 
 export default class CacheSettings extends BaseSettings {
 	async display() {
-		this.containerEl.empty()
-		new Setting(this.containerEl)
-			.setName(i18n.t('settings.cache.title'))
-			.setHeading()
+		this.containerEl.empty();
+		new Setting(this.containerEl).setName(i18n.t('settings.cache.title')).setHeading();
 
 		// set remote cache directory
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.cache.remoteCacheDir.name'))
 			.setDesc(i18n.t('settings.cache.remoteCacheDir.desc'))
 			.addText((text) => {
-				text
-					.setPlaceholder(i18n.t('settings.cache.remoteCacheDir.placeholder'))
+				text.setPlaceholder(i18n.t('settings.cache.remoteCacheDir.placeholder'))
 					.setValue(this.remoteCacheDir)
 					.onChange(async (value) => {
-						this.plugin.settings.remoteCacheDir = value
-						await this.plugin.saveSettings()
-					})
+						this.plugin.settings.remoteCacheDir = value;
+						await this.plugin.saveSettings();
+					});
 				text.inputEl.addEventListener('blur', async () => {
-					this.plugin.settings.remoteCacheDir = this.remoteCacheDir
-					await this.plugin.saveSettings()
-					this.display()
-				})
+					this.plugin.settings.remoteCacheDir = this.remoteCacheDir;
+					await this.plugin.saveSettings();
+					void this.display();
+				});
 			})
 			.addButton((button) => {
 				button.setIcon('folder').onClick(() => {
 					// 检查账号配置
 					if (!this.plugin.isAccountConfigured()) {
-						new Notice(i18n.t('sync.error.accountNotConfigured'))
-						return
+						new Notice(i18n.t('sync.error.accountNotConfigured'));
+						return;
 					}
 					new SelectRemoteBaseDirModal(this.app, this.plugin, async (path) => {
-						this.plugin.settings.remoteCacheDir = path
-						await this.plugin.saveSettings()
-						this.display()
-					}).open()
-				})
-			})
+						this.plugin.settings.remoteCacheDir = path;
+						await this.plugin.saveSettings();
+						void this.display();
+					}).open();
+				});
+			});
 
 		// Save and restore cache
 		new Setting(this.containerEl)
@@ -64,64 +61,56 @@ export default class CacheSettings extends BaseSettings {
 				button.setButtonText(i18n.t('settings.cache.dump')).onClick(() => {
 					new CacheSaveModal(this.plugin, this.remoteCacheDir, () =>
 						this.display(),
-					).open()
-				})
+					).open();
+				});
 			})
 			.addButton((button) => {
 				button.setButtonText(i18n.t('settings.cache.restore')).onClick(() => {
 					new CacheRestoreModal(this.plugin, this.remoteCacheDir, () =>
 						this.display(),
-					).open()
-				})
-			})
+					).open();
+				});
+			});
 
 		// clear
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.cache.clearName'))
 			.setDesc(i18n.t('settings.cache.clearDesc'))
 			.addButton((button) => {
-				button
-					.setButtonText(i18n.t('settings.cache.clear'))
-					.onClick(async () => {
-						new CacheClearModal(this.plugin, async (options) => {
-							try {
-								const cleared =
-									await CacheClearModal.clearSelectedCaches(options)
-								if (cleared.length > 0) {
-									new Notice(i18n.t('settings.cache.cleared'))
-								} else {
-									new Notice(
-										i18n.t('settings.cache.clearModal.nothingSelected'),
-									)
-								}
-							} catch (error) {
-								logger.error('Error clearing cache:', error)
-								new Notice(`Error clearing cache: ${error.message}`)
+				button.setButtonText(i18n.t('settings.cache.clear')).onClick(async () => {
+					new CacheClearModal(this.plugin, async (options) => {
+						try {
+							const cleared = await CacheClearModal.clearSelectedCaches(options);
+							if (cleared.length > 0) {
+								new Notice(i18n.t('settings.cache.cleared'));
+							} else {
+								new Notice(i18n.t('settings.cache.clearModal.nothingSelected'));
 							}
-						}).open()
-					})
-			})
+						// oxlint-disable-next-line typescript/no-explicit-any
+						} catch (error: any) {
+							logger.error('Error clearing cache:', error);
+							new Notice(`Error clearing cache: ${error.message}`);
+						}
+					}).open();
+				});
+			});
 	}
 
 	get remoteCacheDir() {
 		return stdRemotePath(
-			this.plugin.settings.remoteCacheDir?.trim() ||
-				this.plugin.manifest.name.trim(),
-		)
+			this.plugin.settings.remoteCacheDir?.trim() || this.plugin.manifest.name.trim(),
+		);
 	}
 
 	get remoteCachePath() {
-		const filename = getDBKey(
-			this.app.vault.getName(),
-			this.plugin.settings.remoteDir,
-		)
-		return join(this.remoteCacheDir, filename + '.json')
+		const filename = getDBKey(this.app.vault.getName(), this.plugin.settings.remoteDir);
+		return join(this.remoteCacheDir, filename + '.json');
 	}
 
 	async createRemoteCacheDir() {
-		const webdav = await this.plugin.webDAVService.createWebDAVClient()
+		const webdav = await this.plugin.webDAVService.createWebDAVClient();
 		return await webdav.createDirectory(this.remoteCacheDir, {
 			recursive: true,
-		})
+		});
 	}
 }

@@ -1,16 +1,16 @@
-import { normalize } from 'path-browserify'
+import { normalize } from 'path-browserify';
 
 export function isSub(parent: string, sub: string) {
-	parent = normalize(parent)
-	sub = normalize(sub)
+	parent = normalize(parent);
+	sub = normalize(sub);
 	if (!parent.endsWith('/')) {
-		parent += '/'
+		parent += '/';
 	}
 	if (!sub.endsWith('/')) {
-		sub += '/'
+		sub += '/';
 	}
 	if (sub === parent) {
-		return false
+		return false;
 	}
-	return sub.startsWith(parent)
+	return sub.startsWith(parent);
 }

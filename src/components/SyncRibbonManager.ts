@@ -1,14 +1,14 @@
-import { Notice } from 'obsidian'
-import logger from '~/utils/logger'
-import { emitCancelSync } from '../events'
-import i18n from '../i18n'
-import type NutstorePlugin from '../index'
-import { NutstoreSync, SyncStartMode } from '../sync'
-import SyncConfirmModal from './SyncConfirmModal'
+import { Notice } from 'obsidian';
+import logger from '~/utils/logger';
+import type NutstorePlugin from '../index';
+import { emitCancelSync } from '../events';
+import i18n from '../i18n';
+import { NutstoreSync, SyncStartMode } from '../sync';
+import SyncConfirmModal from './SyncConfirmModal';
 
 export class SyncRibbonManager {
-	private startRibbonEl: HTMLElement
-	private stopRibbonEl: HTMLElement
+	private startRibbonEl: HTMLElement;
+	private stopRibbonEl: HTMLElement;
 
 	constructor(private plugin: NutstorePlugin) {
 		this.startRibbonEl = this.plugin.addRibbonIcon(
@@ -16,23 +16,23 @@ export class SyncRibbonManager {
 			i18n.t('sync.startButton'),
 			async () => {
 				if (this.plugin.isSyncing) {
-					return
+					return;
 				}
 
 				// 检查账号配置
 				if (!this.plugin.isAccountConfigured()) {
-					new Notice(i18n.t('sync.error.accountNotConfigured'))
+					new Notice(i18n.t('sync.error.accountNotConfigured'));
 					// 打开设置页面，引导用户配置账号
 					try {
-						const setting = this.plugin.app.setting
+						const setting = this.plugin.app.setting;
 						if (setting) {
-							setting.open()
-							setting.openTabById(this.plugin.manifest.id)
+							setting.open();
+							setting.openTabById(this.plugin.manifest.id);
 						}
 					} catch (error) {
-						logger.error('Failed to open settings:', error)
+						logger.error('Failed to open settings:', error);
 					}
-					return
+					return;
 				}
 
 				const startSync = async () => {
@@ -41,35 +41,33 @@ export class SyncRibbonManager {
 						vault: this.plugin.app.vault,
 						token: await this.plugin.getToken(),
 						remoteBaseDir: this.plugin.remoteBaseDir,
-					})
+					});
 					await sync.start({
 						mode: SyncStartMode.MANUAL_SYNC,
-					})
-				}
+					});
+				};
 				if (plugin.settings.confirmBeforeSync) {
-					new SyncConfirmModal(this.plugin.app, startSync).open()
+					new SyncConfirmModal(this.plugin.app, startSync).open();
 				} else {
-					startSync()
+					void startSync();
 				}
 			},
-		)
-		this.stopRibbonEl = this.plugin.addRibbonIcon(
-			'square',
-			i18n.t('sync.stopButton'),
-			() => emitCancelSync(),
-		)
-		this.stopRibbonEl.classList.add('hidden')
+		);
+		this.stopRibbonEl = this.plugin.addRibbonIcon('square', i18n.t('sync.stopButton'), () =>
+			emitCancelSync(),
+		);
+		this.stopRibbonEl.classList.add('hidden');
 	}
 
 	public update() {
 		if (this.plugin.isSyncing) {
-			this.startRibbonEl.setAttr('aria-disabled', 'true')
-			this.startRibbonEl.addClass('nutstore-sync-spinning')
-			this.stopRibbonEl.classList.remove('hidden')
+			this.startRibbonEl.setAttr('aria-disabled', 'true');
+			this.startRibbonEl.addClass('nutstore-sync-spinning');
+			this.stopRibbonEl.classList.remove('hidden');
 		} else {
-			this.startRibbonEl.removeAttribute('aria-disabled')
-			this.startRibbonEl.removeClass('nutstore-sync-spinning')
-			this.stopRibbonEl.classList.add('hidden')
+			this.startRibbonEl.removeAttribute('aria-disabled');
+			this.startRibbonEl.removeClass('nutstore-sync-spinning');
+			this.stopRibbonEl.classList.add('hidden');
 		}
 	}
 }

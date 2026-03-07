@@ -1,7 +1,7 @@
 export interface FolderProps {
-	name: string
-	path: string
-	onClick: (path: string) => void
+	name: string;
+	path: string;
+	onClick: (path: string) => void;
 }
 
 function Folder(props: FolderProps) {
@@ -13,7 +13,7 @@ function Folder(props: FolderProps) {
 			<div class="i-custom:folder size-10" />
 			<span class="truncate flex-1">{props.name}</span>
 		</div>
-	)
+	);
 }
 
-export default Folder
+export default Folder;

@@ -1,29 +1,28 @@
-import { getInvalidChars } from '../../utils/has-invalid-char'
-import { BaseTask, toTaskError } from './task.interface'
-
-import i18n from '~/i18n'
+import i18n from '~/i18n';
+import { getInvalidChars } from '../../utils/has-invalid-char';
+import { BaseTask, toTaskError } from './task.interface';
 
 export class FilenameError extends Error {
 	constructor(
 		public readonly invalidChars: string[],
 		public readonly filePath: string,
 	) {
-		super()
-		this.name = 'FilenameError'
-		Object.setPrototypeOf?.(this, new.target.prototype)
+		super();
+		this.name = 'FilenameError';
+		Object.setPrototypeOf?.(this, new.target.prototype);
 		Object.defineProperty(this, 'message', {
 			configurable: true,
 			get: () => FilenameError.format(this.invalidChars, this.filePath),
-		})
+		});
 	}
 
 	private static format(invalidChars: string[], filePath: string) {
-		const unique = Array.from(new Set(invalidChars))
-		const charList = unique.map((c) => `'${c}'`).join(', ')
+		const unique = Array.from(new Set(invalidChars));
+		const charList = unique.map((c) => `'${c}'`).join(', ');
 		return i18n.t('errors.filenameUnsupportedChars', {
 			chars: charList,
 			path: filePath,
-		})
+		});
 	}
 }
 
@@ -34,10 +33,10 @@ export class FilenameError extends Error {
  */
 export default class FilenameErrorTask extends BaseTask {
 	exec() {
-		const invalidChars = getInvalidChars(this.localPath)
+		const invalidChars = getInvalidChars(this.localPath);
 		return {
 			success: false,
 			error: toTaskError(new FilenameError(invalidChars, this.localPath), this),
-		} as const
+		} as const;
 	}
 }

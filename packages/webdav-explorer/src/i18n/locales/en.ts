@@ -4,6 +4,6 @@ const en = {
 	confirm: 'Confirm',
 	cancel: 'Cancel',
 	currentPath: 'Current Path',
-}
+};
 
-export default en
+export default en;

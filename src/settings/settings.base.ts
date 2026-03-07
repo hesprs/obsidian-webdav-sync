@@ -1,6 +1,6 @@
-import { App } from 'obsidian'
-import { NutstoreSettingTab } from '.'
-import NutstorePlugin from '..'
+import { App } from 'obsidian';
+import { NutstoreSettingTab } from '.';
+import NutstorePlugin from '..';
 
 export default abstract class BaseSettings {
 	constructor(
@@ -10,5 +10,5 @@ export default abstract class BaseSettings {
 		protected containerEl: HTMLElement,
 	) {}
 
-	abstract display(): void
+	abstract display(): void;
 }

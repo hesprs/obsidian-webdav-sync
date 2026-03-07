@@ -1,12 +1,12 @@
-import { Buffer } from 'buffer' // Import Buffer for explicit Buffer testing
-import { describe, expect, it } from 'vitest'
+import { Buffer } from 'buffer'; // Import Buffer for explicit Buffer testing
+import { describe, expect, it } from 'vitest';
 import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
 	resolveByLatestTimestamp,
 	type IntelligentMergeParams,
 	type LatestTimestampParams,
-} from './merge-utils'
+} from './merge-utils';
 
 describe('resolveByLatestTimestamp', () => {
 	// --- 无更改 ---
@@ -16,10 +16,10 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1000,
 			localContent: Buffer.from('abc'),
 			remoteContent: Buffer.from('abc'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.NoChange)
-	})
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.NoChange);
+	});
 
 	it('情况 1.2: 远程较新但内容相同，应无更改', () => {
 		const params: LatestTimestampParams = {
@@ -27,10 +27,10 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1001,
 			localContent: Buffer.from('abc'),
 			remoteContent: Buffer.from('abc'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.NoChange)
-	})
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.NoChange);
+	});
 
 	it('情况 1.3: 本地较新但内容相同，应无更改', () => {
 		const params: LatestTimestampParams = {
@@ -38,10 +38,10 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1000,
 			localContent: Buffer.from('abc'),
 			remoteContent: Buffer.from('abc'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.NoChange)
-	})
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.NoChange);
+	});
 
 	// --- 使用远程版本 ---
 	it('情况 2.1: 远程较新且内容不同，应使用远程版本', () => {
@@ -50,13 +50,13 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1001,
 			localContent: Buffer.from('abc'),
 			remoteContent: Buffer.from('abcd'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.UseRemote)
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.UseRemote);
 		if (result.status === LatestTimestampResolution.UseRemote) {
-			expect(result.content).toEqual(Buffer.from('abcd'))
+			expect(result.content).toEqual(Buffer.from('abcd'));
 		}
-	})
+	});
 
 	it('情况 2.2: 远程较新，Buffer 内容不同，应使用远程版本', () => {
 		const params: LatestTimestampParams = {
@@ -64,13 +64,13 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1001,
 			localContent: Buffer.from('binarydata1'),
 			remoteContent: Buffer.from('binarydata2'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.UseRemote)
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.UseRemote);
 		if (result.status === LatestTimestampResolution.UseRemote) {
-			expect(result.content).toEqual(Buffer.from('binarydata2'))
+			expect(result.content).toEqual(Buffer.from('binarydata2'));
 		}
-	})
+	});
 
 	// --- 使用本地版本 ---
 	it('情况 3.1: 本地较新且内容不同，应使用本地版本', () => {
@@ -79,13 +79,13 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1000,
 			localContent: Buffer.from('xyz'),
 			remoteContent: Buffer.from('xy'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.UseLocal)
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.UseLocal);
 		if (result.status === LatestTimestampResolution.UseLocal) {
-			expect(result.content).toEqual(Buffer.from('xyz'))
+			expect(result.content).toEqual(Buffer.from('xyz'));
 		}
-	})
+	});
 
 	it('情况 3.2: 本地较新，Buffer 内容不同，应使用本地版本', () => {
 		const params: LatestTimestampParams = {
@@ -93,14 +93,14 @@ describe('resolveByLatestTimestamp', () => {
 			remoteMtime: 1000,
 			localContent: Buffer.from('localbinary'),
 			remoteContent: Buffer.from('remotebinary'),
-		}
-		const result = resolveByLatestTimestamp(params)
-		expect(result.status).toBe(LatestTimestampResolution.UseLocal)
+		};
+		const result = resolveByLatestTimestamp(params);
+		expect(result.status).toBe(LatestTimestampResolution.UseLocal);
 		if (result.status === LatestTimestampResolution.UseLocal) {
-			expect(result.content).toEqual(Buffer.from('localbinary'))
+			expect(result.content).toEqual(Buffer.from('localbinary'));
 		}
-	})
-})
+	});
+});
 
 describe('resolveByIntelligentMerge', () => {
 	// --- 内容一致 ---
@@ -109,11 +109,11 @@ describe('resolveByIntelligentMerge', () => {
 			baseContentText: 'line1\nline2',
 			localContentText: 'line1\nline2\nline3',
 			remoteContentText: 'line1\nline2\nline3',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.isIdentical).toBe(true)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.isIdentical).toBe(true);
+	});
 
 	// --- node-diff3 成功合并 ---
 	it('情况 2.1: 本地新增，远程不变 (node-diff3)，应成功合并', async () => {
@@ -121,131 +121,124 @@ describe('resolveByIntelligentMerge', () => {
 			baseContentText: 'a\nb',
 			localContentText: 'a\nb\nc',
 			remoteContentText: 'a\nb',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('a\nb\nc')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('a\nb\nc');
+	});
 
 	it('情况 2.2: 远程删除，本地不变 (node-diff3)，应成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'a\nb\nc',
 			localContentText: 'a\nb\nc',
 			remoteContentText: 'a\nc',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('a\nc')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('a\nc');
+	});
 
 	it('情况 2.3: 本地修改，远程不变 (node-diff3)，应成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'hello world',
 			localContentText: 'hello universe',
 			remoteContentText: 'hello world',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('hello universe')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('hello universe');
+	});
 
 	it('情况 2.4: 并发无重叠修改 (node-diff3)，应成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'line1\nline2\nline3\nline4',
 			localContentText: 'line1-local\nline2\nline3\nline4',
 			remoteContentText: 'line1\nline2\nline3\nline4-remote',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('line1-local\nline2\nline3\nline4-remote')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('line1-local\nline2\nline3\nline4-remote');
+	});
 
 	it('情况 2.5: 本地在开头修改 (node-diff3)，应成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'original line',
 			localContentText: 'new first line\noriginal line',
 			remoteContentText: 'original line',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('new first line\noriginal line')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('new first line\noriginal line');
+	});
 
 	it('情况 2.6: 远程在末尾修改 (node-diff3)，应成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'original line',
 			localContentText: 'original line',
 			remoteContentText: 'original line\nnew last line',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('original line\nnew last line')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('original line\nnew last line');
+	});
 
 	// --- dmp 回退合并测试 ---
 	it('情况 3.1: node-diff3 冲突，dmp 回退亦无法解决', async () => {
 		// 此场景模拟 diff3 在 'shared_line' 上报告冲突
 		const params: IntelligentMergeParams = {
 			baseContentText: 'common_prefix\nshared_line_base\ncommon_suffix',
-			localContentText:
-				'common_prefix\nshared_line_local_version\ncommon_suffix', // Local made a change
-			remoteContentText:
-				'common_prefix\nshared_line_remote_version\ncommon_suffix', // Remote also made a change
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+			localContentText: 'common_prefix\nshared_line_local_version\ncommon_suffix', // Local made a change
+			remoteContentText: 'common_prefix\nshared_line_remote_version\ncommon_suffix', // Remote also made a change
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.2: node-diff3 冲突，但 dmp 回退成功合并', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: '第一行\n共同祖先\n第三行',
 			localContentText: '第一行\n本地修改了共同祖先\n第三行\n本地新增行', // 本地修改并添加
 			remoteContentText: '第一行\n共同祖先被修改了\n第三行', // 远程仅修改
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe(
-			'第一行\n本地修改了共同祖先被修改了\n第三行\n本地新增行',
-		)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('第一行\n本地修改了共同祖先被修改了\n第三行\n本地新增行');
+	});
 
 	it('情况 3.3: 并发编辑句子 - 一个添加修饰词，另一个更改名词 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'The cat sat on the mat.',
 			localContentText: 'The fluffy cat sat on the mat.', // User A adds "fluffy"
 			remoteContentText: 'The cat sat on the rug.', // User B changes "mat" to "rug"
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe('The fluffy cat sat on the rug.')
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('The fluffy cat sat on the rug.');
+	});
 
 	it('情况 3.4: 同一行文本两端同时编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'This is a shared line of text.',
 			localContentText: 'NEW_PREFIX This is a shared line of text.', // User A adds a prefix
 			remoteContentText: 'This is a shared line of text. NEW_SUFFIX', // User B adds a suffix
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.mergedText).toBe(
-			'NEW_PREFIX This is a shared line of text. NEW_SUFFIX',
-		)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.mergedText).toBe('NEW_PREFIX This is a shared line of text. NEW_SUFFIX');
+	});
 
 	it('情况 3.5: 复杂交织的真实冲突 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'Report for Q1: Sales are up by 10%.',
-			localContentText:
-				'Urgent Report for Q1: Sales are significantly up by 10%.',
+			localContentText: 'Urgent Report for Q1: Sales are significantly up by 10%.',
 			remoteContentText: 'Report for Q1: Revenue is up by 10%, not sales.',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			'Urgent Report for Q1: Revenue is significantly up by 10%, not sales.',
-		)
-	})
+		);
+	});
 
 	it('情况 3.6: 大段文本 - 两端非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -266,9 +259,9 @@ The middle section of this paragraph will remain untouched by direct edits from 
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.
 And a concluding sentence has been added remotely.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`A new introductory sentence has been added locally.
 This is the first sentence of a long paragraph that serves as a base for testing.
@@ -277,8 +270,8 @@ The middle section of this paragraph will remain untouched by direct edits from 
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.
 And a concluding sentence has been added remotely.`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.7: 多段文本 - 不同段落非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -297,17 +290,17 @@ It has a few lines.
 
 Paragraph two, with remote changes applied.
 This one also has some content, and this is a remote addition.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`Paragraph one, with local modifications.
 It has a few lines, and this is a local addition.
 
 Paragraph two, with remote changes applied.
 This one also has some content, and this is a remote addition.`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.8: 大段文本 - 内部冲突编辑 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -320,10 +313,10 @@ The timeline for this critical phase is two months.`,
 			remoteContentText: `The project's main objective is to improve customer satisfaction.
 We will achieve this by simplifying the navigation and ensuring stability.
 The deadline for this phase is strictly four months.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.9: 多段文本 - 一段冲突，其他段落非冲突 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -351,10 +344,10 @@ This section is fundamentally important for understanding.
 
 Paragraph C: Concluding remarks and future work, with an added action item.
 This summarizes the document and suggests next steps.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false) // Conflict in Paragraph B should cause overall failure
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false); // Conflict in Paragraph B should cause overall failure
+	});
 
 	it('情况 3.10: 大段中文文本 - 两端非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -375,9 +368,9 @@ This summarizes the document and suggests next steps.`,
 然而，段落的开头和末尾会发生更改。
 此设置有助于验证DMP是否能处理较长文本主体中的非重叠更改。
 并且远程添加了一个总结句。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`本地新增了一个引言句。
 这是一段用于测试的长中文段落的第一句话。
@@ -386,8 +379,8 @@ This summarizes the document and suggests next steps.`,
 然而，段落的开头和末尾会发生更改。
 此设置有助于验证DMP是否能处理较长文本主体中的非重叠更改。
 并且远程添加了一个总结句。`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.11: 多段中文文本 - 不同段落非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -406,17 +399,17 @@ This summarizes the document and suggests next steps.`,
 
 段落二，已应用远程更改。
 这一个也有一些内容，这是远程新增的内容。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`段落一，经过本地修改。
 它有几行文字，这是本地新增的内容。
 
 段落二，已应用远程更改。
 这一个也有一些内容，这是远程新增的内容。`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.12: 大段中文文本 - 内部冲突编辑 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -429,10 +422,10 @@ This summarizes the document and suggests next steps.`,
 			remoteContentText: `项目的主要目的是提高客户满意度。
 我们将通过简化导航和确保稳定性来实现。
 此阶段的截止日期严格限定为四个月。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.13: 多段中文文本 - 一段冲突，其他段落非冲突 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -460,10 +453,10 @@ This summarizes the document and suggests next steps.`,
 
 段落丙：结论和未来工作，并增加了一个行动项。
 这总结了文档并建议了后续步骤。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false) // Conflict in 段落乙 should cause overall failure
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false); // Conflict in 段落乙 should cause overall failure
+	});
 
 	// --- Markdown Specific Test Cases ---
 	it('情况 3.14: Markdown - 非冲突编辑 (本地添加列表，远程修改段落) (DMP 成功)', async () => {
@@ -480,9 +473,9 @@ This is the original paragraph content. It discusses important concepts.
 			remoteContentText: `# Section Title
 
 This is the modified paragraph content by remote. It elaborates on the important concepts with new details.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# Section Title
 
@@ -490,8 +483,8 @@ This is the modified paragraph content by remote. It elaborates on the important
 
 - Item 1
 - Item 2`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.15: Markdown - 列表内非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -504,25 +497,25 @@ This is the modified paragraph content by remote. It elaborates on the important
 			remoteContentText: `- First item: original text.
 - Second item: remotely modified text.
 - Third item: original text.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`- First item: locally modified text.
 - Second item: remotely modified text.
 - Third item: original text.`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.16: Markdown - 标题冲突 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: `## Original Subheading`,
 			localContentText: `## Locally Updated Subheading`,
 			remoteContentText: `## Remotely Revised Subheading`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.17: Markdown - 大型知识库片段 - 复杂非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -573,9 +566,9 @@ This document provides a comprehensive overview of the system architecture. Key 
 
 ### Data Flow
 Data flows from Frontend -> API Server -> Database.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# Main Topic: System Architecture
 
@@ -594,8 +587,8 @@ This document provides a comprehensive overview of the system architecture. Key 
 
 ### Data Flow
 Data flows from Frontend -> API Server -> Database.`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.18: Markdown - 大型知识库片段 - 复杂冲突编辑 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -629,10 +622,10 @@ Data flows from Frontend -> API Server -> Database.`,
 ## Coding Standards
 - Use ESLint and Prettier for formatting and linting.
 - Write unit tests for all new features.`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.19: Markdown (中文) - 非冲突编辑 (本地添加列表，远程修改段落) (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -648,9 +641,9 @@ Data flows from Frontend -> API Server -> Database.`,
 			remoteContentText: `# 章节标题
 
 这是由远程修改的段落内容。它用新的细节阐述了重要的概念。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 章节标题
 
@@ -658,8 +651,8 @@ Data flows from Frontend -> API Server -> Database.`,
 
 - 项目点 1
 - 项目点 2`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.20: Markdown (中文) - 大型知识库片段 - 复杂非冲突编辑 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -701,9 +694,9 @@ Data flows from Frontend -> API Server -> Database.`,
   - 使用PostgreSQL。
 - **前端：** 用于交互的用户界面。
   - 使用React和Redux进行状态管理。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 主题：系统架构
 
@@ -719,8 +712,8 @@ Data flows from Frontend -> API Server -> Database.`,
   - 使用React和Redux进行状态管理。
 - **缓存层：** (新增) 提升性能。
   - 使用Redis。`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.21: Markdown (中文) - 大型知识库片段 - 复杂冲突编辑 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -754,10 +747,10 @@ Data flows from Frontend -> API Server -> Database.`,
 ##编码规范
 - 使用 ESLint 和 Prettier 进行格式化和代码检查。
 - 为所有新功能编写单元测试。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 3.22: Markdown - 本地在文档中间插入大段文字，远程在末尾小幅修改 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -789,9 +782,9 @@ Data flows from Frontend -> API Server -> Database.`,
 它包含了一些基本信息。
 
 这是文档的结束部分。远程在这里添加了一句总结性的话。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 原始标题
 
@@ -809,8 +802,8 @@ Data flows from Frontend -> API Server -> Database.`,
 甚至可以有更复杂的 Markdown 结构。
 
 这是文档的结束部分。远程在这里添加了一句总结性的话。`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.23: Markdown - 本地和远程在不同位置分别插入大段非冲突文字 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -871,9 +864,9 @@ function example() {
 ## 章节三：结论
 
 这是结论部分。`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 文档标题
 
@@ -906,11 +899,11 @@ function example() {
 ## 章节三：结论
 
 这是结论部分。`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.24: Markdown - 本地插入一个极长的段落，远程在另一处添加简短注释 (DMP 成功)', async () => {
-		const longParagraph = `这是一个极长的段落，模拟用户在Obsidian中撰写或粘贴大量文本的场景。这个段落需要足够长，以测试合并算法在处理大块文本时的性能和准确性。它可以包含各种类型的文本，例如详细的解释、复杂的思考过程、或者从其他地方引用的长篇内容。为了达到“极长”的目的，我会在这里重复一些句子，或者添加一些无意义的填充文本。这仅仅是为了增加段落的字符数和行数。在实际应用中，这样的段落通常会包含有价值的信息，但对于测试来说，长度是关键。我们希望确保即使用户进行了如此大规模的单次编辑，合并过程依然能够正确处理，并且不会丢失任何信息，也不会引入错误。这个段落将继续延伸，以确保它确实很长。重复的文本有助于快速增加长度，同时保持一定的可读性（尽管内容上可能没有新增信息）。这个段落现在应该已经足够长了，可以有效地测试我们想要验证的场景。再加几句确保长度。这真的是一个很长的段落，对吧？我们还在继续写，确保它足够长。最后几句了，这个段落的长度应该可以满足测试需求了。`
+		const longParagraph = `这是一个极长的段落，模拟用户在Obsidian中撰写或粘贴大量文本的场景。这个段落需要足够长，以测试合并算法在处理大块文本时的性能和准确性。它可以包含各种类型的文本，例如详细的解释、复杂的思考过程、或者从其他地方引用的长篇内容。为了达到“极长”的目的，我会在这里重复一些句子，或者添加一些无意义的填充文本。这仅仅是为了增加段落的字符数和行数。在实际应用中，这样的段落通常会包含有价值的信息，但对于测试来说，长度是关键。我们希望确保即使用户进行了如此大规模的单次编辑，合并过程依然能够正确处理，并且不会丢失任何信息，也不会引入错误。这个段落将继续延伸，以确保它确实很长。重复的文本有助于快速增加长度，同时保持一定的可读性（尽管内容上可能没有新增信息）。这个段落现在应该已经足够长了，可以有效地测试我们想要验证的场景。再加几句确保长度。这真的是一个很长的段落，对吧？我们还在继续写，确保它足够长。最后几句了，这个段落的长度应该可以满足测试需求了。`;
 		const params: IntelligentMergeParams = {
 			baseContentText: `# 原始文档
 
@@ -935,9 +928,9 @@ ${longParagraph}
 第二段内容，这里将保持不变。
 
 最后一段。 (远程添加了注释)`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 原始文档 (远程修改了标题)
 
@@ -948,8 +941,8 @@ ${longParagraph}
 第二段内容，这里将保持不变。
 
 最后一段。 (远程添加了注释)`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.25: Markdown - 本地插入大段文字，远程删除另一不相关段落 (DMP 成功)', async () => {
 		const params: IntelligentMergeParams = {
@@ -998,9 +991,9 @@ ${longParagraph}
 ## 第三节：核心论述
 
 这是核心论述部分。 (远程在此处可能有一些微小调整)`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 初始文档结构
 
@@ -1019,8 +1012,8 @@ ${longParagraph}
 ## 第三节：核心论述
 
 这是核心论述部分。 (远程在此处可能有一些微小调整)`,
-		)
-	})
+		);
+	});
 
 	it('情况 3.26: Markdown - 本地和远程在同一位置附近插入大段冲突文字 (DMP 失败)', async () => {
 		const params: IntelligentMergeParams = {
@@ -1058,10 +1051,10 @@ ${longParagraph}
 （此处省略数百字用户反馈详情及分析）
 
 ## 议题二：后续计划`,
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	// --- 合并失败 ---
 	it('情况 4.1: 真冲突，两种算法均无法解决', async () => {
@@ -1069,10 +1062,10 @@ ${longParagraph}
 			baseContentText: 'line1\nconflicting_line_base\nline3',
 			localContentText: 'line1\nconflicting_line_local_change_A\nline3',
 			remoteContentText: 'line1\nconflicting_line_remote_change_B\nline3',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	// --- 内容边缘情况 ---
 	it('情况 5.1: 基础内容为空，本地与远程冲突', async () => {
@@ -1080,41 +1073,41 @@ ${longParagraph}
 			baseContentText: '',
 			localContentText: 'local only content',
 			remoteContentText: 'remote only content',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 5.1b: 基础内容为空，本地与远程内容相同', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: '',
 			localContentText: 'same content',
 			remoteContentText: 'same content',
-		}
+		};
 		// local and remote are identical, so it's not a merge conflict, it's just identical.
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.isIdentical).toBe(true)
-	})
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.isIdentical).toBe(true);
+	});
 
 	it('情况 5.2: 本地内容为空，基础和远程均有内容', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: 'some base content\nshared line',
 			localContentText: '', // Local deleted everything
 			remoteContentText: 'some base content\nshared line\nremote additions', // Remote kept base and added
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(false)
-	})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(false);
+	});
 
 	it('情况 5.3: 所有内容均为空', async () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: '',
 			localContentText: '',
 			remoteContentText: '',
-		}
-		const result = await resolveByIntelligentMerge(params)
-		expect(result.success).toBe(true)
-		expect(result.isIdentical).toBe(true)
-	})
-})
+		};
+		const result = await resolveByIntelligentMerge(params);
+		expect(result.success).toBe(true);
+		expect(result.isIdentical).toBe(true);
+	});
+});

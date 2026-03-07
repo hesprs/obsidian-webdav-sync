@@ -8,7 +8,7 @@
  * Use with caution and proper error handling.
  */
 
-import 'obsidian'
+import 'obsidian';
 
 /**
  * Obsidian's internal Setting object
@@ -18,13 +18,13 @@ interface ObsidianSetting {
 	/**
 	 * Opens the settings modal
 	 */
-	open(): void
+	open(): void;
 
 	/**
 	 * Opens a specific plugin's settings tab
 	 * @param pluginId - The plugin manifest ID
 	 */
-	openTabById(pluginId: string): void
+	openTabById(pluginId: string): void;
 }
 
 declare module 'obsidian' {
@@ -36,6 +36,6 @@ declare module 'obsidian' {
 		 * Warning: This is an internal API and may not be available in all Obsidian versions.
 		 * Always check for existence before using.
 		 */
-		setting?: ObsidianSetting
+		setting?: ObsidianSetting;
 	}
 }

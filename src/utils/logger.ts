@@ -1,4 +1,4 @@
-import { createConsola, LogLevels } from 'consola'
+import { createConsola, LogLevels } from 'consola';
 
 const logger = createConsola({
 	level: LogLevels.verbose,
@@ -6,6 +6,6 @@ const logger = createConsola({
 		date: true,
 		colors: false,
 	},
-})
+});
 
-export default logger
+export default logger;

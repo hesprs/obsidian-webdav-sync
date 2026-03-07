@@ -1,56 +1,60 @@
+// oxlint-disable-next-line typescript/no-explicit-any
 export abstract class StorageInterface<T = any> {
-	abstract setItem(key: string, value: T): Promise<T>
-	abstract getItem(key: string): Promise<T | null>
-	abstract removeItem(key: string): Promise<void>
-	abstract keys(): Promise<string[]>
-	abstract clear(): Promise<void>
+	abstract setItem(key: string, value: T): Promise<T>;
+	abstract getItem(key: string): Promise<T | null>;
+	abstract removeItem(key: string): Promise<void>;
+	abstract keys(): Promise<string[]>;
+	abstract clear(): Promise<void>;
 }
 
-export type UseStorageType<T = any> = ReturnType<typeof useStorage<T>>
+// oxlint-disable-next-line typescript/no-explicit-any
+export type UseStorageType<T = any> = ReturnType<typeof useStorage<T>>;
 
+// oxlint-disable-next-line typescript/no-explicit-any
 export default function useStorage<T = any>(instance: StorageInterface<T>) {
 	function set(key: string, value: T) {
-		return instance.setItem(key, value)
+		return instance.setItem(key, value);
 	}
 
 	function get(key: string) {
-		return instance.getItem(key)
+		return instance.getItem(key);
 	}
 
 	function unset(key: string) {
-		return instance.removeItem(key)
+		return instance.removeItem(key);
 	}
 
 	function clear() {
-		return instance.clear()
+		return instance.clear();
 	}
 
 	async function dump() {
-		const keys = await instance.keys()
-		const data: Record<string, T> = {}
+		const keys = await instance.keys();
+		const data: Record<string, T> = {};
 		for (const key of keys) {
-			const val = await instance.getItem(key)
+			const val = await instance.getItem(key);
 			if (val) {
-				data[key] = val
+				data[key] = val;
 			}
 		}
-		return data
+		return data;
 	}
 
+	// oxlint-disable-next-line typescript/no-explicit-any
 	async function restore(data: Record<string, any>) {
 		if (!data || typeof data !== 'object') {
-			throw new Error('Invalid data format for restore')
+			throw new Error('Invalid data format for restore');
 		}
-		const temp = await dump()
+		const temp = await dump();
 		try {
-			await instance.clear()
+			await instance.clear();
 			for (const key in data) {
-				await instance.setItem(key, data[key])
+				await instance.setItem(key, data[key]);
 			}
 		} catch {
-			await instance.clear()
+			await instance.clear();
 			for (const key in temp) {
-				await instance.setItem(key, temp[key])
+				await instance.setItem(key, temp[key]);
 			}
 		}
 	}
@@ -62,5 +66,5 @@ export default function useStorage<T = any>(instance: StorageInterface<T>) {
 		clear,
 		dump,
 		restore,
-	}
+	};
 }

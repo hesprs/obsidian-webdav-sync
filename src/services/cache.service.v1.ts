@@ -1,17 +1,17 @@
-import { deflateSync, inflateSync } from 'fflate/browser'
-import { Notice } from 'obsidian'
-import { join } from 'path-browserify'
-import superjson from 'superjson'
-import { BufferLike } from 'webdav'
-import { getDirectoryContents } from '~/api/webdav'
-import i18n from '~/i18n'
-import { ExportedStorage } from '~/settings/cache'
-import { traverseWebDAVKV } from '~/storage'
-import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model'
-import { getTraversalWebDAVDBKey } from '~/utils/get-db-key'
-import logger from '~/utils/logger'
-import { uint8ArrayToArrayBuffer } from '~/utils/uint8array-to-arraybuffer'
-import type NutstorePlugin from '..'
+import { deflateSync, inflateSync } from 'fflate/browser';
+import { Notice } from 'obsidian';
+import { join } from 'path-browserify';
+import superjson from 'superjson';
+import type { BufferLike } from 'webdav';
+import { getDirectoryContents } from '~/api/webdav';
+import i18n from '~/i18n';
+import type { ExportedStorage } from '~/settings/cache';
+import { traverseWebDAVKV } from '~/storage';
+import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
+import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import logger from '~/utils/logger';
+import { uint8ArrayToArrayBuffer } from '~/utils/uint8array-to-arraybuffer';
+import type NutstorePlugin from '..';
 
 /**
  * Service for handling cache operations (save, restore, delete, list)
@@ -27,51 +27,48 @@ export default class CacheServiceV1 {
 	 */
 	async saveCache(filename: string) {
 		try {
-			const webdav = await this.plugin.webDAVService.createWebDAVClient()
+			const webdav = await this.plugin.webDAVService.createWebDAVClient();
 			const traverseWebDAVCache = await traverseWebDAVKV.get(
 				await getTraversalWebDAVDBKey(
 					await this.plugin.getToken(),
 					this.plugin.remoteBaseDir,
 				),
-			)
+			);
 
 			const exportedStorage: ExportedStorage = {
 				traverseWebDAVCache: traverseWebDAVCache || undefined,
 				exportedAt: new Date().toISOString(),
-			}
+			};
 
 			// Encoding pipeline: superjson.stringify -> deflate level 9
-			const serializedStr = superjson.stringify(exportedStorage)
+			const serializedStr = superjson.stringify(exportedStorage);
 			if (!serializedStr || serializedStr.length === 0) {
-				throw new Error('Cache data serialization failed')
+				throw new Error('Cache data serialization failed');
 			}
 
-			const encoder = new TextEncoder()
+			const encoder = new TextEncoder();
 
 			const deflatedStorage = deflateSync(encoder.encode(serializedStr), {
 				level: 9,
-			}) as Uint8Array<ArrayBuffer>
-			const filePath = join(this.remoteCacheDir, filename)
+			}) as Uint8Array<ArrayBuffer>;
+			const filePath = join(this.remoteCacheDir, filename);
 
-			await webdav.createDirectory(this.remoteCacheDir, { recursive: true })
-			await webdav.putFileContents(
-				filePath,
-				uint8ArrayToArrayBuffer(deflatedStorage),
-				{
-					overwrite: true,
-				},
-			)
+			await webdav.createDirectory(this.remoteCacheDir, { recursive: true });
+			await webdav.putFileContents(filePath, uint8ArrayToArrayBuffer(deflatedStorage), {
+				overwrite: true,
+			});
 
-			new Notice(i18n.t('settings.cache.saveModal.success'))
-			return Promise.resolve()
-		} catch (error) {
-			logger.error('Error saving cache:', error)
+			new Notice(i18n.t('settings.cache.saveModal.success'));
+			return Promise.resolve();
+		// oxlint-disable-next-line typescript/no-explicit-any
+		} catch (error: any) {
+			logger.error('Error saving cache:', error);
 			new Notice(
 				i18n.t('settings.cache.saveModal.error', {
 					message: error.message,
 				}),
-			)
-			return Promise.reject(error)
+			);
+			return Promise.reject(error);
 		}
 	}
 
@@ -80,43 +77,43 @@ export default class CacheServiceV1 {
 	 */
 	async restoreCache(filename: string) {
 		try {
-			const webdav = await this.plugin.webDAVService.createWebDAVClient()
-			const filePath = join(this.remoteCacheDir, filename)
+			const webdav = await this.plugin.webDAVService.createWebDAVClient();
+			const filePath = join(this.remoteCacheDir, filename);
 
-			const fileExists = await webdav.exists(filePath).catch(() => false)
+			const fileExists = await webdav.exists(filePath).catch(() => false);
 			if (!fileExists) {
-				new Notice(i18n.t('settings.cache.restoreModal.fileNotFound'))
-				return Promise.reject(new Error('File not found'))
+				new Notice(i18n.t('settings.cache.restoreModal.fileNotFound'));
+				return Promise.reject(new Error('File not found'));
 			}
 
 			const fileContent = (await webdav.getFileContents(filePath, {
 				format: 'binary',
-			})) as BufferLike
+			})) as BufferLike;
 
 			// Check if file content is empty
 			if (!fileContent || fileContent.byteLength === 0) {
-				throw new Error('Cache file is empty')
+				throw new Error('Cache file is empty');
 			}
 
 			// Decoding pipeline: inflate -> superjson.parse
-			const inflatedFileContent = inflateSync(new Uint8Array(fileContent))
+			const inflatedFileContent = inflateSync(new Uint8Array(fileContent));
 			if (!inflatedFileContent || inflatedFileContent.length === 0) {
-				throw new Error('Inflate failed or resulted in empty content')
+				throw new Error('Inflate failed or resulted in empty content');
 			}
 
-			const decoder = new TextDecoder()
-			const decodedContent = decoder.decode(inflatedFileContent)
+			const decoder = new TextDecoder();
+			const decodedContent = decoder.decode(inflatedFileContent);
 			if (!decodedContent || decodedContent.trim() === '') {
-				throw new Error('Cache file content is invalid or empty')
+				throw new Error('Cache file content is invalid or empty');
 			}
 
-			const exportedStorage: ExportedStorage = superjson.parse(decodedContent)
+			const exportedStorage: ExportedStorage = superjson.parse(decodedContent);
 
 			// Validate the structure of exported storage
 			if (!exportedStorage) {
-				throw new Error('Invalid cache file format')
+				throw new Error('Invalid cache file format');
 			}
-			const { traverseWebDAVCache } = exportedStorage
+			const { traverseWebDAVCache } = exportedStorage;
 			if (traverseWebDAVCache) {
 				await traverseWebDAVKV.set(
 					await getTraversalWebDAVDBKey(
@@ -124,18 +121,19 @@ export default class CacheServiceV1 {
 						this.plugin.remoteBaseDir,
 					),
 					traverseWebDAVCache,
-				)
+				);
 			}
-			new Notice(i18n.t('settings.cache.restoreModal.success'))
-			return Promise.resolve()
-		} catch (error) {
-			logger.error('Error restoring cache:', error)
+			new Notice(i18n.t('settings.cache.restoreModal.success'));
+			return Promise.resolve();
+		// oxlint-disable-next-line typescript/no-explicit-any
+		} catch (error: any) {
+			logger.error('Error restoring cache:', error);
 			new Notice(
 				i18n.t('settings.cache.restoreModal.error', {
 					message: error.message,
 				}),
-			)
-			return Promise.reject(error)
+			);
+			return Promise.reject(error);
 		}
 	}
 
@@ -144,21 +142,22 @@ export default class CacheServiceV1 {
 	 */
 	async deleteCache(filename: string): Promise<void> {
 		try {
-			const webdav = await this.plugin.webDAVService.createWebDAVClient()
-			const filePath = join(this.remoteCacheDir, filename)
+			const webdav = await this.plugin.webDAVService.createWebDAVClient();
+			const filePath = join(this.remoteCacheDir, filename);
 
-			await webdav.deleteFile(filePath)
+			await webdav.deleteFile(filePath);
 
-			new Notice(i18n.t('settings.cache.restoreModal.deleteSuccess'))
-			return Promise.resolve()
-		} catch (error) {
-			logger.error('Error deleting cache file:', error)
+			new Notice(i18n.t('settings.cache.restoreModal.deleteSuccess'));
+			return Promise.resolve();
+		// oxlint-disable-next-line typescript/no-explicit-any
+		} catch (error: any) {
+			logger.error('Error deleting cache file:', error);
 			new Notice(
 				i18n.t('settings.cache.restoreModal.deleteError', {
 					message: error.message,
 				}),
-			)
-			return Promise.reject(error)
+			);
+			return Promise.reject(error);
 		}
 	}
 
@@ -167,22 +166,20 @@ export default class CacheServiceV1 {
 	 */
 	async loadCacheFileList() {
 		try {
-			const webdav = await this.plugin.webDAVService.createWebDAVClient()
-			const dirExists = await webdav
-				.exists(this.remoteCacheDir)
-				.catch(() => false)
+			const webdav = await this.plugin.webDAVService.createWebDAVClient();
+			const dirExists = await webdav.exists(this.remoteCacheDir).catch(() => false);
 			if (!dirExists) {
-				await webdav.createDirectory(this.remoteCacheDir, { recursive: true })
-				return []
+				await webdav.createDirectory(this.remoteCacheDir, { recursive: true });
+				return [];
 			}
 			const files = await getDirectoryContents(
 				await this.plugin.getToken(),
 				this.remoteCacheDir,
-			)
-			return files.map(fileStatToStatModel)
+			);
+			return files.map(fileStatToStatModel);
 		} catch (error) {
-			logger.error('Error loading cache file list:', error)
-			throw error
+			logger.error('Error loading cache file list:', error);
+			throw error;
 		}
 	}
 }

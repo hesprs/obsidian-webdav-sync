@@ -1,7 +1,6 @@
 export default {
 	errors: {
-		filenameUnsupportedChars:
-			'File {{path}} contains unsupported characters: {{chars}}',
+		filenameUnsupportedChars: 'File {{path}} contains unsupported characters: {{chars}}',
 	},
 	settings: {
 		language: {
@@ -140,8 +139,7 @@ export default {
 			name: 'Skip large files',
 			desc: 'Files exceeding this size will be skipped during synchronization. If sync issues occur, try lowering this value.',
 			placeholder: 'e.g., 10 MiB or 500 KiB',
-			invalidFormat:
-				'Invalid file size format. Please use formats like "10MB" or "500KB"',
+			invalidFormat: 'Invalid file size format. Please use formats like "10MB" or "500KB"',
 			exceedsMaxSize: 'File size exceeds maximum limit of 500MB',
 		},
 		log: {
@@ -175,8 +173,7 @@ export default {
 			cleared: 'Cache cleared successfully',
 			clearModal: {
 				title: 'Clear cache',
-				description:
-					'Select which cache types to clear. This action cannot be undone.',
+				description: 'Select which cache types to clear. This action cannot be undone.',
 				cancel: 'Cancel',
 				confirm: 'Confirm clear',
 				deltaCache: {
@@ -247,12 +244,11 @@ export default {
 			failedToAutoMerge: 'Failed to auto merge',
 			failedToUploadMerged: 'Failed to upload merged content',
 			conflictsMarkedInFile: 'Conflicts found and marked in file',
-			requestsTooFrequent:
-				'Requests too frequent, please wait a few minutes and try again',
-			accountNotConfigured: 'Nutstore account not configured. Please configure your account in settings first.',
+			requestsTooFrequent: 'Requests too frequent, please wait a few minutes and try again',
+			accountNotConfigured:
+				'Nutstore account not configured. Please configure your account in settings first.',
 		},
-		requestsTooFrequent:
-			'Requests too frequent, plugin will resume sync at {{time}}',
+		requestsTooFrequent: 'Requests too frequent, plugin will resume sync at {{time}}',
 		preparing: '📋 Preparing sync',
 		start: '⌛️ Starting sync',
 		complete: '✅ Sync completed',
@@ -353,4 +349,4 @@ export default {
 		daysAgo: '{{count}}d ago',
 		longAgo: 'long ago',
 	},
-}
+};

@@ -1,72 +1,72 @@
-import { normalizePath, Vault } from 'obsidian'
-import { isAbsolute, join } from 'path-browserify'
-import { WebDAVClient } from 'webdav'
-import { SyncRecord } from '~/storage/sync-record'
-import getTaskName from '~/utils/get-task-name'
-import { MaybePromise } from '~/utils/types'
+import { normalizePath, Vault } from 'obsidian';
+import { isAbsolute, join } from 'path-browserify';
+import type { WebDAVClient } from 'webdav';
+import { SyncRecord } from '~/storage/sync-record';
+import getTaskName from '~/utils/get-task-name';
+import type { MaybePromise } from '~/utils/types';
 
 export interface BaseTaskOptions {
-	vault: Vault
-	webdav: WebDAVClient
-	remoteBaseDir: string
-	remotePath: string
-	localPath: string
-	syncRecord: SyncRecord
+	vault: Vault;
+	webdav: WebDAVClient;
+	remoteBaseDir: string;
+	remotePath: string;
+	localPath: string;
+	syncRecord: SyncRecord;
 }
 
 interface TaskSuccessResult {
-	success: true
-	skipRecord?: boolean
+	success: true;
+	skipRecord?: boolean;
 }
 
 interface TaskFailureResult {
-	success: false
-	error: TaskError
-	skipRecord?: boolean
+	success: false;
+	error: TaskError;
+	skipRecord?: boolean;
 }
 
-export type TaskResult = TaskSuccessResult | TaskFailureResult
+export type TaskResult = TaskSuccessResult | TaskFailureResult;
 
 export abstract class BaseTask {
 	constructor(readonly options: BaseTaskOptions) {}
 
 	get vault() {
-		return this.options.vault
+		return this.options.vault;
 	}
 
 	get syncRecord() {
-		return this.options.syncRecord
+		return this.options.syncRecord;
 	}
 
 	get webdav() {
-		return this.options.webdav
+		return this.options.webdav;
 	}
 
 	get remoteBaseDir() {
-		return this.options.remoteBaseDir
+		return this.options.remoteBaseDir;
 	}
 
 	get remotePath() {
 		return isAbsolute(this.options.remotePath)
 			? this.options.remotePath
-			: join(this.remoteBaseDir, this.options.remotePath)
+			: join(this.remoteBaseDir, this.options.remotePath);
 	}
 
 	get localPath() {
-		return normalizePath(this.options.localPath)
+		return normalizePath(this.options.localPath);
 	}
 
-	abstract exec(): MaybePromise<TaskResult>
+	abstract exec(): MaybePromise<TaskResult>;
 
 	toJSON() {
-		const { localPath, remoteBaseDir, remotePath } = this
-		const taskName = getTaskName(this)
+		const { localPath, remoteBaseDir, remotePath } = this;
+		const taskName = getTaskName(this);
 		return {
 			taskName,
 			localPath,
 			remoteBaseDir,
 			remotePath,
-		}
+		};
 	}
 }
 
@@ -76,15 +76,15 @@ export class TaskError extends Error {
 		readonly task: BaseTask,
 		readonly cause?: Error,
 	) {
-		super(message)
-		this.name = 'TaskError'
+		super(message);
+		this.name = 'TaskError';
 	}
 }
 
 export function toTaskError(e: unknown, task: BaseTask): TaskError {
 	if (e instanceof TaskError) {
-		return e
+		return e;
 	}
-	const message = e instanceof Error ? e.message : String(e)
-	return new TaskError(message, task, e instanceof Error ? e : undefined)
+	const message = e instanceof Error ? e.message : String(e);
+	return new TaskError(message, task, e instanceof Error ? e : undefined);
 }

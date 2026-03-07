@@ -12,7 +12,7 @@ import {
 	isSymbol,
 	isUndefined,
 	map,
-} from 'lodash-es'
+} from 'lodash-es';
 // No need to import Set, use built-in TS Set type
 
 /**
@@ -33,88 +33,86 @@ export default function deepStringify(
 ): string | undefined {
 	// 1. Handle primitives, null, and unsupported types first
 	if (isNull(value)) {
-		return 'null'
+		return 'null';
 	}
 	if (isBoolean(value)) {
-		return String(value) // 'true' or 'false'
+		return String(value); // 'true' or 'false'
 	}
 	if (isString(value)) {
 		// Use native JSON.stringify for robust escaping AND quoting
-		return JSON.stringify(value)
+		return JSON.stringify(value);
 	}
 	if (isNumber(value)) {
-		return isFinite(value) ? String(value) : 'null' // Handle NaN/Infinity
+		return isFinite(value) ? String(value) : 'null'; // Handle NaN/Infinity
 	}
 	if (isUndefined(value) || isFunction(value) || isSymbol(value)) {
-		return undefined // Omitted in objects, null in arrays (handled by caller)
+		return undefined; // Omitted in objects, null in arrays (handled by caller)
 	}
 	if (typeof value === 'bigint') {
-		throw new TypeError('Do not know how to serialize a BigInt')
+		throw new TypeError('Do not know how to serialize a BigInt');
 	}
 	if (isRegExp(value)) {
-		return JSON.stringify(String(value))
+		return JSON.stringify(String(value));
 	}
 	// Handle Date objects explicitly
 	if (isDate(value)) {
 		if (isFinite(value.getTime())) {
 			// Stringify the ISO string to get the required quotes
-			return JSON.stringify(value.toISOString())
+			return JSON.stringify(value.toISOString());
 		} else {
-			return 'null' // Invalid date becomes null
+			return 'null'; // Invalid date becomes null
 		}
 	}
 	if (isError(value)) {
 		return JSON.stringify({
 			type: 'Error',
 			value: value?.toString() ?? { name: value.name, message: value.message },
-		})
+		});
 	}
 
 	// --- Value should be an Array or an Object-like entity ---
 
 	// Ensure value is object type before circular check / adding to Set<object>
 	if (typeof value !== 'object' || value === null) {
-		throw new Error(
-			`Internal error: Unexpected non-object type: ${typeof value}`,
-		)
+		throw new Error(`Internal error: Unexpected non-object type: ${typeof value}`);
 	}
 
 	// 2. Circular reference check
 	if (visited.has(value)) {
-		throw new TypeError('Converting circular structure to JSON')
+		throw new TypeError('Converting circular structure to JSON');
 	}
-	visited.add(value) // Add current object/array *before* recursive calls
+	visited.add(value); // Add current object/array *before* recursive calls
 
-	let result: string | undefined
+	let result: string | undefined;
 
 	try {
 		// 3. Handle Arrays using _.map
 		if (isArray(value)) {
 			const elements = map(value, (element: unknown): string => {
-				const stringifiedElement = deepStringify(element, visited)
+				const stringifiedElement = deepStringify(element, visited);
 				// JSON spec: undefined/function/symbol array elements become null
-				return stringifiedElement === undefined ? 'null' : stringifiedElement
-			})
-			result = `[${elements.join(',')}]`
+				return stringifiedElement === undefined ? 'null' : stringifiedElement;
+			});
+			result = `[${elements.join(',')}]`;
 		}
 		// 4. Handle Objects using Object.keys().forEach()
 		else {
 			// Should be an object type here
-			const keys = Object.keys(value) // Get own enumerable string keys
-			const properties: string[] = [] // Array to hold "key:value" strings
+			const keys = Object.keys(value); // Get own enumerable string keys
+			const properties: string[] = []; // Array to hold "key:value" strings
 
 			keys.forEach((key) => {
-				let stringifiedValue: string | undefined
+				let stringifiedValue: string | undefined;
 				try {
 					// *** Access the property inside try block ***
 					// Use Record<string, unknown> assertion as TS doesn't know about arbitrary keys/getters
-					const currentValue = (value as Record<string, unknown>)[key]
-					stringifiedValue = deepStringify(currentValue, visited) // Recurse
+					const currentValue = (value as Record<string, unknown>)[key];
+					stringifiedValue = deepStringify(currentValue, visited); // Recurse
 				} catch (error: unknown) {
 					// *** Handle getter error: stringify the error message ***
-					let errorMessage = 'Error accessing property'
+					let errorMessage = 'Error accessing property';
 					if (error instanceof Error) {
-						errorMessage = error.message
+						errorMessage = error.message;
 					} else if (
 						typeof error === 'object' &&
 						error !== null &&
@@ -122,32 +120,32 @@ export default function deepStringify(
 						typeof error.message === 'string'
 					) {
 						// Handle plain objects thrown with a message property
-						errorMessage = error.message
+						errorMessage = error.message;
 					} else {
 						try {
-							errorMessage = String(error)
+							errorMessage = String(error);
 						} catch {
 							/* ignore */
 						}
 					}
 					// Use native stringify to quote and escape the error message string
-					stringifiedValue = JSON.stringify(errorMessage)
+					stringifiedValue = JSON.stringify(errorMessage);
 				}
 
 				// Omit properties whose values stringify to undefined
 				if (stringifiedValue !== undefined) {
 					// Keys in JSON objects must be strings. Stringify ensures quotes.
-					const stringifiedKey = JSON.stringify(key)
-					properties.push(`${stringifiedKey}:${stringifiedValue}`)
+					const stringifiedKey = JSON.stringify(key);
+					properties.push(`${stringifiedKey}:${stringifiedValue}`);
 				}
-			}) // end forEach key
+			}); // end forEach key
 
-			result = `{${properties.join(',')}}`
+			result = `{${properties.join(',')}}`;
 		}
 	} finally {
 		// 5. Crucial: Remove from visited set *after* processing children/throwing errors
-		visited.delete(value)
+		visited.delete(value);
 	}
 
-	return result
+	return result;
 }

@@ -1,60 +1,60 @@
-import { dirname } from 'path-browserify'
-import { BufferLike } from 'webdav'
-import logger from '~/utils/logger'
-import { mkdirsVault } from '~/utils/mkdirs-vault'
-import { BaseTask, BaseTaskOptions, toTaskError } from './task.interface'
+import { dirname } from 'path-browserify';
+import type { BufferLike } from 'webdav';
+import logger from '~/utils/logger';
+import { mkdirsVault } from '~/utils/mkdirs-vault';
+import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PullTask extends BaseTask {
 	constructor(
 		readonly options: BaseTaskOptions & {
-			remoteSize: number
+			remoteSize: number;
 		},
 	) {
-		super(options)
+		super(options);
 	}
 
 	get remoteSize() {
-		return this.options.remoteSize
+		return this.options.remoteSize;
 	}
 
 	async exec() {
-		const fileExists = await this.vault.getFileByPath(this.localPath)
+		const fileExists = this.vault.getFileByPath(this.localPath);
 		try {
 			const file = (await this.webdav.getFileContents(this.remotePath, {
 				format: 'binary',
 				details: false,
-			})) as BufferLike
-			const arrayBuffer = bufferLikeToArrayBuffer(file)
+			})) as BufferLike;
+			const arrayBuffer = bufferLikeToArrayBuffer(file);
 			if (arrayBuffer.byteLength !== this.remoteSize) {
-				throw new Error('Remote Size Not Match!')
+				throw new Error('Remote Size Not Match!');
 			}
 			if (fileExists) {
-				await this.vault.modifyBinary(fileExists, arrayBuffer)
+				await this.vault.modifyBinary(fileExists, arrayBuffer);
 			} else {
-				await mkdirsVault(this.vault, dirname(this.localPath))
-				await this.vault.createBinary(this.localPath, arrayBuffer)
+				await mkdirsVault(this.vault, dirname(this.localPath));
+				await this.vault.createBinary(this.localPath, arrayBuffer);
 			}
-			return { success: true } as const
+			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e)
-			return { success: false, error: toTaskError(e, this) }
+			logger.error(this, e);
+			return { success: false, error: toTaskError(e, this) };
 		}
 	}
 }
 
 function bufferLikeToArrayBuffer(buffer: BufferLike): ArrayBuffer {
 	if (buffer instanceof ArrayBuffer) {
-		return buffer
+		return buffer;
 	} else {
-		return toArrayBuffer(buffer)
+		return toArrayBuffer(buffer);
 	}
 }
 
 function toArrayBuffer(buf: Buffer): ArrayBuffer {
 	if (buf.buffer instanceof SharedArrayBuffer) {
-		const copy = new ArrayBuffer(buf.byteLength)
-		new Uint8Array(copy).set(buf)
-		return copy
+		const copy = new ArrayBuffer(buf.byteLength);
+		new Uint8Array(copy).set(buf);
+		return copy;
 	}
-	return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+	return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength);
 }

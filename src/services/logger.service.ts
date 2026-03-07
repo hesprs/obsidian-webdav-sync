@@ -1,10 +1,11 @@
-import { moment } from 'obsidian'
-import { IN_DEV } from '~/consts'
-import logger from '~/utils/logger'
-import NutstorePlugin from '..'
+import { moment } from 'obsidian';
+import { IN_DEV } from '~/consts';
+import logger from '~/utils/logger';
+import NutstorePlugin from '..';
 
 export default class LoggerService {
-	logs: any[] = []
+	// oxlint-disable-next-line typescript/no-explicit-any
+	logs: Array<any> = [];
 
 	constructor(private plugin: NutstorePlugin) {
 		if (IN_DEV) {
@@ -14,22 +15,22 @@ export default class LoggerService {
 						moment(logObj.date).format('YYYY-MM-DD HH:mm:ss'),
 						logObj.type,
 						logObj.args,
-					]
-					this.logs.push(log)
+					];
+					this.logs.push(log);
 				},
-			})
+			});
 		} else {
 			logger.setReporters([
 				{
 					log: (logObj) => {
-						this.logs.push(logObj)
+						this.logs.push(logObj);
 					},
 				},
-			])
+			]);
 		}
 	}
 
 	clear() {
-		this.logs = []
+		this.logs = [];
 	}
 }

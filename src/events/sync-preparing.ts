@@ -1,11 +1,10 @@
-import { Subject } from 'rxjs'
+import { Subject } from 'rxjs';
 
 interface SyncPreparingProps {
-	showNotice: boolean
+	showNotice: boolean;
 }
 
-const preparingSync = new Subject<SyncPreparingProps>()
+const preparingSync = new Subject<SyncPreparingProps>();
 
-export const onPreparingSync = () => preparingSync.asObservable()
-export const emitPreparingSync = (props: SyncPreparingProps) =>
-	preparingSync.next(props)
+export const onPreparingSync = () => preparingSync.asObservable();
+export const emitPreparingSync = (props: SyncPreparingProps) => preparingSync.next(props);

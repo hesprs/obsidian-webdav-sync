@@ -1,10 +1,10 @@
-import { Notice } from 'obsidian'
-import SyncConfirmModal from '~/components/SyncConfirmModal'
-import { emitCancelSync } from '~/events'
-import i18n from '~/i18n'
-import { NutstoreSync, SyncStartMode } from '~/sync'
-import logger from '~/utils/logger'
-import NutstorePlugin from '..'
+import { Notice } from 'obsidian';
+import SyncConfirmModal from '~/components/SyncConfirmModal';
+import { emitCancelSync } from '~/events';
+import i18n from '~/i18n';
+import { NutstoreSync, SyncStartMode } from '~/sync';
+import logger from '~/utils/logger';
+import NutstorePlugin from '..';
 
 export default class CommandService {
 	constructor(plugin: NutstorePlugin) {
@@ -13,26 +13,26 @@ export default class CommandService {
 			name: i18n.t('sync.startButton'),
 			checkCallback: (checking) => {
 				if (plugin.isSyncing) {
-					return false
+					return false;
 				}
 				if (checking) {
-					return true
+					return true;
 				}
 
 				// 检查账号配置
 				if (!plugin.isAccountConfigured()) {
-					new Notice(i18n.t('sync.error.accountNotConfigured'))
+					new Notice(i18n.t('sync.error.accountNotConfigured'));
 					// 打开设置页面，引导用户配置账号
 					try {
-						const setting = plugin.app.setting
+						const setting = plugin.app.setting;
 						if (setting) {
-							setting.open()
-							setting.openTabById(plugin.manifest.id)
+							setting.open();
+							setting.openTabById(plugin.manifest.id);
 						}
 					} catch (error) {
-						logger.error('Failed to open settings:', error)
+						logger.error('Failed to open settings:', error);
 					}
-					return
+					return;
 				}
 
 				const startSync = async () => {
@@ -41,18 +41,18 @@ export default class CommandService {
 						vault: plugin.app.vault,
 						token: await plugin.getToken(),
 						remoteBaseDir: plugin.remoteBaseDir,
-					})
+					});
 					await sync.start({
 						mode: SyncStartMode.MANUAL_SYNC,
-					})
-				}
+					});
+				};
 				if (plugin.settings.confirmBeforeSync) {
-					new SyncConfirmModal(plugin.app, startSync).open()
+					new SyncConfirmModal(plugin.app, startSync).open();
 				} else {
-					startSync()
+					void startSync();
 				}
 			},
-		})
+		});
 
 		plugin.addCommand({
 			id: 'stop-sync',
@@ -60,20 +60,20 @@ export default class CommandService {
 			checkCallback: (checking) => {
 				if (plugin.isSyncing) {
 					if (!checking) {
-						emitCancelSync()
+						emitCancelSync();
 					}
-					return true
+					return true;
 				}
-				return false
+				return false;
 			},
-		})
+		});
 
 		plugin.addCommand({
 			id: 'show-sync-progress',
 			name: i18n.t('sync.showProgressButton'),
 			callback: () => {
-				plugin.progressService.showProgressModal()
+				plugin.progressService.showProgressModal();
 			},
-		})
+		});
 	}
 }
