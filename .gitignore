@@ -1,0 +1,25 @@
+.vscode
+
+# npm
+node_modules
+
+# Exclude sourcemaps
+*.map
+
+# obsidian
+data.json
+
+# Exclude macOS Finder (System Explorer) View States
+.DS_Store
+
+# Local
+*.local
+*.log*
+
+# Environment variables
+.env
+
+# build output
+dist
+styles.css
+main.js

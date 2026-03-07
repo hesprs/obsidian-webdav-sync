@@ -1,0 +1,104 @@
+@unocss;
+
+.view-action[aria-disabled='true'] {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+@keyframes nutstore-sync-spin {
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(-360deg);
+	}
+}
+
+.nutstore-sync-spinning {
+	animation: nutstore-sync-spin 2s linear infinite;
+}
+
+.conflict.ours,
+.conflict.theirs {
+	position: relative;
+	white-space: pre-wrap;
+	word-break: break-word;
+}
+
+.conflict.ours {
+	background-color: rgb(0, 255, 208);
+}
+
+.conflict.theirs {
+	background-color: rgb(0, 132, 255);
+}
+
+.connection-status {
+	padding: 6px 12px;
+	border-radius: 4px;
+	margin-top: 8px;
+	transition: all 0.3s ease;
+	opacity: 0;
+}
+
+.connection-status.success {
+	background-color: var(--background-modifier-success);
+	color: var(--text-success);
+	opacity: 1;
+}
+
+.connection-status.error {
+	background-color: var(--background-modifier-error);
+	color: var(--text-error);
+	opacity: 1;
+}
+
+.connection-button.loading {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.connection-button.success {
+	background-color: var(--background-modifier-success);
+	color: var(--background-primary);
+	border-color: var(--background-modifier-success);
+}
+
+.connection-button.error {
+	background-color: var(--background-modifier-error);
+	color: var(--background-primary);
+	border-color: var(--background-modifier-error);
+}
+
+input.error {
+	border-color: var(--background-modifier-error) !important;
+	box-shadow: none !important;
+}
+
+input.success {
+	border-color: var(--background-modifier-success) !important;
+	box-shadow: none !important;
+}
+
+.task-list-table {
+	width: 100%;
+	border-collapse: collapse;
+	margin: 1em 0;
+}
+
+.task-list-table th,
+.task-list-table td {
+	padding: 8px;
+	word-break: keep-all;
+	border: 1px solid var(--background-modifier-border);
+	text-align: left;
+}
+
+.task-list-table th {
+	background-color: var(--background-secondary);
+	font-weight: bold;
+}
+
+.task-list-table tr:hover {
+	background-color: var(--background-modifier-hover);
+}
