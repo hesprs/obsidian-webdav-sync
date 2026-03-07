@@ -9,7 +9,6 @@
 		"crypto": "crypto-browserify"
 	},
 	"scripts": {
-		"dev": "run-p dev:*",
 		"dev:plugin": "node esbuild.config.mjs",
 		"dev:webdav-explorer": "pnpm -F webdav-explorer dev",
 		"build": "run-s build:webdav-explorer build:plugin",

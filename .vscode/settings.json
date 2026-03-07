@@ -1,7 +1,7 @@
 {
 	"files.exclude": {
 		".github": false,
-		".vscode": true,
+		".vscode": false,
 		"**/node_modules": true,
 		"**/.turbo": true
 	},
@@ -23,6 +23,7 @@
 		"interactable",
 		"Mistouch",
 		"mistouched",
+		"Nutstore",
 		"Orchestratable",
 		"pointeract"
 	]
