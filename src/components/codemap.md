@@ -42,4 +42,3 @@ Provide user-facing sync UI components (ribbon control + modal dialogs) for conf
 - `FilterEditorModal.ts` — include/exclude rule editor modal.
 - `SelectRemoteBaseDirModal.ts` — remote directory picker/creator.
 - `TextAreaModal.ts` — generic multiline text input modal.
-- `LogoutConfirmModal.ts` — account logout confirmation.

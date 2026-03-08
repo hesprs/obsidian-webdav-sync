@@ -30,14 +30,6 @@ function extractNextLink(linkHeader: string): string | null {
 	return matches ? matches[1] : null;
 }
 
-function normalizeServerBase(path: string): string {
-	const normalized = decodeURIComponent(path || '/');
-	if (normalized === '' || normalized === '/') {
-		return '/';
-	}
-	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
-}
-
 function hrefToPathname(href: string): string {
 	if (href.startsWith('http://') || href.startsWith('https://')) {
 		return decodeURIComponent(new URL(href).pathname);
@@ -45,8 +37,28 @@ function hrefToPathname(href: string): string {
 	return decodeURIComponent(href);
 }
 
+function normalizePathForMatch(pathname: string): string {
+	const normalized = decodeURIComponent(pathname || '/');
+	if (normalized === '' || normalized === '/') {
+		return '/';
+	}
+	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
+}
+
+function buildStripPrefixes(serverUrl: string, targetPath: string): string[] {
+	const endpointPath = normalizePathForMatch(new URL(serverUrl).pathname);
+	const requestedPath = normalizePathForMatch(targetPath);
+
+	if (requestedPath === '/') {
+		return [endpointPath];
+	}
+
+	const endpointWithRequest = normalizePathForMatch(join(endpointPath, requestedPath));
+	return [endpointWithRequest, requestedPath];
+}
+
 function convertToFileStat(
-	serverBase: string,
+	stripPrefixes: string[],
 	item: WebDAVResponse['multistatus']['response'][number],
 ): FileStat {
 	const props = item.propstat.prop;
@@ -54,8 +66,11 @@ function convertToFileStat(
 	const hrefPathname = hrefToPathname(item.href);
 
 	let relativePath = hrefPathname;
-	if (serverBase !== '/' && hrefPathname.startsWith(serverBase)) {
-		relativePath = hrefPathname.slice(serverBase.length);
+	for (const prefix of stripPrefixes) {
+		if (prefix !== '/' && hrefPathname.startsWith(prefix)) {
+			relativePath = hrefPathname.slice(prefix.length);
+			break;
+		}
 	}
 
 	const filename = join('/', relativePath || '/');
@@ -84,7 +99,9 @@ export async function getDirectoryContents(
 	const contents: FileStat[] = [];
 	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
-	const serverBase = normalizeServerBase(normalizedPath);
+	const stripPrefixes = buildStripPrefixes(endpoint, normalizedPath).sort(
+		(a, b) => b.length - a.length,
+	);
 	let currentUrl = `${endpoint}${encodedPath}`;
 
 	while (true) {
@@ -124,7 +141,7 @@ export async function getDirectoryContents(
 				? result.multistatus.response
 				: [result.multistatus.response];
 
-			contents.push(...items.slice(1).map((item) => convertToFileStat(serverBase, item)));
+			contents.push(...items.slice(1).map((item) => convertToFileStat(stripPrefixes, item)));
 
 			const linkHeader = response.headers['link'] || response.headers['Link'];
 			if (!linkHeader) {
