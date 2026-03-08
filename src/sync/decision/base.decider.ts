@@ -1,6 +1,6 @@
 import type { MaybePromise } from '~/utils/types';
 import { SyncRecord } from '~/storage/sync-record';
-import { SyncEngine } from '..';
+import type { SyncEngine } from '..';
 import { BaseTask } from '../tasks/task.interface';
 
 export default abstract class BaseSyncDecider {

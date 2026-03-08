@@ -1,3 +1,4 @@
+// deprecated - use tsdown instead
 import postcss from '@deanc/esbuild-plugin-postcss';
 import UnoCSS from '@unocss/postcss';
 import esbuild from 'esbuild';
