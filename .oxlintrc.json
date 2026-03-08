@@ -114,5 +114,8 @@
 		"builtin": true
 	},
 	"globals": {},
-	"ignorePatterns": ["**/node_modules/**", "**/dist/**"]
+	"ignorePatterns": ["**/node_modules/**", "**/dist/**"],
+	"options": {
+		"typeAware": true
+	}
 }
