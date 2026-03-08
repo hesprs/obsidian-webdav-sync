@@ -1,11 +1,11 @@
-import i18n from '~/i18n';
 import type { BaseTask } from '~/sync/tasks/task.interface';
+import i18n from '~/i18n';
 
 export default function getTaskName(task: BaseTask) {
 	if (task.constructor.name === 'SkippedTask') {
 		const reason = (task.options as { reason?: string }).reason;
 		const reasonText = reason
-			? i18n.t(`sync.skipReason.${reason}` as any)
+			? i18n.t(`sync.skipReason.${reason}` as never)
 			: i18n.t('sync.fileOp.noop');
 		return `${i18n.t('sync.fileOp.skip')}: ${reasonText}`;
 	}

@@ -4,7 +4,7 @@ import { Notice } from 'obsidian';
 import { join } from 'path-browserify';
 import superjson from 'superjson';
 import type { ExportedStorage } from '~/settings/cache';
-import { getDirectoryContents } from '~/api/webdav';
+import { getDirectoryContents } from '~/api';
 import i18n from '~/i18n';
 import { traverseWebDAVKV } from '~/storage';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';

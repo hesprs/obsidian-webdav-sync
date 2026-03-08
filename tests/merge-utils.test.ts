@@ -6,7 +6,7 @@ import {
 	resolveByLatestTimestamp,
 	type IntelligentMergeParams,
 	type LatestTimestampParams,
-} from './merge-utils';
+} from '~/sync/core/merge-utils';
 
 describe('resolveByLatestTimestamp', () => {
 	// --- 无更改 ---

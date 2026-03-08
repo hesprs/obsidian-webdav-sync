@@ -2,35 +2,32 @@
 
 ## Responsibility
 
-Owns end-to-end sync execution: convert vault/server state into ordered tasks, execute with retry/confirmation rules, and publish sync outcomes.
+Coordinates end-to-end sync runs for the plugin: initialize sync context, request a two-way task plan, apply user-facing confirmation rules, optimize task batches, execute tasks with cancellation/retry handling, and finalize record/progress updates.
 
 ## Design Patterns
 
-- Orchestrator/Façade: `SyncEngine` centralizes planning, optimization, execution, and reporting.
-- Command pattern: `tasks/*` classes encapsulate one executable sync action each.
-- Strategy split: `decision/*` computes task plans independently from execution.
-- Pipeline optimization: utility passes merge/reorder task lists before execution.
+- Orchestrator/Façade (`SyncEngine` in `index.ts`): central runtime coordinator for planning, confirmation, execution, and lifecycle events.
+- Command pattern (`tasks/*`): each sync action is an executable task with a shared `BaseTask`/`TaskResult` contract.
+- Decision engine split (`decision/*`): planning is separated from execution via `TwoWaySyncDecider` + pure decision logic.
+- Optimization passes (`utils/*`): pre-execution transforms merge related mkdir/remove-remote work to reduce remote API calls.
+- Resilient execution loop: per-task retry on transient 503 errors plus global cancellation subscription.
 
 ## Data & Control Flow
 
-1. `SyncEngine.start()` builds runtime context (local fs, remote fs, records, settings).
-2. `TwoWaySyncDecider.decide()` generates raw `BaseTask[]` from local/remote/record snapshots.
-3. Engine prompts user when destructive actions require confirmation.
-4. Task list is optimized (`mergeMkdirTasks`, `mergeRemoveRemoteTasks`) and chunked.
-5. Tasks execute with retry guards; results are collected and failures surfaced.
-6. Successful task outcomes update sync records and emit progress/end events.
+1. `SyncEngine.start()` normalizes remote base path, ensures remote directory exists, resets records if remote root is missing, and exits early on cancellation.
+2. `TwoWaySyncDecider.decide()` reads local/remote snapshots + sync records and returns raw `BaseTask[]`.
+3. Engine partitions tasks (`NoopTask`, `SkippedTask`, actionable tasks), then applies confirmation gates:
+   - optional task-list confirmation for manual sync,
+   - optional delete confirmation in auto-sync with reupload conversion (`RemoveLocalTask` → `PushTask`/`MkdirRemoteTask`) when selected.
+4. Action list is deduplicated, optimized (`mergeMkdirTasks`, `mergeRemoveRemoteTasks`), and chunked (200 tasks/chunk).
+5. `execTasks()` runs each task sequentially per chunk, emits progress for displayable tasks, and uses `executeWithRetry()` to wait/retry on 503 until success/failure/cancel.
+6. After each chunk, `updateMtimeInRecord()` persists post-task state to sync records (including blob base content where applicable).
+7. On completion, engine emits end/error events and surfaces failed-task details in manual sync.
 
 ## Integration Points
 
-- `src/fs/*` for local and WebDAV filesystem operations.
-- `src/storage/sync-record.ts` and blob storage for stateful conflict handling.
-- `src/events/*` for sync lifecycle emission.
-- Obsidian UI APIs for notices/modals around errors and confirmations.
-
-## Key Files
-
-- `index.ts` — `SyncEngine` orchestration and execution loop.
-- `decision/two-way.decider.ts` — planner entrypoint.
-- `decision/two-way.decider.function.ts` — deterministic decision rules.
-- `tasks/task.interface.ts` — task contracts/result types.
-- `utils/update-records.ts` — post-task record persistence.
+- `src/fs/local-vault` and `src/fs/webdav`: local and remote filesystem traversal/execution.
+- `src/storage/sync-record` + `src/storage/blob`: persisted sync state and merge base blobs.
+- `src/events`: sync lifecycle + progress emissions (`preparing/start/progress/update-mtime/end/error/cancel`).
+- UI components (`DeleteConfirmModal`, `TaskListConfirmModal`, `FailedTasksModal`) and Obsidian `Notice` for user interaction.
+- Plugin/runtime dependencies: `WebDAVSyncPlugin` settings/progress service and WebDAV client operations (`exists`, `createDirectory`, `stat`).

@@ -2,27 +2,18 @@
 
 ## Responsibility
 
-Workspace boundary for reusable/distributable plugin modules. Currently hosts the `webdav-explorer` UI package.
+Top-level workspace for reusable packages consumed by the main plugin.
 
-## Design Patterns
+## Package Topology
 
-- Monorepo package isolation (`packages/<module>`).
-- Library packaging pattern: source in `src/`, build output in `dist/`, exports defined in package metadata.
-- Package-level codemaps (`codemap.md`) to document structure per directory.
+- `webdav-explorer/`: standalone UI/library package for WebDAV file exploration features.
 
-## Data & Control Flow
+## Architecture Conventions
 
-- Consumers import packages from this workspace (currently `webdav-explorer`).
-- `webdav-explorer` builds from `src/**` into `dist/**` and exposes typed ESM exports.
-- UI events and filesystem operations are mediated through package APIs rather than direct host internals.
+- Each package is self-contained under `packages/<name>/`.
+- Package internals are documented in a local `codemap.md` inside each package.
+- Cross-package usage happens through each package's published/exported API surface.
 
-## Integration Points
+## Package Sub-Maps
 
-- Root workspace tooling resolves this directory as part of the monorepo.
-- Package consumers (the main plugin) import built artifacts via each package's `exports` field.
-
-## Key Files
-
-- `webdav-explorer/package.json`: package metadata and public export surface.
-- `webdav-explorer/rslib.config.ts`: library build configuration.
-- `webdav-explorer/codemap.md`: package-level architecture map.
+- [`webdav-explorer/codemap.md`](./webdav-explorer/codemap.md)

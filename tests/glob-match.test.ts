@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import GlobMatch, { needIncludeFromGlobRules } from './glob-match';
+import GlobMatch, { needIncludeFromGlobRules } from '~/utils/glob-match';
 
 const options = { caseSensitive: false };
 
