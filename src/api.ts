@@ -7,22 +7,69 @@ import logger from '~/utils/logger';
 import requestUrl from '~/utils/request-url';
 import sleep from '~/utils/sleep';
 
+interface WebDAVProp {
+	displayname?: string;
+	resourcetype?: { collection?: unknown } | string;
+	getlastmodified?: string;
+	getcontentlength?: string;
+	getcontenttype?: string;
+}
+
+interface WebDAVPropstat {
+	prop?: WebDAVProp;
+	status?: string;
+}
+
+interface WebDAVResponseItem {
+	href: string;
+	propstat?: WebDAVPropstat | WebDAVPropstat[];
+}
+
 interface WebDAVResponse {
 	multistatus: {
-		response: Array<{
-			href: string;
-			propstat: {
-				prop: {
-					displayname: string;
-					resourcetype: { collection?: unknown };
-					getlastmodified?: string;
-					getcontentlength?: string;
-					getcontenttype?: string;
-				};
-				status: string;
-			};
-		}>;
+		response: WebDAVResponseItem | WebDAVResponseItem[];
 	};
+}
+
+function isSuccessStatus(status?: string): boolean {
+	if (!status) {
+		return true;
+	}
+	const match = status.match(/\s(\d{3})(?:\s|$)/);
+	if (!match) {
+		return false;
+	}
+	const code = Number.parseInt(match[1], 10);
+	return code >= 200 && code < 300;
+}
+
+function getValidProps(item: WebDAVResponseItem): WebDAVProp | null {
+	if (!item.propstat) {
+		return null;
+	}
+
+	const propstats = Array.isArray(item.propstat) ? item.propstat : [item.propstat];
+
+	for (const propstat of propstats) {
+		if (!isSuccessStatus(propstat.status)) {
+			continue;
+		}
+		if (propstat.prop) {
+			return propstat.prop;
+		}
+	}
+
+	return null;
+}
+
+function isCollectionResource(resourcetype: WebDAVProp['resourcetype']): boolean {
+	if (!resourcetype) {
+		return false;
+	}
+	if (typeof resourcetype === 'string') {
+		return resourcetype.toLowerCase() === 'collection';
+	}
+	return !isNil(resourcetype.collection);
 }
 
 function extractNextLink(linkHeader: string): string | null {
@@ -49,20 +96,17 @@ function buildStripPrefixes(serverUrl: string, targetPath: string): string[] {
 	const endpointPath = normalizePathForMatch(new URL(serverUrl).pathname);
 	const requestedPath = normalizePathForMatch(targetPath);
 
-	if (requestedPath === '/') {
-		return [endpointPath];
-	}
+	if (requestedPath === '/') return [endpointPath];
 
 	const endpointWithRequest = normalizePathForMatch(join(endpointPath, requestedPath));
 	return [endpointWithRequest, requestedPath];
 }
 
-function convertToFileStat(
-	stripPrefixes: string[],
-	item: WebDAVResponse['multistatus']['response'][number],
-): FileStat {
-	const props = item.propstat.prop;
-	const isDir = !isNil(props.resourcetype?.collection);
+function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): FileStat | null {
+	const props = getValidProps(item);
+	if (!props) return null;
+
+	const isDir = isCollectionResource(props.resourcetype);
 	const hrefPathname = hrefToPathname(item.href);
 
 	let relativePath = hrefPathname;
@@ -115,15 +159,15 @@ export async function getDirectoryContents(
 					Depth: '1',
 				},
 				body: `<?xml version="1.0" encoding="utf-8"?>
-        <propfind xmlns="DAV:">
-          <prop>
-            <displayname/>
-            <resourcetype/>
-            <getlastmodified/>
-            <getcontentlength/>
-            <getcontenttype/>
-          </prop>
-        </propfind>`,
+<propfind xmlns="DAV:">
+  <prop>
+    <displayname/>
+    <resourcetype/>
+    <getlastmodified/>
+    <getcontentlength/>
+    <getcontenttype/>
+  </prop>
+</propfind>`,
 			});
 			const parseXml = new XMLParser({
 				attributeNamePrefix: '',
@@ -141,7 +185,12 @@ export async function getDirectoryContents(
 				? result.multistatus.response
 				: [result.multistatus.response];
 
-			contents.push(...items.slice(1).map((item) => convertToFileStat(stripPrefixes, item)));
+			const parsedItems = items
+				.slice(1)
+				.map((item) => convertToFileStat(stripPrefixes, item))
+				.filter((item): item is FileStat => item !== null);
+
+			contents.push(...parsedItems);
 
 			const linkHeader = response.headers['link'] || response.headers['Link'];
 			if (!linkHeader) {

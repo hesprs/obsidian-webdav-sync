@@ -1,7 +1,6 @@
 import UnoCSS from '@unocss/postcss';
 import { builtinModules } from 'node:module';
 import postcssMergeRules from 'postcss-merge-rules';
-import postcss from 'rollup-plugin-postcss';
 import { defineConfig } from 'tsdown';
 import pkg from './package.json' with { type: 'json' };
 
@@ -33,7 +32,7 @@ export default defineConfig({
 		file: 'dist/main.js',
 		codeSplitting: false,
 	},
-	sourcemap: dev ? 'inline' : false,
+	sourcemap: false,
 	format: 'cjs',
 	copy: [
 		{
@@ -43,11 +42,6 @@ export default defineConfig({
 	],
 	logLevel: 'error',
 	target: 'es2018',
-	plugins: [
-		postcss({
-			plugins: [UnoCSS(), postcssMergeRules()],
-		}),
-	],
 	platform: 'browser',
 	inputOptions: {
 		resolve: {
@@ -58,5 +52,12 @@ export default defineConfig({
 			},
 			conditionNames: ['browser', 'import', 'module', 'default'],
 		},
+	},
+	css: {
+		postcss: {
+			plugins: [UnoCSS(), postcssMergeRules()],
+		},
+        transformer: 'postcss',
+        minify: dev,
 	},
 });

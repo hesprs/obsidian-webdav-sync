@@ -4,13 +4,19 @@
 
 Obsidian Sync is a WebDAV-first Obsidian plugin that performs two-way synchronization between vault content and remote storage. The repository is organized around deterministic sync planning/execution, persistent sync state, and UI/service layers that make WebDAV sync operable as a general-purpose plugin (not Nutstore-specific).
 
+## Root Assets
+
+- `package.json` — workspace manifest, scripts, dependency graph, and build/test orchestration.
+- `manifest.json` — Obsidian plugin metadata consumed at runtime.
+- `tsdown.config.ts` / `uno.config.ts` — bundling and CSS/utility build configuration.
+
 ## System Entry Points
 
 - `src/index.ts` — plugin composition root (`WebDAVSyncPlugin`), lifecycle hooks, service wiring.
 - `src/services/sync-executor.service.ts` — canonical runtime entry for validated sync execution.
 - `src/sync/index.ts` — sync engine orchestration (plan, optimize, execute, update records).
 - `src/sync/decision/two-way.decider.ts` — task-plan generation from local/remote/record snapshots.
-- `src/services/webdav.service.ts` and `src/api/webdav.ts` — WebDAV client setup and remote listing/protocol handling.
+- `src/services/webdav.service.ts` and `src/api.ts` — WebDAV client setup and remote PROPFIND listing/protocol handling.
 
 ## Directory Map (Aggregated)
 
@@ -21,7 +27,6 @@ Obsidian Sync is a WebDAV-first Obsidian plugin that performs two-way synchroniz
 | `packages/webdav-explorer/src`            | Source implementation of WebDAV explorer navigation, listing, i18n, and host fs abstraction.                  | [packages/webdav-explorer/src/codemap.md](./packages/webdav-explorer/src/codemap.md)                       |
 | `packages/webdav-explorer/src/components` | Explorer presentation/interaction components for list rendering, folder navigation, and folder creation.      | [packages/webdav-explorer/src/components/codemap.md](./packages/webdav-explorer/src/components/codemap.md) |
 | `src`                                     | Plugin source composition root connecting settings, services, sync engine, fs adapters, and storage.          | [src/codemap.md](./src/codemap.md)                                                                         |
-| `src/api`                                 | Low-level WebDAV `PROPFIND` listing helpers with parsing, pagination, normalization, and retry behavior.      | [src/api/codemap.md](./src/api/codemap.md)                                                                 |
 | `src/components`                          | Obsidian UI components for sync controls, confirmations, progress, cache flows, and settings helpers.         | [src/components/codemap.md](./src/components/codemap.md)                                                   |
 | `src/events`                              | RxJS event bus for sync lifecycle/progress/error/cancel and vault-level notifications.                        | [src/events/codemap.md](./src/events/codemap.md)                                                           |
 | `src/fs`                                  | Unified local-vault and remote-WebDAV filesystem walk abstraction with shared filtering/completion.           | [src/fs/codemap.md](./src/fs/codemap.md)                                                                   |

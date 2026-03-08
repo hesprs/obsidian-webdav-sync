@@ -1,5 +1,5 @@
 import { Mutex } from 'async-mutex';
-import { getDirectoryContents } from '~/api/webdav';
+import { getDirectoryContents } from '~/api';
 import { type StatModel } from '~/model/stat.model';
 import { traverseWebDAVKV } from '~/storage';
 import { apiLimiter } from './api-limiter';
