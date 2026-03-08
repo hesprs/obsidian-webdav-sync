@@ -61,7 +61,10 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toEqual(['/Folder A/', '/Project Plan.md']);
+		expect(files.map((f) => f.filename)).toEqual([
+			'/Notes/Folder A/',
+			'/Notes/Project Plan.md',
+		]);
 		expect(files[0].type).toBe('directory');
 		expect(files[1].type).toBe('file');
 	});
@@ -101,7 +104,7 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/中文.md');
+		expect(files[0].filename).toBe('/Notes/中文.md');
 		expect(files[0].size).toBe(4);
 	});
 
@@ -149,7 +152,7 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toEqual(['/Folder/', '/file.md']);
+		expect(files.map((f) => f.filename)).toEqual(['/Notes/Folder/', '/Notes/file.md']);
 		expect(files[0].type).toBe('directory');
 		expect(files[1].type).toBe('file');
 		expect(files[1].size).toBe(9);
@@ -190,7 +193,37 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/Ok.md');
+		expect(files[0].filename).toBe('/Notes/Ok.md');
 		expect(files[0].size).toBe(5);
+	});
+
+	it('keeps nested absolute path when listing non-root directory', async () => {
+		const { getDirectoryContents } = await import('../src/api');
+		vi.mocked(requestUrl).mockResolvedValue({
+			headers: {},
+			text: `<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/test/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/test/abc/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>`,
+		} as never);
+
+		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/test/');
+
+		expect(files).toHaveLength(1);
+		expect(files[0].filename).toBe('/test/abc/');
+		expect(files[0].type).toBe('directory');
 	});
 });

@@ -102,3 +102,7 @@ input.success {
 .task-list-table tr:hover {
 	background-color: var(--background-modifier-hover);
 }
+
+.pre-line {
+	white-space: pre-line;
+}

@@ -1,5 +1,4 @@
 import { Vault } from 'obsidian';
-import { isAbsolute } from 'path-browserify';
 import { isNotNil } from 'ramda';
 import { useSettings } from '~/settings';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
@@ -8,11 +7,10 @@ import GlobMatch, {
 	isVoidGlobMatchOptions,
 	needIncludeFromGlobRules,
 } from '~/utils/glob-match';
-import { isSub } from '~/utils/is-sub';
-import { stdRemotePath } from '~/utils/std-remote-path';
 import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
 import AbstractFileSystem from './fs.interface';
 import completeLossDir from './utils/complete-loss-dir';
+import { normalizeRemoteWalkPath } from './utils/normalize-remote-walk-path';
 
 export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 	constructor(
@@ -40,30 +38,19 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			return [];
 		}
 
-		const base = stdRemotePath(this.options.remoteBaseDir);
-		const subPath = new Set<string>();
-		for (let { path } of stats) {
-			if (path.endsWith('/')) {
-				path = path.slice(0, path.length - 1);
-			}
-			if (!path.startsWith('/')) {
-				path = `/${path}`;
-			}
-			if (isSub(base, path)) {
-				subPath.add(path);
-			}
-		}
-
-		const statsMap = new Map(stats.map((s) => [s.path, s]));
-		stats = [...subPath].map((path) => statsMap.get(path)).filter(isNotNil);
-		for (const item of stats) {
-			if (isAbsolute(item.path)) {
-				item.path = item.path.replace(this.options.remoteBaseDir, '');
-				if (item.path.startsWith('/')) {
-					item.path = item.path.slice(1);
-				}
-			}
-		}
+		// Paths returned by traversal are expected to be already relative to remoteBaseDir
+		// (e.g. /Welcome.md). Some servers may still return base-prefixed absolute paths.
+		// Normalize both shapes into plugin-relative paths (e.g. Welcome.md).
+		stats = stats
+			.map((item) => {
+				const path = normalizeRemoteWalkPath(item.path, this.options.remoteBaseDir);
+				return {
+					...item,
+					path,
+				};
+			})
+			.filter((item) => item.path.length > 0)
+			.filter(isNotNil);
 
 		const exclusions = this.buildRules(settings?.filterRules.exclusionRules);
 		const inclusions = this.buildRules(settings?.filterRules.inclusionRules);

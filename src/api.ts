@@ -1,7 +1,7 @@
 import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
-import { basename, join } from 'path-browserify';
+import { basename } from 'path-browserify';
 import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
 import requestUrl from '~/utils/request-url';
@@ -92,14 +92,9 @@ function normalizePathForMatch(pathname: string): string {
 	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
 }
 
-function buildStripPrefixes(serverUrl: string, targetPath: string): string[] {
+function buildStripPrefixes(serverUrl: string): string[] {
 	const endpointPath = normalizePathForMatch(new URL(serverUrl).pathname);
-	const requestedPath = normalizePathForMatch(targetPath);
-
-	if (requestedPath === '/') return [endpointPath];
-
-	const endpointWithRequest = normalizePathForMatch(join(endpointPath, requestedPath));
-	return [endpointWithRequest, requestedPath];
+	return [endpointPath];
 }
 
 function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): FileStat | null {
@@ -117,7 +112,7 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 		}
 	}
 
-	const filename = join('/', relativePath || '/');
+	const filename = `/${(relativePath || '/').replace(/^\/+/, '')}`;
 
 	return {
 		filename,
@@ -143,9 +138,7 @@ export async function getDirectoryContents(
 	const contents: FileStat[] = [];
 	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
 	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
-	const stripPrefixes = buildStripPrefixes(endpoint, normalizedPath).sort(
-		(a, b) => b.length - a.length,
-	);
+	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 	let currentUrl = `${endpoint}${encodedPath}`;
 
 	while (true) {

@@ -12,7 +12,7 @@
 			"types": "./dist/index.d.ts",
 			"import": "./dist/index.js"
 		},
-        "./css": "./dist/assets/global.css"
+		"./css": "./dist/assets/global.css"
 	},
 	"scripts": {
 		"build": "rslib build",

@@ -122,7 +122,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		);
 	}
 
-	get remoteBaseDir() {
+    get remoteBaseDir() {
 		let remoteDir = normalizePath(this.settings.remoteDir.trim());
 		if (remoteDir === '' || remoteDir === '/') {
 			remoteDir = this.app.vault.getName();
