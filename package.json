@@ -10,11 +10,11 @@
 		"crypto": "crypto-browserify"
 	},
 	"scripts": {
-		"dev:plugin": "MODE=dev pnpm tsdown && swc ./dist/main.js -o ./dist/main.js",
+		"dev:plugin": "MODE=dev pnpm tsdown",
 		"dev:explorer": "pnpm -F webdav-explorer dev",
 		"build": "pnpm build:explorer && pnpm build:plugin",
 		"build:explorer": "pnpm -F webdav-explorer build",
-		"build:plugin": "tsdown && swc ./dist/main.js -o ./dist/main.js",
+		"build:plugin": "tsdown",
 		"version": "node version-bump.ts && oxfmt",
 		"test": "vitest",
 		"lint": "oxlint --fix && oxfmt",
