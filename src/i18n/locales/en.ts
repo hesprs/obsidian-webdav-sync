@@ -13,6 +13,12 @@ export default {
 			desc: 'Enter your WebDAV account',
 			placeholder: 'Enter your account',
 		},
+		serverUrl: {
+			name: 'WebDAV server URL',
+			desc: 'Base URL of your WebDAV service.',
+			placeholder: 'https://example.com/webdav',
+			invalid: 'Please enter a valid WebDAV server URL (http:// or https://).',
+		},
 		credential: {
 			name: 'Credential',
 			desc: 'Enter your WebDAV credential',
@@ -23,6 +29,7 @@ export default {
 			desc: 'Click to check WebDAV connection',
 			success: 'WebDAV connection successful',
 			failure: 'WebDAV connection failed',
+			failureWithReason: 'WebDAV connection failed: {{reason}}',
 			successButton: 'Connected ✓',
 			failureButton: 'Failed ×',
 		},
@@ -160,14 +167,14 @@ export default {
 			dump: 'Export',
 			dumpName: 'Cache management',
 			dumpDesc:
-				'The plugin stores remote folder information locally. When switching devices, this data is lost and must be rebuilt before syncing. With many files, rebuilding can be slow due to rate limits. Export saves this data to Nutstore; Import retrieves it, allowing immediate syncing on new devices.',
+				'The plugin stores remote folder information locally. When switching devices, this data is lost and must be rebuilt before syncing. With many files, rebuilding can be slow due to rate limits. Export saves this data to your WebDAV server; Import retrieves it, allowing immediate syncing on new devices.',
 			restoreName: 'Import cache',
 			restoreDesc:
-				'Import previously exported cache data from Nutstore to your device. This lets you sync immediately on a new device without the long waiting time normally needed to scan all your files.',
+				'Import previously exported cache data from your WebDAV server to your device. This lets you sync immediately on a new device without the long waiting time normally needed to scan all your files.',
 			restore: 'Import',
 			clearName: 'Clear local cache',
 			clearDesc:
-				'Delete local cache data stored on this device only. This action cannot be undone and will require rebuilding the cache before the next sync. Your Nutstore data remains intact.',
+				'Delete local cache data stored on this device only. This action cannot be undone and will require rebuilding the cache before the next sync. Your WebDAV data remains intact.',
 			clear: 'Clear',
 			confirm: 'Confirm clear',
 			cleared: 'Cache cleared successfully',
@@ -246,7 +253,7 @@ export default {
 			conflictsMarkedInFile: 'Conflicts found and marked in file',
 			requestsTooFrequent: 'Requests too frequent, please wait a few minutes and try again',
 			accountNotConfigured:
-				'Nutstore account not configured. Please configure your account in settings first.',
+				'WebDAV account is not configured. Please configure your server URL, account, and credential in settings first.',
 		},
 		requestsTooFrequent: 'Requests too frequent, plugin will resume sync at {{time}}',
 		preparing: '📋 Preparing sync',
@@ -273,7 +280,7 @@ export default {
 		failedStatus: 'Sync failed',
 		cancelled: 'Sync cancelled',
 		suggestUseClientForManyTasks:
-			'Tip: When there are many sync tasks, we recommend using the Nutstore client for better performance and stability. The plugin is more suitable for mobile use!',
+			"Tip: When there are many sync tasks, using your WebDAV provider's desktop sync client may be more stable. This plugin is generally better suited for lightweight/mobile use.",
 		modalTitle: 'Syncing',
 		cancelButton: 'Cancel sync',
 		progressText: 'Syncing files',
