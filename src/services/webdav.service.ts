@@ -10,7 +10,19 @@ export class WebDAVService {
 		if (!serverUrl) {
 			throw new Error('WebDAV server URL is not configured');
 		}
-		return serverUrl;
+
+		let parsedUrl: URL;
+		try {
+			parsedUrl = new URL(serverUrl);
+		} catch {
+			throw new Error('WebDAV server URL is invalid');
+		}
+
+		if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+			throw new Error('WebDAV server URL must start with http:// or https://');
+		}
+
+		return parsedUrl.toString().replace(/\/+$/, '');
 	}
 
 	async createWebDAVClient(): Promise<WebDAVClient> {

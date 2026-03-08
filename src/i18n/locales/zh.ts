@@ -14,6 +14,12 @@ export default {
 			desc: '输入你的 WebDAV 账号',
 			placeholder: '输入你的账号',
 		},
+		serverUrl: {
+			name: 'WebDAV 服务器地址',
+			desc: '输入 WebDAV 服务的基准 URL',
+			placeholder: 'https://example.com/webdav',
+			invalid: '请输入有效的 WebDAV 服务器地址（http:// 或 https://）',
+		},
 		credential: {
 			name: '凭证',
 			desc: '输入你的 WebDAV 凭证',
@@ -30,6 +36,7 @@ export default {
 			desc: '点击检查 WebDAV 连接',
 			success: 'WebDAV 连接成功',
 			failure: 'WebDAV 连接失败',
+			failureWithReason: 'WebDAV 连接失败：{{reason}}',
 			successButton: '连接成功 ✓',
 			failureButton: '连接失败 ×',
 		},
@@ -156,15 +163,15 @@ export default {
 			title: '缓存管理',
 			dumpName: '缓存管理',
 			dumpDesc:
-				'插件会在您的设备上保存远程文件夹的目录信息。当您更换设备时，这些信息会丢失，需要在首次同步前重新获取。如果您的文件数量较多，可能会触发坚果云的访问频率限制，导致获取过程变慢。导出功能可将这些信息保存到坚果云，导入功能则可将数据恢复到新设备，使您无需等待即可直接同步。',
+				'插件会在您的设备上保存远程文件夹的目录信息。当您更换设备时，这些信息会丢失，需要在首次同步前重新获取。如果您的文件数量较多，可能会触发访问频率限制，导致获取过程变慢。导出功能可将这些信息保存到 WebDAV 服务器，导入功能则可将数据恢复到新设备，使您无需等待即可直接同步。',
 			dump: '导出',
 			restoreName: '导入缓存',
 			restoreDesc:
-				'从坚果云导入之前导出的缓存数据到当前设备。这样可以避免在新设备上等待漫长的文件扫描过程，让您直接进行同步。',
+				'从 WebDAV 服务器导入之前导出的缓存数据到当前设备。这样可以避免在新设备上等待漫长的文件扫描过程，让您直接进行同步。',
 			restore: '导入',
 			clearName: '清除本地缓存',
 			clearDesc:
-				'删除当前设备上的本地缓存数据。此操作无法撤销，会导致下次同步前需要重新建立缓存。仅影响当前设备，不会影响您在坚果云中的数据。',
+				'删除当前设备上的本地缓存数据。此操作无法撤销，会导致下次同步前需要重新建立缓存。仅影响当前设备，不会影响您在 WebDAV 服务器中的数据。',
 			clear: '清除',
 			confirm: '确认清除',
 			cleared: '缓存已成功清除',
@@ -241,7 +248,8 @@ export default {
 			failedToUploadMerged: '上传合并内容失败',
 			conflictsMarkedInFile: '发现冲突，已在文件中标记',
 			requestsTooFrequent: '请求过于频繁，请等待几分钟后再试',
-			accountNotConfigured: '尚未配置坚果云账号，请先在设置中配置账号信息',
+			accountNotConfigured:
+				'尚未完成 WebDAV 账号配置，请先在设置中填写服务器地址、账号和凭证',
 		},
 		requestsTooFrequent: '请求过于频繁，插件将在 {{time}} 后自动继续同步任务',
 		preparing: '📋 准备同步',
@@ -268,7 +276,7 @@ export default {
 		failedStatus: '同步失败',
 		cancelled: '同步已取消',
 		suggestUseClientForManyTasks:
-			'提示：当同步任务较多时，建议使用坚果云客户端同步，可获得更好的性能和稳定性，插件更适合在移动端使用！',
+			'提示：当同步任务较多时，建议优先使用 WebDAV 服务商提供的桌面同步客户端，通常更稳定。插件更适合轻量或移动端使用。',
 		modalTitle: '同步进行中',
 		cancelButton: '取消同步',
 		progressText: '正在同步文件',

@@ -4,19 +4,36 @@ import { is503Error } from '~/utils/is-503-error';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
+	private getNormalizedServerUrl(): string | null {
+		const serverUrl = this.plugin.settings.serverUrl.trim().replace(/\/+$/, '');
+		if (!serverUrl) {
+			return null;
+		}
+
+		try {
+			const parsedUrl = new URL(serverUrl);
+			if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
+				return null;
+			}
+			return parsedUrl.toString().replace(/\/+$/, '');
+		} catch {
+			return null;
+		}
+	}
+
 	async display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.account')).setHeading();
 
 		new Setting(this.containerEl)
-			.setName('WebDAV Server URL')
-			.setDesc('Base URL of your WebDAV service.')
+			.setName(i18n.t('settings.serverUrl.name'))
+			.setDesc(i18n.t('settings.serverUrl.desc'))
 			.addText((text) =>
 				text
-					.setPlaceholder('https://example.com/webdav')
+					.setPlaceholder(i18n.t('settings.serverUrl.placeholder'))
 					.setValue(this.plugin.settings.serverUrl)
 					.onChange(async (value) => {
-						this.plugin.settings.serverUrl = value;
+						this.plugin.settings.serverUrl = value.trim();
 						await this.plugin.saveSettings();
 					}),
 			);
@@ -58,6 +75,14 @@ export default class AccountSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.checkConnection.desc'))
 			.addButton((button) => {
 				button.setButtonText(i18n.t('settings.checkConnection.name')).onClick(async (e) => {
+					const normalizedUrl = this.getNormalizedServerUrl();
+					if (!normalizedUrl) {
+						new Notice(i18n.t('settings.serverUrl.invalid'));
+						return;
+					}
+					this.plugin.settings.serverUrl = normalizedUrl;
+					await this.plugin.saveSettings();
+
 					const buttonEl = e.target as HTMLElement;
 					buttonEl.classList.add('connection-button', 'loading');
 					buttonEl.classList.remove('success', 'error');
@@ -77,7 +102,14 @@ export default class AccountSettings extends BaseSettings {
 						} else {
 							buttonEl.classList.add('error');
 							buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
-							new Notice(i18n.t('settings.checkConnection.failure'));
+							const reason = error?.message?.trim();
+							new Notice(
+								reason
+									? i18n.t('settings.checkConnection.failureWithReason', {
+											reason,
+										})
+									: i18n.t('settings.checkConnection.failure'),
+							);
 						}
 					} catch {
 						buttonEl.classList.remove('loading');
