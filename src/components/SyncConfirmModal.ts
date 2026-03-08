@@ -26,7 +26,7 @@ export default class SyncConfirmModal extends Modal {
 				),
 			}),
 		});
-		contentEl.createEl('pre', { text: i18n.t('sync.confirmModal.message') });
+		contentEl.createEl('p', { text: i18n.t('sync.confirmModal.message') });
 
 		new Setting(contentEl)
 			.addButton((button) =>

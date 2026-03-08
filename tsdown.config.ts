@@ -49,4 +49,14 @@ export default defineConfig({
 		}),
 	],
 	platform: 'browser',
+	inputOptions: {
+		resolve: {
+			// Obsidian plugins run in Electron with a DOM, but CJS resolution can still
+			// select Solid's server runtime. Force the browser runtime explicitly.
+			alias: {
+				'solid-js/web': 'solid-js/web/dist/web.js',
+			},
+			conditionNames: ['browser', 'import', 'module', 'default'],
+		},
+	},
 });
