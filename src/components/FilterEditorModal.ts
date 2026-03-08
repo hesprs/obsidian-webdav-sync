@@ -2,7 +2,7 @@ import { cloneDeep } from 'lodash-es';
 import { Modal, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import { getUserOptions, type GlobMatchOptions } from '~/utils/glob-match';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 enum FilterType {
 	Include = 'include',
@@ -15,7 +15,7 @@ export default class FilterEditorModal extends Modal {
 	filters: GlobMatchOptions[];
 
 	constructor(
-		plugin: NutstorePlugin,
+		plugin: WebDAVSyncPlugin,
 		filters: GlobMatchOptions[] = [],
 		private onSave: (filters: GlobMatchOptions[]) => void,
 		private filterType: FilterType = FilterType.Exclude,

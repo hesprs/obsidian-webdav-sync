@@ -1,33 +1,37 @@
-# src/sync/decision/
+# src/sync/decision
 
 ## Responsibility
 
--Define how local vault state, remote WebDAV state, and persisted sync records are translated into executable sync tasks.
--Provide the decider abstraction (`BaseSyncDecider`) and the concrete two-way implementation (`TwoWaySyncDecider`).
--Contain the pure decision engine (`twoWayDecider`) and helper logic for folder-change detection (`hasFolderContentChanged`).
--Define typed decision contracts and task-construction interfaces in `sync-decision.interface.ts`.
+Transforms local/remote/record snapshots into a deterministic, ordered task plan for two-way sync.
 
 ## Design Patterns
 
--Template method and base abstraction: `BaseSyncDecider` centralizes shared dependencies (`sync`, `syncRecordStorage`) and exposes abstract `decide()`.
--Class-to-function split for testable core logic: `TwoWaySyncDecider.decide()` handles environment wiring, while `twoWayDecider(input)` performs deterministic rule evaluation.
--Factory pattern: `TaskFactory` decouples decision rules from concrete task constructors (`createPullTask`, `createPushTask`, `createConflictResolveTask`, `createSkippedTask`, and others).
--Rule-based state machine behavior: branches in `twoWayDecider` classify each path by presence, record existence, mtime/content changes, size limits, and filename validity.
+- Abstract decider contract in `BaseSyncDecider`.
+- Class-wrapper + pure-function split (`TwoWaySyncDecider` + `twoWayDecider`) for testability.
+- Factory-based task construction to keep branch rules independent from task class details.
+- Rule-engine style branching by path state, mtimes, content deltas, limits, and policy settings.
 
 ## Data & Control Flow
 
-1. `NutstoreSync.start()` creates `TwoWaySyncDecider` and calls `decide()`.
-2. `TwoWaySyncDecider.decide()` loads inputs concurrently: `SyncRecord.getRecords()`, `localFS.walk()`, `remoteFs.walk()`.
-3. It builds shared options and a `TaskFactory`, plus content comparators (`getBaseContent` using `blobStore.get`, `compareFileContent` using `vault.readBinary` and `isEqual`).
-4. `twoWayDecider()` parses size limit (`bytesParse`), filters ignored entries, builds local/remote path maps, then iterates the unified path set.
-5. For files, it decides among `PullTask`, `PushTask`, `ConflictResolveTask`, `RemoveLocalTask`, `RemoveRemoteTask`, `NoopTask`, `CleanRecordTask`, `FilenameErrorTask`, and `SkippedTask`.
-6. For folders, it uses `hasFolderContentChanged` and `hasIgnoredInFolder` to choose create/remove/noop/skip actions, then sorts remove tasks deepest-first before prepending folder tasks.
-7. The ordered `BaseTask[]` is returned to `NutstoreSync` for confirmation, optimization, and execution.
+1. `TwoWaySyncDecider.decide()` loads local walk, remote walk, and sync records.
+2. Builds lookup maps and comparators (base-content fetch + content equality checks).
+3. `twoWayDecider()` evaluates every unified path under ignore/filter rules.
+4. Produces file actions (pull/push/remove/conflict/noop/skip/clean-record/filename-error).
+5. Produces folder actions using descendant-change and ignored-content checks.
+6. Returns ordered `BaseTask[]` to `SyncEngine`.
 
 ## Integration Points
 
--Upstream caller: `src/sync/index.ts` (`NutstoreSync`) depends on this directory for planning.
--Task layer coupling: produces task instances from `src/sync/tasks/*.task.ts` and uses enums/constants like `ConflictStrategy` and `SkipReason`.
--Filesystem and records: consumes `FsWalkResult` from `src/fs/fs.interface.ts` and sync record shapes from `SyncRecord` storage.
--Utility dependencies: `isSameTime`, `hasInvalidChar`, `remotePathToAbsolute`, `remotePathToLocalPath`, `isSub`, and ignored-item helpers in `src/sync/utils/has-ignored-in-folder.ts`.
--Settings contract: consumes `SyncDecisionSettings` (`skipLargeFiles`, `conflictStrategy`, `useGitStyle`, `syncMode`) to drive decision branches.
+- Upstream: `src/sync/index.ts` planner call site.
+- Downstream: `src/sync/tasks/*.task.ts` via task factory callbacks.
+- Inputs: fs walk outputs, sync records, blob store base versions.
+- Utilities: path conversion/time comparison/ignore helpers.
+- Settings: conflict strategy, size limits, sync mode toggles.
+
+## Key Files
+
+- `two-way.decider.ts` — decider class and input preparation.
+- `two-way.decider.function.ts` — core decision rules.
+- `base.decider.ts` — abstract planner base.
+- `sync-decision.interface.ts` — contracts/options/factory types.
+- `has-folder-content-changed.ts` — folder-delta helper.

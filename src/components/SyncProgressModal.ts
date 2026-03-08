@@ -6,7 +6,7 @@ import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import SkippedTask from '~/sync/tasks/skipped.task';
 import getTaskName from '~/utils/get-task-name';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 import { emitCancelSync, onCancelSync, onSyncUpdateMtimeProgress } from '../events';
 import i18n from '../i18n';
 import ConflictResolveTask from '../sync/tasks/conflict-resolve.task';
@@ -35,7 +35,7 @@ export default class SyncProgressModal extends Modal {
 	private cacheCurrentOperation!: HTMLDivElement;
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private closeCallback?: () => void,
 	) {
 		super(plugin.app);

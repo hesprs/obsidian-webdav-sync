@@ -4,12 +4,12 @@ import { getDirectoryContents } from '~/api/webdav';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
 import { stdRemotePath } from '~/utils/std-remote-path';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class SelectRemoteBaseDirModal extends Modal {
 	constructor(
 		app: App,
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private onConfirm: (path: string) => void,
 	) {
 		super(app);

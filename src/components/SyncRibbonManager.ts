@@ -1,16 +1,16 @@
 import { Notice } from 'obsidian';
 import logger from '~/utils/logger';
-import type NutstorePlugin from '../index';
+import type WebDAVSyncPlugin from '../index';
 import { emitCancelSync } from '../events';
 import i18n from '../i18n';
-import { NutstoreSync, SyncStartMode } from '../sync';
+import { SyncEngine, SyncStartMode } from '../sync/index';
 import SyncConfirmModal from './SyncConfirmModal';
 
 export class SyncRibbonManager {
 	private startRibbonEl: HTMLElement;
 	private stopRibbonEl: HTMLElement;
 
-	constructor(private plugin: NutstorePlugin) {
+	constructor(private plugin: WebDAVSyncPlugin) {
 		this.startRibbonEl = this.plugin.addRibbonIcon(
 			'refresh-ccw',
 			i18n.t('sync.startButton'),
@@ -36,7 +36,7 @@ export class SyncRibbonManager {
 				}
 
 				const startSync = async () => {
-					const sync = new NutstoreSync(this.plugin, {
+					const sync = new SyncEngine(this.plugin, {
 						webdav: await this.plugin.webDAVService.createWebDAVClient(),
 						vault: this.plugin.app.vault,
 						token: await this.plugin.getToken(),
@@ -46,7 +46,7 @@ export class SyncRibbonManager {
 						mode: SyncStartMode.MANUAL_SYNC,
 					});
 				};
-				if (plugin.settings.confirmBeforeSync) {
+				if (this.plugin.settings.confirmBeforeSync) {
 					new SyncConfirmModal(this.plugin.app, startSync).open();
 				} else {
 					void startSync();
@@ -62,11 +62,11 @@ export class SyncRibbonManager {
 	public update() {
 		if (this.plugin.isSyncing) {
 			this.startRibbonEl.setAttr('aria-disabled', 'true');
-			this.startRibbonEl.addClass('nutstore-sync-spinning');
+			this.startRibbonEl.addClass('webdav-sync-spinning');
 			this.stopRibbonEl.classList.remove('hidden');
 		} else {
 			this.startRibbonEl.removeAttribute('aria-disabled');
-			this.startRibbonEl.removeClass('nutstore-sync-spinning');
+			this.startRibbonEl.removeClass('webdav-sync-spinning');
 			this.stopRibbonEl.classList.add('hidden');
 		}
 	}

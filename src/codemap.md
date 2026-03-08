@@ -1,33 +1,35 @@
-# src/
+# src
 
 ## Responsibility
 
--`src/index.ts` defines `NutstorePlugin`, initializes default `NutstoreSettings`, and wires core services (`SyncExecutorService`, `WebDAVService`, `ScheduledSyncService`, `RealtimeSyncService`, `ProgressService`, `StatusService`).
--The source tree provides the full sync stack: filesystem abstraction in `src/fs`, decision and execution engine in `src/sync`, persistence in `src/storage`, runtime configuration in `src/settings`, and shared helpers in `src/utils`.
--It owns plugin lifecycle hooks (`onload`, `onunload`), account/token handling (`getToken`, `getDecryptedOAuthInfo`, `isAccountConfigured`), and sync root normalization (`remoteBaseDir`).
+Top-level plugin composition root: bootstraps settings/services, owns lifecycle, and connects fs/decision/task/storage modules into one sync runtime.
 
 ## Design Patterns
 
--Facade and service composition: `NutstorePlugin` acts as the composition root and delegates behavior to focused services instead of embedding sync logic directly.
--Strategy via filesystem abstraction: `IFileSystem` with `LocalVaultFileSystem` and `NutstoreFileSystem` allows the sync engine to operate over local vault and WebDAV using the same walk/stat contract.
--Command-based execution: `src/sync/tasks/*.task.ts` encapsulates concrete operations (`PushTask`, `PullTask`, `RemoveLocalTask`, `RemoveRemoteTask`, `MkdirLocalTask`, `MkdirRemoteTask`, `ConflictResolveTask`).
--Event-driven coordination: `src/events/*` exposes emitters/subscriptions used by sync runtime and UI (`emitStartSync`, `emitSyncProgress`, `emitSyncError`, `emitCancelSync`).
--Persistence adapter pattern: `src/storage/use-storage.ts` standardizes key-value access, while `SyncRecord` and `blobStore` provide domain-level APIs.
+- Composition root via `WebDAVSyncPlugin` (`src/index.ts`) wiring services instead of embedding sync logic.
+- Service-oriented split (`services/*`) for scheduling, realtime triggers, execution, progress, and status.
+- Adapter boundaries around filesystem (`fs/*`), storage (`storage/*`), and remote client setup.
+- Event-driven updates through `events/*` to decouple engine state from UI/reporting.
 
 ## Data & Control Flow
 
-1. Plugin boot: `NutstorePlugin.onload()` calls `loadSettings()`, registers settings UI (`NutstoreSettingTab`), protocol handler, then starts `ScheduledSyncService.start()`.
-2. Triggering sync: user command, schedule, or vault events call `SyncExecutorService.executeSync()` with `SyncStartMode`.
-3. Pre-check and setup: executor validates account config, ensures exclusion rules, builds `NutstoreSync` with `WebDAVService.createWebDAVClient()` and `remoteBaseDir`.
-4. Planning: `TwoWaySyncDecider.decide()` walks both filesystems (`localFS.walk()`, `remoteFs.walk()`), loads records from `SyncRecord.getRecords()`, and invokes `twoWayDecider()`.
-5. Decision output: `twoWayDecider()` maps states to task instances using `TaskFactory`, including skip/clean/conflict handling.
-6. Execution: `NutstoreSync.start()` confirms actions when required, optimizes task list (`mergeMkdirTasks`, `mergeRemoveRemoteTasks`), executes tasks in chunks through `execTasks()` and `executeWithRetry()`.
-7. Persistence and feedback: `updateMtimeInRecord()` writes record updates, events update UI/progress, and final status is emitted by `emitEndSync` or `emitSyncError`.
+1. `onload()` loads persisted settings and registers UI/commands.
+2. Trigger sources (manual command, schedule, vault events) call the sync executor service.
+3. Executor validates configuration, prepares WebDAV client, and creates sync engine context.
+4. `src/sync` decides and executes tasks against local + remote filesystems.
+5. Storage/event services persist records and emit progress/completion/error states.
 
 ## Integration Points
 
--Obsidian runtime: `Plugin`, `Vault`, protocol handlers, ribbon/status/progress UI components, notices, and settings tab APIs.
--Remote protocol: `webdav` client wrapped by `createRateLimitedWebDAVClient` in `src/utils/rate-limited-client.ts` and consumed by `NutstoreFileSystem` and task executors.
--Storage backend: IndexedDB through `localforage` wrappers in `src/storage/kv.ts`; sync metadata via `SyncRecord`, base-content blobs via `blobStore`.
--Configuration and localization: settings model and UI in `src/settings`, language switching through `I18nService`, string resources via `src/i18n`.
--Cross-module contracts: path/time/filter utilities (`stdRemotePath`, `remotePathToLocalPath`, `isSameTime`, glob matching) are shared across fs, decision, and task layers.
+- Obsidian plugin API (`Plugin`, `Vault`, settings tab, notices, status UI).
+- WebDAV client lifecycle and patched request behavior.
+- Persistent metadata via localforage-backed storage wrappers.
+- Cross-module contracts from `model/*`, `types/*`, and shared utilities.
+
+## Key Files
+
+- `index.ts` — plugin entrypoint and service wiring.
+- `sync/index.ts` — sync engine orchestration.
+- `fs/local-vault.ts`, `fs/webdav.ts` — local/remote filesystem adapters.
+- `storage/sync-record.ts`, `storage/blob.ts` — sync metadata and base-content persistence.
+- `services/scheduled-sync.service.ts`, `services/realtime-sync.service.ts` — sync triggers.

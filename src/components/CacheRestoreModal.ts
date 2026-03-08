@@ -3,7 +3,7 @@ import type { StatModel } from '~/model/stat.model';
 import i18n from '~/i18n';
 import CacheService from '~/services/cache.service.v1';
 import logger from '~/utils/logger';
-import type NutstorePlugin from '..';
+import type WebDAVSyncPlugin from '..';
 
 export default class CacheRestoreModal extends Modal {
 	private fileList!: HTMLElement;
@@ -11,7 +11,7 @@ export default class CacheRestoreModal extends Modal {
 	private cacheService: CacheService;
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private remoteCacheDir: string,
 		private onSuccess?: () => void,
 	) {

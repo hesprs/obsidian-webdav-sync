@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import i18n from '../i18n';
-import NutstorePlugin from '../index';
+import WebDAVSyncPlugin from '../index';
 import { formatRelativeTime } from '../utils/format-relative-time';
 
 export class StatusService {
@@ -9,7 +9,7 @@ export class StatusService {
 	private updateInterval: number | null = null;
 	private baseStatusText: string = '';
 
-	constructor(private plugin: NutstorePlugin) {
+	constructor(private plugin: WebDAVSyncPlugin) {
 		this.syncStatusBar = plugin.addStatusBarItem();
 	}
 

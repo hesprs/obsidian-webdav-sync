@@ -2,7 +2,7 @@ import { chunk, debounce, isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
 import type { BaseTask, TaskResult } from '~/sync/tasks/task.interface';
 import { emitSyncUpdateMtimeProgress } from '~/events';
-import { NutstoreFileSystem } from '~/fs/nutstore';
+import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import { syncRecordKV } from '~/storage';
 import { blobStore } from '~/storage/blob';
 import { SyncRecord } from '~/storage/sync-record';
@@ -13,14 +13,14 @@ import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
 import { stdRemotePath } from '~/utils/std-remote-path';
-import type NutstorePlugin from '../..';
+import type WebDAVSyncPlugin from '../..';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 
 /**
  * 批量更新同步记录的工具函数
  */
 export async function updateMtimeInRecord(
-	plugin: NutstorePlugin,
+	plugin: WebDAVSyncPlugin,
 	vault: Vault,
 	remoteBaseDir: string,
 	tasks: BaseTask[],
@@ -40,7 +40,7 @@ export async function updateMtimeInRecord(
 	}
 
 	const token = await plugin.getToken();
-	const remoteFs = new NutstoreFileSystem({
+	const remoteFs = new RemoteWebDAVFileSystem({
 		vault,
 		token,
 		remoteBaseDir: stdRemotePath(remoteBaseDir),

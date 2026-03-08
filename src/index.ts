@@ -18,7 +18,7 @@ import ScheduledSyncService from './services/scheduled-sync.service';
 import { StatusService } from './services/status.service';
 import SyncExecutorService from './services/sync-executor.service';
 import { WebDAVService } from './services/webdav.service';
-import { type NutstoreSettings, NutstoreSettingTab, setPluginInstance, SyncMode } from './settings';
+import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
 import { stdRemotePath } from './utils/std-remote-path';
 
@@ -31,9 +31,9 @@ function createGlobMathOptions(expr: string) {
 	} satisfies GlobMatchOptions;
 }
 
-export default class NutstorePlugin extends Plugin {
+export default class WebDAVSyncPlugin extends Plugin {
 	public isSyncing: boolean = false;
-	public settings: NutstoreSettings = {
+	public settings: PluginSettings = {
 		serverUrl: '',
 		account: '',
 		credential: '',
@@ -73,7 +73,7 @@ export default class NutstorePlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		this.addSettingTab(new NutstoreSettingTab(this.app, this));
+		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 
 		await this.scheduledSyncService.start();
