@@ -1,13 +1,11 @@
 import postcss from '@deanc/esbuild-plugin-postcss';
 import UnoCSS from '@unocss/postcss';
-import dotenv from 'dotenv';
 import esbuild from 'esbuild';
 import fs, { readFileSync } from 'fs';
 import postcssMergeRules from 'postcss-merge-rules';
 import process from 'process';
 
 const pkgJson = JSON.parse(readFileSync('./package.json', 'utf-8'));
-dotenv.config();
 
 const prod = process.argv[2] === 'production';
 
