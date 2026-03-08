@@ -1,11 +1,11 @@
 import { Notice, Setting } from 'obsidian';
 import { join } from 'path-browserify';
+import type { TraverseWebDAVCache } from '~/storage';
 import CacheClearModal from '~/components/CacheClearModal';
 import CacheRestoreModal from '~/components/CacheRestoreModal';
 import CacheSaveModal from '~/components/CacheSaveModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
-import type { TraverseWebDAVCache } from '~/storage';
 import { getDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
 import { stdRemotePath } from '~/utils/std-remote-path';
@@ -86,7 +86,7 @@ export default class CacheSettings extends BaseSettings {
 							} else {
 								new Notice(i18n.t('settings.cache.clearModal.nothingSelected'));
 							}
-						// oxlint-disable-next-line typescript/no-explicit-any
+							// oxlint-disable-next-line typescript/no-explicit-any
 						} catch (error: any) {
 							logger.error('Error clearing cache:', error);
 							new Notice(`Error clearing cache: ${error.message}`);

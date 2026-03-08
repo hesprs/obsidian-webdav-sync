@@ -30,11 +30,11 @@ The `settings` directory is responsible for managing the plugin's configuration 
 
 - **Obsidian Framework**: Extends `PluginSettingTab` and heavily utilizes the `Setting` and `Notice` APIs for UI construction and user feedback.
 - **Internal Services**:
-    - `WebDAVService`: Used by `AccountSettings` for connection checks and `CacheSettings` for directory operations.
-    - `ScheduledSyncService`: Updated by `CommonSettings` when sync intervals change.
-    - `I18nService`: Triggered by `CommonSettings` to switch the plugin's display language.
-    - `LoggerService`: Accessed by `LogSettings` for log management.
+  - `WebDAVService`: Used by `AccountSettings` for connection checks and `CacheSettings` for directory operations.
+  - `ScheduledSyncService`: Updated by `CommonSettings` when sync intervals change.
+  - `I18nService`: Triggered by `CommonSettings` to switch the plugin's display language.
+  - `LoggerService`: Accessed by `LogSettings` for log management.
 - **Modals**: Integrates with various specialized modals (`FilterEditorModal`, `SelectRemoteBaseDirModal`, etc.) for complex configuration tasks.
 - **External Dependencies**:
-    - `@nutstore/sso-js`: For generating SSO authentication URLs.
-    - `bytes-iec`: For parsing and validating human-readable file size strings (e.g., "500MB").
+  - `@nutstore/sso-js`: For generating SSO authentication URLs.
+  - `bytes-iec`: For parsing and validating human-readable file size strings (e.g., "500MB").

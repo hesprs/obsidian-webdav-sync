@@ -25,12 +25,14 @@ function objKeyToLower(obj: Record<string, string>) {
  * @returns true if all are iso 8859 1 chars
  */
 function onlyAscii(str: string) {
+	// oxlint-disable-next-line no-control-regex
 	return !/[^\u0000-\u00ff]/g.test(str);
 }
 
 if (VALID_REQURL) {
-	getPatcher().patch('request', async (options: RequestOptionsWithState): Promise<Response> => {
-		const transformedHeaders = objKeyToLower({ ...options.headers });
+	getPatcher().patch('request', async (options: unknown): Promise<Response> => {
+		const requestOptions = options as RequestOptionsWithState;
+		const transformedHeaders = objKeyToLower({ ...requestOptions.headers });
 		delete transformedHeaders['host'];
 		delete transformedHeaders['content-length'];
 
@@ -42,9 +44,9 @@ if (VALID_REQURL) {
 		}
 
 		const p: RequestUrlParam = {
-			url: options.url,
-			method: options.method,
-			body: options.data as string | ArrayBuffer,
+			url: requestOptions.url,
+			method: requestOptions.method,
+			body: requestOptions.data as string | ArrayBuffer,
 			headers: transformedHeaders,
 			contentType: reqContentType,
 			throw: false,
@@ -55,11 +57,11 @@ if (VALID_REQURL) {
 		if (
 			r.status === 401 &&
 			Platform.isIosApp &&
-			!options.url.endsWith('/') &&
-			!options.url.endsWith('.md') &&
-			options.method.toUpperCase() === 'PROPFIND'
+			!requestOptions.url.endsWith('/') &&
+			!requestOptions.url.endsWith('.md') &&
+			requestOptions.method.toUpperCase() === 'PROPFIND'
 		) {
-			p.url = `${options.url}/`;
+			p.url = `${requestOptions.url}/`;
 			r = await requestUrl(p);
 		}
 		const rspHeaders = objKeyToLower({ ...r.headers });

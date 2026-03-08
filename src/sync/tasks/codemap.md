@@ -20,9 +20,9 @@ This directory contains the implementation of individual synchronization tasks, 
 
 - **Initialization**: Tasks are instantiated with `BaseTaskOptions`, providing access to the Obsidian `Vault`, `WebDAVClient`, `SyncRecord`, and relevant file paths.
 - **Execution Flow**:
-    1. **State Verification**: Tasks often begin by checking the existence or metadata of files using utilities like `statVaultItem` or `statWebDAVItem`.
-    2. **Action**: The core logic is performed (e.g., `webdav.putFileContents` for uploads, `vault.modifyBinary` for downloads).
-    3. **Result Reporting**: Tasks return a `TaskResult` object. A `success: true` result may include `skipRecord: true` if the task shouldn't trigger a sync record update.
+  1. **State Verification**: Tasks often begin by checking the existence or metadata of files using utilities like `statVaultItem` or `statWebDAVItem`.
+  2. **Action**: The core logic is performed (e.g., `webdav.putFileContents` for uploads, `vault.modifyBinary` for downloads).
+  3. **Result Reporting**: Tasks return a `TaskResult` object. A `success: true` result may include `skipRecord: true` if the task shouldn't trigger a sync record update.
 - **Error Propagation**: Exceptions are caught within `exec()`, logged via `logger`, and converted into a `TaskFailureResult` containing a `TaskError`.
 
 ## Integration Points

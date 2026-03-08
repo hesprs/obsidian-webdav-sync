@@ -5,6 +5,7 @@
 Shared low-level primitives for sync, traversal, path handling, hashing, logging, and defensive runtime checks.
 
 Major responsibilities are:
+
 - Local/remote filesystem normalization and conversion (`std-remote-path.ts`, `remote-path-to-absolute.ts`, `remote-path-to-local-path.ts`, `is-sub.ts`, `get-root-folder-name.ts`)
 - File metadata acquisition and projection into `StatModel` (`stat-vault-item.ts`, `stat-webdav-item.ts`, `file-stat-to-stat-model.ts`, `apply-deltas-to-stats.ts`)
 - Full and incremental WebDAV traversal with resumable cache (`traverse-webdav.ts`)

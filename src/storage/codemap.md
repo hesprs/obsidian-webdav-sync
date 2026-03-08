@@ -19,20 +19,22 @@ This directory manages local persistence for the Obsidian Sync plugin, providing
 ## Flow
 
 ### Data Flow
+
 1. **Storage**: Data (Blobs or SyncRecords) is passed to specialized stores (`blobStore` or `SyncRecord` instance).
 2. **Abstraction**: The stores call `useStorage` methods (`set`, `get`).
 3. **Persistence**: `useStorage` interacts with `localforage` instances, which write to/read from the browser's IndexedDB.
 
 ### Control Flow
+
 - **Read-Modify-Write**: `SyncRecord` methods like `updateFileRecord` handle the logic of fetching a Map from storage, updating it, and persisting it back.
 - **Backup/Restore**: `useStorage` provides `dump` and `restore` functions that can serialize the entire store for debugging or migration purposes.
 
 ## Integration Points
 
 - **External Libraries**:
-    - `localforage`: Used as the underlying storage engine for IndexedDB.
+  - `localforage`: Used as the underlying storage engine for IndexedDB.
 - **Internal Modules**:
-    - `~/model/*`: Uses `StatModel` and `SyncRecordModel` for type definitions.
-    - `~/utils/sha256`: Used by `blob.ts` to generate unique keys for file contents.
+  - `~/model/*`: Uses `StatModel` and `SyncRecordModel` for type definitions.
+  - `~/utils/sha256`: Used by `blob.ts` to generate unique keys for file contents.
 - **Consumers**:
-    - The Sync Engine (likely in `src/sync/`) consumes `SyncRecord` and `blobStore` to coordinate file synchronization.
+  - The Sync Engine (likely in `src/sync/`) consumes `SyncRecord` and `blobStore` to coordinate file synchronization.

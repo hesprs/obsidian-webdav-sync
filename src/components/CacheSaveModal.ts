@@ -1,6 +1,7 @@
-import { Modal, Setting, moment } from 'obsidian';
+import { Modal, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import CacheService from '~/services/cache.service.v1';
+import { formatFilenameDateTime } from '~/utils/format-date';
 import NutstorePlugin from '..';
 
 export default class CacheSaveModal extends Modal {
@@ -26,7 +27,7 @@ export default class CacheSaveModal extends Modal {
 			cls: 'setting-item-description',
 		});
 
-		const defaultFilename = `${this.plugin.app.vault.getName()}.${moment().format('YYYY-MM-DD HH_mm_ss')}.SyncCache`;
+		const defaultFilename = `${this.plugin.app.vault.getName()}.${formatFilenameDateTime(new Date())}.SyncCache`;
 
 		const inputContainer = contentEl.createDiv();
 		const filenameInput = inputContainer.createEl('input', {
@@ -49,7 +50,7 @@ export default class CacheSaveModal extends Modal {
 							await this.cacheService.saveCache(filename);
 							this.onSuccess?.();
 							this.close();
-						} catch (error) {
+						} catch {
 							// Error is already handled in the service
 						}
 					});

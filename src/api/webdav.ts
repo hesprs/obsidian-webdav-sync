@@ -1,11 +1,11 @@
-import { XMLParser } from 'fast-xml-parser';
-import { isNil, partial } from 'lodash-es';
-import { basename, join } from 'path-browserify';
 import type { FileStat } from 'webdav';
-import { NS_DAV_ENDPOINT } from '~/consts';
+import { XMLParser } from 'fast-xml-parser';
+import { isNil } from 'lodash-es';
+import { basename, join } from 'path-browserify';
 import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
 import requestUrl from '~/utils/request-url';
+import sleep from '~/utils/sleep';
 
 interface WebDAVResponse {
 	multistatus: {
@@ -14,7 +14,7 @@ interface WebDAVResponse {
 			propstat: {
 				prop: {
 					displayname: string;
-					resourcetype: { collection?: any };
+					resourcetype: { collection?: unknown };
 					getlastmodified?: string;
 					getcontentlength?: string;
 					getcontenttype?: string;
@@ -30,14 +30,35 @@ function extractNextLink(linkHeader: string): string | null {
 	return matches ? matches[1] : null;
 }
 
+function normalizeServerBase(path: string): string {
+	const normalized = decodeURIComponent(path || '/');
+	if (normalized === '' || normalized === '/') {
+		return '/';
+	}
+	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
+}
+
+function hrefToPathname(href: string): string {
+	if (href.startsWith('http://') || href.startsWith('https://')) {
+		return decodeURIComponent(new URL(href).pathname);
+	}
+	return decodeURIComponent(href);
+}
+
 function convertToFileStat(
 	serverBase: string,
 	item: WebDAVResponse['multistatus']['response'][number],
 ): FileStat {
 	const props = item.propstat.prop;
 	const isDir = !isNil(props.resourcetype?.collection);
-	const href = decodeURIComponent(item.href);
-	const filename = serverBase === '/' ? href : join('/', href.replace(serverBase, ''));
+	const hrefPathname = hrefToPathname(item.href);
+
+	let relativePath = hrefPathname;
+	if (serverBase !== '/' && hrefPathname.startsWith(serverBase)) {
+		relativePath = hrefPathname.slice(serverBase.length);
+	}
+
+	const filename = join('/', relativePath || '/');
 
 	return {
 		filename,
@@ -50,13 +71,21 @@ function convertToFileStat(
 	};
 }
 
-export async function getDirectoryContents(token: string, path: string): Promise<FileStat[]> {
-	const contents: FileStat[] = [];
-	path = path.split('/').map(encodeURIComponent).join('/');
-	if (!path.startsWith('/')) {
-		path = '/' + path;
+export async function getDirectoryContents(
+	serverUrl: string,
+	token: string,
+	path: string,
+): Promise<FileStat[]> {
+	const endpoint = serverUrl.trim().replace(/\/+$/, '');
+	if (!endpoint) {
+		throw new Error('WebDAV server URL is not configured');
 	}
-	let currentUrl = `${NS_DAV_ENDPOINT}${path}`;
+
+	const contents: FileStat[] = [];
+	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
+	const serverBase = normalizeServerBase(normalizedPath);
+	let currentUrl = `${endpoint}${encodedPath}`;
 
 	while (true) {
 		try {
@@ -95,8 +124,7 @@ export async function getDirectoryContents(token: string, path: string): Promise
 				? result.multistatus.response
 				: [result.multistatus.response];
 
-			// 跳过第一个条目（当前目录）
-			contents.push(...items.slice(1).map(partial(convertToFileStat, '/dav')));
+			contents.push(...items.slice(1).map((item) => convertToFileStat(serverBase, item)));
 
 			const linkHeader = response.headers['link'] || response.headers['Link'];
 			if (!linkHeader) {

@@ -1,5 +1,12 @@
 import { isEqual } from 'ohash';
 import { blobStore } from '~/storage/blob';
+import type {
+	ConflictTaskOptions,
+	PullTaskOptions,
+	SkippedTaskOptions,
+	TaskFactory,
+	TaskOptions,
+} from './sync-decision.interface';
 import CleanRecordTask from '../tasks/clean-record.task';
 import ConflictResolveTask from '../tasks/conflict-resolve.task';
 import FilenameErrorTask from '../tasks/filename-error.task';
@@ -13,13 +20,6 @@ import RemoveRemoteTask from '../tasks/remove-remote.task';
 import SkippedTask from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
 import BaseSyncDecider from './base.decider';
-import type {
-	ConflictTaskOptions,
-	PullTaskOptions,
-	SkippedTaskOptions,
-	TaskFactory,
-	TaskOptions,
-} from './sync-decision.interface';
 import { twoWayDecider } from './two-way.decider.function';
 
 export default class TwoWaySyncDecider extends BaseSyncDecider {

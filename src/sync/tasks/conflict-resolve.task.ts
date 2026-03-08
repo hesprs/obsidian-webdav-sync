@@ -1,8 +1,8 @@
-import { isEqual, noop } from 'lodash-es';
 import type { BufferLike } from 'webdav';
-import i18n from '~/i18n';
+import { isEqual, noop } from 'lodash-es';
 import type { StatModel } from '~/model/stat.model';
 import type { SyncRecordModel } from '~/model/sync-record.model';
+import i18n from '~/i18n';
 import { blobStore } from '~/storage/blob';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';

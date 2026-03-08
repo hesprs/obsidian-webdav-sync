@@ -20,7 +20,6 @@ export const blobKV = useStorage<Blob>(
 );
 
 export interface TraverseWebDAVCache {
-	rootCursor: string;
 	queue: string[];
 	nodes: Record<string, StatModel[]>;
 }

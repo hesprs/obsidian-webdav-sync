@@ -1,5 +1,5 @@
-import { SyncRecord } from '~/storage/sync-record';
 import type { MaybePromise } from '~/utils/types';
+import { SyncRecord } from '~/storage/sync-record';
 import { NutstoreSync } from '..';
 import { BaseTask } from '../tasks/task.interface';
 

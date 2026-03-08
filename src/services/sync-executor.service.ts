@@ -41,6 +41,7 @@ export default class SyncExecutorService {
 		const sync = new NutstoreSync(this.plugin, {
 			vault: this.plugin.app.vault,
 			token: await this.plugin.getToken(),
+			remoteServerUrl: this.plugin.settings.serverUrl,
 			remoteBaseDir: this.plugin.remoteBaseDir,
 			webdav: await this.plugin.webDAVService.createWebDAVClient(),
 		});

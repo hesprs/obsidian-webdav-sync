@@ -1,7 +1,7 @@
+import type { BufferLike } from 'webdav';
 import { diff_match_patch } from 'diff-match-patch';
 import { isEqual } from 'lodash-es';
 import { diff3Merge as nodeDiff3Merge } from 'node-diff3';
-import type { BufferLike } from 'webdav';
 
 // --- Logic for Latest Timestamp Resolution ---
 

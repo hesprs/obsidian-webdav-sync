@@ -1,8 +1,6 @@
 import { Vault } from 'obsidian';
 import { isAbsolute } from 'path-browserify';
 import { isNotNil } from 'ramda';
-import { createClient, type WebDAVClient } from 'webdav';
-import { NS_DAV_ENDPOINT } from '~/consts';
 import { useSettings } from '~/settings';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import GlobMatch, {
@@ -17,24 +15,20 @@ import AbstractFileSystem from './fs.interface';
 import completeLossDir from './utils/complete-loss-dir';
 
 export class NutstoreFileSystem implements AbstractFileSystem {
-	private webdav: WebDAVClient;
-
 	constructor(
 		private options: {
 			vault: Vault;
 			token: string;
+			remoteServerUrl?: string;
 			remoteBaseDir: string;
 		},
-	) {
-		this.webdav = createClient(NS_DAV_ENDPOINT, {
-			headers: {
-				Authorization: `Basic ${this.options.token}`,
-			},
-		});
-	}
+	) {}
 
 	async walk() {
+		const settings = await useSettings();
+		const remoteServerUrl = this.options.remoteServerUrl || settings.serverUrl;
 		const traversal = new ResumableWebDAVTraversal({
+			remoteServerUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
 			kvKey: await getTraversalWebDAVDBKey(this.options.token, this.options.remoteBaseDir),
@@ -71,7 +65,6 @@ export class NutstoreFileSystem implements AbstractFileSystem {
 			}
 		}
 
-		const settings = await useSettings();
 		const exclusions = this.buildRules(settings?.filterRules.exclusionRules);
 		const inclusions = this.buildRules(settings?.filterRules.inclusionRules);
 

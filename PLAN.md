@@ -5,9 +5,11 @@
 Transform this fork into a **pure general-purpose WebDAV sync plugin**.
 
 Target:
+
 - Any RFC4918-compatible WebDAV server (Nextcloud, ownCloud, Synology, Box WebDAV, etc.)
 
 Non-goals:
+
 - Keep Nutstore-specific compatibility
 - Keep Nutstore-specific optimizations (delta API, SSO, protocol callback)
 
@@ -16,6 +18,7 @@ Non-goals:
 ## 1) Current state (as-is codebase understanding)
 
 ### 1.1 Core architecture already reusable
+
 - Plugin composition root: `src/index.ts`
 - Sync orchestration: `src/services/sync-executor.service.ts` + `src/sync/index.ts`
 - Decision engine and tasks: `src/sync/decision/*`, `src/sync/tasks/*`
@@ -23,6 +26,7 @@ Non-goals:
 - Remote path chooser UI already generic by contract: `packages/webdav-explorer/src/*`
 
 ### 1.2 Nutstore lock-in points to remove
+
 - Branding + identity:
   - `manifest.json` (`id/name/description`)
   - `package.json` (`name`)
@@ -50,6 +54,7 @@ Non-goals:
 ## 2) Product direction
 
 Core plugin mode:
+
 1. User enters WebDAV server URL
 2. User enters credentials (initially Basic auth)
 3. User tests connection
@@ -57,6 +62,7 @@ Core plugin mode:
 5. Existing sync engine runs normally
 
 Policy:
+
 - Prioritize clean architecture over backward compatibility.
 - Breaking changes from the Nutstore fork baseline are acceptable.
 
@@ -67,18 +73,21 @@ Policy:
 ### 3.1 Add
 
 #### A) Generic WebDAV settings UX
+
 - Server URL input
 - Username/password input
 - Connection test with clear errors
 - Optional advanced section (timeout/retry)
 
 #### B) Generic remote traversal strategy
+
 - Keep one default strategy: recursive PROPFIND traversal + local cache acceleration.
 - No provider-specific delta/SSO capability flags.
 
 ### 3.2 Remove
 
 Remove Nutstore-specific code and dependencies directly:
+
 - `@nutstore/sso-js` dependency and all SSO flow
 - protocol callback `nutstore-sync/sso`
 - `decrypt-ticket-response` utility
@@ -90,12 +99,14 @@ Remove Nutstore-specific code and dependencies directly:
 ### 3.3 Refactor
 
 #### Naming refactor (internal)
+
 - `NutstorePlugin` → `WebDAVSyncPlugin` (or final project name)
 - `NutstoreSync` → `SyncEngine`
 - `NutstoreFileSystem` → `RemoteWebDAVFileSystem`
 - `NutstoreSettings` → `PluginSettings`
 
 #### Services and flow refactor
+
 - `src/services/webdav.service.ts`
   - Build client from user-provided server URL + credentials
 - `src/sync/index.ts`
@@ -106,6 +117,7 @@ Remove Nutstore-specific code and dependencies directly:
   - Use generic WebDAV listing path only
 
 #### API module refactor
+
 - Keep `src/api/webdav.ts` protocol-generic
 - Remove Nutstore adapter/API modules entirely
 
@@ -114,6 +126,7 @@ Remove Nutstore-specific code and dependencies directly:
 ## 4) Execution roadmap (phased)
 
 ### Phase 1 — Remove hard lock-ins
+
 1. Delete Nutstore SSO/protocol flows and dependencies.
 2. Delete delta-related APIs/utilities.
 3. Remove compile-time Nutstore endpoint constants.
@@ -122,6 +135,7 @@ Remove Nutstore-specific code and dependencies directly:
 Deliverable: codebase no longer depends on Nutstore-specific APIs.
 
 ### Phase 2 — Generic settings and client wiring
+
 1. Redesign settings schema for direct WebDAV URL + credentials.
 2. Refactor `WebDAVService` to use runtime settings only.
 3. Update settings UI copy and validation for generic WebDAV.
@@ -129,6 +143,7 @@ Deliverable: codebase no longer depends on Nutstore-specific APIs.
 Deliverable: manual setup works with arbitrary WebDAV endpoints.
 
 ### Phase 3 — Naming and structural cleanup
+
 1. Rename core classes/types to provider-neutral names.
 2. Rename storage keys/DB names and related labels.
 3. Remove leftover Nutstore identifiers in code/comments/CSS/i18n.
@@ -136,6 +151,7 @@ Deliverable: manual setup works with arbitrary WebDAV endpoints.
 Deliverable: internal semantics are fully generic.
 
 ### Phase 4 — Branding and release hardening
+
 1. Update `manifest.json`, `package.json`, README, and user-facing copy.
 2. Final dead-code sweep and dependency cleanup.
 3. Validate end-to-end sync flows against at least two non-Nutstore servers.
@@ -147,6 +163,7 @@ Deliverable: publishable, general-purpose WebDAV sync plugin.
 ## 5) Detailed file-by-file plan
 
 ### Core
+
 - `src/index.ts`
   - Remove Nutstore protocol handler and related branches
   - Load generic settings only
@@ -164,6 +181,7 @@ Deliverable: publishable, general-purpose WebDAV sync plugin.
   - Keep only generic remote fs dependency
 
 ### Settings/UI
+
 - `src/settings/index.ts`
   - Define simplified generic settings model
 
@@ -177,6 +195,7 @@ Deliverable: publishable, general-purpose WebDAV sync plugin.
   - Rename note path/title from `nutstore-*` to generic naming
 
 ### API/Traversal
+
 - `src/api/webdav.ts`
   - Remove `/dav` assumption
   - Keep parser/listing logic provider-neutral
@@ -191,6 +210,7 @@ Deliverable: publishable, general-purpose WebDAV sync plugin.
   - `src/utils/decrypt-ticket-response.ts`
 
 ### Metadata and docs
+
 - `manifest.json`, `package.json`, `README.md`, i18n files, CSS classes
   - Rename and rewrite to provider-neutral branding
 
@@ -215,6 +235,7 @@ Deliverable: publishable, general-purpose WebDAV sync plugin.
 ## 7) Verification plan
 
 Per phase:
+
 1. `pnpm check`
 2. `pnpm test`
 3. Manual smoke tests:
@@ -230,6 +251,7 @@ Per phase:
 ## 8) Definition of done
 
 The re-engineering is complete when:
+
 - Plugin is configurable and usable with non-Nutstore WebDAV servers out of the box.
 - Nutstore-specific code paths, dependencies, and protocol flows are removed.
 - Core modules, naming, docs, and metadata are provider-neutral.

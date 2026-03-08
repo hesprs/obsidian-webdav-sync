@@ -1,8 +1,8 @@
+import type { WebDAVClient } from 'webdav';
 import { chunk } from 'lodash-es';
-import { Notice, Platform, Vault, moment, normalizePath } from 'obsidian';
+import { Notice, Platform, Vault, normalizePath } from 'obsidian';
 import { dirname } from 'path-browserify';
 import { Subscription } from 'rxjs';
-import type { WebDAVClient } from 'webdav';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import FailedTasksModal, { type FailedTaskInfo } from '~/components/FailedTasksModal';
 import TaskListConfirmModal from '~/components/TaskListConfirmModal';
@@ -21,6 +21,7 @@ import i18n from '~/i18n';
 import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
+import { formatTime } from '~/utils/format-date';
 import { getDBKey } from '~/utils/get-db-key';
 import getTaskName from '~/utils/get-task-name';
 import { is503Error } from '~/utils/is-503-error';
@@ -58,6 +59,7 @@ export class NutstoreSync {
 		private options: {
 			vault: Vault;
 			token: string;
+			remoteServerUrl?: string;
 			remoteBaseDir: string;
 			webdav: WebDAVClient;
 		},
@@ -107,7 +109,7 @@ export class NutstoreSync {
 						recursive: true,
 					});
 					break;
-				// oxlint-disable-next-line typescript/no-explicit-any
+					// oxlint-disable-next-line typescript/no-explicit-any
 				} catch (e: any) {
 					if (is503Error(e)) {
 						await this.handle503Error(60000);
@@ -236,8 +238,7 @@ export class NutstoreSync {
 							await webdav.stat(parentRemotePath);
 							// Directory exists, mark it and all parents as existing
 							markPathAndParentsAsExisting(parentRemotePath);
-						// oxlint-disable-next-line typescript/no-explicit-any
-						} catch (e: any) {
+						} catch {
 							// Directory doesn't exist, create mkdir task
 							// No need to check parent's parent since createDirectory uses recursive: true
 							const mkdirTask = new MkdirRemoteTask({
@@ -408,7 +409,7 @@ export class NutstoreSync {
 			}
 
 			emitEndSync({ failedCount, showNotice });
-		// oxlint-disable-next-line typescript/no-explicit-any
+			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			emitSyncError(error);
 			logger.error('Sync error:', error);
@@ -515,7 +516,7 @@ export class NutstoreSync {
 		const startAt = now + waitMs;
 		new Notice(
 			i18n.t('sync.requestsTooFrequent', {
-				time: moment(startAt).format('HH:mm:ss'),
+				time: formatTime(startAt),
 			}),
 		);
 		await breakableSleep(onCancelSync(), startAt - now);

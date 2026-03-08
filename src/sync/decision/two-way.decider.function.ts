@@ -5,12 +5,12 @@ import { isSameTime } from '~/utils/is-same-time';
 import logger from '~/utils/logger';
 import remotePathToAbsolute from '~/utils/remote-path-to-absolute';
 import { remotePathToLocalPath } from '~/utils/remote-path-to-local-path';
+import type { SyncDecisionInput } from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
 import { getIgnoredPathsInFolder, hasIgnoredInFolder } from '../utils/has-ignored-in-folder';
 import { hasFolderContentChanged } from './has-folder-content-changed';
-import type { SyncDecisionInput } from './sync-decision.interface';
 
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {

@@ -1,12 +1,12 @@
 import { Modal, Setting } from 'obsidian';
-import i18n from '~/i18n';
 import type { StatModel } from '~/model/stat.model';
+import i18n from '~/i18n';
 import CacheService from '~/services/cache.service.v1';
 import logger from '~/utils/logger';
 import type NutstorePlugin from '..';
 
 export default class CacheRestoreModal extends Modal {
-	private fileList: HTMLElement;
+	private fileList!: HTMLElement;
 	private files: StatModel[] = [];
 	private cacheService: CacheService;
 
@@ -81,7 +81,7 @@ export default class CacheRestoreModal extends Modal {
 						await this.cacheService.restoreCache(basename);
 						this.onSuccess?.();
 						this.close();
-					} catch (error) {
+					} catch {
 						// Error is already handled in the service
 					}
 				});
@@ -96,7 +96,7 @@ export default class CacheRestoreModal extends Modal {
 						try {
 							await this.cacheService.deleteCache(basename);
 							await this.loadFileList();
-						} catch (error) {
+						} catch {
 							// Error is already handled in the service
 						}
 					} else {
@@ -113,10 +113,11 @@ export default class CacheRestoreModal extends Modal {
 			});
 		} catch (error) {
 			logger.error('Error loading cache file list:', error);
+			const message = error instanceof Error ? error.message : String(error);
 			this.fileList.empty();
 			this.fileList.createEl('p', {
 				text: i18n.t('settings.cache.restoreModal.loadError', {
-					message: error?.message,
+					message,
 				}),
 				cls: 'p-12px text-center text-[var(--text-error)]',
 			});
