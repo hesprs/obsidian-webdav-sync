@@ -1,25 +1,23 @@
 import { createClient, type WebDAVClient } from 'webdav';
-import { NS_DAV_ENDPOINT } from '../consts';
 import NutstorePlugin from '../index';
 import { createRateLimitedWebDAVClient } from '../utils/rate-limited-client';
 
 export class WebDAVService {
 	constructor(private plugin: NutstorePlugin) {}
 
-	async createWebDAVClient(): Promise<WebDAVClient> {
-		let client: WebDAVClient;
-		if (this.plugin.settings.loginMode === 'manual') {
-			client = createClient(NS_DAV_ENDPOINT, {
-				username: this.plugin.settings.account,
-				password: this.plugin.settings.credential,
-			});
-		} else {
-			const oauth = await this.plugin.getDecryptedOAuthInfo();
-			client = createClient(NS_DAV_ENDPOINT, {
-				username: oauth.username,
-				password: oauth.access_token,
-			});
+	private getServerUrl(): string {
+		const serverUrl = this.plugin.settings.serverUrl.trim().replace(/\/+$/, '');
+		if (!serverUrl) {
+			throw new Error('WebDAV server URL is not configured');
 		}
+		return serverUrl;
+	}
+
+	async createWebDAVClient(): Promise<WebDAVClient> {
+		const client = createClient(this.getServerUrl(), {
+			username: this.plugin.settings.account,
+			password: this.plugin.settings.credential,
+		});
 		return createRateLimitedWebDAVClient(client);
 	}
 
@@ -27,7 +25,7 @@ export class WebDAVService {
 		try {
 			const client = await this.createWebDAVClient();
 			return { success: await client.exists('/') };
-		// oxlint-disable-next-line typescript/no-explicit-any
+			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			return {
 				error,

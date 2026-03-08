@@ -1,5 +1,5 @@
-import { dirname } from 'path-browserify';
 import type { BufferLike } from 'webdav';
+import { dirname } from 'path-browserify';
 import logger from '~/utils/logger';
 import { mkdirsVault } from '~/utils/mkdirs-vault';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';

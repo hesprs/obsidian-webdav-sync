@@ -1,7 +1,9 @@
 ## Responsibility
+
 This directory contains all presentational and interaction components used by the explorer UI: listing entries, rendering folder/file rows, and collecting a new-folder name. It is the UI layer between `App.tsx` state orchestration and the injected filesystem operations.
 
 ## Design Patterns
+
 - Functional SolidJS components with typed props (`File`, `Folder`, `NewFolder`).
 - Factory pattern in `createFileList()`:
   - Returns `refresh()` as an external trigger.
@@ -18,6 +20,7 @@ This directory contains all presentational and interaction components used by th
   - `Folder` is clickable and delegates navigation intent upward.
 
 ## Data & Control Flow
+
 - `App.tsx` calls `createFileList()` and renders `<list.FileList fs={props.fs} path={cwd()} .../>`.
 - Inside `FileList`:
   - `refresh()` calls `props.fs.ls(props.path)` and stores results in `items`.
@@ -36,6 +39,7 @@ This directory contains all presentational and interaction components used by th
   - `fs.ls` failures are surfaced with Obsidian `Notice`.
 
 ## Integration Points
+
 - `FileList.tsx` imports `type fs` from `../App`, binding component contract to app-level filesystem abstraction.
 - `NewFolder.tsx` imports `t` from `../i18n` to localize button labels.
 - `FileList.tsx` imports `Notice` from `obsidian` for runtime error display.

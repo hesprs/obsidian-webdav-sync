@@ -1,11 +1,11 @@
+import type { BufferLike } from 'webdav';
 import { deflateSync, inflateSync } from 'fflate/browser';
 import { Notice } from 'obsidian';
 import { join } from 'path-browserify';
 import superjson from 'superjson';
-import type { BufferLike } from 'webdav';
+import type { ExportedStorage } from '~/settings/cache';
 import { getDirectoryContents } from '~/api/webdav';
 import i18n from '~/i18n';
-import type { ExportedStorage } from '~/settings/cache';
 import { traverseWebDAVKV } from '~/storage';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
@@ -60,7 +60,7 @@ export default class CacheServiceV1 {
 
 			new Notice(i18n.t('settings.cache.saveModal.success'));
 			return Promise.resolve();
-		// oxlint-disable-next-line typescript/no-explicit-any
+			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			logger.error('Error saving cache:', error);
 			new Notice(
@@ -125,7 +125,7 @@ export default class CacheServiceV1 {
 			}
 			new Notice(i18n.t('settings.cache.restoreModal.success'));
 			return Promise.resolve();
-		// oxlint-disable-next-line typescript/no-explicit-any
+			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			logger.error('Error restoring cache:', error);
 			new Notice(
@@ -149,7 +149,7 @@ export default class CacheServiceV1 {
 
 			new Notice(i18n.t('settings.cache.restoreModal.deleteSuccess'));
 			return Promise.resolve();
-		// oxlint-disable-next-line typescript/no-explicit-any
+			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			logger.error('Error deleting cache file:', error);
 			new Notice(
@@ -173,6 +173,7 @@ export default class CacheServiceV1 {
 				return [];
 			}
 			const files = await getDirectoryContents(
+				this.plugin.settings.serverUrl,
 				await this.plugin.getToken(),
 				this.remoteCacheDir,
 			);

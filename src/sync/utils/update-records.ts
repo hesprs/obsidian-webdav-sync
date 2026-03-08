@@ -123,7 +123,7 @@ export async function updateMtimeInRecord(
 					base,
 				});
 				successfulTasksCount++;
-			// oxlint-disable-next-line typescript/no-explicit-any
+				// oxlint-disable-next-line typescript/no-explicit-any
 			} catch (e: any) {
 				logger.error(
 					'updateMtimeInRecord',

@@ -25,8 +25,6 @@ const context = await esbuild.context({
 	bundle: true,
 	external: ['obsidian', 'electron'],
 	define: {
-		'process.env.NS_NSDAV_ENDPOINT': JSON.stringify(process.env.NS_NSDAV_ENDPOINT),
-		'process.env.NS_DAV_ENDPOINT': JSON.stringify(process.env.NS_DAV_ENDPOINT),
 		'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || ''),
 		'process.env.PLUGIN_VERSION': JSON.stringify(pkgJson.version),
 	},

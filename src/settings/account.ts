@@ -1,52 +1,25 @@
-import { createOAuthUrl } from '@nutstore/sso-js';
 import { Notice, Setting } from 'obsidian';
-import type { OAuthResponse } from '~/utils/decrypt-ticket-response';
-import LogoutConfirmModal from '~/components/LogoutConfirmModal';
 import i18n from '~/i18n';
 import { is503Error } from '~/utils/is-503-error';
-import logger from '~/utils/logger';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
-	private updateOAuthUrlTimer: number | null = null;
-
 	async display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.account')).setHeading();
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.loginMode.name'))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('manual', i18n.t('settings.loginMode.manual'))
-					.addOption('sso', i18n.t('settings.loginMode.sso'))
-					.setValue(this.plugin.settings.loginMode)
+			.setName('WebDAV Server URL')
+			.setDesc('Base URL of your WebDAV service.')
+			.addText((text) =>
+				text
+					.setPlaceholder('https://example.com/webdav')
+					.setValue(this.plugin.settings.serverUrl)
 					.onChange(async (value) => {
-						this.plugin.settings.loginMode = value as 'manual' | 'sso';
+						this.plugin.settings.serverUrl = value;
 						await this.plugin.saveSettings();
-						void this.display();
 					}),
 			);
-
-		if (this.settings.isSSO) await this.displaySSOLoginSettings();
-		else this.displayManualLoginSettings();
-	}
-
-	async hide() {
-		if (this.updateOAuthUrlTimer !== null) {
-			window.clearInterval(this.updateOAuthUrlTimer);
-			this.updateOAuthUrlTimer = null;
-		}
-	}
-
-	private displayManualLoginSettings(): void {
-		const helper = new Setting(this.containerEl);
-		const anchor = helper.descEl.createEl('a', {
-			href: 'https://help.jianguoyun.com/?p=2064',
-			cls: 'no-underline',
-			text: i18n.t('settings.help.name'),
-		});
-		anchor.target = '_blank';
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.account.name'))
@@ -77,64 +50,7 @@ export default class AccountSettings extends BaseSettings {
 		this.displayCheckConnection();
 	}
 
-	private async displaySSOLoginSettings() {
-		let isLoggedIn = this.plugin.settings.oauthResponseText.length > 0;
-		let oauth: OAuthResponse | undefined;
-		if (isLoggedIn) {
-			try {
-				oauth = await this.plugin.getDecryptedOAuthInfo();
-			} catch (e) {
-				logger.error(e);
-				isLoggedIn = false;
-			}
-		}
-		if (isLoggedIn && oauth?.username) {
-			const el = new Setting(this.containerEl)
-				.setName(i18n.t('settings.ssoStatus.loggedIn'))
-				.setDesc(oauth.username)
-				.addButton((button) => {
-					button
-						.setWarning()
-						.setButtonText(i18n.t('settings.ssoStatus.logout'))
-						.onClick(() => {
-							new LogoutConfirmModal(this.app, async () => {
-								this.plugin.settings.oauthResponseText = '';
-								await this.plugin.saveSettings();
-								new Notice(i18n.t('settings.ssoStatus.logoutSuccess'));
-								void this.display();
-							}).open();
-						});
-				});
-			el.descEl.classList.add('max-w-full', 'truncate');
-			el.infoEl.classList.add('max-w-full');
-			this.displayCheckConnection();
-		} else {
-			new Setting(this.containerEl)
-				.setName(i18n.t('settings.ssoStatus.notLoggedIn'))
-				.addButton(async (button) => {
-					button.setButtonText(i18n.t('settings.login.name'));
-					const anchor = document.createElement('a');
-					anchor.target = '_blank';
-					button.buttonEl.parentElement?.appendChild(anchor);
-					anchor.appendChild(button.buttonEl);
-					anchor.href = await createOAuthUrl({
-						app: 'obsidian',
-					});
-					this.updateOAuthUrlTimer = window.setInterval(async () => {
-						const stillInDoc = document.contains(anchor);
-						if (stillInDoc) {
-							anchor.href = await createOAuthUrl({
-								app: 'obsidian',
-							});
-						} else {
-							if (this.updateOAuthUrlTimer)
-								window.clearInterval(this.updateOAuthUrlTimer);
-							this.updateOAuthUrlTimer = null;
-						}
-					}, 60 * 1000);
-				});
-		}
-	}
+	async hide() {}
 
 	private displayCheckConnection() {
 		new Setting(this.containerEl)

@@ -1,5 +1,5 @@
-import { moment } from 'obsidian';
 import { IN_DEV } from '~/consts';
+import { formatDateTime } from '~/utils/format-date';
 import logger from '~/utils/logger';
 import NutstorePlugin from '..';
 
@@ -11,11 +11,7 @@ export default class LoggerService {
 		if (IN_DEV) {
 			logger.addReporter({
 				log: (logObj) => {
-					const log = [
-						moment(logObj.date).format('YYYY-MM-DD HH:mm:ss'),
-						logObj.type,
-						logObj.args,
-					];
+					const log = [formatDateTime(logObj.date), logObj.type, logObj.args];
 					this.logs.push(log);
 				},
 			});

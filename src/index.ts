@@ -4,12 +4,10 @@ import './polyfill';
 import './webdav-patch';
 import './assets/styles/global.css';
 import { toBase64 } from 'js-base64';
-import { normalizePath, Notice, Plugin } from 'obsidian';
+import { normalizePath, Plugin } from 'obsidian';
 import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { emitCancelSync } from './events';
-import { emitSsoReceive } from './events/sso-receive';
-import i18n from './i18n';
 import CommandService from './services/command.service';
 import EventsService from './services/events.service';
 import I18nService from './services/i18n.service';
@@ -22,7 +20,6 @@ import SyncExecutorService from './services/sync-executor.service';
 import { WebDAVService } from './services/webdav.service';
 import { type NutstoreSettings, NutstoreSettingTab, setPluginInstance, SyncMode } from './settings';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
-import { decryptOAuthResponse } from './utils/decrypt-ticket-response';
 import { stdRemotePath } from './utils/std-remote-path';
 
 function createGlobMathOptions(expr: string) {
@@ -37,14 +34,13 @@ function createGlobMathOptions(expr: string) {
 export default class NutstorePlugin extends Plugin {
 	public isSyncing: boolean = false;
 	public settings: NutstoreSettings = {
+		serverUrl: '',
 		account: '',
 		credential: '',
 		remoteDir: '',
 		remoteCacheDir: '',
 		useGitStyle: false,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
-		oauthResponseText: '',
-		loginMode: 'sso',
 		confirmBeforeSync: true,
 		confirmBeforeDeleteInAutoSync: true,
 		syncMode: SyncMode.LOOSE,
@@ -78,17 +74,6 @@ export default class NutstorePlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		this.addSettingTab(new NutstoreSettingTab(this.app, this));
-
-		this.registerObsidianProtocolHandler('nutstore-sync/sso', async (data) => {
-			if (data?.s) {
-				this.settings.oauthResponseText = data.s;
-				await this.saveSettings();
-				new Notice(i18n.t('settings.login.success'), 5000);
-			}
-			emitSsoReceive({
-				token: data?.s,
-			});
-		});
 		setPluginInstance(this);
 
 		await this.scheduledSyncService.start();
@@ -117,18 +102,8 @@ export default class NutstorePlugin extends Plugin {
 		this.ribbonManager.update();
 	}
 
-	async getDecryptedOAuthInfo() {
-		return decryptOAuthResponse(this.settings.oauthResponseText);
-	}
-
 	async getToken() {
-		let token;
-		if (this.settings.loginMode === 'sso') {
-			const oauth = await this.getDecryptedOAuthInfo();
-			token = `${oauth.username}:${oauth.access_token}`;
-		} else {
-			token = `${this.settings.account}:${this.settings.credential}`;
-		}
+		const token = `${this.settings.account}:${this.settings.credential}`;
 		return toBase64(token);
 	}
 
@@ -137,20 +112,14 @@ export default class NutstorePlugin extends Plugin {
 	 * @returns true 表示配置完整，false 表示未配置或配置不完整
 	 */
 	isAccountConfigured(): boolean {
-		if (this.settings.loginMode === 'sso') {
-			// SSO 模式：检查是否有 OAuth 响应数据
-			return (
-				!!this.settings.oauthResponseText && this.settings.oauthResponseText.trim() !== ''
-			);
-		} else {
-			// 手动模式：检查账号和凭证是否都已填写
-			return (
-				!!this.settings.account &&
-				this.settings.account.trim() !== '' &&
-				!!this.settings.credential &&
-				this.settings.credential.trim() !== ''
-			);
-		}
+		return (
+			!!this.settings.serverUrl &&
+			this.settings.serverUrl.trim() !== '' &&
+			!!this.settings.account &&
+			this.settings.account.trim() !== '' &&
+			!!this.settings.credential &&
+			this.settings.credential.trim() !== ''
+		);
 	}
 
 	get remoteBaseDir() {

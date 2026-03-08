@@ -5,6 +5,7 @@ This directory contains the core synchronization logic for the Obsidian Sync plu
 ## Responsibility
 
 The `NutstoreSync` class in `index.ts` is the central orchestrator. Its primary responsibilities include:
+
 - **Lifecycle Management**: Managing the start, progress, completion, and error handling of sync operations.
 - **Environment Initialization**: Setting up local (`LocalVaultFileSystem`) and remote (`NutstoreFileSystem`) abstractions.
 - **Task Generation**: Utilizing the `decision` submodule to determine the set of actions (tasks) required to synchronize the two systems.
@@ -30,14 +31,14 @@ The `NutstoreSync` class in `index.ts` is the central orchestrator. Its primary 
 
 ## Integration Points
 
--   **Obsidian API**: Deeply integrated with the `Vault` for local file operations and UI components (`Notice`, `Modal`) for user feedback.
--   **WebDAV**: Communicates with remote servers using the `webdav` library.
--   **Storage**: Uses a key-value store (`syncRecordKV`) to persist sync metadata via the `SyncRecord` class.
--   **Events**: Relies on a central event system (`~/events`) to decouple sync logic from the UI.
+- **Obsidian API**: Deeply integrated with the `Vault` for local file operations and UI components (`Notice`, `Modal`) for user feedback.
+- **WebDAV**: Communicates with remote servers using the `webdav` library.
+- **Storage**: Uses a key-value store (`syncRecordKV`) to persist sync metadata via the `SyncRecord` class.
+- **Events**: Relies on a central event system (`~/events`) to decouple sync logic from the UI.
 
 ## Submodules
 
--   **[core](./core/codemap.md)**: Low-level utilities for merging and comparing file states.
--   **[decision](./decision/codemap.md)**: Logic for determining which sync actions are necessary based on the current state.
--   **[tasks](./tasks/codemap.md)**: Individual, executable units of work (e.g., Push, Pull, Delete).
--   **[utils](./utils/codemap.md)**: Helper functions for task optimization and record management.
+- **[core](./core/codemap.md)**: Low-level utilities for merging and comparing file states.
+- **[decision](./decision/codemap.md)**: Logic for determining which sync actions are necessary based on the current state.
+- **[tasks](./tasks/codemap.md)**: Individual, executable units of work (e.g., Push, Pull, Delete).
+- **[utils](./utils/codemap.md)**: Helper functions for task optimization and record management.

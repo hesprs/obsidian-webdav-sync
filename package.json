@@ -9,12 +9,12 @@
 		"crypto": "crypto-browserify"
 	},
 	"scripts": {
-		"dev:plugin": "node esbuild.config.mjs",
+		"dev:plugin": "node esbuild.config.ts",
 		"dev:webdav-explorer": "pnpm -F webdav-explorer dev",
 		"build": "run-s build:webdav-explorer build:plugin",
 		"build:webdav-explorer": "pnpm -F webdav-explorer build",
-		"build:plugin": "node esbuild.config.mjs production && swc ./dist/main.js -o main.js",
-		"version": "node version-bump.mjs && git add manifest.json versions.json",
+		"build:plugin": "node esbuild.config.ts production && swc ./dist/main.js -o main.js",
+		"version": "node version-bump.ts && git add manifest.json versions.json",
 		"test": "vitest",
 		"lint": "oxlint --fix && oxfmt",
 		"check": "tsc && oxlint && oxfmt --check"
@@ -22,7 +22,6 @@
 	"devDependencies": {
 		"@deanc/esbuild-plugin-postcss": "^3.0.0",
 		"@electron/remote": "^2.1.3",
-		"@nutstore/sso-js": "^0.0.8",
 		"@swc/cli": "^0.8.0",
 		"@swc/core": "^1.15.18",
 		"@types/diff-match-patch": "^1.0.36",

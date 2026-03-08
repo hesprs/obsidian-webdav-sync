@@ -18,21 +18,21 @@ import RemoveLocalTask from '../sync/tasks/remove-local.task';
 import RemoveRemoteTask from '../sync/tasks/remove-remote.task';
 
 export default class SyncProgressModal extends Modal {
-	private progressBar: HTMLDivElement;
-	private progressText: HTMLDivElement;
-	private progressStats: HTMLDivElement;
-	private currentFile: HTMLDivElement;
-	private filesList: HTMLDivElement;
+	private progressBar!: HTMLDivElement;
+	private progressText!: HTMLDivElement;
+	private progressStats!: HTMLDivElement;
+	private currentFile!: HTMLDivElement;
+	private filesList!: HTMLDivElement;
 	private syncCancelled = false;
 	private cancelSubscription: Subscription;
 	private updateMtimeSubscription: Subscription;
-	private stopButtonComponent: ButtonComponent;
-	private hideButtonComponent: ButtonComponent;
+	private stopButtonComponent!: ButtonComponent;
+	private hideButtonComponent!: ButtonComponent;
 
-	private cacheProgressBar: HTMLDivElement;
-	private cacheProgressText: HTMLDivElement;
-	private cacheProgressStats: HTMLDivElement;
-	private cacheCurrentOperation: HTMLDivElement;
+	private cacheProgressBar!: HTMLDivElement;
+	private cacheProgressText!: HTMLDivElement;
+	private cacheProgressStats!: HTMLDivElement;
+	private cacheCurrentOperation!: HTMLDivElement;
 
 	constructor(
 		private plugin: NutstorePlugin,

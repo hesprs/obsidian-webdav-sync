@@ -1,5 +1,5 @@
-import { isAbsolute } from 'path-browserify';
 import type { FileStat, WebDAVClient } from 'webdav';
+import { isAbsolute } from 'path-browserify';
 import { fileStatToStatModel } from './file-stat-to-stat-model';
 
 export async function statWebDAVItem(client: WebDAVClient, path: string) {
