@@ -14,9 +14,6 @@ importers:
       '@electron/remote':
         specifier: ^2.1.3
         version: 2.1.3(electron@35.0.3)
-      '@nutstore/sso-js':
-        specifier: ^0.0.8
-        version: 0.0.8
       '@swc/cli':
         specifier: ^0.8.0
         version: 0.8.0(@swc/core@1.15.18)(chokidar@5.0.0)
@@ -845,9 +842,6 @@ packages:
 
   '@napi-rs/wasm-runtime@1.1.1':
     resolution: {integrity: sha512-p64ah1M1ld8xjWv3qbvFwHiFVWrq1yFvV4f7w+mzaqiR4IlSgkqhcRdHwsGgomwzBH51sRY4NEowLxnaBjcW/A==}
-
-  '@nutstore/sso-js@0.0.8':
-    resolution: {integrity: sha512-mby3hzfVuE0Ch/nbe/PsvoR5h4bHHHSHTOycDDOLGrbFqO1mTn7L5LcvaPHskjBHxCeN2Y3PotOZOJiy5eRZmQ==}
 
   '@oxc-parser/binding-android-arm-eabi@0.115.0':
     resolution: {integrity: sha512-VoB2rhgoqgYf64d6Qs5emONQW8ASiTc0xp+aUE4JUhxjX+0pE3gblTYDO0upcN5vt9UlBNmUhAwfSifkfre7nw==}
@@ -4634,8 +4628,6 @@ snapshots:
       '@emnapi/runtime': 1.8.1
       '@tybys/wasm-util': 0.10.1
     optional: true
-
-  '@nutstore/sso-js@0.0.8': {}
 
   '@oxc-parser/binding-android-arm-eabi@0.115.0':
     optional: true

@@ -40,12 +40,6 @@ export default {
 			successButton: '连接成功 ✓',
 			failureButton: '连接失败 ×',
 		},
-		login: {
-			name: '登录',
-			desc: '点击登录',
-			success: '登录成功',
-			failure: '登录失败，请重试',
-		},
 		useGitStyle: {
 			name: '使用 Git 样式的冲突标记',
 			desc: '启用后将使用 <<<<<<< 和 >>>>>>> 等标记来显示冲突，而不是 HTML 标记',
@@ -60,23 +54,6 @@ export default {
 			diffMatchPatch: '智能合并（推荐）',
 			latestTimestamp: '使用最新版本',
 			skip: '跳过冲突',
-		},
-		loginMode: {
-			name: '登录方式',
-			manual: '手动输入',
-			sso: '单点登录',
-		},
-		ssoStatus: {
-			loggedIn: '已登录',
-			notLoggedIn: '未登录',
-			logout: '退出登录',
-			logoutSuccess: '已退出登录',
-		},
-		logout: {
-			confirmTitle: '确认退出',
-			confirmMessage: '确定要退出登录吗？退出后需要重新登录才能继续同步。',
-			confirm: '确认退出',
-			cancel: '取消',
 		},
 		help: {
 			name: '如何获取 WebDAV 账号和凭证？',
@@ -180,10 +157,6 @@ export default {
 				description: '选择需要清除的缓存类型。此操作无法撤销。',
 				cancel: '取消',
 				confirm: '确认清除',
-				deltaCache: {
-					name: '增量同步缓存',
-					desc: '存储文件增量变化的相关信息。',
-				},
 				syncRecordCache: {
 					name: '同步记录缓存',
 					desc: '跟踪每个文件的同步状态。',

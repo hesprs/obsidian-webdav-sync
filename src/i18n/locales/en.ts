@@ -39,23 +39,6 @@ export default {
 			placeholder: 'Enter the remote directory',
 			edit: 'Edit',
 		},
-		login: {
-			name: 'Login',
-			desc: 'Click to login',
-			success: 'Login successful',
-			failure: 'Login failed, please try again',
-		},
-		loginMode: {
-			name: 'Login mode',
-			manual: 'Manual input',
-			sso: 'Single sign-on',
-		},
-		ssoStatus: {
-			loggedIn: 'Logged in',
-			notLoggedIn: 'Not logged in',
-			logout: 'Logout',
-			logoutSuccess: 'Logged out successfully',
-		},
 		useGitStyle: {
 			name: 'Use git-style conflict markers',
 			desc: 'Use <<<<<<< and >>>>>>> markers for conflicts instead of HTML tags',
@@ -109,13 +92,6 @@ export default {
 			account: 'Account',
 			common: 'General',
 			filters: 'Filter rules',
-		},
-		logout: {
-			confirmTitle: 'Confirm logout',
-			confirmMessage:
-				'Are you sure you want to log out? You will need to log in again to continue syncing.',
-			confirm: 'Confirm logout',
-			cancel: 'Cancel',
 		},
 		help: {
 			name: 'How to get WebDAV account and credential?',
@@ -183,10 +159,6 @@ export default {
 				description: 'Select which cache types to clear. This action cannot be undone.',
 				cancel: 'Cancel',
 				confirm: 'Confirm clear',
-				deltaCache: {
-					name: 'Delta cache',
-					desc: 'Stores information about incremental file changes.',
-				},
 				syncRecordCache: {
 					name: 'Sync record cache',
 					desc: 'Tracks synchronization status for each file.',
