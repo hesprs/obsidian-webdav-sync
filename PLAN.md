@@ -1,1 +1,1 @@
-Currently no plan
+currently no plan

@@ -57,7 +57,8 @@ export default defineConfig({
 		postcss: {
 			plugins: [UnoCSS(), postcssMergeRules()],
 		},
-        transformer: 'postcss',
-        minify: dev,
+		transformer: 'postcss',
+		minify: dev,
+		fileName: 'styles.css',
 	},
 });

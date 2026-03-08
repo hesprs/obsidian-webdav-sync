@@ -17,7 +17,7 @@ export default class SyncConfirmModal extends Modal {
 		contentEl.createEl('h2', { text: i18n.t('sync.confirmModal.title') });
 		const infoDiv = contentEl.createDiv({ cls: 'sync-info' });
 		infoDiv.createEl('p', {
-			text: i18n.t('sync.confirmModal.remoteDir', { dir: settings.remoteDir }),
+			text: i18n.t('sync.confirmModal.remoteDir', { dir: settings.remoteDir || `/${this.app.vault.getName()}/` }),
 		});
 		infoDiv.createEl('p', {
 			text: i18n.t('sync.confirmModal.strategy', {
@@ -26,7 +26,7 @@ export default class SyncConfirmModal extends Modal {
 				),
 			}),
 		});
-		contentEl.createEl('p', { text: i18n.t('sync.confirmModal.message') });
+		contentEl.createEl('p', { text: i18n.t('sync.confirmModal.message'), cls: 'pre-line' });
 
 		new Setting(contentEl)
 			.addButton((button) =>

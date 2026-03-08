@@ -1,6 +1,7 @@
 import { Mutex } from 'async-mutex';
+import { join } from 'path-browserify';
+import type { StatModel } from '~/model/stat.model';
 import { getDirectoryContents } from '~/api';
-import { type StatModel } from '~/model/stat.model';
 import { traverseWebDAVKV } from '~/storage';
 import { apiLimiter } from './api-limiter';
 import { fileStatToStatModel } from './file-stat-to-stat-model';
@@ -16,9 +17,7 @@ const getContents = apiLimiter.wrap(getDirectoryContents);
 const traversalLocks = new Map<string, Mutex>();
 
 function getTraversalLock(kvKey: string): Mutex {
-	if (!traversalLocks.has(kvKey)) {
-		traversalLocks.set(kvKey, new Mutex());
-	}
+	if (!traversalLocks.has(kvKey)) traversalLocks.set(kvKey, new Mutex());
 	return traversalLocks.get(kvKey) as Mutex;
 }
 
@@ -28,13 +27,17 @@ async function executeWithRetry<T>(func: () => MaybePromise<T>): Promise<T> {
 			return await func();
 			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (err: any) {
-			if (is503Error(err)) {
-				await sleep(30_000);
-			} else {
-				throw err;
-			}
+			if (is503Error(err)) await sleep(30_000);
+			else throw err;
 		}
 	}
+}
+
+function isNotFoundError(err: unknown): boolean {
+	if (!err || typeof err !== 'object') return false;
+	const errWithRes = err as { res?: { status?: number }; message?: string };
+	if (errWithRes.res?.status === 404) return true;
+	return typeof errWithRes.message === 'string' && /^404\s*:/.test(errWithRes.message);
 }
 
 export class ResumableWebDAVTraversal {
@@ -53,6 +56,19 @@ export class ResumableWebDAVTraversal {
 	 */
 	private normalizeDirPath(path: string): string {
 		return stdRemotePath(path);
+	}
+
+	private isPathWithinBase(path: string): boolean {
+		const base = this.normalizeDirPath(this.remoteBaseDir);
+		const normalized = this.normalizeDirPath(path);
+		if (base === '/') return normalized.startsWith('/');
+		return normalized === base || normalized.startsWith(base);
+	}
+
+	private resolveTraversalPath(currentPath: string, childPath: string): string {
+		if (this.isPathWithinBase(childPath)) return this.normalizeDirPath(childPath);
+		const current = this.normalizeDirPath(currentPath);
+		return this.normalizeDirPath(join(current, childPath));
 	}
 
 	constructor(options: {
@@ -84,9 +100,7 @@ export class ResumableWebDAVTraversal {
 			}
 
 			await this.bfsTraverse();
-
 			await this.saveState();
-
 			return this.getAllFromCache();
 		});
 	}
@@ -109,24 +123,27 @@ export class ResumableWebDAVTraversal {
 							)
 						).map(fileStatToStatModel);
 
-				if (!cachedItems) {
-					this.nodes[normalizedPath] = resultItems;
-				}
+				if (!cachedItems) this.nodes[normalizedPath] = resultItems;
 
 				for (const item of resultItems) {
-					if (item.isDir) {
-						this.queue.push(item.path);
-					}
+					if (item.isDir)
+						this.queue.push(this.resolveTraversalPath(currentPath, item.path));
 				}
 
 				this.queue.shift();
 				this.processedCount++;
 
-				if (this.processedCount % this.saveInterval === 0) {
-					await this.saveState();
-				}
+				if (this.processedCount % this.saveInterval === 0) await this.saveState();
 			} catch (err) {
 				logger.error(`Error processing ${currentPath}`, err);
+
+				if (isNotFoundError(err)) {
+					this.queue.shift();
+					this.processedCount++;
+					await this.saveState();
+					continue;
+				}
+
 				await this.saveState();
 				throw err;
 			}
@@ -138,9 +155,7 @@ export class ResumableWebDAVTraversal {
 	 */
 	private getAllFromCache(): StatModel[] {
 		const results: StatModel[] = [];
-		for (const items of Object.values(this.nodes)) {
-			results.push(...items);
-		}
+		for (const items of Object.values(this.nodes)) results.push(...items);
 		return results;
 	}
 
@@ -150,6 +165,14 @@ export class ResumableWebDAVTraversal {
 	private async loadState(): Promise<void> {
 		const cache = await traverseWebDAVKV.get(this.kvKey);
 		if (cache) {
+			if (cache.queue.some((path) => !this.isPathWithinBase(path))) {
+				logger.warn('Detected stale traversal cache, clearing incompatible queue entries');
+				await traverseWebDAVKV.unset(this.kvKey);
+				this.queue = [];
+				this.nodes = {};
+				return;
+			}
+
 			this.queue = cache.queue || [];
 			this.nodes = cache.nodes || {};
 		}
@@ -180,10 +203,7 @@ export class ResumableWebDAVTraversal {
 	 */
 	async isCacheValid(): Promise<boolean> {
 		const cache = await traverseWebDAVKV.get(this.kvKey);
-		if (!cache) {
-			return false;
-		}
-
+		if (!cache) return false;
 		return Array.isArray(cache.queue) && cache.queue.length === 0 && !!cache.nodes;
 	}
 }
