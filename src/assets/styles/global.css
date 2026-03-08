@@ -5,7 +5,7 @@
 	cursor: not-allowed;
 }
 
-@keyframes nutstore-sync-spin {
+@keyframes webdav-sync-spin {
 	from {
 		transform: rotate(0deg);
 	}
@@ -14,8 +14,8 @@
 	}
 }
 
-.nutstore-sync-spinning {
-	animation: nutstore-sync-spin 2s linear infinite;
+.webdav-sync-spinning {
+	animation: webdav-sync-spin 2s linear infinite;
 }
 
 .conflict.ours,

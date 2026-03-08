@@ -1,40 +1,38 @@
-# WebDAV Explorer Package Codemap
+# packages/webdav-explorer
 
 ## Responsibility
 
-The `webdav-explorer` package provides a SolidJS-based user interface for exploring and interacting with a WebDAV filesystem. It is designed to be embedded within an Obsidian plugin (or any other environment) to allow users to navigate folders, create new directories, and select a target path for synchronization.
+Embeddable SolidJS directory picker UI that lists folders/files, allows creating folders, and returns a selected path through host callbacks.
 
 ## Design Patterns
 
-- **Component-Based Architecture**: Built using SolidJS components (`App`, `FileList`, `File`, `Folder`, `NewFolder`) for a reactive and modular UI.
-- **Dependency Injection**: The actual filesystem operations are abstracted behind an `fs` interface (`ls`, `mkdirs`), which is passed as a prop to the `App` component. This decouples the UI from the specific WebDAV client implementation.
-- **Reactive State Management**: Uses SolidJS signals (`createSignal`) and effects (`createEffect`) to manage navigation state (path stack), file lists, and UI visibility (e.g., the "New Folder" dialog).
-- **Internationalization (i18n)**: Implements multi-language support using `@solid-primitives/i18n`, with automatic locale detection based on the browser's language.
+- Single public mount API (`src/index.tsx`) wrapping internal component tree.
+- Dependency injection for filesystem access via `fs` interface (`ls`, `mkdirs`) in `AppProps`.
+- Reactive state via Solid signals/effects for navigation stack, refresh triggering, and modal visibility.
+- View decomposition into focused components (`FileList`, `Folder`, `File`, `NewFolder`).
+- Lightweight i18n layer (`src/i18n`) with locale detection from `navigator.language`.
 
 ## Data & Control Flow
 
-- **Navigation**:
-  - The `App` component maintains a `stack` of paths.
-  - `enter(path)` pushes a new path to the stack, triggering a re-render of the `FileList`.
-  - `pop()` removes the top path from the stack to go back to the parent directory.
-- **File Listing**:
-  - `FileList` uses the provided `fs.ls(path)` method to fetch directory contents.
-  - Items are sorted (directories first, then files) and rendered using the `For` component.
-- **Folder Creation**:
-  - `NewFolder` component captures user input and calls `fs.mkdirs(path)`.
-  - Upon success, it triggers a refresh of the `FileList` via a `version` signal.
-- **Selection**:
-  - When the user clicks "Confirm", the `onConfirm` callback is invoked with the current directory path (`cwd`).
+- Host calls `mount(el, props)` to render `App` into a DOM node.
+- `App` tracks current path with a stack (start at `/`), supports enter/back navigation.
+- `createFileList().FileList` fetches `fs.ls(path)`, sorts dirs before files, and renders items.
+- `NewFolder` emits folder name; `App` resolves target path and calls `fs.mkdirs(target)`.
+- On create/list failures, UI surfaces errors through `obsidian.Notice`.
+- Confirm emits current path with `onConfirm`; cancel triggers `onClose`.
 
 ## Integration Points
 
-- **Mounting**: The `mount(el, props)` function in `index.tsx` is the primary entry point for embedding the explorer into a DOM element.
-- **Filesystem Interface**: Requires an object implementing the `fs` interface:
-  ```typescript
-  interface fs {
-    ls: (path: string) => Promise<FileStat[]>;
-    mkdirs: (path: string) => Promise<void>;
-  }
-  ```
-- **Callbacks**: Communicates user actions back to the host application via `onConfirm` and `onClose` props.
-- **Obsidian API**: Directly uses Obsidian's `Notice` class for displaying error messages to the user.
+- Public package export: `dist/index.js` + `dist/index.d.ts` (`package.json` exports).
+- Host contract (`AppProps`): `fs`, `onConfirm(path)`, `onClose()`.
+- Runtime dependencies: `solid-js`, `solid-js/web`, `path-browserify`, and Obsidian `Notice`.
+- Build/style toolchain: Rslib (`rslib.config.ts`) + UnoCSS/PostCSS (`unocss.config.ts`, `postcss.config.mjs`).
+
+## Key Files
+
+- `src/index.tsx`: `mount` entrypoint.
+- `src/App.tsx`: navigation, actions, host callback wiring.
+- `src/components/FileList.tsx`: listing, sorting, refresh behavior.
+- `src/components/NewFolder.tsx`: create-folder input/actions.
+- `src/i18n/index.ts`: locale resolution and translator setup.
+- `rslib.config.ts`: library build output configuration.

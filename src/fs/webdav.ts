@@ -14,7 +14,7 @@ import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
 import AbstractFileSystem from './fs.interface';
 import completeLossDir from './utils/complete-loss-dir';
 
-export class NutstoreFileSystem implements AbstractFileSystem {
+export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 	constructor(
 		private options: {
 			vault: Vault;

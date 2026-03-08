@@ -1,13 +1,13 @@
 import { IN_DEV } from '~/consts';
 import { formatDateTime } from '~/utils/format-date';
 import logger from '~/utils/logger';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class LoggerService {
 	// oxlint-disable-next-line typescript/no-explicit-any
 	logs: Array<any> = [];
 
-	constructor(private plugin: NutstorePlugin) {
+	constructor(private plugin: WebDAVSyncPlugin) {
 		if (IN_DEV) {
 			logger.addReporter({
 				log: (logObj) => {

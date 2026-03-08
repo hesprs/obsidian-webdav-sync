@@ -3,12 +3,12 @@ import { Subscription } from 'rxjs';
 import { onEndSync, onPreparingSync, onStartSync, onSyncError, onSyncProgress } from '~/events';
 import i18n from '~/i18n';
 import { is503Error } from '~/utils/is-503-error';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class EventsService {
 	subscriptions: Subscription[];
 
-	constructor(plugin: NutstorePlugin) {
+	constructor(plugin: WebDAVSyncPlugin) {
 		this.subscriptions = [
 			onPreparingSync().subscribe(({ showNotice }) => {
 				plugin.toggleSyncUI(true);

@@ -11,14 +11,14 @@ import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
 import { uint8ArrayToArrayBuffer } from '~/utils/uint8array-to-arraybuffer';
-import type NutstorePlugin from '..';
+import type WebDAVSyncPlugin from '..';
 
 /**
  * Service for handling cache operations (save, restore, delete, list)
  */
 export default class CacheServiceV1 {
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private remoteCacheDir: string,
 	) {}
 

@@ -3,7 +3,7 @@ import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import waitUntil from '~/utils/wait-until';
 import type SyncExecutorService from './sync-executor.service';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class RealtimeSyncService {
 	private waiting = false;
@@ -21,7 +21,7 @@ export default class RealtimeSyncService {
 	private submitSyncRequest = debounce(this.submitDirectly, 8000);
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private syncExecutor: SyncExecutorService,
 	) {
 		this.plugin.registerEvent(

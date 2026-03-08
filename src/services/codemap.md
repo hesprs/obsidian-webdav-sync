@@ -1,38 +1,43 @@
-# Services Codemap
+# src/services
 
 ## Responsibility
 
-The `services` directory contains the core logic for managing the plugin's lifecycle, synchronization orchestration, UI state, and external integrations.
-
-- **Sync Orchestration**: `SyncExecutorService` acts as the primary entry point for starting a sync, coordinating between the decider and the executor. `RealtimeSyncService` and `ScheduledSyncService` provide automated triggers for sync.
-- **Communication & State**: `EventsService` and `ProgressService` handle the flow of information during sync, updating the UI and internal state based on RxJS events. `StatusService` manages the Obsidian status bar.
-- **Infrastructure**: `WebDAVService` manages remote connections. `CacheServiceV1` handles persistence of remote traversal data. `LoggerService` and `I18nService` provide cross-cutting concerns like logging and internationalization.
-- **User Interaction**: `CommandService` registers user-facing commands to control the sync process.
+Implement operational service layer for sync execution, automation triggers, event/progress state, infrastructure clients, and shared cross-cutting concerns.
 
 ## Design Patterns
 
-- **Service Pattern**: Most classes are structured as singleton-like services injected into the main plugin instance.
-- **Observer Pattern**: Extensively used via RxJS in `EventsService` and `ProgressService` to react to sync lifecycle events.
-- **Factory Pattern**: `WebDAVService` acts as a factory for creating configured WebDAV clients.
-- **Command Pattern**: `CommandService` encapsulates Obsidian command registration.
-- **Facade/Orchestrator**: `SyncExecutorService` simplifies the complex setup required to initiate a sync.
-- **Debounce/Throttle**: Used in `RealtimeSyncService` (debounce) and `ProgressService` (throttle) to manage high-frequency events.
+- Service-per-domain organization (`sync`, `events`, `progress`, `status`, `webdav`, `cache`, `i18n`, `logging`, `commands`).
+- Orchestrator/facade role in `SyncExecutorService` to prepare and launch sync with consistent prechecks.
+- Observer/reactive pattern with RxJS-backed events and throttled progress propagation.
+- Factory-like client construction in `WebDAVService` for authenticated remote access.
+- Trigger abstraction: manual command, interval scheduler, and realtime debounce listener all converge on shared execution flow.
 
 ## Data & Control Flow
 
-1.  **Trigger**: A sync is triggered manually (`CommandService`), automatically on a timer (`ScheduledSyncService`), or by file changes (`RealtimeSyncService`).
-2.  **Execution**: The trigger calls `SyncExecutorService.executeSync()`.
-3.  **Preparation**: `SyncExecutorService` verifies account configuration, ensures the Obsidian config directory is excluded, and initializes `NutstoreSync` and `TwoWaySyncDecider`.
-4.  **Decision**: `TwoWaySyncDecider` compares local and remote states (using `SyncRecord` and `CacheServiceV1` data) to determine necessary actions.
-5.  **Sync**: `NutstoreSync.start()` is called. It emits events via `~/events`.
-6.  **Feedback**: `EventsService` and `ProgressService` listen to these events to update the `StatusService` (status bar) and `SyncProgressModal`.
-7.  **Completion**: Upon completion, `EventsService` updates the last sync time and shows notifications.
+1. Sync starts from `CommandService`, `ScheduledSyncService`, or `RealtimeSyncService`.
+2. `SyncExecutorService.executeSync()` validates settings/context and constructs runtime sync dependencies.
+3. Decider + engine compute and execute pull/push/delete task sets against local vault + remote WebDAV state.
+4. Engine events are consumed by `EventsService`/`ProgressService` to update status bar, notices, and progress consumers.
+5. Completion handlers persist sync metadata, refresh last-sync indicators, and reset runtime status.
 
 ## Integration Points
 
-- **Obsidian API**: Integration with `Vault` (events), `StatusBar`, `Commands`, and `Notice`.
-- **WebDAV**: Communication with remote servers via the `webdav` library, managed by `WebDAVService`.
-- **Local Storage**: Persistence of sync records and cache via `~/storage` (IndexedDB/KV).
-- **RxJS**: Global event bus defined in `~/events` for decoupled communication.
-- **i18next**: Internationalization support via `~/i18n`.
-- **Superjson & Fflate**: Used by `CacheServiceV1` for efficient data serialization and compression.
+- Obsidian platform APIs: vault file events, commands, status bar items, user notices.
+- Sync core modules: `SyncEngine`, `TwoWaySyncDecider`, task and sync-record models.
+- Remote transport: `webdav` client wrappers in `WebDAVService`.
+- Local persistence: KV/indexed storage for sync records and cached remote traversal snapshots.
+- Shared app services: i18n provider, logger, and global event streams.
+
+## Key Files
+
+- `sync-executor.service.ts` — canonical entrypoint for safe sync execution.
+- `realtime-sync.service.ts` — file-change driven sync trigger with debounce control.
+- `scheduled-sync.service.ts` — interval/startup sync scheduling lifecycle.
+- `events.service.ts` — sync lifecycle event handling and user notification updates.
+- `progress.service.ts` — progress state aggregation/throttled publication.
+- `status.service.ts` — status bar rendering and state transitions.
+- `webdav.service.ts` — configured WebDAV client creation and connection utilities.
+- `cache.service.v1.ts` — serialized/compressed cache persistence for traversal metadata.
+- `command.service.ts` — Obsidian command registration and handler binding.
+- `i18n.service.ts` — language initialization/switch logic.
+- `logger.service.ts` — logging setup, storage, and export helpers.

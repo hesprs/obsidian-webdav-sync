@@ -16,7 +16,7 @@ import {
 } from '~/events';
 import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
-import { NutstoreFileSystem } from '~/fs/nutstore';
+import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
 import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
@@ -28,7 +28,7 @@ import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
 import { stdRemotePath } from '~/utils/std-remote-path';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
@@ -47,7 +47,7 @@ export enum SyncStartMode {
 	AUTO_SYNC = 'auto_sync',
 }
 
-export class NutstoreSync {
+export class SyncEngine {
 	remoteFs: IFileSystem;
 	localFS: IFileSystem;
 	isCancelled: boolean = false;
@@ -55,7 +55,7 @@ export class NutstoreSync {
 	private subscriptions: Subscription[] = [];
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private options: {
 			vault: Vault;
 			token: string;
@@ -65,7 +65,7 @@ export class NutstoreSync {
 		},
 	) {
 		this.options = Object.freeze(this.options);
-		this.remoteFs = new NutstoreFileSystem(this.options);
+		this.remoteFs = new RemoteWebDAVFileSystem(this.options);
 		this.localFS = new LocalVaultFileSystem({
 			vault: this.options.vault,
 			syncRecord: new SyncRecord(

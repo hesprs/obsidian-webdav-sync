@@ -2,13 +2,13 @@ import { Modal, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import CacheService from '~/services/cache.service.v1';
 import { formatFilenameDateTime } from '~/utils/format-date';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class CacheSaveModal extends Modal {
 	private cacheService: CacheService;
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		remoteCacheDir: string,
 		private onSuccess?: () => void,
 	) {

@@ -3,7 +3,7 @@ import type { StatModel } from '~/model/stat.model';
 import type { SyncRecordModel } from '~/model/sync-record.model';
 import useStorage from './use-storage';
 
-const DB_NAME = 'Nutstore_Plugin_Cache';
+const DB_NAME = 'WebDAV_Sync_Cache';
 
 export const syncRecordKV = useStorage<Map<string, SyncRecordModel>>(
 	localforage.createInstance({

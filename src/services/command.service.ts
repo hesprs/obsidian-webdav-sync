@@ -2,12 +2,12 @@ import { Notice } from 'obsidian';
 import SyncConfirmModal from '~/components/SyncConfirmModal';
 import { emitCancelSync } from '~/events';
 import i18n from '~/i18n';
-import { NutstoreSync, SyncStartMode } from '~/sync';
+import { SyncEngine, SyncStartMode } from '~/sync';
 import logger from '~/utils/logger';
-import NutstorePlugin from '..';
+import WebDAVSyncPlugin from '..';
 
 export default class CommandService {
-	constructor(plugin: NutstorePlugin) {
+	constructor(plugin: WebDAVSyncPlugin) {
 		plugin.addCommand({
 			id: 'start-sync',
 			name: i18n.t('sync.startButton'),
@@ -36,7 +36,7 @@ export default class CommandService {
 				}
 
 				const startSync = async () => {
-					const sync = new NutstoreSync(plugin, {
+					const sync = new SyncEngine(plugin, {
 						webdav: await plugin.webDAVService.createWebDAVClient(),
 						vault: plugin.app.vault,
 						token: await plugin.getToken(),

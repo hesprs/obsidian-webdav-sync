@@ -2,7 +2,7 @@ import { Modal, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import { blobKV, syncRecordKV, traverseWebDAVKV } from '~/storage/kv';
 import logger from '~/utils/logger';
-import type NutstorePlugin from '..';
+import type WebDAVSyncPlugin from '..';
 
 export interface CacheClearOptions {
 	syncRecordEnabled: boolean;
@@ -18,7 +18,7 @@ export default class CacheClearModal extends Modal {
 	};
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private onSuccess?: (options: CacheClearOptions) => void,
 	) {
 		super(plugin.app);

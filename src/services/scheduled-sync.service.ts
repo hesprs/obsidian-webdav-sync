@@ -1,7 +1,7 @@
 import { clamp } from 'lodash-es';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
-import type NutstorePlugin from '..';
+import type WebDAVSyncPlugin from '..';
 import type SyncExecutorService from './sync-executor.service';
 
 export default class ScheduledSyncService {
@@ -9,7 +9,7 @@ export default class ScheduledSyncService {
 	private startupSyncTimer: number | null = null;
 
 	constructor(
-		private plugin: NutstorePlugin,
+		private plugin: WebDAVSyncPlugin,
 		private syncExecutor: SyncExecutorService,
 	) {}
 

@@ -1,17 +1,17 @@
 import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
-import { NutstoreSync, SyncStartMode } from '~/sync';
+import { SyncEngine, SyncStartMode } from '~/sync';
 import TwoWaySyncDecider from '~/sync/decision/two-way.decider';
 import { getDBKey } from '~/utils/get-db-key';
 import waitUntil from '~/utils/wait-until';
-import type NutstorePlugin from '..';
+import type WebDAVSyncPlugin from '..';
 
 export interface SyncOptions {
 	mode: SyncStartMode;
 }
 
 export default class SyncExecutorService {
-	constructor(private plugin: NutstorePlugin) {}
+	constructor(private plugin: WebDAVSyncPlugin) {}
 
 	async executeSync(options: SyncOptions) {
 		if (this.plugin.isSyncing) {
@@ -38,7 +38,7 @@ export default class SyncExecutorService {
 			await this.plugin.saveSettings();
 		}
 
-		const sync = new NutstoreSync(this.plugin, {
+		const sync = new SyncEngine(this.plugin, {
 			vault: this.plugin.app.vault,
 			token: await this.plugin.getToken(),
 			remoteServerUrl: this.plugin.settings.serverUrl,

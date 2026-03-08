@@ -1,34 +1,36 @@
-# Codemap: Sync Tasks
-
-This directory contains the implementation of individual synchronization tasks, which are the atomic units of work in the sync process.
+# src/sync/tasks
 
 ## Responsibility
 
-- **Atomic Operations**: Encapsulates specific sync actions such as file transfers (`PullTask`, `PushTask`), filesystem modifications (`MkdirLocalTask`, `RemoveRemoteTask`), and state management (`CleanRecordTask`).
-- **Cross-Platform Interaction**: Bridges the gap between the local Obsidian `Vault` and the remote WebDAV server.
-- **Conflict Resolution**: Implements logic to handle discrepancies between local and remote file versions (`ConflictResolveTask`).
-- **Error Handling**: Standardizes error reporting across different types of operations using `TaskError` and `TaskResult`.
+Implements executable sync commands (file transfer, mkdir/remove, conflict handling, bookkeeping) as atomic units consumed by the sync engine.
 
 ## Design Patterns
 
-- **Command Pattern**: Each task is a class extending `BaseTask` that encapsulates all information needed to perform an action. The `exec()` method serves as the execution trigger.
-- **Template Method Pattern**: `BaseTask` defines the structure and common properties (like path resolution logic), while subclasses implement the specific execution logic in `exec()`.
-- **Strategy Pattern**: `ConflictResolveTask` employs different strategies (e.g., `DiffMatchPatch`, `LatestTimeStamp`) to resolve version conflicts based on configuration.
-- **Abstract Base Class**: `BaseTask` provides a unified interface and shared utility getters for all task implementations.
+- Command pattern: one class per operation with `exec()`.
+- Shared base contract via task interfaces/result objects.
+- Template-style common behavior in base task helpers (path/context access).
+- Policy strategy in conflict task (merge strategy selected from settings).
 
 ## Data & Control Flow
 
-- **Initialization**: Tasks are instantiated with `BaseTaskOptions`, providing access to the Obsidian `Vault`, `WebDAVClient`, `SyncRecord`, and relevant file paths.
-- **Execution Flow**:
-  1. **State Verification**: Tasks often begin by checking the existence or metadata of files using utilities like `statVaultItem` or `statWebDAVItem`.
-  2. **Action**: The core logic is performed (e.g., `webdav.putFileContents` for uploads, `vault.modifyBinary` for downloads).
-  3. **Result Reporting**: Tasks return a `TaskResult` object. A `success: true` result may include `skipRecord: true` if the task shouldn't trigger a sync record update.
-- **Error Propagation**: Exceptions are caught within `exec()`, logged via `logger`, and converted into a `TaskFailureResult` containing a `TaskError`.
+1. Planner instantiates task objects with context (`vault`, `webdav`, records, paths, settings).
+2. Task validates current state (existence/stat/content where required).
+3. Task performs local/remote mutation or produces noop/skip outcome.
+4. Returns typed `TaskResult` with success/failure and record-update hints.
+5. Engine aggregates results and persists mtime updates for eligible tasks.
 
 ## Integration Points
 
-- **Obsidian API**: Uses `Vault` for reading, writing, and trashing local files and folders.
-- **WebDAV Client**: Uses `WebDAVClient` for all remote operations including file transfers and directory management.
-- **Sync Engine**: Tasks are typically created and orchestrated by the higher-level sync logic (e.g., `SyncManager` or `PlanGenerator`).
-- **Storage Layer**: Interacts with `SyncRecord` to manage the persistent state of synchronized items and `blobStore` for retrieving base versions during merges.
-- **Utilities**: Relies on shared utilities for path manipulation (`path-browserify`), directory creation (`mkdirs-vault`), and internationalization (`i18n`).
+- Obsidian `Vault` API for local read/write/trash/folder ops.
+- WebDAV client for remote upload/download/delete/mkdir calls.
+- `src/sync/core/merge-utils.ts` for conflict resolution internals.
+- `src/storage/sync-record.ts` + blob store for record/base-content interactions.
+- Shared path/stat utilities from `src/utils/*`.
+
+## Key Files
+
+- `task.interface.ts` — base types and task contracts.
+- `push.task.ts`, `pull.task.ts` — file sync transfer actions.
+- `remove-local.task.ts`, `remove-remote.task.ts`, `remove-remote-recursively.task.ts` — deletion actions.
+- `mkdir-local.task.ts`, `mkdir-remote.task.ts`, `mkdirs-remote.task.ts` — directory creation actions.
+- `conflict-resolve.task.ts` — conflict merge and resolution handling.

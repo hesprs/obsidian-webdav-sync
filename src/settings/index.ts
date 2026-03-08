@@ -1,5 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import type NutstorePlugin from '~/index';
+import type WebDAVSyncPlugin from '~/index';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
@@ -15,7 +15,7 @@ export enum SyncMode {
 	LOOSE = 'loose',
 }
 
-export interface NutstoreSettings {
+export interface PluginSettings {
 	serverUrl: string;
 	account: string;
 	credential: string;
@@ -39,9 +39,9 @@ export interface NutstoreSettings {
 	language?: 'zh' | 'en';
 }
 
-let pluginInstance: NutstorePlugin | null = null;
+let pluginInstance: WebDAVSyncPlugin | null = null;
 
-export function setPluginInstance(plugin: NutstorePlugin | null) {
+export function setPluginInstance(plugin: WebDAVSyncPlugin | null) {
 	pluginInstance = plugin;
 }
 
@@ -51,11 +51,11 @@ export function waitUntilPluginInstance() {
 
 export async function useSettings() {
 	await waitUntilPluginInstance();
-	return (pluginInstance as NutstorePlugin).settings;
+	return (pluginInstance as WebDAVSyncPlugin).settings;
 }
 
-export class NutstoreSettingTab extends PluginSettingTab {
-	plugin: NutstorePlugin;
+export class SyncSettingTab extends PluginSettingTab {
+	plugin: WebDAVSyncPlugin;
 	accountSettings: AccountSettings;
 	commonSettings: CommonSettings;
 	filterSettings: FilterSettings;
@@ -63,7 +63,7 @@ export class NutstoreSettingTab extends PluginSettingTab {
 	cacheSettings: CacheSettings;
 	warningContainerEl: HTMLElement;
 
-	constructor(app: App, plugin: NutstorePlugin) {
+	constructor(app: App, plugin: WebDAVSyncPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 		this.warningContainerEl = this.containerEl.createDiv();

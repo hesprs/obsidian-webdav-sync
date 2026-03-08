@@ -9,9 +9,6 @@ import { isNumeric } from '~/utils/is-numeric';
 import { SyncMode } from './index';
 import BaseSettings from './settings.base';
 
-/**
- * https://help.jianguoyun.com/?p=2064
- */
 const MAX_FILE_SIZE = '500MB';
 const MAX_BYTES = bytesParse(MAX_FILE_SIZE, { mode: 'jedec' }) ?? 524288000;
 

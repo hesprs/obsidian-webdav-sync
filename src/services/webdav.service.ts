@@ -1,9 +1,9 @@
 import { createClient, type WebDAVClient } from 'webdav';
-import NutstorePlugin from '../index';
+import WebDAVSyncPlugin from '../index';
 import { createRateLimitedWebDAVClient } from '../utils/rate-limited-client';
 
 export class WebDAVService {
-	constructor(private plugin: NutstorePlugin) {}
+	constructor(private plugin: WebDAVSyncPlugin) {}
 
 	private getServerUrl(): string {
 		const serverUrl = this.plugin.settings.serverUrl.trim().replace(/\/+$/, '');
