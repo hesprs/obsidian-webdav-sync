@@ -1,6 +1,6 @@
 import type { WebDAVClient } from 'webdav';
+import { isAbsolute, join } from 'node:path';
 import { normalizePath, Vault } from 'obsidian';
-import { isAbsolute, join } from 'path-browserify';
 import type { MaybePromise } from '~/utils/types';
 import { SyncRecord } from '~/storage/sync-record';
 import getTaskName from '~/utils/get-task-name';

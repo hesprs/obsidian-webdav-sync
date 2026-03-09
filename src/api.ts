@@ -1,7 +1,7 @@
 import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
-import { basename } from 'path-browserify';
+import { basename } from 'node:path';
 import { is503Error } from './utils/is-503-error';
 import logger from './utils/logger';
 import requestUrl from './utils/request-url';

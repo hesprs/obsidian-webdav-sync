@@ -1,7 +1,7 @@
 import type { WebDAVClient } from 'webdav';
 import { chunk } from 'lodash-es';
+import { dirname } from 'node:path';
 import { Notice, Platform, Vault, normalizePath } from 'obsidian';
-import { dirname } from 'path-browserify';
 import { Subscription } from 'rxjs';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import FailedTasksModal, { type FailedTaskInfo } from '~/components/FailedTasksModal';

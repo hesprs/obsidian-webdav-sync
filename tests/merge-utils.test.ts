@@ -1,4 +1,3 @@
-import { Buffer } from 'buffer'; // Import Buffer for explicit Buffer testing
 import { describe, expect, it } from 'vitest';
 import {
 	LatestTimestampResolution,

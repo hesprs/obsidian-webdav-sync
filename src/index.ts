@@ -1,8 +1,5 @@
-import 'blob-polyfill';
-import 'core-js/stable';
 import './webdav-patch';
 import './assets/global.css';
-import { toBase64 } from 'js-base64';
 import { normalizePath, Plugin } from 'obsidian';
 import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
@@ -101,9 +98,9 @@ export default class WebDAVSyncPlugin extends Plugin {
 		this.ribbonManager.update();
 	}
 
-	async getToken() {
+	getToken() {
 		const token = `${this.settings.account}:${this.settings.credential}`;
-		return toBase64(token);
+		return btoa(token);
 	}
 
 	/**

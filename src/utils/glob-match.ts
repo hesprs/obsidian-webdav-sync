@@ -1,6 +1,6 @@
 import GlobToRegExp from 'glob-to-regexp';
 import { cloneDeep } from 'lodash-es';
-import path from 'path-browserify';
+import path from 'node:path';
 
 export interface GlobMatchUserOptions {
 	caseSensitive: boolean;

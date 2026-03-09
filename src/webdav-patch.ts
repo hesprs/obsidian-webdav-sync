@@ -1,10 +1,9 @@
-import type { RequestOptionsWithState } from 'webdav';
 /**
  * Patch webdav request to use obsidian's requestUrl
  *
  * reference: https://github.com/remotely-save/remotely-save/blob/34db181af002f8d71ea0a87e7965abc57b294914/src/fsWebdav.ts#L25
  */
-import { getReasonPhrase } from 'http-status-codes/build/cjs/utils-functions';
+import type { RequestOptionsWithState } from 'webdav';
 import { Platform, type RequestUrlParam } from 'obsidian';
 import { getPatcher } from 'webdav';
 import { VALID_REQURL } from '~/consts';
@@ -18,6 +17,28 @@ import requestUrl from './utils/request-url';
 function objKeyToLower(obj: Record<string, string>) {
 	return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.toLowerCase(), v]));
 }
+
+const STATUS_TEXTS: Record<number, string> = {
+	100: 'Continue',
+	101: 'Switching Protocols',
+	200: 'OK',
+	201: 'Created',
+	204: 'No Content',
+	301: 'Moved Permanently',
+	302: 'Found',
+	304: 'Not Modified',
+	400: 'Bad Request',
+	401: 'Unauthorized',
+	403: 'Forbidden',
+	404: 'Not Found',
+	405: 'Method Not Allowed',
+	409: 'Conflict',
+	412: 'Precondition Failed',
+	423: 'Locked', // Common in WebDAV
+	500: 'Internal Server Error',
+	502: 'Bad Gateway',
+	503: 'Service Unavailable',
+};
 
 /**
  * https://stackoverflow.com/questions/32850898/how-to-check-if-a-string-has-any-non-iso-8859-1-characters-with-javascript
@@ -74,7 +95,7 @@ if (VALID_REQURL) {
 		}
 
 		let r2: Response | undefined = undefined;
-		const statusText = getReasonPhrase(r.status);
+		const statusText = STATUS_TEXTS[r.status];
 		if ([101, 103, 204, 205, 304].includes(r.status)) {
 			r2 = new Response(null, {
 				status: r.status,

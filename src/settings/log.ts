@@ -1,5 +1,5 @@
+import { isNil } from 'lodash-es';
 import { Notice, Setting } from 'obsidian';
-import { isNotNil } from 'ramda';
 import i18n from '~/i18n';
 import logger from '~/utils/logger';
 import logsStringify from '~/utils/logs-stringify';
@@ -29,7 +29,10 @@ export default class LogSettings extends BaseSettings {
 	}
 
 	get logs() {
-		return this.plugin.loggerService.logs.map(logsStringify).filter(isNotNil).join('\n\n');
+		return this.plugin.loggerService.logs
+			.map(logsStringify)
+			.filter((log) => !isNil(log))
+			.join('\n\n');
 	}
 
 	async saveLogsToNote() {

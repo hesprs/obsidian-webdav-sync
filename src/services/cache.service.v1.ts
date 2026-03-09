@@ -1,7 +1,7 @@
 import type { BufferLike } from 'webdav';
 import { deflateSync, inflateSync } from 'fflate/browser';
+import { join } from 'node:path';
 import { Notice } from 'obsidian';
-import { join } from 'path-browserify';
 import superjson from 'superjson';
 import type { ExportedStorage } from '~/settings/cache';
 import { getDirectoryContents } from '~/api';
@@ -29,10 +29,7 @@ export default class CacheServiceV1 {
 		try {
 			const webdav = await this.plugin.webDAVService.createWebDAVClient();
 			const traverseWebDAVCache = await traverseWebDAVKV.get(
-				await getTraversalWebDAVDBKey(
-					await this.plugin.getToken(),
-					this.plugin.remoteBaseDir,
-				),
+				await getTraversalWebDAVDBKey(this.plugin.getToken(), this.plugin.remoteBaseDir),
 			);
 
 			const exportedStorage: ExportedStorage = {
@@ -117,7 +114,7 @@ export default class CacheServiceV1 {
 			if (traverseWebDAVCache) {
 				await traverseWebDAVKV.set(
 					await getTraversalWebDAVDBKey(
-						await this.plugin.getToken(),
+						this.plugin.getToken(),
 						this.plugin.remoteBaseDir,
 					),
 					traverseWebDAVCache,
@@ -174,7 +171,7 @@ export default class CacheServiceV1 {
 			}
 			const files = await getDirectoryContents(
 				this.plugin.settings.serverUrl,
-				await this.plugin.getToken(),
+				this.plugin.getToken(),
 				this.remoteCacheDir,
 			);
 			return files.map(fileStatToStatModel);

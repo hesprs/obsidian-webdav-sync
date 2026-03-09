@@ -1,4 +1,4 @@
-import { normalize } from 'path-browserify';
+import { normalize } from 'node:path';
 
 export function stdRemotePath(remotePath: string): `/${string}/` {
 	if (!remotePath.startsWith('/')) remotePath = `/${remotePath}`;

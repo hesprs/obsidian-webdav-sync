@@ -1,4 +1,4 @@
-import { normalize } from 'path-browserify';
+import { normalize } from 'node:path';
 
 export function isSub(parent: string, sub: string) {
 	parent = normalize(parent);

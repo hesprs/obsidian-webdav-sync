@@ -39,7 +39,7 @@ export default class CommandService {
 					const sync = new SyncEngine(plugin, {
 						webdav: await plugin.webDAVService.createWebDAVClient(),
 						vault: plugin.app.vault,
-						token: await plugin.getToken(),
+						token: plugin.getToken(),
 						remoteBaseDir: plugin.remoteBaseDir,
 					});
 					await sync.start({

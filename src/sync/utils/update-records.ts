@@ -39,7 +39,7 @@ export async function updateMtimeInRecord(
 		return;
 	}
 
-	const token = await plugin.getToken();
+	const token = plugin.getToken();
 	const remoteFs = new RemoteWebDAVFileSystem({
 		vault,
 		token,

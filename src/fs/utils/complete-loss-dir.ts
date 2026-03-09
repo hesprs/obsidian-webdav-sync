@@ -1,4 +1,4 @@
-import { dirname } from 'path-browserify';
+import { dirname } from 'node:path';
 import type { StatModel } from '~/model/stat.model';
 import isRoot from './is-root';
 
@@ -16,16 +16,10 @@ export default function completeLossDir(stats: StatModel[], _filteredStats: Stat
 	for (let { path } of _filteredStats) {
 		while (true) {
 			path = dirname(path);
-			if (isRoot(path)) {
-				break;
-			}
-			if (filteredFolderMap.has(path)) {
-				continue;
-			}
+			if (isRoot(path)) break;
+			if (filteredFolderMap.has(path)) continue;
 			const dirStat = statsMap.get(path);
-			if (!dirStat || !dirStat.isDir) {
-				continue;
-			}
+			if (!dirStat || !dirStat.isDir) continue;
 			filteredFolderMap.set(path, dirStat);
 			filteredStats.add(dirStat);
 		}
