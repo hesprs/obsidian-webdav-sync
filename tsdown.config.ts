@@ -2,6 +2,7 @@ import UnoCSS from '@unocss/postcss';
 import { builtinModules } from 'node:module';
 import postcssMergeRules from 'postcss-merge-rules';
 import { defineConfig } from 'tsdown';
+import solid from 'unplugin-solid/rolldown';
 import pkg from './package.json' with { type: 'json' };
 
 const dev = process.env.MODE === 'dev';
@@ -13,6 +14,7 @@ export default defineConfig({
 		'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || ''),
 		'process.env.PLUGIN_VERSION': String(pkg.version),
 	},
+	plugins: [solid()],
 	deps: {
 		neverBundle: [
 			'obsidian',
@@ -61,4 +63,5 @@ export default defineConfig({
 		minify: dev,
 		fileName: 'styles.css',
 	},
+    clean: !dev,
 });

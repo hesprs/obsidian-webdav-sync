@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { normalizeRemoteWalkPath } from '../src/fs/utils/normalize-remote-walk-path';
+import { normalizeRemoteWalkPath } from '~/fs/utils/normalize-remote-walk-path';
 
 describe('normalizeRemoteWalkPath', () => {
 	it('keeps base-relative traversal paths when remote base is non-root', () => {

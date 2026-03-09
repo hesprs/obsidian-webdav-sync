@@ -1,6 +1,5 @@
 import 'blob-polyfill';
 import 'core-js/stable';
-import './polyfill';
 import './webdav-patch';
 import './assets/global.css';
 import { toBase64 } from 'js-base64';

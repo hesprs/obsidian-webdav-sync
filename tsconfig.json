@@ -16,6 +16,7 @@
 		"resolveJsonModule": true,
 		"noEmit": true,
 		"jsx": "preserve",
+		"jsxImportSource": "solid-js",
 		"verbatimModuleSyntax": true,
 		"allowImportingTsExtensions": true,
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
