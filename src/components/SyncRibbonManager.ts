@@ -39,7 +39,7 @@ export class SyncRibbonManager {
 					const sync = new SyncEngine(this.plugin, {
 						webdav: await this.plugin.webDAVService.createWebDAVClient(),
 						vault: this.plugin.app.vault,
-						token: await this.plugin.getToken(),
+						token: this.plugin.getToken(),
 						remoteBaseDir: this.plugin.remoteBaseDir,
 					});
 					await sync.start({

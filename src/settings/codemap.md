@@ -45,7 +45,7 @@ Own the plugin settings UI for account, sync behavior, filters, cache, and logs,
   - `CacheSaveModal`, `CacheRestoreModal`, `CacheClearModal`
 - **Utilities/dependencies**:
   - `bytes-iec` parsing for max file size handling
-  - `lodash-es` clamp/isNil and `ramda` isNotNil
+  - `lodash-es` clamp/isNil
   - path/helpers for cache paths (`path-browserify` `join`, `stdRemotePath`, `getDBKey`)
 
 ## Files

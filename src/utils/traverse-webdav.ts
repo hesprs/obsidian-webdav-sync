@@ -1,8 +1,8 @@
-import { Mutex } from 'async-mutex';
-import { join } from 'path-browserify';
+import { join } from 'node:path';
 import type { StatModel } from '~/model/stat.model';
 import { getDirectoryContents } from '~/api';
 import { traverseWebDAVKV } from '~/storage';
+import { Mutex } from '~/utils/mutex';
 import { apiLimiter } from './api-limiter';
 import { fileStatToStatModel } from './file-stat-to-stat-model';
 import { is503Error } from './is-503-error';

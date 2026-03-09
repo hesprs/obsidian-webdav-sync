@@ -8,15 +8,9 @@ export function formatRelativeTime(timestamp: number): string {
 	const diffHours = Math.floor(diffMinutes / 60);
 	const diffDays = Math.floor(diffHours / 24);
 
-	if (diffSeconds < 60) {
-		return i18n.t('time.justNow');
-	} else if (diffMinutes < 60) {
-		return i18n.t('time.minutesAgo', { count: diffMinutes });
-	} else if (diffHours < 24) {
-		return i18n.t('time.hoursAgo', { count: diffHours });
-	} else if (diffDays < 30) {
-		return i18n.t('time.daysAgo', { count: diffDays });
-	} else {
-		return i18n.t('time.longAgo');
-	}
+	if (diffSeconds < 60) return i18n.t('time.justNow');
+	else if (diffMinutes < 60) return i18n.t('time.minutesAgo', { count: diffMinutes });
+	else if (diffHours < 24) return i18n.t('time.hoursAgo', { count: diffHours });
+	else if (diffDays < 30) return i18n.t('time.daysAgo', { count: diffDays });
+	else return i18n.t('time.longAgo');
 }

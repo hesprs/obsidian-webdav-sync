@@ -25,7 +25,7 @@ Hosts shared, cross-cutting utilities for path normalization, stat conversion, l
 - WebDAV client/types and directory listing operations.
 - Storage KV for resumable traversal checkpoints.
 - Sync engine/tasks consuming stat/path/name/retry helpers.
-- Third-party libs (`bottleneck`, `async-mutex`, `glob-to-regexp`, hashing/logging deps).
+- Third-party libs (`glob-to-regexp`, hashing/logging deps).
 
 ## Key Files
 

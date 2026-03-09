@@ -29,6 +29,7 @@ export default defineConfig({
 			'@codemirror/view',
 			...builtinModules,
 		],
+		onlyAllowBundle: false,
 	},
 	outputOptions: {
 		file: 'dist/main.js',
@@ -42,9 +43,9 @@ export default defineConfig({
 			to: 'dist',
 		},
 	],
-	logLevel: 'error',
+	//logLevel: 'error',
 	target: 'es2018',
-	platform: 'browser',
+	platform: 'neutral',
 	inputOptions: {
 		resolve: {
 			// Obsidian plugins run in Electron with a DOM, but CJS resolution can still
@@ -63,5 +64,5 @@ export default defineConfig({
 		minify: dev,
 		fileName: 'styles.css',
 	},
-    clean: !dev,
+	clean: !dev,
 });

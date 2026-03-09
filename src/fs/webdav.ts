@@ -1,5 +1,5 @@
+import { isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
-import { isNotNil } from 'ramda';
 import { useSettings } from '~/settings';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import GlobMatch, {
@@ -50,7 +50,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 				};
 			})
 			.filter((item) => item.path.length > 0)
-			.filter(isNotNil);
+			.filter((item) => !isNil(item));
 
 		const exclusions = this.buildRules(settings?.filterRules.exclusionRules);
 		const inclusions = this.buildRules(settings?.filterRules.inclusionRules);

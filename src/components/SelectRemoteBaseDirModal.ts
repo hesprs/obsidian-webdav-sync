@@ -1,6 +1,6 @@
 import { App, Modal } from 'obsidian';
-import { mount as mountWebDAVExplorer } from '~/explorer';
 import { getDirectoryContents } from '~/api';
+import { mount as mountWebDAVExplorer } from '~/explorer';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
 import { stdRemotePath } from '~/utils/std-remote-path';
@@ -26,7 +26,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 		mountWebDAVExplorer(explorer, {
 			fs: {
 				ls: async (target) => {
-					const token = await this.plugin.getToken();
+					const token = this.plugin.getToken();
 					const items = await getDirectoryContents(
 						this.plugin.settings.serverUrl,
 						token,

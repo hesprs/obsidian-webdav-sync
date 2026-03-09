@@ -1,5 +1,5 @@
+import { join } from 'node:path';
 import { Notice, Setting } from 'obsidian';
-import { join } from 'path-browserify';
 import type { TraverseWebDAVCache } from '~/storage';
 import CacheClearModal from '~/components/CacheClearModal';
 import CacheRestoreModal from '~/components/CacheRestoreModal';

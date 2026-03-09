@@ -1,6 +1,21 @@
 import { createClient, type WebDAVClient } from 'webdav';
+import { apiLimiter } from '~/utils/api-limiter';
 import WebDAVSyncPlugin from '../index';
-import { createRateLimitedWebDAVClient } from '../utils/rate-limited-client';
+
+export function createRateLimitedWebDAVClient(client: WebDAVClient): WebDAVClient {
+	return new Proxy(client, {
+		get(target, prop, receiver) {
+			const value = Reflect.get(target, prop, receiver);
+			if (typeof value === 'function') {
+				// oxlint-disable-next-line typescript/no-explicit-any
+				return (...args: any[]) => {
+					return apiLimiter.schedule(() => value.apply(target, args));
+				};
+			}
+			return value;
+		},
+	});
+}
 
 export class WebDAVService {
 	constructor(private plugin: WebDAVSyncPlugin) {}

@@ -20,7 +20,7 @@ export default defineConfig({
   .scrollbar-default::-webkit-scrollbar{display:block}`;
 			},
 		],
-        [/^background-none$/, () => ({ background: 'none' })]
+		[/^background-none$/, () => ({ background: 'none' })],
 	],
 	presets: [
 		presetIcons({
@@ -31,6 +31,6 @@ export default defineConfig({
 				},
 			},
 		}),
-		presetWind3()
+		presetWind3(),
 	],
 });

@@ -1,4 +1,4 @@
-import { isAbsolute } from 'path-browserify';
+import { isAbsolute } from 'node:path';
 import { stdRemotePath } from '../../utils/std-remote-path';
 
 export function normalizeRemoteWalkPath(path: string, remoteBaseDir: string): string {

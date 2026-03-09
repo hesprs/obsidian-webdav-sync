@@ -1,5 +1,3 @@
-import { fromUint8Array } from 'js-base64';
-
 export async function sha256(data: ArrayBuffer) {
 	return crypto.subtle.digest('SHA-256', data);
 }
@@ -11,8 +9,10 @@ export async function sha256Hex(data: ArrayBuffer) {
 	return hashHex;
 }
 
-export async function sha256Base64(data: ArrayBuffer) {
-	const hashBuffer = await sha256(data);
-	const hashBase64 = fromUint8Array(new Uint8Array(hashBuffer), false);
-	return hashBase64;
+export async function sha256Base64(data: ArrayBuffer): Promise<string> {
+	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+	const hashBytes = new Uint8Array(hashBuffer);
+	let binary = '';
+	for (let i = 0; i < hashBytes.byteLength; i++) binary += String.fromCharCode(hashBytes[i]);
+	return btoa(binary);
 }

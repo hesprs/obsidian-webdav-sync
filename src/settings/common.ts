@@ -1,7 +1,6 @@
 import { parse as bytesParse } from 'bytes-iec';
 import { clamp, isNil } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
-import { isNotNil } from 'ramda';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
@@ -266,7 +265,7 @@ export default class CommonSettings extends BaseSettings {
 		// Plain number without unit: append 'B' for better UX
 		else if (
 			isNumeric(value) ||
-			(isNil(bytesParse(value)) && isNotNil(bytesParse(value + 'B')))
+			(isNil(bytesParse(value)) && !isNil(bytesParse(value + 'B')))
 		) {
 			value += 'B';
 		}
