@@ -4,6 +4,6 @@
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
 	"description": "General-purpose two-way WebDAV sync for Obsidian vaults.",
-	"author": "WebDAV Sync Contributors",
+	"author": "Hēsperus",
 	"isDesktopOnly": false
 }

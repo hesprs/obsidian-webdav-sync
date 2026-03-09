@@ -8,7 +8,7 @@ Primary entry and wiring files:
 
 - `index.ts` — plugin bootstrap and lifecycle orchestration.
 - `api.ts` — external/plugin-facing API surface.
-- `consts.ts`, `polyfill.ts`, `webdav-patch.ts` — runtime constants and environment patches.
+- `consts.ts`, `webdav-patch.ts` — runtime constants and environment patches.
 
 ## Module boundaries
 
@@ -43,6 +43,8 @@ Primary entry and wiring files:
   - See: `src/components/codemap.md`
 - `utils/` — cross-cutting pure helpers and small infra utilities.
   - See: `src/utils/codemap.md`
+- `explorer/` — self-contained WebDAV file explorer.
+  - See: `src/explorer/codemap.md`
 
 ### Localization and assets
 

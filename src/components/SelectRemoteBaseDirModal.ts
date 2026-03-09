@@ -1,5 +1,5 @@
 import { App, Modal } from 'obsidian';
-import { mount as mountWebDAVExplorer } from 'webdav-explorer';
+import { mount as mountWebDAVExplorer } from '~/explorer';
 import { getDirectoryContents } from '~/api';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
