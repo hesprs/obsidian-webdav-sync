@@ -71,5 +71,5 @@ Below is a list of planned features and improvements, the faster this plugin is 
 
 Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync), licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
 
-Copyright ©️ 2025-2026, YiJing Network (for unchanged parts)<br>
+Copyright ©️ 2025-2026 YiJing Network (for unchanged parts)<br>
 Copyright ©️ 2026 Hesprs (Hēsperus) (for modifications)
