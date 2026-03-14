@@ -1,25 +1,33 @@
 # Changelog
 
-本项目的所有重要更改都将记录在此文件中。All notable changes to this project will be documented in this file.
+All notable changes to this project will be documented in this file.
 
-## [1.1.3] - 2026-02-14
+## Obsidian WebDAV Sync v1.0.0 - 2026-03-15
+
+- Re-engineered the plugin to be a general-purpose WebDAV syncing plugin.
+- Allow custom WebDAV endpoints.
+- Removed Nutstore-specific features and APIs.
+- Significantly reduced the size of the plugin by eliminating unnecessary dependencies.
+- Internal: simplified the plugin structure and modernized the build & lint & format toolchain.
+
+## Obsidian Nutstore Sync v1.1.3 - 2026-02-14
 
 - 优化了设置访问的稳定性和错误处理。
 - 优化账户同步流程：在同步前增加配置校验，引导用户前往设置页面。
 - Improved stability and error handling for settings access.
 - Enhanced account sync workflow: Added configuration validation before sync and guided users to settings page.
 
-## [1.1.2] - 2026-02-11
+## Obsidian Nutstore Sync v1.1.2 - 2026-02-11
 
-- **新增对 traverseWebDAV 缓存清理的支持**
-- **Added support for clearing the traverseWebDAV cache**
+- 新增对 traverseWebDAV 缓存清理的支持
+- Added support for clearing the traverseWebDAV cache
 
-## [1.1.1] - 2026-02-10
+## Obsidian Nutstore Sync v1.1.1 - 2026-02-10
 
 - 修复：增强了 HTML 实体解码支持，提升了对特殊字符的处理能力。
 - Fix: Enhanced HTML entity decoding support, improving special character handling.
 
-## [1.1.0] - 2026-02-05
+## Obsidian Nutstore Sync v1.1.0 - 2026-02-05
 
 ### 新增功能 / Features
 
@@ -72,7 +80,7 @@
 - Switched to Vault API for file operations to improve stability.
 - Changed language setting from Obsidian API to plugin settings configuration.
 
-## [1.0.0] - 2025-12-29
+## Obsidian Nutstore Sync v1.0.0 - 2025-12-29
 
 - 功能: 分块执行同步任务并新增批量远端操作（批量建目录、递归删除）、覆盖推送与跳过冲突，显著提升大批量同步效率。/ Feature: Execute sync jobs in chunks with new batch remote operations (bulk mkdir, recursive delete), overwrite push, and conflict skipping to speed up large syncs.
 - 功能: 扩展 glob 规则和路径判定（Mergeable、Markdown、二进制文件），自动排除 configDir，并支持禁用间隔自动同步，增强策略可控性。/ Feature: Extended glob rules and path detection (mergeable, markdown, binary), auto-exclusion of configDir, and ability to disable interval auto sync for finer control.
@@ -80,34 +88,34 @@
 - 修复: 保护忽略文件不被远端删除、修复缓存服务、记录跳过、进度上报与任务分块等问题，保证同步稳定性。/ Fix: Safeguarded ignored files from remote deletion and fixed cache service, record skipping, progress reporting, and chunked task handling to keep sync stable.
 - 优化: 使用 `fflate` 压缩缓存、以 SWC 支持 ES5、改进 ArrayBuffer 转换与时长 clamping，提供更快更兼容的运行体验。/ Improvement: Switched to `fflate` caching, compile with SWC for ES5 support, and improved ArrayBuffer conversion plus duration clamping for faster, more compatible runtime.
 
-## [0.8.5] - 2025-12-02
+## Obsidian Nutstore Sync v0.8.5 - 2025-12-02
 
 - 功能: 允许跳过初始同步确认。/ Feature: Allow skipping initial sync confirmation.
 - 修复: 移除无用的卸载服务进程。/ Fix: Remove useless unload service process.
 - 优化: 优化记录更新的防抖性能。/ Refactor: Debounce record updates for performance.
 
-## [0.8.4] - 2025-08-06
+## Obsidian Nutstore Sync v0.8.4 - 2025-12-02
 
 - **改进:** 实现了可配置的自动同步间隔。
 - **修复:** 删除了孤立的记录。
-- **内部优化:** 重构了同步决策架构，并添加了全面的 glob 匹配测试；对 `SyncRecord` 类进行了解耦和重构，提升了代码可维护性；改进了 `StatModel` 的类型安全性和修复了相关的类型问题；使用了 `path-browserify` 提升兼容性。
+- **内部优化:** 重构了同步决策架构，并添加了全面的 glob 匹配测试；对 [SyncRecord](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/model/sync-record.model.ts#L4-L30) 类进行了解耦和重构，提升了代码可维护性；改进了 [StatModel](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/model/stat.model.ts#L1-L19) 的类型安全性和修复了相关的类型问题；使用了 `path-browserify` 提升兼容性。
 - **Improvements:** Implemented configurable auto-sync interval.
 - **Fixes:** Removed orphaned record.
-- **Internal Improvements:** Refactored sync decision architecture and added comprehensive glob matching tests; Decoupled and refactored the `SyncRecord` class for improved maintainability; Improved `StatModel` type safety and fixed related type issues; Used `path-browserify` for better compatibility.
+- **Internal Improvements:** Refactored sync decision architecture and added comprehensive glob matching tests; Decoupled and refactored the [SyncRecord](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/model/sync-record.model.ts#L4-L30) class for improved maintainability; Improved [StatModel](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/model/stat.model.ts#L1-L19) type safety and fixed related type issues; Used `path-browserify` for better compatibility.
 
-## [0.8.3] - 2025-07-21
+## Obsidian Nutstore Sync v0.8.3 - 2025-07-21
 
 - 优化二进制文件检测：通过扩展名检查优化了二进制文件的检测。
 - Optimized binary file detection: Improved binary file detection with extension checking.
 
-## [0.8.2] - 2025-06-26
+## Obsidian Nutstore Sync v0.8.2 - 2025-06-26
 
-- **改进:** 提升了文件处理的稳定性，修复了 `PullTask` 执行方法中的错误。
+- **改进:** 提升了文件处理的稳定性，修复了 [PullTask](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/sync/tasks/pull.task.ts#L1-L42) 执行方法中的错误。
 - **改进:** 改进了 `deepStringify` 函数的错误处理，使其能够更好地处理 `Error` 对象。
-- **Improvements:** Improved file handling stability, fixing errors in the `PullTask` execution method.
+- **Improvements:** Improved file handling stability, fixing errors in the [PullTask](file:///home/hesprs/Documents/Obsidian%20WebDAV%20Sync/src/sync/tasks/pull.task.ts#L1-L42) execution method.
 - **Improvements:** Improved error handling in the `deepStringify` function to better manage `Error` objects.
 
-## [0.8.1] - 2025-06-25
+## Obsidian Nutstore Sync v0.8.1 - 2025-06-25
 
 - **改进与修复:**
   - 更新了文件检索方法，提高了效率和稳定性。
@@ -118,7 +126,7 @@
   - Improved folder creation logic to reduce potential errors.
   - Enhanced robustness of language retrieval method to prevent potential runtime errors.
 
-## [0.8.0] - 2025-06-23
+## Obsidian Nutstore Sync v0.8.0 - 2025-06-23
 
 - **改进:**
   - 优化同步流程，避免同步进度条被意外清空。
@@ -141,7 +149,7 @@
   - Removed unused code to streamline the codebase.
   - Optimized timer management using `window.clearTimeout` and `window.setTimeout`.
 
-## [0.7.0] - 2025-05-14
+## Obsidian Nutstore Sync v0.7.0 - 2025-05-14
 
 - **特性**
   - 增强智能合并策略，提升冲突解决效率。
@@ -159,12 +167,12 @@
   - Improved stability of the `updateMtimeInRecord` method by adding error handling.
   - Ensured compatibility with versions 1.8.x and earlier.
 
-## [0.6.1] - 2025-05-13
+## Obsidian Nutstore Sync v0.6.1 - 2025-05-13
 
 - 改进 Glob 匹配逻辑和性能 (重构文件系统结构)
 - Improve glob matching logic and performance (Refactored filesystem structure)
 
-## [0.6.0] - 2025-05-09
+## Obsidian Nutstore Sync v0.6.0 - 2025-05-09
 
 - **新功能**
   - 解码文件路径中的 HTML Entity 编码
@@ -178,7 +186,7 @@
   - Suppress notifications during automatic synchronization
   - Add filter rule settings with support for include and exclude rules
 
-## [0.5.1] - 2025-04-30
+## Obsidian Nutstore Sync v0.5.1 - 2025-04-30
 
 - 修复：修复了 NutstorePlugin 类型不存在 'logs' 属性的问题。
 - Fixed: Resolved an issue where the 'logs' property was missing from the NutstorePlugin type.
@@ -198,7 +206,7 @@
   - Fixed the generated regular expression flags, removing the default global flag.
   - Added configDir to the filter rules.
 
-## [0.4.2] - 2025-04-28
+## Obsidian Nutstore Sync v0.4.2 - 2025-04-28
 
 - 修复：优化实时保存同步记录功能，避免同步大量文件中断后需要重新读写。
 - 修复：处理空目录或根目录情况。
@@ -207,19 +215,19 @@
 - Fixed: Handled cases with empty or root directories.
 - Fixed: Improved WebDAV connection check to handle 503 errors and provide corresponding notifications.
 
-## [0.4.1] - 2025-04-27
+## Obsidian Nutstore Sync v0.4.1 - 2025-04-27
 
 - 修复了首次同步时本地数据会覆盖远程数据的问题，现在会进行合并。
 - Fixed an issue where local data would overwrite remote data during the initial synchronization. Now, the data will be merged.
 
-## [0.4.0] - 2025-04-25
+## Obsidian Nutstore Sync v0.4.0 - 2025-04-25
 
 - 可以配置跳过大文件，避免 OOM；同步进度窗口可以取消同步和隐藏窗口；可选择性清除缓存。
 - 串行保存 blob 数据，日志持久化。
 - Configure skip large files to avoid OOM; The sync progress window can cancel sync and hide the window; Selectable cache clearing modal.
 - Serialize blob saving; Logs are now persistent.
 
-## [0.3.2] - 2025-04-23
+## Obsidian Nutstore Sync v0.3.2 - 2025-04-23
 
 - 恢复同步记录后显示同步完成提示。
 - 完善了同步记录功能，自动补充缺失文件夹的同步记录。
@@ -236,7 +244,7 @@
 - Added commands for starting and stopping synchronization.
 - Improved synchronization mechanism with interruptible 503 retry and sleep functions, fixing the crash issue when concurrently reading files with a large number of tasks.
 
-## [0.3.1] - 2025-04-21
+## Obsidian Nutstore Sync v0.3.1 - 2025-04-21
 
 - 修复：
   - 仅导出当前 vault 的缓存
@@ -253,7 +261,7 @@
   - Added a no-op task to optimize task execution flow.
   - Added a loose synchronization mode to skip files with the same name and size.
 
-## [0.3.0] - 2025-04-18
+## Obsidian Nutstore Sync v0.3.0 - 2025-04-18
 
 - **功能改进:**
   - 实现了 Indexed DB 缓存数据的导入导出功能，并支持保存到坚果云盘。
@@ -274,7 +282,7 @@
   - Added logging functionality for production mode.
   - Refactored the settings module as a class.
 
-## [0.2.3] - 2025-04-14
+## Obsidian Nutstore Sync v0.2.3 - 2025-04-14
 
 - 修复相对路径处理逻辑
 - 为过滤器添加 flag
@@ -282,7 +290,7 @@
 - fix relative path bug
 - allow config flag for filter
 
-## [0.2.2] - 2025-04-10
+## Obsidian Nutstore Sync v0.2.2 - 2025-04-10
 
 - 修复了部分旧环境下的兼容性问题 (通过 polyfill 数组方法)。
 - 修复了导致移动端无法同步的问题。
@@ -290,13 +298,13 @@
 - Fixed compatibility issues in some older environments (by polyfilling array methods).
 - Fixed an issue preventing synchronization on mobile devices.
 
-## [0.2.1] - 2025-04-10
+## Obsidian Nutstore Sync v0.2.1 - 2025-04-10
 
 - 修正了相对路径的处理。
 
 - Corrected handling of relative paths.
 
-## [0.2.0] - 2025-04-09
+## Obsidian Nutstore Sync v0.2.0 - 2025-04-09
 
 - 简化了登录流程。
 - 增加了自定义过滤功能。
@@ -318,7 +326,7 @@
 - Adjusted the match threshold for diffs.
 - Encoded paths for improved handling.
 
-## [0.1.0] - 2025-04-03
+## Obsidian Nutstore Sync v0.1.0 - 2025-04-03
 
 - 为冲突解决策略描述添加了备份建议。
 - 改进了手动登录帮助链接的结构。
@@ -330,7 +338,7 @@
 - Disabled scientific notation (eNotation) for number display.
 - Updated the Single Sign-On (SSO) component (using `@nutstore/sso-js`).
 
-## [0.0.7] - 2025-03-28
+## Obsidian Nutstore Sync v0.0.7 - 2025-03-28
 
 - 新增：执行同步任务前增加确认步骤，通过包含说明文字的新弹窗进行确认。
 - 新增：添加 `confirmBeforeSync` 设置项，用于控制是否在同步前进行确认。
@@ -344,12 +352,12 @@
 - Added notifications for errors during remote directory creation.
 - Optimized the synchronization process (includes remote directory checks and record cleanup).
 
-## [0.0.6] - 2025-03-25
+## Obsidian Nutstore Sync v0.0.6 - 2025-03-25
 
 - 提高了获取目录内容时的可靠性，增加了 API 速率限制和针对临时服务器错误 (503) 的自动重试机制。
 - Improved reliability when fetching directory contents by adding API rate limiting and automatic retries for temporary server errors (503).
 
-## [0.0.5] - 2025-03-21
+## Obsidian Nutstore Sync v0.0.5 - 2025-03-21
 
 - 修复：创建新文件夹后自动刷新列表。
 - 功能：更新了坚果云单点登录（SSO）支持。
@@ -357,12 +365,12 @@
 - Fix: Refresh list automatically after creating a new folder.
 - Feature: Updated Nutstore Single Sign-On (SSO) support.
 
-## [0.0.4] - 2025-03-13
+## Obsidian Nutstore Sync v0.0.4 - 2025-03-13
 
 - 更新了单点登录 (SSO) 功能。
 - Updated Single Sign-On (SSO) functionality.
 
-## [0.0.3] - 2025-03-13
+## Obsidian Nutstore Sync v0.0.3 - 2025-03-13
 
 - **同步核心与进度**
   - 新增 同步状态管理、进度百分比显示、完成状态（含失败计数）和同步按钮视觉反馈。
@@ -422,7 +430,7 @@
   - Fixed automatic word wrapping issues.
   - Updated plugin name.
 
-## [0.0.2] - 2025-03-07
+## Obsidian Nutstore Sync v0.0.2 - 2025-03-07
 
 - **WebDAV:**
   - 新增 WebDAV 文件浏览器功能。
@@ -452,7 +460,7 @@
   - Added Chinese help documentation (`help` for zh).
   - Fixed accessing configured value from `configDir`.
 
-## [0.0.1] - 2025-02-26
+## Obsidian Nutstore Sync v0.0.1 - 2025-02-26
 
 - 新增 WebDAV 及本地文件同步功能，包括文件和文件夹的遍历、创建、删除（支持递归删除）以及基础的冲突解决机制。
 - 改进同步冲突处理：增加解决策略，支持跳过空文件冲突，并在解决后更新记录。

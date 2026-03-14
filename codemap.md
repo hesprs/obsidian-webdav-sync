@@ -40,3 +40,59 @@ Obsidian Sync is a WebDAV-first Obsidian plugin that performs two-way synchroniz
 | `src/utils`         | Cross-cutting utilities for traversal, path/stat adapters, retries, request throttling, and diagnostics.      | [src/utils/codemap.md](./src/utils/codemap.md)                 |
 | `src/utils/mime`    | Minimal path-based markdown-type detection helper scope for sync/filter decisions.                            | [src/utils/mime/codemap.md](./src/utils/mime/codemap.md)       |
 | `src/explorer`      | Self-contained WebDAV file explorer UI for remote directory selection.                                        | [src/explorer/codemap.md](./src/explorer/codemap.md)           |
+
+## Mechanisms
+
+### Remote Cache
+
+It helps “trivially” in steady-state sync, but it helps a lot in cold-start sync.
+
+It’s not part of normal sync correctness logic. It’s a bootstrap optimization.
+
+- The expensive part is remote tree traversal (ResumableWebDAVTraversal), especially with big vaults/rate-limited WebDAV.
+- That traversal cache lives in local IndexedDB (traverseWebDAVKV) and is device-local.
+- New device = no local cache, so first sync must re-scan everything.
+- Export/import just copies that local traversal cache through WebDAV so another device can skip the first heavy scan.
+
+So it exists for:
+
+1. faster onboarding on new devices,
+2. less API pressure/rate-limit pain on first run,
+3. manual recovery after cache loss.
+
+Not for automatic sync behavior.
+
+### Remote/Local Presence Resolution
+
+This plugin is doing a 3-way heuristic per path using:
+
+1. local stat list,
+2. remote stat list,
+3. previous sync record (syncRecord: last known local+remote state + optional base blob).
+   Core rule: compare current local/remote against last synced record.
+   File presence matrix (simplified)
+
+**With existing record**:
+
+- local exists + remote exists
+  - both changed since record → conflict task (merge/latest timestamp/skip per setting)
+  - only local changed → push
+  - only remote changed → pull
+  - neither changed → noop
+
+- remote exists + local missing
+  - remote changed since record → pull (local was likely stale/missing)
+  - remote unchanged → remove remote (propagate local deletion)
+
+- local exists + remote missing
+  - local changed since record → push
+  - local unchanged → remove local (propagate remote deletion)
+
+**No record**:
+
+- both exist → conflict resolve (or noop in loose mode if same size)
+- only local → push
+- only remote → pull
+
+Folders are similar but based on child-content change detection (not folder mtime, since folder mtime is unreliable).
+After execution it updates records by re-reading local+remote state; orphan records are cleaned.

@@ -39,9 +39,8 @@ export default class CacheServiceV1 {
 
 			// Encoding pipeline: superjson.stringify -> deflate level 9
 			const serializedStr = superjson.stringify(exportedStorage);
-			if (!serializedStr || serializedStr.length === 0) {
+			if (!serializedStr || serializedStr.length === 0)
 				throw new Error('Cache data serialization failed');
-			}
 
 			const encoder = new TextEncoder();
 
