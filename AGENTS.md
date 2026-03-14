@@ -12,3 +12,8 @@ Detailed codebase map can be found in `codemap.md` in each directory. Rule of th
 - `pnpm dev`: build in watch mode for daily debug.
 - `pnpm build`: build for distribution (ONLY before true distribution).
 - `pnpm test`: run al tests.
+
+## Code Quality
+
+- No non-null assertion (use `as` assertion)
+- No explicit `any`
