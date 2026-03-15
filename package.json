@@ -1,9 +1,9 @@
 {
 	"name": "obsidian-webdav-sync",
 	"version": "1.0.0",
+	"private": true,
 	"type": "module",
 	"main": "main.js",
-    "private": true,
 	"scripts": {
 		"dev": "MODE=dev pnpm tsdown",
 		"build": "tsdown",
