@@ -1,11 +1,11 @@
 import { normalizePath } from 'obsidian';
 import { sha256Digest, hash } from '~/platform/crypto';
-import { stdRemotePath } from './std-remote-path';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 
 export function getDBKey(vaultName: string, remoteBaseDir: string) {
 	return hash({
 		vaultName,
-		remoteBaseDir: stdRemotePath(remoteBaseDir),
+		remoteBaseDir: normalizeRemoteDir(remoteBaseDir),
 	});
 }
 

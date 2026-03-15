@@ -3,8 +3,8 @@ import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import { isSameTime } from '~/utils/is-same-time';
 import logger from '~/utils/logger';
-import remotePathToAbsolute from '~/utils/remote-path-to-absolute';
-import { remotePathToLocalPath } from '~/utils/remote-path-to-local-path';
+import { remotePathToAbsolute } from '~/platform/path/remote-path';
+import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 import type { SyncDecisionInput } from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
@@ -440,7 +440,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		if (!remote.isDir) {
 			continue;
 		}
-		const localPath = remotePathToLocalPath(remoteBaseDir, remote.path);
+		const localPath = remotePathToLocalRelative(remoteBaseDir, remote.path);
 		const local = localStatsMap.get(localPath);
 		const record = syncRecords.get(localPath);
 		if (local) {

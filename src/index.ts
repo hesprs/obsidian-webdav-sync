@@ -16,7 +16,7 @@ import SyncExecutorService from './services/sync-executor.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
-import { stdRemotePath } from './utils/std-remote-path';
+import { normalizeRemoteDir } from './platform/path/remote-path';
 
 function createGlobMathOptions(expr: string) {
 	return {
@@ -120,9 +120,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	get remoteBaseDir() {
 		let remoteDir = normalizePath(this.settings.remoteDir.trim());
-		if (remoteDir === '' || remoteDir === '/') {
-			remoteDir = this.app.vault.getName();
-		}
-		return stdRemotePath(remoteDir);
+		if (remoteDir === '' || remoteDir === '/') remoteDir = this.app.vault.getName();
+		return normalizeRemoteDir(remoteDir);
 	}
 }

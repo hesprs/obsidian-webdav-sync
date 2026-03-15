@@ -8,7 +8,7 @@ import i18n from '~/i18n';
 import { joinRemotePath } from '~/platform/path/remote-path';
 import { getDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
-import { stdRemotePath } from '~/utils/std-remote-path';
+import { normalizeRemoteDir } from '~/platform/path/remote-path'
 import BaseSettings from './settings.base';
 
 export interface ExportedStorage {
@@ -97,7 +97,7 @@ export default class CacheSettings extends BaseSettings {
 	}
 
 	get remoteCacheDir() {
-		return stdRemotePath(
+		return normalizeRemoteDir(
 			this.plugin.settings.remoteCacheDir?.trim() || this.plugin.manifest.name.trim(),
 		);
 	}

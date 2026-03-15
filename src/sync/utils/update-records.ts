@@ -12,7 +12,7 @@ import { getDBKey } from '~/utils/get-db-key';
 import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
-import { stdRemotePath } from '~/utils/std-remote-path';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 import type WebDAVSyncPlugin from '../..';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 
@@ -41,7 +41,7 @@ export async function updateMtimeInRecord(
 	const remoteFs = new RemoteWebDAVFileSystem({
 		vault,
 		token,
-		remoteBaseDir: stdRemotePath(remoteBaseDir),
+		remoteBaseDir: normalizeRemoteDir(remoteBaseDir),
 	});
 
 	const latestRemoteEntities = await remoteFs.walk({ freshness: 'fresh' });

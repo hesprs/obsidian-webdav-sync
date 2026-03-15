@@ -8,14 +8,8 @@ function normalizeComparablePath(path: string): string {
 export function isSub(parent: string, sub: string) {
 	parent = normalizeComparablePath(parent);
 	sub = normalizeComparablePath(sub);
-	if (!parent.endsWith('/')) {
-		parent += '/';
-	}
-	if (!sub.endsWith('/')) {
-		sub += '/';
-	}
-	if (sub === parent) {
-		return false;
-	}
+	if (!parent.endsWith('/')) parent += '/';
+	if (!sub.endsWith('/')) sub += '/';
+	if (sub === parent) return false;
 	return sub.startsWith(parent);
 }

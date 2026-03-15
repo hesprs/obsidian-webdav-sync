@@ -6,9 +6,7 @@ function splitRemoteSegments(path: string): string[] {
 	const resolved: string[] = [];
 
 	for (const segment of segments) {
-		if (segment === '' || segment === '.') {
-			continue;
-		}
+		if (segment === '' || segment === '.') continue;
 		if (segment === '..') {
 			resolved.pop();
 			continue;
@@ -39,9 +37,7 @@ export function joinRemotePath(...parts: string[]): `/${string}` {
 
 export function remoteDirname(path: string): `/${string}` {
 	const normalized = normalizeRemotePath(path);
-	if (normalized === '/') {
-		return '/';
-	}
+	if (normalized === '/') return '/';
 
 	const lastSlashIndex = normalized.lastIndexOf('/');
 	return (lastSlashIndex <= 0 ? '/' : normalized.slice(0, lastSlashIndex)) as `/${string}`;
@@ -49,30 +45,29 @@ export function remoteDirname(path: string): `/${string}` {
 
 export function remoteBasename(path: string): string {
 	const normalized = normalizeRemotePath(path);
-	if (normalized === '/') {
-		return '';
-	}
+	if (normalized === '/') return '';
 
 	const lastSlashIndex = normalized.lastIndexOf('/');
 	return normalized.slice(lastSlashIndex + 1);
 }
 
 export function remotePathToLocalRelative(remoteBaseDir: string, remotePath: string): string {
-	if (!isAbsoluteRemotePath(remotePath)) {
-		return normalizeVaultPath(remotePath);
-	}
+	if (!isAbsoluteRemotePath(remotePath)) return normalizeVaultPath(remotePath);
 
 	const normalizedBasePath = normalizeRemotePath(remoteBaseDir);
 	const normalizedBaseDir = normalizeRemoteDir(remoteBaseDir);
 	const normalizedRemotePath = normalizeRemotePath(remotePath);
 
-	if (normalizedRemotePath === normalizedBasePath) {
-		return '';
-	}
+	if (normalizedRemotePath === normalizedBasePath) return '';
 
-	if (normalizedBasePath !== '/' && normalizedRemotePath.startsWith(normalizedBaseDir)) {
+	if (normalizedBasePath !== '/' && normalizedRemotePath.startsWith(normalizedBaseDir))
 		return normalizeVaultPath(normalizedRemotePath.slice(normalizedBaseDir.length));
-	}
 
 	return normalizeVaultPath(normalizedRemotePath.slice(1));
+}
+
+export function remotePathToAbsolute(remoteBaseDir: string, remotePath: string): string {
+	return isAbsoluteRemotePath(remotePath)
+		? normalizeRemotePath(remotePath)
+		: joinRemotePath(remoteBaseDir, remotePath);
 }

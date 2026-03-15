@@ -73,7 +73,7 @@ Configuration:
 
 ## Development Roadmap
 
-Below is a list of planned features and improvements, the faster this plugin is adopted and the stars ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
+Below is a list of planned features and improvements, the faster this plugin is adopted and the star ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
 
 - [ ] Support syncing files in the Obsidian config folder (`.obsidian/`)
 - [ ] Saving WebDAV credentials in Obsidian Keychain

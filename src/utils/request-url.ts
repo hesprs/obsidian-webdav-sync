@@ -26,9 +26,7 @@ export default async function requestUrl(p: RequestUrlParam | string) {
 
 	if (res.status >= 400) {
 		logger.error(res);
-		if (typeof p === 'string' || p.throw !== false) {
-			throw new RequestUrlError(res);
-		}
+		if (typeof p === 'string' || p.throw !== false) throw new RequestUrlError(res);
 	}
 
 	return res;

@@ -41,7 +41,7 @@ Obsidian Sync is a WebDAV-first Obsidian plugin that performs two-way synchroniz
 | `src/utils/mime`    | Minimal path-based markdown-type detection helper scope for sync/filter decisions.                            | [src/utils/mime/codemap.md](./src/utils/mime/codemap.md)       |
 | `src/explorer`      | Self-contained WebDAV file explorer UI for remote directory selection.                                        | [src/explorer/codemap.md](./src/explorer/codemap.md)           |
 
-## Mechanisms
+## Mechanisms (DO NOT EDIT)
 
 ### Remote Cache
 

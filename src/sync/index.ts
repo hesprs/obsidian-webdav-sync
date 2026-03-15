@@ -28,7 +28,6 @@ import getTaskName from '~/utils/get-task-name';
 import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
-import { stdRemotePath } from '~/utils/std-remote-path';
 import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
@@ -409,7 +408,7 @@ export class SyncEngine {
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
 		const webdav = this.webdav;
-		const remoteBaseDir = stdRemotePath(this.options.remoteBaseDir);
+		const remoteBaseDir = normalizeRemoteDir(this.options.remoteBaseDir);
 
 		let remoteBaseDirExists = await webdav.exists(remoteBaseDir);
 

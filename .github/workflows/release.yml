@@ -31,7 +31,7 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Run test build
+      - name: Build plugin
         run: pnpm build
 
       - name: Create release
