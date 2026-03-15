@@ -6,6 +6,9 @@
 <h4 align="center">Sync your Obsidian notes with any WebDAV service.</h4>
 
 <p align="center">
+    <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
+        <img src="https://img.shields.io/github/actions/workflow/status/hesprs/obsidian-webdav-sync/ci.yml?style=flat&logo=github&logoColor=white&label=CI&labelColor=d4ab00&color=333333" alt="ci">
+    </a>
     <img src="https://img.shields.io/badge/Types-Strict-333333?logo=typescript&labelColor=blue&logoColor=white" alt="TypeScript">
 </p>
 
