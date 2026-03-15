@@ -1,7 +1,7 @@
-import { subtle } from "node:crypto";
+import { sha256Digest } from '~/platform/crypto';
 
 export async function sha256(data: ArrayBuffer) {
-	return subtle.digest('SHA-256', data);
+	return sha256Digest(data);
 }
 
 export async function sha256Hex(data: ArrayBuffer) {
@@ -12,7 +12,7 @@ export async function sha256Hex(data: ArrayBuffer) {
 }
 
 export async function sha256Base64(data: ArrayBuffer): Promise<string> {
-	const hashBuffer = await subtle.digest('SHA-256', data);
+	const hashBuffer = await sha256(data);
 	const hashBytes = new Uint8Array(hashBuffer);
 	let binary = '';
 	for (let i = 0; i < hashBytes.byteLength; i++) binary += String.fromCharCode(hashBytes[i]);

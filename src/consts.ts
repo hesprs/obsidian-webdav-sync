@@ -9,4 +9,4 @@ export const VALID_REQURL =
 	(!Platform.isAndroidApp && requireApiVersion(API_VER_REQURL)) ||
 	(Platform.isAndroidApp && requireApiVersion(API_VER_REQURL_ANDROID));
 
-export const IN_DEV = process.env.NODE_ENV === 'dev';
+export const IN_DEV = __DEV__;

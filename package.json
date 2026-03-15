@@ -30,7 +30,6 @@
 		"lodash-es": "^4.17.23",
 		"node-diff3": "^3.2.0",
 		"obsidian": "latest",
-		"ohash": "^2.0.11",
 		"oxfmt": "^0.36.0",
 		"oxlint": "^1.51.0",
 		"oxlint-tsgolint": "^0.16.0",

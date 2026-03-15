@@ -7,8 +7,9 @@ All notable changes to this project will be documented in this file.
 - Re-engineered the plugin to be a general-purpose WebDAV syncing plugin.
 - Allow custom WebDAV endpoints.
 - Removed Nutstore-specific features and APIs.
-- Significantly reduced the size of the plugin by eliminating unnecessary dependencies.
+- Reduced size by 50% via eliminating unnecessary dependencies while preserving mobile compatibility.
 - Internal: simplified the plugin structure and modernized the build & lint & format toolchain.
+- Internal: simplified syncing planning process and reuse traversal cache in stable syncing to improve performance.
 
 ## Obsidian Nutstore Sync v1.1.3 - 2026-02-14
 

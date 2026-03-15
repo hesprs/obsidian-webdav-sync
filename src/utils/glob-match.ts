@@ -1,6 +1,5 @@
 import GlobToRegExp from 'glob-to-regexp';
 import { cloneDeep } from 'lodash-es';
-import path from 'node:path';
 
 export interface GlobMatchUserOptions {
 	caseSensitive: boolean;
@@ -28,11 +27,25 @@ function generateFlags(options: GlobMatchUserOptions) {
 }
 
 function normalizePath(rawPath: string) {
-	const normalized = path.normalize(rawPath);
+	const isDirPath = rawPath.replaceAll('\\', '/').endsWith('/');
+	const normalized = rawPath
+		.replaceAll('\\', '/')
+		.split('/')
+		.filter((segment, index) => segment !== '' || index === 0)
+		.reduce<string[]>((segments, segment) => {
+			if (segment === '' || segment === '.') {
+				return segments;
+			}
+			if (segment === '..') {
+				segments.pop();
+				return segments;
+			}
+			segments.push(segment);
+			return segments;
+		}, [])
+		.join('/');
 	const trimmed = normalized.replace(/^\.+\//, '').replace(/^\/+/, '');
-	const isDirPath = trimmed.endsWith('/');
-	const withoutTrailing = isDirPath ? trimmed.slice(0, -1) : trimmed;
-	const segments = withoutTrailing ? withoutTrailing.split('/').filter(Boolean) : [];
+	const segments = trimmed ? trimmed.split('/').filter(Boolean) : [];
 	return {
 		normalized: segments.join('/'),
 		segments,

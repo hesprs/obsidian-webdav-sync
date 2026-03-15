@@ -1,11 +1,5 @@
-import { isAbsolute, normalize } from 'node:path';
+import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 
 export function remotePathToLocalPath(remoteBaseDir: string, remotePath: string) {
-	remoteBaseDir = normalize(remoteBaseDir);
-	remotePath = normalize(remotePath);
-	remotePath =
-		isAbsolute(remotePath) && remotePath.startsWith(remoteBaseDir)
-			? remotePath.replace(remoteBaseDir, '')
-			: remotePath;
-	return normalize(remotePath);
+	return remotePathToLocalRelative(remoteBaseDir, remotePath);
 }

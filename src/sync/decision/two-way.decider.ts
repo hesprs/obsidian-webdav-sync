@@ -1,4 +1,4 @@
-import { isEqual } from 'ohash';
+import { isEqual } from '~/platform/crypto';
 import { blobStore } from '~/storage/blob';
 import type {
 	ConflictTaskOptions,
@@ -65,7 +65,6 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 				new SkippedTask({ ...commonTaskOptions, ...options }),
 		};
 
-		// 文件内容比较函数
 		const compareFileContent = async (
 			filePath: string,
 			baseContent: ArrayBuffer,
@@ -83,7 +82,6 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 			return await blob.arrayBuffer();
 		};
 
-		// 调用纯函数进行决策
 		return await twoWayDecider({
 			settings: {
 				skipLargeFiles: this.settings.skipLargeFiles,

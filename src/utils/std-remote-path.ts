@@ -1,7 +1,5 @@
-import { normalize } from 'node:path';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 
 export function stdRemotePath(remotePath: string): `/${string}/` {
-	if (!remotePath.startsWith('/')) remotePath = `/${remotePath}`;
-	if (!remotePath.endsWith('/')) remotePath = `${remotePath}/`;
-	return normalize(remotePath) as `/${string}/`;
+	return normalizeRemoteDir(remotePath);
 }

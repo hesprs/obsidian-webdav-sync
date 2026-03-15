@@ -1,6 +1,6 @@
-import { join } from 'node:path';
 import type { StatModel } from '~/model/stat.model';
 import { getDirectoryContents } from '~/api';
+import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
 import { traverseWebDAVKV } from '~/storage';
 import { Mutex } from '~/utils/mutex';
 import { apiLimiter } from './api-limiter';
@@ -8,7 +8,6 @@ import { fileStatToStatModel } from './file-stat-to-stat-model';
 import { is503Error } from './is-503-error';
 import logger from './logger';
 import sleep from './sleep';
-import { stdRemotePath } from './std-remote-path';
 import { type MaybePromise } from './types';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
@@ -58,7 +57,7 @@ export class ResumableWebDAVTraversal {
 	 * Normalize directory path for use as nodes key
 	 */
 	private normalizeDirPath(path: string): string {
-		return stdRemotePath(path);
+		return normalizeRemoteDir(path);
 	}
 
 	private isPathWithinBase(path: string): boolean {
@@ -71,7 +70,7 @@ export class ResumableWebDAVTraversal {
 	private resolveTraversalPath(currentPath: string, childPath: string): string {
 		if (this.isPathWithinBase(childPath)) return this.normalizeDirPath(childPath);
 		const current = this.normalizeDirPath(currentPath);
-		return this.normalizeDirPath(join(current, childPath));
+		return this.normalizeDirPath(joinRemotePath(current, childPath));
 	}
 
 	constructor(options: {

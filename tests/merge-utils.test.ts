@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { arrayBufferEquals } from '~/platform/binary';
 import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
@@ -7,14 +8,18 @@ import {
 	type LatestTimestampParams,
 } from '~/sync/core/merge-utils';
 
+function textToArrayBuffer(value: string): ArrayBuffer {
+	return new TextEncoder().encode(value).buffer;
+}
+
 describe('resolveByLatestTimestamp', () => {
 	// --- 无更改 ---
 	it('情况 1.1: 时间戳相同，应无更改', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1000,
 			remoteMtime: 1000,
-			localContent: Buffer.from('abc'),
-			remoteContent: Buffer.from('abc'),
+			localContent: textToArrayBuffer('abc'),
+			remoteContent: textToArrayBuffer('abc'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.NoChange);
@@ -24,8 +29,8 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1000,
 			remoteMtime: 1001,
-			localContent: Buffer.from('abc'),
-			remoteContent: Buffer.from('abc'),
+			localContent: textToArrayBuffer('abc'),
+			remoteContent: textToArrayBuffer('abc'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.NoChange);
@@ -35,8 +40,8 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1001,
 			remoteMtime: 1000,
-			localContent: Buffer.from('abc'),
-			remoteContent: Buffer.from('abc'),
+			localContent: textToArrayBuffer('abc'),
+			remoteContent: textToArrayBuffer('abc'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.NoChange);
@@ -47,13 +52,13 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1000,
 			remoteMtime: 1001,
-			localContent: Buffer.from('abc'),
-			remoteContent: Buffer.from('abcd'),
+			localContent: textToArrayBuffer('abc'),
+			remoteContent: textToArrayBuffer('abcd'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.UseRemote);
 		if (result.status === LatestTimestampResolution.UseRemote) {
-			expect(result.content).toEqual(Buffer.from('abcd'));
+			expect(arrayBufferEquals(result.content, textToArrayBuffer('abcd'))).toBe(true);
 		}
 	});
 
@@ -61,13 +66,13 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1000,
 			remoteMtime: 1001,
-			localContent: Buffer.from('binarydata1'),
-			remoteContent: Buffer.from('binarydata2'),
+			localContent: textToArrayBuffer('binarydata1'),
+			remoteContent: textToArrayBuffer('binarydata2'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.UseRemote);
 		if (result.status === LatestTimestampResolution.UseRemote) {
-			expect(result.content).toEqual(Buffer.from('binarydata2'));
+			expect(arrayBufferEquals(result.content, textToArrayBuffer('binarydata2'))).toBe(true);
 		}
 	});
 
@@ -76,13 +81,13 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1001,
 			remoteMtime: 1000,
-			localContent: Buffer.from('xyz'),
-			remoteContent: Buffer.from('xy'),
+			localContent: textToArrayBuffer('xyz'),
+			remoteContent: textToArrayBuffer('xy'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.UseLocal);
 		if (result.status === LatestTimestampResolution.UseLocal) {
-			expect(result.content).toEqual(Buffer.from('xyz'));
+			expect(arrayBufferEquals(result.content, textToArrayBuffer('xyz'))).toBe(true);
 		}
 	});
 
@@ -90,13 +95,13 @@ describe('resolveByLatestTimestamp', () => {
 		const params: LatestTimestampParams = {
 			localMtime: 1001,
 			remoteMtime: 1000,
-			localContent: Buffer.from('localbinary'),
-			remoteContent: Buffer.from('remotebinary'),
+			localContent: textToArrayBuffer('localbinary'),
+			remoteContent: textToArrayBuffer('remotebinary'),
 		};
 		const result = resolveByLatestTimestamp(params);
 		expect(result.status).toBe(LatestTimestampResolution.UseLocal);
 		if (result.status === LatestTimestampResolution.UseLocal) {
-			expect(result.content).toEqual(Buffer.from('localbinary'));
+			expect(arrayBufferEquals(result.content, textToArrayBuffer('localbinary'))).toBe(true);
 		}
 	});
 });

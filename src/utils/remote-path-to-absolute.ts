@@ -1,5 +1,11 @@
-import { isAbsolute, join } from 'node:path';
+import {
+	isAbsoluteRemotePath,
+	joinRemotePath,
+	normalizeRemotePath,
+} from '~/platform/path/remote-path';
 
 export default function remotePathToAbsolute(remoteBaseDir: string, remotePath: string): string {
-	return isAbsolute(remotePath) ? remotePath : join(remoteBaseDir, remotePath);
+	return isAbsoluteRemotePath(remotePath)
+		? normalizeRemotePath(remotePath)
+		: joinRemotePath(remoteBaseDir, remotePath);
 }

@@ -1,9 +1,9 @@
-import { basename } from 'node:path';
-import { normalizePath, TFile, TFolder, Vault } from 'obsidian';
+import { TFile, TFolder, Vault } from 'obsidian';
 import type { StatModel } from '~/model/stat.model';
+import { normalizeVaultPath, vaultBasename } from '~/platform/path/vault-path';
 
 export async function statVaultItem(vault: Vault, path: string): Promise<StatModel | undefined> {
-	path = normalizePath(path);
+	path = normalizeVaultPath(path);
 	const file = vault.getAbstractFileByPath(path);
 	if (!file) {
 		return undefined;
@@ -11,14 +11,14 @@ export async function statVaultItem(vault: Vault, path: string): Promise<StatMod
 	if (file instanceof TFolder) {
 		return {
 			path,
-			basename: basename(path),
+			basename: vaultBasename(path),
 			isDir: true,
 			isDeleted: false,
 		};
 	} else if (file instanceof TFile) {
 		return {
 			path,
-			basename: basename(path),
+			basename: vaultBasename(path),
 			isDir: false,
 			isDeleted: false,
 			mtime: file.stat.mtime,

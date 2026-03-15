@@ -1,11 +1,11 @@
-import type { BufferLike } from 'webdav';
 import { deflateSync, inflateSync } from 'fflate/browser';
-import { join } from 'node:path';
 import { Notice } from 'obsidian';
 import superjson from 'superjson';
 import type { ExportedStorage } from '~/settings/cache';
 import { getDirectoryContents } from '~/api';
 import i18n from '~/i18n';
+import { toArrayBuffer, type BinaryLike } from '~/platform/binary';
+import { joinRemotePath } from '~/platform/path/remote-path';
 import { traverseWebDAVKV } from '~/storage';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
@@ -47,7 +47,7 @@ export default class CacheServiceV1 {
 			const deflatedStorage = deflateSync(encoder.encode(serializedStr), {
 				level: 9,
 			}) as Uint8Array<ArrayBuffer>;
-			const filePath = join(this.remoteCacheDir, filename);
+			const filePath = joinRemotePath(this.remoteCacheDir, filename);
 
 			await webdav.createDirectory(this.remoteCacheDir, { recursive: true });
 			await webdav.putFileContents(filePath, uint8ArrayToArrayBuffer(deflatedStorage), {
@@ -74,7 +74,7 @@ export default class CacheServiceV1 {
 	async restoreCache(filename: string) {
 		try {
 			const webdav = await this.plugin.webDAVService.createWebDAVClient();
-			const filePath = join(this.remoteCacheDir, filename);
+			const filePath = joinRemotePath(this.remoteCacheDir, filename);
 
 			const fileExists = await webdav.exists(filePath).catch(() => false);
 			if (!fileExists) {
@@ -82,9 +82,11 @@ export default class CacheServiceV1 {
 				return Promise.reject(new Error('File not found'));
 			}
 
-			const fileContent = (await webdav.getFileContents(filePath, {
-				format: 'binary',
-			})) as BufferLike;
+			const fileContent = await toArrayBuffer(
+				(await webdav.getFileContents(filePath, {
+					format: 'binary',
+				})) as BinaryLike,
+			);
 
 			// Check if file content is empty
 			if (!fileContent || fileContent.byteLength === 0) {
@@ -139,7 +141,7 @@ export default class CacheServiceV1 {
 	async deleteCache(filename: string): Promise<void> {
 		try {
 			const webdav = await this.plugin.webDAVService.createWebDAVClient();
-			const filePath = join(this.remoteCacheDir, filename);
+			const filePath = joinRemotePath(this.remoteCacheDir, filename);
 
 			await webdav.deleteFile(filePath);
 
