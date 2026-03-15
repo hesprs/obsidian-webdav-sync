@@ -1,6 +1,7 @@
 {
 	"name": "obsidian-webdav-sync",
 	"version": "1.0.0",
+	"private": true,
 	"type": "module",
 	"main": "main.js",
 	"scripts": {
@@ -44,5 +45,6 @@
 		"unplugin-solid": "^1.0.0",
 		"vitest": "^4.0.18",
 		"webdav": "^5.9.0"
-	}
+	},
+	"packageManager": "pnpm@10.28.0"
 }

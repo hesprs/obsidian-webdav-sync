@@ -6,6 +6,9 @@
 <h4 align="center">将您的 Obsidian 笔记与任何 WebDAV 服务进行同步。</h4>
 
 <p align="center">
+    <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
+        <img src="https://img.shields.io/github/actions/workflow/status/hesprs/obsidian-webdav-sync/ci.yml?style=flat&logo=github&logoColor=white&label=CI&labelColor=d4ab00&color=333333" alt="ci">
+    </a>
     <img src="https://img.shields.io/badge/Types-Strict-333333?logo=typescript&labelColor=blue&logoColor=white" alt="TypeScript">
 </p>
 
