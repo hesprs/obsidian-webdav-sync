@@ -48,7 +48,16 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 - 📦 **Large file skipping** via configurable size threshold
 - 🔁 **Robust file presence handling** that doesn't mess up your notes like Remotely Save, [elaborated in the code map](codemap.md#remotelocal-presence-resolution)
 
-## Setup
+## Install & Setup
+
+This plugin is currently in beta. You can install it using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin:
+
+1. Go to **Community plugins** and search for `BRAT`
+2. Install and enable it
+3. Go to BRAT settings, click **Add beta plugin**, copy and paste `https://github.com/hesprs/obsidian-webdav-sync` into the _Repository_ field
+4. Select the latest version and click **Add plugin**
+
+Configuration:
 
 1. Enter WebDAV server URL
 2. Enter account + credential
