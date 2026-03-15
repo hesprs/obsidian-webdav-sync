@@ -3,7 +3,8 @@
 	"name": "WebDAV Sync",
 	"version": "1.0.0",
 	"minAppVersion": "0.15.0",
-	"description": "General-purpose two-way WebDAV sync for Obsidian vaults.",
+	"authorUrl": "https://hesprs.github.io",
+	"description": "General-purpose bidirectional WebDAV syncing with robust local-remote presence resolution and conflict merging.",
 	"author": "Hēsperus",
 	"isDesktopOnly": false
 }
