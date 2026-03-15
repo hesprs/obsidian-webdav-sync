@@ -141,9 +141,8 @@ export class SyncEngine {
 
 			if (showNotice && settings.confirmBeforeSync && firstTaskIdxNeedingConfirmation > -1) {
 				const confirmExec = await new TaskListConfirmModal(this.app, confirmedTasks).open();
-				if (confirmExec.confirm) {
-					confirmedTasks = confirmExec.tasks;
-				} else {
+				if (confirmExec.confirm) confirmedTasks = confirmExec.tasks;
+				else {
 					emitSyncError(new Error(i18n.t('sync.cancelled')));
 					return;
 				}
@@ -194,37 +193,27 @@ export class SyncEngine {
 							parentLocalPath === '.' ||
 							parentLocalPath === '' ||
 							parentLocalPath === '/'
-						) {
-							return;
-						}
+						) return;
 
 						// Already collected in new tasks, no need to check remote
-						if (mkdirTasksMap.has(parentRemotePath)) {
-							return;
-						}
+						if (mkdirTasksMap.has(parentRemotePath)) return;
 
 						// Check if already exists in original tasks (from decider)
 						const existsInOriginalTasks = tasks.some(
 							(t) =>
 								t instanceof MkdirRemoteTask && t.remotePath === parentRemotePath,
 						);
-						if (existsInOriginalTasks) {
-							return;
-						}
+						if (existsInOriginalTasks) return;
 
 						// Already exists in confirmed tasks, no need to check remote
 						const existsInConfirmedTasks = confirmedTasks.some(
 							(t) =>
 								t instanceof MkdirRemoteTask && t.remotePath === parentRemotePath,
 						);
-						if (existsInConfirmedTasks) {
-							return;
-						}
+						if (existsInConfirmedTasks) return;
 
 						// Already confirmed to exist remotely
-						if (remoteExistsCache.has(parentRemotePath)) {
-							return;
-						}
+						if (remoteExistsCache.has(parentRemotePath)) return;
 
 						// Check if parent directory exists remotely using webdav.stat
 						try {
@@ -248,10 +237,8 @@ export class SyncEngine {
 
 					for (const task of tasksToReupload) {
 						const stat = await statVaultItem(this.vault, task.localPath);
-						if (!stat) {
-							// File doesn't exist, skip
-							continue;
-						}
+                        // File doesn't exist, skip
+						if (!stat) continue;
 
 						// Ensure parent directory exists
 						await ensureParentDir(task.localPath, task.remotePath);
@@ -377,9 +364,7 @@ export class SyncEngine {
 				allTasksResult.push(...chunkResult);
 				await this.updateMtimeInRecord(taskChunk, chunkResult);
 
-				if (this.isCancelled) {
-					break;
-				}
+				if (this.isCancelled) break;
 			}
 
 			const failedCount = allTasksResult.filter((r) => !r.success).length;
@@ -436,14 +421,11 @@ export class SyncEngine {
 
 		let remoteBaseDirExists = await webdav.exists(remoteBaseDir);
 
-		if (!remoteBaseDirExists) {
+		if (!remoteBaseDirExists)
 			await Promise.all([syncRecord.drop(), this.clearTraversalCache()]);
-		}
 
 		while (!remoteBaseDirExists) {
-			if (this.isCancelled) {
-				return;
-			}
+			if (this.isCancelled) return;
 
 			try {
 				await webdav.createDirectory(this.options.remoteBaseDir, {
@@ -455,9 +437,7 @@ export class SyncEngine {
 			} catch (e: any) {
 				if (is503Error(e)) {
 					await this.handle503Error(60000);
-					if (this.isCancelled) {
-						return;
-					}
+					if (this.isCancelled) return;
 					remoteBaseDirExists = await webdav.exists(remoteBaseDir);
 					continue;
 				}

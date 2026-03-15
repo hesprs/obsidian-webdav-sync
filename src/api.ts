@@ -32,43 +32,29 @@ interface WebDAVResponse {
 }
 
 function isSuccessStatus(status?: string): boolean {
-	if (!status) {
-		return true;
-	}
+	if (!status) return true;
 	const match = status.match(/\s(\d{3})(?:\s|$)/);
-	if (!match) {
-		return false;
-	}
+	if (!match) return false;
 	const code = Number.parseInt(match[1], 10);
 	return code >= 200 && code < 300;
 }
 
 function getValidProps(item: WebDAVResponseItem): WebDAVProp | null {
-	if (!item.propstat) {
-		return null;
-	}
+	if (!item.propstat) return null;
 
 	const propstats = Array.isArray(item.propstat) ? item.propstat : [item.propstat];
 
 	for (const propstat of propstats) {
-		if (!isSuccessStatus(propstat.status)) {
-			continue;
-		}
-		if (propstat.prop) {
-			return propstat.prop;
-		}
+		if (!isSuccessStatus(propstat.status)) continue;
+		if (propstat.prop) return propstat.prop;
 	}
 
 	return null;
 }
 
 function isCollectionResource(resourcetype: WebDAVProp['resourcetype']): boolean {
-	if (!resourcetype) {
-		return false;
-	}
-	if (typeof resourcetype === 'string') {
-		return resourcetype.toLowerCase() === 'collection';
-	}
+	if (!resourcetype) return false;
+	if (typeof resourcetype === 'string') return resourcetype.toLowerCase() === 'collection';
 	return !isNil(resourcetype.collection);
 }
 
@@ -86,9 +72,7 @@ function hrefToPathname(href: string): string {
 
 function normalizePathForMatch(pathname: string): string {
 	const normalized = decodeURIComponent(pathname || '/');
-	if (normalized === '' || normalized === '/') {
-		return '/';
-	}
+	if (normalized === '' || normalized === '/') return '/';
 	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
 }
 
@@ -131,9 +115,7 @@ export async function getDirectoryContents(
 	path: string,
 ): Promise<FileStat[]> {
 	const endpoint = serverUrl.trim().replace(/\/+$/, '');
-	if (!endpoint) {
-		throw new Error('WebDAV server URL is not configured');
-	}
+	if (!endpoint) throw new Error('WebDAV server URL is not configured');
 
 	const contents: FileStat[] = [];
 	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
@@ -191,9 +173,7 @@ export async function getDirectoryContents(
 			}
 
 			const nextLink = extractNextLink(linkHeader);
-			if (!nextLink) {
-				break;
-			}
+			if (!nextLink) break;
 			const nextUrl = new URL(nextLink);
 			nextUrl.pathname = decodeURI(nextUrl.pathname);
 			currentUrl = nextUrl.toString();

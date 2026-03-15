@@ -12,9 +12,7 @@ export class SyncRecord {
 		if (map) {
 			map.set(path, record);
 			await this.storage.set(this.namespace, map);
-		} else {
-			await this.storage.set(this.namespace, new Map([[path, record]]));
-		}
+		} else await this.storage.set(this.namespace, new Map([[path, record]]));
 	}
 
 	async deleteFileRecord(path: string): Promise<void> {
@@ -38,9 +36,7 @@ export class SyncRecord {
 
 	async getRecord(path: string): Promise<SyncRecordModel | undefined> {
 		const map = await this.storage.get(this.namespace);
-		if (map) {
-			return map.get(path);
-		}
+		if (map) return map.get(path);
 	}
 
 	async drop() {
@@ -49,25 +45,17 @@ export class SyncRecord {
 
 	async exists(path: string): Promise<boolean> {
 		const map = await this.storage.get(this.namespace);
-		if (map) {
-			return map.has(path);
-		}
+		if (map) return map.has(path);
 		return false;
 	}
 
 	async batchUpdate(updates: [string, SyncRecordModel][]): Promise<void> {
-		if (updates.length === 0) {
-			return;
-		}
+		if (updates.length === 0) return;
 		const map = await this.storage.get(this.namespace);
 
 		if (map) {
-			for (const [path, record] of updates) {
-				map.set(path, record);
-			}
+			for (const [path, record] of updates) map.set(path, record);
 			await this.storage.set(this.namespace, map);
-		} else {
-			await this.storage.set(this.namespace, new Map(updates));
-		}
+		} else await this.storage.set(this.namespace, new Map(updates));
 	}
 }
