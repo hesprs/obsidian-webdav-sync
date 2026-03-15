@@ -7,10 +7,11 @@
 	"scripts": {
 		"dev": "MODE=dev pnpm tsdown",
 		"build": "tsdown",
-		"ver": "node version-bump.ts && oxfmt",
+		"ver": "node scripts/version-bump.ts",
 		"test": "vitest run",
 		"lint": "oxlint --fix && oxfmt",
-		"check": "tsc && oxlint && oxfmt --check"
+		"check": "tsc && oxlint && oxfmt --check",
+		"notes": "node scripts/release-notes.ts"
 	},
 	"devDependencies": {
 		"@solid-primitives/i18n": "^2.2.0",
