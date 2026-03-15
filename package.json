@@ -21,7 +21,6 @@
 		"@unocss/postcss": "66.6.6",
 		"@vitest/coverage-v8": "^4.0.18",
 		"bytes-iec": "^3.1.1",
-		"consola": "^3.4.2",
 		"diff-match-patch": "^1.0.5",
 		"fast-xml-parser": "^5.4.2",
 		"fflate": "^0.8.2",

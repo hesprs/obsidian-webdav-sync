@@ -10,9 +10,7 @@ import { isSub } from '../../utils/is-sub';
 export function hasIgnoredInFolder(dirPath: string, stats: FsWalkResult[]): boolean {
 	for (const item of stats) {
 		if (isSub(dirPath, item.stat.path) || item.stat.path === dirPath) {
-			if (item.ignored) {
-				return true;
-			}
+			if (item.ignored) return true;
 		}
 	}
 
@@ -30,9 +28,7 @@ export function getIgnoredPathsInFolder(dirPath: string, stats: FsWalkResult[]):
 
 	for (const item of stats) {
 		if (isSub(dirPath, item.stat.path) || item.stat.path === dirPath) {
-			if (item.ignored) {
-				ignoredPaths.push(item.stat.path);
-			}
+			if (item.ignored) ignoredPaths.push(item.stat.path);
 		}
 	}
 

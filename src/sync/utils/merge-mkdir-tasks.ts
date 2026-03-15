@@ -15,9 +15,7 @@ import MkdirsRemoteTask from '../tasks/mkdirs-remote.task';
  * @returns Array of MkdirsRemoteTask (additionalPaths may be empty)
  */
 export function mergeMkdirTasks(mkdirTasks: MkdirRemoteTask[]): MkdirsRemoteTask[] {
-	if (mkdirTasks.length === 0) {
-		return [];
-	}
+	if (mkdirTasks.length === 0) return [];
 
 	// Group mkdir tasks by their path hierarchy
 	// Key: deepest path, Value: all paths in the hierarchy (including parents)

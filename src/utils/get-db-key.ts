@@ -1,3 +1,4 @@
+import { subtle } from 'node:crypto';
 import { normalizePath } from 'obsidian';
 import { hash } from 'ohash';
 import { stdRemotePath } from './std-remote-path';
@@ -21,7 +22,7 @@ export async function getTraversalWebDAVDBKey(
 ): Promise<string> {
 	const encoder = new TextEncoder();
 	const data = encoder.encode(token);
-	const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+	const hashBuffer = await subtle.digest('SHA-256', data);
 	const hash = arrayBufferToHex(hashBuffer);
 	remoteBaseDir = normalizePath(remoteBaseDir);
 	return `${hash}:${remoteBaseDir}`;

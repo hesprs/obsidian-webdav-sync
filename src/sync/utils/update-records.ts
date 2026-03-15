@@ -35,9 +35,7 @@ export async function updateMtimeInRecord(
 		return results[idx]?.success && !results[idx]?.skipRecord;
 	});
 
-	if (tasksNeedingUpdate.length === 0) {
-		return;
-	}
+	if (tasksNeedingUpdate.length === 0) return;
 
 	const token = plugin.getToken();
 	const remoteFs = new RemoteWebDAVFileSystem({
@@ -69,9 +67,7 @@ export async function updateMtimeInRecord(
 			for (const pathInfo of allPaths) {
 				expandedTasks.push({ task, localPath: pathInfo.localPath });
 			}
-		} else {
-			expandedTasks.push({ task, localPath: task.localPath });
-		}
+		} else expandedTasks.push({ task, localPath: task.localPath });
 	}
 
 	const taskChunks = chunk(expandedTasks, batch_size);
@@ -84,9 +80,7 @@ export async function updateMtimeInRecord(
 
 				if (task instanceof RemoveRemoteRecursivelyTask) {
 					for (const k of records.keys()) {
-						if (isSub(localPath, k)) {
-							records.delete(k);
-						}
+						if (isSub(localPath, k)) records.delete(k);
 					}
 					records.delete(localPath);
 					return;
@@ -102,15 +96,12 @@ export async function updateMtimeInRecord(
 				let baseKey: string | undefined;
 				if (!local.isDir) {
 					const file = vault.getFileByPath(localPath);
-					if (!file) {
-						return;
-					}
+					if (!file) return;
 
 					const buffer = await vault.readBinary(file);
 					const isMergeable = isMergeablePath(file.path);
-					if (!isMergeable) {
-						baseKey = undefined;
-					} else {
+					if (!isMergeable) baseKey = undefined;
+					else {
 						const { key } = await blobStore.store(buffer);
 						baseKey = key;
 					}

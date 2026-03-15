@@ -1,18 +1,16 @@
 import UnoCSS from '@unocss/postcss';
-import { builtinModules } from 'node:module';
 import postcssMergeRules from 'postcss-merge-rules';
 import { defineConfig } from 'tsdown';
 import solid from 'unplugin-solid/rolldown';
-import pkg from './package.json' with { type: 'json' };
 
 const dev = process.env.MODE === 'dev';
 
 export default defineConfig({
 	entry: 'src/index.ts',
+	platform: 'browser',
 	minify: !dev,
 	define: {
-		'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || ''),
-		'process.env.PLUGIN_VERSION': String(pkg.version),
+		'process.env.NODE_ENV': process.env.MODE ?? 'prod',
 	},
 	plugins: [solid()],
 	deps: {
@@ -27,7 +25,6 @@ export default defineConfig({
 			'@codemirror/search',
 			'@codemirror/state',
 			'@codemirror/view',
-			...builtinModules,
 		],
 		onlyAllowBundle: false,
 	},
@@ -45,7 +42,6 @@ export default defineConfig({
 	],
 	//logLevel: 'error',
 	target: 'es2018',
-	platform: 'neutral',
 	inputOptions: {
 		resolve: {
 			// Obsidian plugins run in Electron with a DOM, but CJS resolution can still

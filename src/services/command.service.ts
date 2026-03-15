@@ -12,12 +12,8 @@ export default class CommandService {
 			id: 'start-sync',
 			name: i18n.t('sync.startButton'),
 			checkCallback: (checking) => {
-				if (plugin.isSyncing) {
-					return false;
-				}
-				if (checking) {
-					return true;
-				}
+				if (plugin.isSyncing) return false;
+				if (checking) return true;
 
 				// 检查账号配置
 				if (!plugin.isAccountConfigured()) {
@@ -46,11 +42,9 @@ export default class CommandService {
 						mode: SyncStartMode.MANUAL_SYNC,
 					});
 				};
-				if (plugin.settings.confirmBeforeSync) {
+				if (plugin.settings.confirmBeforeSync)
 					new SyncConfirmModal(plugin.app, startSync).open();
-				} else {
-					void startSync();
-				}
+				else void startSync();
 			},
 		});
 
@@ -59,9 +53,7 @@ export default class CommandService {
 			name: i18n.t('sync.stopButton'),
 			checkCallback: (checking) => {
 				if (plugin.isSyncing) {
-					if (!checking) {
-						emitCancelSync();
-					}
+					if (!checking) emitCancelSync();
 					return true;
 				}
 				return false;

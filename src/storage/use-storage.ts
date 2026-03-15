@@ -33,9 +33,7 @@ export default function useStorage<T = any>(instance: StorageInterface<T>) {
 		const data: Record<string, T> = {};
 		for (const key of keys) {
 			const val = await instance.getItem(key);
-			if (val) {
-				data[key] = val;
-			}
+			if (val) data[key] = val;
 		}
 		return data;
 	}
@@ -48,14 +46,10 @@ export default function useStorage<T = any>(instance: StorageInterface<T>) {
 		const temp = await dump();
 		try {
 			await instance.clear();
-			for (const key in data) {
-				await instance.setItem(key, data[key]);
-			}
+			for (const key in data) await instance.setItem(key, data[key]);
 		} catch {
 			await instance.clear();
-			for (const key in temp) {
-				await instance.setItem(key, temp[key]);
-			}
+			for (const key in temp) await instance.setItem(key, temp[key]);
 		}
 	}
 

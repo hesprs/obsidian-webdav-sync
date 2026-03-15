@@ -33,9 +33,7 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): RemoveRemoteR
 
 		// 检查当前路径是否是已选路径的子路径或重复路径
 		const shouldSkip = selectedPaths.some((parentPath) => {
-			if (path === parentPath) {
-				return true;
-			}
+			if (path === parentPath) return true;
 			return isSub(parentPath, path);
 		});
 
