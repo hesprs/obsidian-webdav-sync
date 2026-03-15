@@ -1,7 +1,6 @@
 import type { WebDAVClient } from 'webdav';
 import { chunk } from 'lodash-es';
-import { dirname } from 'node:path';
-import { Notice, Platform, Vault, normalizePath } from 'obsidian';
+import { Notice, Platform, Vault } from 'obsidian';
 import { Subscription } from 'rxjs';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import FailedTasksModal, { type FailedTaskInfo } from '~/components/FailedTasksModal';
@@ -18,6 +17,8 @@ import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
+import { normalizeRemoteDir, remoteDirname } from '~/platform/path/remote-path';
+import { vaultDirname } from '~/platform/path/vault-path';
 import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
@@ -177,7 +178,7 @@ export class SyncEngine {
 								break; // Already marked, all parents must be marked too
 							}
 							remoteExistsCache.add(current);
-							current = stdRemotePath(dirname(current));
+							current = normalizeRemoteDir(remoteDirname(current));
 						}
 					};
 
@@ -185,15 +186,11 @@ export class SyncEngine {
 					 * Helper function to ensure parent directory exists or create mkdir task
 					 */
 					const ensureParentDir = async (localPath: string, remotePath: string) => {
-						const parentLocalPath = normalizePath(dirname(localPath));
-						const parentRemotePath = stdRemotePath(dirname(remotePath));
+						const parentLocalPath = vaultDirname(localPath);
+						const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
 
 						// Root path or vault root, no need to check
-						if (
-							parentLocalPath === '.' ||
-							parentLocalPath === '' ||
-							parentLocalPath === '/'
-						) return;
+						if (parentLocalPath === '.' || parentLocalPath === '') return;
 
 						// Already collected in new tasks, no need to check remote
 						if (mkdirTasksMap.has(parentRemotePath)) return;
@@ -237,7 +234,7 @@ export class SyncEngine {
 
 					for (const task of tasksToReupload) {
 						const stat = await statVaultItem(this.vault, task.localPath);
-                        // File doesn't exist, skip
+						// File doesn't exist, skip
 						if (!stat) continue;
 
 						// Ensure parent directory exists
@@ -264,16 +261,11 @@ export class SyncEngine {
 					// Remove parent directory delete tasks for reupload files
 					// If we reupload /a/b/c/file.png, we shouldn't delete /a, /a/b, or /a/b/c
 					for (const reuploadTask of tasksToReupload) {
-						let currentPath = normalizePath(reuploadTask.localPath);
+						let currentPath = reuploadTask.localPath;
 						// Check all parent paths
-						while (
-							currentPath &&
-							currentPath !== '.' &&
-							currentPath !== '' &&
-							currentPath !== '/'
-						) {
-							currentPath = normalizePath(dirname(currentPath));
-							if (currentPath === '.' || currentPath === '' || currentPath === '/') {
+						while (currentPath && currentPath !== '.' && currentPath !== '') {
+							currentPath = vaultDirname(currentPath);
+							if (currentPath === '.' || currentPath === '') {
 								break;
 							}
 							// Find and remove parent directory delete tasks

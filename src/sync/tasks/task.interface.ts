@@ -1,7 +1,12 @@
 import type { WebDAVClient } from 'webdav';
-import { isAbsolute, join } from 'node:path';
-import { normalizePath, Vault } from 'obsidian';
+import { Vault } from 'obsidian';
 import type { MaybePromise } from '~/utils/types';
+import {
+	isAbsoluteRemotePath,
+	joinRemotePath,
+	normalizeRemotePath,
+} from '~/platform/path/remote-path';
+import { normalizeVaultPath } from '~/platform/path/vault-path';
 import { SyncRecord } from '~/storage/sync-record';
 import getTaskName from '~/utils/get-task-name';
 
@@ -47,13 +52,13 @@ export abstract class BaseTask {
 	}
 
 	get remotePath() {
-		return isAbsolute(this.options.remotePath)
-			? this.options.remotePath
-			: join(this.remoteBaseDir, this.options.remotePath);
+		return isAbsoluteRemotePath(this.options.remotePath)
+			? normalizeRemotePath(this.options.remotePath)
+			: joinRemotePath(this.remoteBaseDir, this.options.remotePath);
 	}
 
 	get localPath() {
-		return normalizePath(this.options.localPath);
+		return normalizeVaultPath(this.options.localPath);
 	}
 
 	abstract exec(): MaybePromise<TaskResult>;

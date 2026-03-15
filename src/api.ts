@@ -1,7 +1,7 @@
 import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
-import { basename } from 'node:path';
+import { normalizeRemotePath, remoteBasename } from '~/platform/path/remote-path';
 import { is503Error } from './utils/is-503-error';
 import logger from './utils/logger';
 import requestUrl from './utils/request-url';
@@ -100,7 +100,7 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 
 	return {
 		filename,
-		basename: basename(filename),
+		basename: remoteBasename(filename),
 		lastmod: props.getlastmodified || '',
 		size: props.getcontentlength ? parseInt(props.getcontentlength, 10) : 0,
 		type: isDir ? 'directory' : 'file',
@@ -118,7 +118,7 @@ export async function getDirectoryContents(
 	if (!endpoint) throw new Error('WebDAV server URL is not configured');
 
 	const contents: FileStat[] = [];
-	const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+	const normalizedPath = normalizeRemotePath(path);
 	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
 	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 	let currentUrl = `${endpoint}${encodedPath}`;

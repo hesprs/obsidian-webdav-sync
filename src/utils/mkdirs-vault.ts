@@ -1,11 +1,11 @@
 import { isNil } from 'lodash-es';
-import { dirname, normalize } from 'node:path';
 import { Vault } from 'obsidian';
+import { normalizeVaultPath, vaultDirname } from '~/platform/path/vault-path';
 
 export async function mkdirsVault(vault: Vault, path: string) {
 	const stack: string[] = [];
-	let currentPath = normalize(path);
-	if (currentPath === '/' || currentPath === '.') {
+	let currentPath = normalizeVaultPath(path);
+	if (currentPath === '' || currentPath === '.') {
 		return;
 	}
 	if (vault.getAbstractFileByPath(currentPath)) {
@@ -13,12 +13,11 @@ export async function mkdirsVault(vault: Vault, path: string) {
 	}
 	while (
 		currentPath !== '' &&
-		currentPath !== '/' &&
 		currentPath !== '.' &&
 		isNil(vault.getAbstractFileByPath(currentPath))
 	) {
 		stack.push(currentPath);
-		currentPath = dirname(currentPath);
+		currentPath = vaultDirname(currentPath);
 	}
 	while (stack.length) {
 		const pop = stack.pop();

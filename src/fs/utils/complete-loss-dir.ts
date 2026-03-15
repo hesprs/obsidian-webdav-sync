@@ -1,5 +1,5 @@
-import { dirname } from 'node:path';
 import type { StatModel } from '~/model/stat.model';
+import { vaultDirname } from '~/platform/path/vault-path';
 import isRoot from './is-root';
 
 /**
@@ -15,7 +15,7 @@ export default function completeLossDir(stats: StatModel[], _filteredStats: Stat
 	);
 	for (let { path } of _filteredStats) {
 		while (true) {
-			path = dirname(path);
+			path = vaultDirname(path);
 			if (isRoot(path)) break;
 			if (filteredFolderMap.has(path)) continue;
 			const dirStat = statsMap.get(path);

@@ -1,9 +1,7 @@
-import { normalize } from 'node:path';
+import { normalizeRemotePath } from '~/platform/path/remote-path';
+import { normalizeVaultPath } from '~/platform/path/vault-path';
 
 export function getRootFolderName(path: string) {
-	path = normalize(path);
-	if (path.startsWith('/')) {
-		path = path.slice(1);
-	}
+	path = path.startsWith('/') ? normalizeRemotePath(path).slice(1) : normalizeVaultPath(path);
 	return path.split('/')[0];
 }

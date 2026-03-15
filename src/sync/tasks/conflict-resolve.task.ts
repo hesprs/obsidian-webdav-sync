@@ -1,8 +1,8 @@
-import type { BufferLike } from 'webdav';
-import { isEqual, noop } from 'lodash-es';
+import { noop } from 'lodash-es';
 import type { StatModel } from '~/model/stat.model';
 import type { SyncRecordModel } from '~/model/sync-record.model';
 import i18n from '~/i18n';
+import { arrayBufferEquals, toArrayBuffer, type BinaryLike } from '~/platform/binary';
 import { blobStore } from '~/storage/blob';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
@@ -103,22 +103,19 @@ export default class ConflictResolveTask extends BaseTask {
 			const remoteContent = (await this.webdav.getFileContents(this.remotePath, {
 				details: false,
 				format: 'binary',
-			})) as BufferLike;
+			})) as BinaryLike;
+			const remoteArrayBuffer = await toArrayBuffer(remoteContent);
 
 			const result = resolveByLatestTimestamp({
 				localMtime,
 				remoteMtime,
 				localContent,
-				remoteContent,
+				remoteContent: remoteArrayBuffer,
 			});
 
 			switch (result.status) {
 				case LatestTimestampResolution.UseRemote:
-					const arrayBuffer =
-						result.content instanceof ArrayBuffer
-							? result.content
-							: new Uint8Array(result.content).buffer;
-					await this.vault.modifyBinary(file, arrayBuffer);
+					await this.vault.modifyBinary(file, result.content);
 					break;
 				case LatestTimestampResolution.UseLocal:
 					await this.webdav.putFileContents(this.remotePath, result.content, {
@@ -147,9 +144,10 @@ export default class ConflictResolveTask extends BaseTask {
 			const remoteBuffer = (await this.webdav.getFileContents(this.remotePath, {
 				format: 'binary',
 				details: false,
-			})) as BufferLike;
+			})) as BinaryLike;
+			const remoteArrayBuffer = await toArrayBuffer(remoteBuffer);
 
-			if (isEqual(localBuffer, remoteBuffer)) {
+			if (arrayBufferEquals(localBuffer, remoteArrayBuffer)) {
 				return { success: true } as const;
 			}
 
@@ -168,7 +166,7 @@ export default class ConflictResolveTask extends BaseTask {
 			}
 
 			const localText = await new Blob([new Uint8Array(localBuffer)]).text();
-			const remoteText = await new Blob([new Uint8Array(remoteBuffer)]).text();
+			const remoteText = await new Blob([new Uint8Array(remoteArrayBuffer)]).text();
 			const baseText = (await baseBlob?.text()) ?? localText;
 
 			const mergeResult = await resolveByIntelligentMerge({

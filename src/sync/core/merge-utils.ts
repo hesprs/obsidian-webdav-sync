@@ -1,4 +1,3 @@
-import type { BufferLike } from 'webdav';
 import { diff_match_patch } from 'diff-match-patch';
 import { isEqual } from 'lodash-es';
 import { diff3Merge as nodeDiff3Merge } from 'node-diff3';
@@ -14,14 +13,14 @@ export enum LatestTimestampResolution {
 export interface LatestTimestampParams {
 	localMtime: number;
 	remoteMtime: number;
-	localContent: BufferLike;
-	remoteContent: BufferLike;
+	localContent: ArrayBuffer;
+	remoteContent: ArrayBuffer;
 }
 
 export type LatestTimestampResult =
 	| { status: LatestTimestampResolution.NoChange }
-	| { status: LatestTimestampResolution.UseRemote; content: BufferLike }
-	| { status: LatestTimestampResolution.UseLocal; content: BufferLike };
+	| { status: LatestTimestampResolution.UseRemote; content: ArrayBuffer }
+	| { status: LatestTimestampResolution.UseLocal; content: ArrayBuffer };
 
 export function resolveByLatestTimestamp(params: LatestTimestampParams): LatestTimestampResult {
 	const { localMtime, remoteMtime, localContent, remoteContent } = params;

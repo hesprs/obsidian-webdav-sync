@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import { Notice, Setting } from 'obsidian';
 import type { TraverseWebDAVCache } from '~/storage';
 import CacheClearModal from '~/components/CacheClearModal';
@@ -6,6 +5,7 @@ import CacheRestoreModal from '~/components/CacheRestoreModal';
 import CacheSaveModal from '~/components/CacheSaveModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
+import { joinRemotePath } from '~/platform/path/remote-path';
 import { getDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
 import { stdRemotePath } from '~/utils/std-remote-path';
@@ -104,7 +104,7 @@ export default class CacheSettings extends BaseSettings {
 
 	get remoteCachePath() {
 		const filename = getDBKey(this.app.vault.getName(), this.plugin.settings.remoteDir);
-		return join(this.remoteCacheDir, filename + '.json');
+		return joinRemotePath(this.remoteCacheDir, filename + '.json');
 	}
 
 	async createRemoteCacheDir() {

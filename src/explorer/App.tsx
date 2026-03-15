@@ -1,6 +1,6 @@
-import path from 'node:path';
 import { Notice } from 'obsidian';
 import { createSignal, Show } from 'solid-js';
+import { joinRemotePath } from '~/platform/path/remote-path';
 import { createFileList, type FileStat } from './components/FileList';
 import NewFolder from './components/NewFolder';
 import { t } from './i18n';
@@ -40,7 +40,7 @@ function App(props: AppProps) {
 						class="mt-1"
 						onCancel={() => setShowNewFolder(false)}
 						onConfirm={async (name) => {
-							const target = path.join(cwd() ?? '/', name);
+							const target = joinRemotePath(cwd() ?? '/', name);
 							await Promise.resolve(props.fs.mkdirs(target))
 								.then(() => {
 									setShowNewFolder(false);
