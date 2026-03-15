@@ -46,7 +46,7 @@ export async function updateMtimeInRecord(
 		remoteBaseDir: stdRemotePath(remoteBaseDir),
 	});
 
-	const latestRemoteEntities = await remoteFs.walk();
+	const latestRemoteEntities = await remoteFs.walk({ freshness: 'fresh' });
 	const remoteEntityMap = new Map(latestRemoteEntities.map((e) => [e.stat.path, e]));
 	const syncRecord = new SyncRecord(getDBKey(vault.getName(), remoteBaseDir), syncRecordKV);
 	const records = await syncRecord.getRecords();

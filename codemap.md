@@ -45,22 +45,23 @@ Obsidian Sync is a WebDAV-first Obsidian plugin that performs two-way synchroniz
 
 ### Remote Cache
 
-It helps “trivially” in steady-state sync, but it helps a lot in cold-start sync.
+Remote traversal cache is part of normal planning performance.
 
-It’s not part of normal sync correctness logic. It’s a bootstrap optimization.
-
-- The expensive part is remote tree traversal (ResumableWebDAVTraversal), especially with big vaults/rate-limited WebDAV.
-- That traversal cache lives in local IndexedDB (traverseWebDAVKV) and is device-local.
-- New device = no local cache, so first sync must re-scan everything.
-- Export/import just copies that local traversal cache through WebDAV so another device can skip the first heavy scan.
+- The expensive part is remote tree traversal (`ResumableWebDAVTraversal`), especially with large vaults or rate-limited WebDAV servers.
+- That traversal cache lives in local IndexedDB (`traverseWebDAVKV`) and is device-local.
+- A completed cache is reusable for later planning passes when callers request `freshness: 'cached-ok'`.
+- Callers can still force a fresh traversal with `freshness: 'fresh'` for correctness-sensitive reads, especially after remote mutations.
+- Incomplete cache state is still resumable, so interrupted traversals continue instead of restarting.
+- Remote-root reset is a central invalidation point: when the remote base dir is missing/recreated, both sync records and traversal cache are cleared together.
+- Export/import still helps cold start on a new device by copying this local traversal snapshot through WebDAV.
 
 So it exists for:
 
-1. faster onboarding on new devices,
-2. less API pressure/rate-limit pain on first run,
-3. manual recovery after cache loss.
-
-Not for automatic sync behavior.
+1. faster steady-state planning,
+2. faster onboarding on new devices,
+3. less API pressure/rate-limit pain,
+4. resumable traversal after interruption,
+5. manual recovery after cache loss.
 
 ### Remote/Local Presence Resolution
 
