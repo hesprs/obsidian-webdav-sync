@@ -22,12 +22,13 @@ import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
 import { formatTime } from '~/utils/format-date';
-import { getDBKey } from '~/utils/get-db-key';
+import { getDBKey, getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import getTaskName from '~/utils/get-task-name';
 import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
 import { stdRemotePath } from '~/utils/std-remote-path';
+import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import CleanRecordTask from './tasks/clean-record.task';
@@ -45,6 +46,11 @@ import { updateMtimeInRecord as updateMtimeInRecordUtil } from './utils/update-r
 export enum SyncStartMode {
 	MANUAL_SYNC = 'manual_sync',
 	AUTO_SYNC = 'auto_sync',
+}
+
+export interface PreparedSyncPlan {
+	readonly tasks: BaseTask[];
+	readonly hasActionableTasks: boolean;
 }
 
 export class SyncEngine {
@@ -80,51 +86,38 @@ export class SyncEngine {
 		);
 	}
 
-	async start({ mode }: { mode: SyncStartMode }) {
+	async preparePlan(): Promise<PreparedSyncPlan> {
+		const syncRecord = this.createSyncRecord();
+		await this.ensureRemoteBaseDirReady(syncRecord);
+
+		if (this.isCancelled) {
+			return {
+				tasks: [],
+				hasActionableTasks: false,
+			};
+		}
+
+		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide();
+		const hasActionableTasks = tasks.some(
+			(task) => !(task instanceof NoopTask || task instanceof SkippedTask),
+		);
+
+		return Object.freeze({
+			tasks,
+			hasActionableTasks,
+		});
+	}
+
+	async start({ mode, plan }: { mode: SyncStartMode; plan?: PreparedSyncPlan }) {
 		try {
 			const showNotice = mode === SyncStartMode.MANUAL_SYNC;
 			emitPreparingSync({ showNotice });
 
 			const settings = this.settings;
 			const webdav = this.webdav;
-			const remoteBaseDir = stdRemotePath(this.options.remoteBaseDir);
-			const syncRecord = new SyncRecord(
-				getDBKey(this.vault.getName(), this.remoteBaseDir),
-				syncRecordKV,
-			);
-
-			let remoteBaseDirExits = await webdav.exists(remoteBaseDir);
-
-			if (!remoteBaseDirExits) {
-				await syncRecord.drop();
-			}
-
-			while (!remoteBaseDirExits) {
-				if (this.isCancelled) {
-					emitSyncError(new Error(i18n.t('sync.cancelled')));
-					return;
-				}
-				try {
-					await webdav.createDirectory(this.options.remoteBaseDir, {
-						recursive: true,
-					});
-					break;
-					// oxlint-disable-next-line typescript/no-explicit-any
-				} catch (e: any) {
-					if (is503Error(e)) {
-						await this.handle503Error(60000);
-						if (this.isCancelled) {
-							emitSyncError(new Error(i18n.t('sync.cancelled')));
-							return;
-						}
-						remoteBaseDirExits = await webdav.exists(remoteBaseDir);
-					} else {
-						throw e;
-					}
-				}
-			}
-
-			const tasks = await new TwoWaySyncDecider(this, syncRecord).decide();
+			const syncRecord = this.createSyncRecord();
+			const preparedPlan = plan ?? (await this.preparePlan());
+			const tasks = preparedPlan.tasks;
 
 			if (tasks.length === 0) {
 				emitEndSync({ showNotice, failedCount: 0 });
@@ -415,6 +408,62 @@ export class SyncEngine {
 			logger.error('Sync error:', error);
 		} finally {
 			this.subscriptions.forEach((sub) => sub.unsubscribe());
+		}
+	}
+
+	private createSyncRecord() {
+		return new SyncRecord(getDBKey(this.vault.getName(), this.remoteBaseDir), syncRecordKV);
+	}
+
+	private async createTraversal() {
+		return new ResumableWebDAVTraversal({
+			remoteServerUrl: this.options.remoteServerUrl || this.settings.serverUrl,
+			token: this.options.token,
+			remoteBaseDir: this.options.remoteBaseDir,
+			kvKey: await getTraversalWebDAVDBKey(this.options.token, this.options.remoteBaseDir),
+			saveInterval: 1,
+		});
+	}
+
+	private async clearTraversalCache() {
+		const traversal = await this.createTraversal();
+		await traversal.clearCache();
+	}
+
+	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
+		const webdav = this.webdav;
+		const remoteBaseDir = stdRemotePath(this.options.remoteBaseDir);
+
+		let remoteBaseDirExists = await webdav.exists(remoteBaseDir);
+
+		if (!remoteBaseDirExists) {
+			await Promise.all([syncRecord.drop(), this.clearTraversalCache()]);
+		}
+
+		while (!remoteBaseDirExists) {
+			if (this.isCancelled) {
+				return;
+			}
+
+			try {
+				await webdav.createDirectory(this.options.remoteBaseDir, {
+					recursive: true,
+				});
+				remoteBaseDirExists = true;
+				continue;
+				// oxlint-disable-next-line typescript/no-explicit-any
+			} catch (e: any) {
+				if (is503Error(e)) {
+					await this.handle503Error(60000);
+					if (this.isCancelled) {
+						return;
+					}
+					remoteBaseDirExists = await webdav.exists(remoteBaseDir);
+					continue;
+				}
+
+				throw e;
+			}
 		}
 	}
 

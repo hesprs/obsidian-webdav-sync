@@ -13,6 +13,8 @@ import { type MaybePromise } from './types';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
 
+export type WalkFreshness = 'cached-ok' | 'fresh';
+
 // Global mutex map: one lock per kvKey
 const traversalLocks = new Map<string, Mutex>();
 
@@ -50,6 +52,7 @@ export class ResumableWebDAVTraversal {
 	private queue: string[] = [];
 	private nodes: Record<string, StatModel[]> = {};
 	private processedCount: number = 0;
+	private hasLoadedCache: boolean = false;
 
 	/**
 	 * Normalize directory path for use as nodes key
@@ -89,13 +92,23 @@ export class ResumableWebDAVTraversal {
 		return getTraversalLock(this.kvKey);
 	}
 
-	async traverse(): Promise<StatModel[]> {
+	async traverse(options?: { freshness?: WalkFreshness }): Promise<StatModel[]> {
 		return await this.lock.runExclusive(async () => {
 			await this.loadState();
 
+			const freshness = options?.freshness ?? 'cached-ok';
+			const hasCompleteCache = this.hasCompleteCache();
+
+			if (freshness === 'fresh' && (hasCompleteCache || this.queue.length > 0)) {
+				await this.clearLoadedState();
+			}
+
+			if (freshness === 'cached-ok' && hasCompleteCache) {
+				return this.getAllFromCache();
+			}
+
 			if (this.queue.length === 0) {
 				this.queue = [this.remoteBaseDir];
-				this.nodes = {};
 				this.processedCount = 0;
 			}
 
@@ -103,6 +116,10 @@ export class ResumableWebDAVTraversal {
 			await this.saveState();
 			return this.getAllFromCache();
 		});
+	}
+
+	hasCompleteCache(): boolean {
+		return this.hasLoadedCache && this.queue.length === 0;
 	}
 
 	/**
@@ -170,12 +187,22 @@ export class ResumableWebDAVTraversal {
 				await traverseWebDAVKV.unset(this.kvKey);
 				this.queue = [];
 				this.nodes = {};
+				this.hasLoadedCache = false;
+				this.processedCount = 0;
 				return;
 			}
 
 			this.queue = cache.queue || [];
 			this.nodes = cache.nodes || {};
+			this.hasLoadedCache = true;
+			this.processedCount = 0;
+			return;
 		}
+
+		this.queue = [];
+		this.nodes = {};
+		this.hasLoadedCache = false;
+		this.processedCount = 0;
 	}
 
 	/**
@@ -186,16 +213,24 @@ export class ResumableWebDAVTraversal {
 			queue: this.queue,
 			nodes: this.nodes,
 		});
+		this.hasLoadedCache = true;
+	}
+
+	private async clearLoadedState(): Promise<void> {
+		await traverseWebDAVKV.unset(this.kvKey);
+		this.queue = [];
+		this.nodes = {};
+		this.hasLoadedCache = false;
+		this.processedCount = 0;
 	}
 
 	/**
 	 * Clear cache (force re-traversal)
 	 */
 	async clearCache(): Promise<void> {
-		await traverseWebDAVKV.unset(this.kvKey);
-		this.queue = [];
-		this.nodes = {};
-		this.processedCount = 0;
+		await this.lock.runExclusive(async () => {
+			await this.clearLoadedState();
+		});
 	}
 
 	/**

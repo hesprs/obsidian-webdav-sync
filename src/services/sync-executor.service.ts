@@ -1,8 +1,4 @@
-import { syncRecordKV } from '~/storage';
-import { SyncRecord } from '~/storage/sync-record';
 import { SyncEngine, SyncStartMode } from '~/sync';
-import TwoWaySyncDecider from '~/sync/decision/two-way.decider';
-import { getDBKey } from '~/utils/get-db-key';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';
 
@@ -46,20 +42,15 @@ export default class SyncExecutorService {
 			webdav: await this.plugin.webDAVService.createWebDAVClient(),
 		});
 
-		const syncRecord = new SyncRecord(
-			getDBKey(this.plugin.app.vault.getName(), this.plugin.remoteBaseDir),
-			syncRecordKV,
-		);
+		const plan = await sync.preparePlan();
 
-		const decider = new TwoWaySyncDecider(sync, syncRecord);
-		const decided = await decider.decide();
-
-		if (decided.length === 0) {
+		if (!plan.hasActionableTasks) {
 			return false;
 		}
 
 		await sync.start({
 			mode: options.mode,
+			plan,
 		});
 
 		return true;

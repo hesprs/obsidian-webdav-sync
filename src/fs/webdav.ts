@@ -7,10 +7,12 @@ import GlobMatch, {
 	isVoidGlobMatchOptions,
 	needIncludeFromGlobRules,
 } from '~/utils/glob-match';
-import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
-import AbstractFileSystem from './fs.interface';
+import { ResumableWebDAVTraversal, type WalkFreshness } from '~/utils/traverse-webdav';
+import AbstractFileSystem, { type FsWalkOptions } from './fs.interface';
 import completeLossDir from './utils/complete-loss-dir';
 import { normalizeRemoteWalkPath } from './utils/normalize-remote-walk-path';
+
+export type { WalkFreshness };
 
 export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 	constructor(
@@ -22,7 +24,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 		},
 	) {}
 
-	async walk() {
+	async walk(options?: FsWalkOptions) {
 		const settings = await useSettings();
 		const remoteServerUrl = this.options.remoteServerUrl || settings.serverUrl;
 		const traversal = new ResumableWebDAVTraversal({
@@ -32,7 +34,9 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			kvKey: await getTraversalWebDAVDBKey(this.options.token, this.options.remoteBaseDir),
 			saveInterval: 1,
 		});
-		let stats = await traversal.traverse();
+		let stats = await traversal.traverse({
+			freshness: options?.freshness ?? 'cached-ok',
+		});
 
 		if (stats.length === 0) {
 			return [];
