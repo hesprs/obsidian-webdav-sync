@@ -1,3 +1,4 @@
+import { exec } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 
 const targetVersion = process.env.npm_package_version ?? '1.0.0';
@@ -12,3 +13,5 @@ writeFileSync('manifest.json', JSON.stringify(manifest, null, '\t'));
 let versions = JSON.parse(readFileSync('versions.json', 'utf8'));
 versions[targetVersion] = minAppVersion;
 writeFileSync('versions.json', JSON.stringify(versions, null, '\t'));
+
+exec('pnpm oxfmt versions.json manifest.json');
