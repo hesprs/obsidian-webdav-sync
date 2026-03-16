@@ -102,9 +102,7 @@ export class ResumableWebDAVTraversal {
 				await this.clearLoadedState();
 			}
 
-			if (freshness === 'cached-ok' && hasCompleteCache) {
-				return this.getAllFromCache();
-			}
+			if (freshness === 'cached-ok' && hasCompleteCache) return this.getAllFromCache();
 
 			if (this.queue.length === 0) {
 				this.queue = [this.remoteBaseDir];

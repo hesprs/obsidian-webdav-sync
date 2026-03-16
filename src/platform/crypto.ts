@@ -1,5 +1,5 @@
-import deepStringify from "~/utils/deep-stringify";
-import { isNil } from "lodash-es";
+import { isNil } from 'lodash-es';
+import deepStringify from '~/utils/deep-stringify';
 
 // oxlint-disable-next-line typescript/no-explicit-any
 type General = any;
@@ -10,7 +10,7 @@ export async function sha256Digest(data: BufferSource): Promise<ArrayBuffer> {
 
 export function hash(input: General): string {
 	const str = typeof input === 'string' ? input : deepStringify(input);
-    if (isNil(str)) throw new Error('hash failed');
+	if (isNil(str)) throw new Error('hash failed');
 	let hash = 0x811c9dc5;
 	for (let i = 0; i < str.length; i++) {
 		hash ^= str.charCodeAt(i);

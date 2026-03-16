@@ -6,9 +6,9 @@ import CacheSaveModal from '~/components/CacheSaveModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
 import { joinRemotePath } from '~/platform/path/remote-path';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 import { getDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
-import { normalizeRemoteDir } from '~/platform/path/remote-path'
 import BaseSettings from './settings.base';
 
 export interface ExportedStorage {

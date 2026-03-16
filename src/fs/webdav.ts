@@ -38,9 +38,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			freshness: options?.freshness ?? 'cached-ok',
 		});
 
-		if (stats.length === 0) {
-			return [];
-		}
+		if (stats.length === 0) return [];
 
 		// Paths returned by traversal are expected to be already relative to remoteBaseDir
 		// (e.g. /Welcome.md). Some servers may still return base-prefixed absolute paths.

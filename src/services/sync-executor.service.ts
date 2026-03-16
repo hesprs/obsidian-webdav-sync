@@ -6,18 +6,15 @@ export interface SyncOptions {
 	mode: SyncStartMode;
 }
 
+// TODO: don't instantiate SyncEngine every time
 export default class SyncExecutorService {
 	constructor(private plugin: WebDAVSyncPlugin) {}
 
 	async executeSync(options: SyncOptions) {
-		if (this.plugin.isSyncing) {
-			return false;
-		}
+		if (this.plugin.isSyncing) return false;
 
 		// 检查账号配置，未配置时静默返回（自动同步场景）
-		if (!this.plugin.isAccountConfigured()) {
-			return false;
-		}
+		if (!this.plugin.isAccountConfigured()) return false;
 
 		await waitUntil(() => this.plugin.isSyncing === false, 500);
 
@@ -44,9 +41,7 @@ export default class SyncExecutorService {
 
 		const plan = await sync.preparePlan();
 
-		if (!plan.hasActionableTasks) {
-			return false;
-		}
+		if (!plan.hasActionableTasks) return false;
 
 		await sync.start({
 			mode: options.mode,

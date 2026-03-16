@@ -9,9 +9,7 @@ export default class RealtimeSyncService {
 	private waiting = false;
 
 	private submitDirectly = async () => {
-		if (this.waiting) {
-			return;
-		}
+		if (this.waiting) return;
 		this.waiting = true;
 		await waitUntil(() => this.plugin.isSyncing === false, 500);
 		this.waiting = false;
@@ -20,46 +18,20 @@ export default class RealtimeSyncService {
 
 	private submitSyncRequest = debounce(this.submitDirectly, 8000);
 
+	private onChange = async () => {
+		const settings = await useSettings();
+		if (!settings.realtimeSync) return;
+		await this.submitSyncRequest();
+	};
+
 	constructor(
 		private plugin: WebDAVSyncPlugin,
 		private syncExecutor: SyncExecutorService,
 	) {
-		this.plugin.registerEvent(
-			this.vault.on('create', async () => {
-				const settings = await useSettings();
-				if (!settings.realtimeSync) {
-					return;
-				}
-				await this.submitSyncRequest();
-			}),
-		);
-		this.plugin.registerEvent(
-			this.vault.on('delete', async () => {
-				const settings = await useSettings();
-				if (!settings.realtimeSync) {
-					return;
-				}
-				await this.submitSyncRequest();
-			}),
-		);
-		this.plugin.registerEvent(
-			this.vault.on('modify', async () => {
-				const settings = await useSettings();
-				if (!settings.realtimeSync) {
-					return;
-				}
-				await this.submitSyncRequest();
-			}),
-		);
-		this.plugin.registerEvent(
-			this.vault.on('rename', async () => {
-				const settings = await useSettings();
-				if (!settings.realtimeSync) {
-					return;
-				}
-				await this.submitSyncRequest();
-			}),
-		);
+		this.plugin.registerEvent(this.vault.on('create', this.onChange));
+		this.plugin.registerEvent(this.vault.on('delete', this.onChange));
+		this.plugin.registerEvent(this.vault.on('modify', this.onChange));
+		this.plugin.registerEvent(this.vault.on('rename', this.onChange));
 	}
 
 	get vault() {

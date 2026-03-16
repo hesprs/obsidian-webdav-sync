@@ -4,6 +4,7 @@ import { normalizePath, Plugin } from 'obsidian';
 import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { emitCancelSync } from './events';
+import { normalizeRemoteDir } from './platform/path/remote-path';
 import CommandService from './services/command.service';
 import EventsService from './services/events.service';
 import I18nService from './services/i18n.service';
@@ -16,7 +17,6 @@ import SyncExecutorService from './services/sync-executor.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
-import { normalizeRemoteDir } from './platform/path/remote-path';
 
 function createGlobMathOptions(expr: string) {
 	return {

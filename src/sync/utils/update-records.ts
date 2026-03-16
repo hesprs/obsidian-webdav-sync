@@ -1,8 +1,10 @@
+import type WebDAVSyncPlugin from '~';
 import { chunk, debounce, isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
 import type { BaseTask, TaskResult } from '~/sync/tasks/task.interface';
 import { emitSyncUpdateMtimeProgress } from '~/events';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 import { syncRecordKV } from '~/storage';
 import { blobStore } from '~/storage/blob';
 import { SyncRecord } from '~/storage/sync-record';
@@ -12,12 +14,10 @@ import { getDBKey } from '~/utils/get-db-key';
 import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
-import { normalizeRemoteDir } from '~/platform/path/remote-path';
-import type WebDAVSyncPlugin from '../..';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 
 /**
- * 批量更新同步记录的工具函数
+ * helper function to batch update sync record
  */
 export async function updateMtimeInRecord(
 	plugin: WebDAVSyncPlugin,
@@ -27,9 +27,7 @@ export async function updateMtimeInRecord(
 	results: TaskResult[],
 	batch_size: number,
 ): Promise<void> {
-	if (tasks.length === 0) {
-		return;
-	}
+	if (tasks.length === 0) return;
 	// Filter out tasks that don't need record updates
 	const tasksNeedingUpdate = tasks.filter((task, idx) => {
 		return results[idx]?.success && !results[idx]?.skipRecord;
@@ -50,8 +48,6 @@ export async function updateMtimeInRecord(
 	const records = await syncRecord.getRecords();
 	const startAt = Date.now();
 	let completedCount = 0;
-	// oxlint-disable-next-line no-unused-vars
-	let successfulTasksCount = 0;
 
 	const debouncedSetRecords = debounce((records) => syncRecord.setRecords(records), 3000, {
 		trailing: true,
@@ -113,7 +109,6 @@ export async function updateMtimeInRecord(
 					local,
 					base,
 				});
-				successfulTasksCount++;
 				// oxlint-disable-next-line typescript/no-explicit-any
 			} catch (e: any) {
 				logger.error(

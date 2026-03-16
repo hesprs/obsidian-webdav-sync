@@ -1,10 +1,10 @@
 import { parse as bytesParse } from 'bytes-iec';
+import { remotePathToAbsolute } from '~/platform/path/remote-path';
+import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import { isSameTime } from '~/utils/is-same-time';
 import logger from '~/utils/logger';
-import { remotePathToAbsolute } from '~/platform/path/remote-path';
-import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 import type { SyncDecisionInput } from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
