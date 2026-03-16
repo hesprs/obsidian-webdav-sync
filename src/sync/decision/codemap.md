@@ -2,7 +2,7 @@
 
 ## Responsibility
 
-Generates deterministic `BaseTask[]` plans from current local/remote snapshots plus persisted sync state. This layer decides *what* to do; task classes decide *how* to execute.
+Generates deterministic `BaseTask[]` plans from current local/remote snapshots plus persisted sync state. This layer decides _what_ to do; task classes decide _how_ to execute.
 
 ## Design
 

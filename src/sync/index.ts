@@ -23,10 +23,9 @@ import { vaultDirname } from '~/platform/path/vault-path';
 import { useSettings } from '~/settings';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
-import { formatTime } from '~/utils/format-date';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
-import { is503Error } from '~/utils/is-503-error';
+import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
 import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
@@ -435,7 +434,7 @@ export class SyncEngine {
 		const webdav = this.webdav;
 		const remoteBaseDir = normalizeRemoteDir(this.options.remoteBaseDir);
 
-		let remoteBaseDirExists = await webdav.exists(remoteBaseDir);
+		let remoteBaseDirExists = await this.retryWebDAVCall(() => webdav.exists(remoteBaseDir));
 
 		if (!remoteBaseDirExists)
 			await Promise.all([syncRecord.drop(), this.clearStoredRemoteSnapshot()]);
@@ -451,10 +450,12 @@ export class SyncEngine {
 				continue;
 				// oxlint-disable-next-line typescript/no-explicit-any
 			} catch (e: any) {
-				if (is503Error(e)) {
-					await this.handle503Error(60000);
+				if (isRetryableError(e)) {
+					await breakableSleep(onCancelSync(), 5000);
 					if (this.isCancelled) return;
-					remoteBaseDirExists = await webdav.exists(remoteBaseDir);
+					remoteBaseDirExists = await this.retryWebDAVCall(() =>
+						webdav.exists(remoteBaseDir),
+					);
 					continue;
 				}
 
@@ -531,8 +532,8 @@ export class SyncEngine {
 				};
 			}
 			const taskResult = await task.exec();
-			if (!taskResult.success && is503Error(taskResult.error)) {
-				await this.handle503Error(60000);
+			if (!taskResult.success && isRetryableError(taskResult.error)) {
+				await breakableSleep(onCancelSync(), 5000);
 				if (this.isCancelled) {
 					return {
 						success: false,
@@ -549,15 +550,30 @@ export class SyncEngine {
 		return updateMtimeInRecordUtil(this.vault, tasks, results, 10);
 	}
 
-	private async handle503Error(waitMs: number) {
-		const now = Date.now();
-		const startAt = now + waitMs;
-		new Notice(
-			i18n.t('sync.requestsTooFrequent', {
-				time: formatTime(startAt),
-			}),
-		);
-		await breakableSleep(onCancelSync(), startAt - now);
+	private async retryWebDAVCall<T>(operation: () => Promise<T>) {
+		let retryCount = 0;
+		while (true) {
+			if (this.isCancelled) {
+				logger.error(i18n.t('sync.cancelled'));
+				break;
+			}
+			if (retryCount >= 3) {
+				logger.error('WebDAV connection failed, retries reach max limit');
+				break;
+			}
+
+			try {
+				return await operation();
+			} catch (error) {
+				if (!isRetryableError(error)) {
+					logger.error(error);
+					break;
+				}
+
+				await breakableSleep(onCancelSync(), 5000);
+				retryCount++;
+			}
+		}
 	}
 
 	get app() {

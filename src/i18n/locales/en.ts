@@ -153,11 +153,9 @@ export default {
 			failedToAutoMerge: 'Failed to auto merge',
 			failedToUploadMerged: 'Failed to upload merged content',
 			conflictsMarkedInFile: 'Conflicts found and marked in file',
-			requestsTooFrequent: 'Requests too frequent, please wait a few minutes and try again',
 			accountNotConfigured:
 				'WebDAV account is not configured. Please configure your server URL, account, and credential in settings first.',
 		},
-		requestsTooFrequent: 'Requests too frequent, plugin will resume sync at {{time}}',
 		preparing: '📋 Preparing sync',
 		start: '⌛️ Starting sync',
 		complete: '✅ Sync completed',

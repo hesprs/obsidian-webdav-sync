@@ -2,7 +2,6 @@ import { Notice } from 'obsidian';
 import { Subscription } from 'rxjs';
 import { onEndSync, onPreparingSync, onStartSync, onSyncError, onSyncProgress } from '~/events';
 import i18n from '~/i18n';
-import { is503Error } from '~/utils/is-503-error';
 import WebDAVSyncPlugin from '..';
 
 export default class EventsService {
@@ -55,9 +54,7 @@ export default class EventsService {
 				});
 				new Notice(
 					i18n.t('sync.failedWithError', {
-						error: is503Error(error)
-							? i18n.t('sync.error.requestsTooFrequent')
-							: error.message,
+						error: error.message,
 					}),
 				);
 			}),

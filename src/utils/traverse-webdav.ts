@@ -4,12 +4,12 @@ import { getDirectoryContents } from '~/api';
 import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
 import { SyncRecord } from '~/storage/sync-record';
 import { Mutex } from '~/utils/mutex';
+import { type MaybePromise } from '../types';
 import { apiLimiter } from './api-limiter';
 import { fileStatToStatModel } from './file-stat-to-stat-model';
-import { is503Error } from './is-503-error';
+import { isRetryableError } from './is-retryable-error';
 import logger from './logger';
 import sleep from './sleep';
-import { type MaybePromise } from './types';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
 
@@ -29,7 +29,7 @@ async function executeWithRetry<T>(func: () => MaybePromise<T>): Promise<T> {
 			return await func();
 			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (err: any) {
-			if (is503Error(err)) await sleep(30_000);
+			if (isRetryableError(err)) await sleep(5_000);
 			else throw err;
 		}
 	}

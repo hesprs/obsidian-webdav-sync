@@ -18,13 +18,3 @@ export function formatDateTime(input: number | Date): string {
 	const { year, month, day, hour, minute, second } = getDateParts(input);
 	return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }
-
-export function formatTime(input: number | Date): string {
-	const { hour, minute, second } = getDateParts(input);
-	return `${hour}:${minute}:${second}`;
-}
-
-export function formatFilenameDateTime(input: number | Date): string {
-	const { year, month, day, hour, minute, second } = getDateParts(input);
-	return `${year}-${month}-${day} ${hour}_${minute}_${second}`;
-}

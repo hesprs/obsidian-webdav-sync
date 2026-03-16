@@ -37,4 +37,4 @@ Provides cross-cutting runtime primitives used by sync/fs/services: traversal, s
 - `request-url.ts` — normalized HTTP wrapper around Obsidian `requestUrl`.
 - `traverse-local-vault.ts` — local vault BFS traversal with ignore filtering.
 - `stat-vault-item.ts`, `stat-webdav-item.ts`, `file-stat-to-stat-model.ts` — stat normalization.
-- `sha256.ts`, `is-sub.ts`, `is-same-time.ts`, `is-503-error.ts` — shared decision/runtime helpers.
+- `sha256.ts`, `is-sub.ts`, `is-same-time.ts`, `is-retryable-error.ts` — shared decision/runtime helpers.

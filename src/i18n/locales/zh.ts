@@ -151,11 +151,9 @@ export default {
 			failedToAutoMerge: '自动合并失败',
 			failedToUploadMerged: '上传合并内容失败',
 			conflictsMarkedInFile: '发现冲突，已在文件中标记',
-			requestsTooFrequent: '请求过于频繁，请等待几分钟后再试',
 			accountNotConfigured:
 				'尚未完成 WebDAV 账号配置，请先在设置中填写服务器地址、账号和凭证',
 		},
-		requestsTooFrequent: '请求过于频繁，插件将在 {{time}} 后自动继续同步任务',
 		preparing: '📋 准备同步',
 		start: '⌛️ 开始同步',
 		complete: '✅ 同步完成',

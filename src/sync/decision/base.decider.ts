@@ -1,4 +1,4 @@
-import type { MaybePromise } from '~/utils/types';
+import type { MaybePromise } from '~/types';
 import { SyncRecord } from '~/storage/sync-record';
 import type { SyncEngine } from '..';
 import { BaseTask } from '../tasks/task.interface';

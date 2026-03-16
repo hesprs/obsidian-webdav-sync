@@ -1,6 +1,6 @@
 import type { StatModel } from '~/model/stat.model';
+import type { MaybePromise } from '~/types';
 import type { WalkFreshness } from '~/utils/traverse-webdav';
-import type { MaybePromise } from '~/utils/types';
 
 export interface FsWalkResult {
 	stat: StatModel;

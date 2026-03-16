@@ -2,7 +2,7 @@ import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
 import { normalizeRemotePath, remoteBasename } from '~/platform/path/remote-path';
-import { is503Error } from './utils/is-503-error';
+import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
 import requestUrl from './utils/request-url';
 import sleep from './utils/sleep';
@@ -178,9 +178,9 @@ export async function getDirectoryContents(
 			nextUrl.pathname = decodeURI(nextUrl.pathname);
 			currentUrl = nextUrl.toString();
 		} catch (e) {
-			if (is503Error(e as Error)) {
-				logger.error('503 error, retrying...');
-				await sleep(60_000);
+			if (isRetryableError(e)) {
+				logger.error('Retryable WebDAV error, retrying...', e);
+				await sleep(5_000);
 				continue;
 			}
 			throw e;

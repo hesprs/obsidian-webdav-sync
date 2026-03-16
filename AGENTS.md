@@ -11,6 +11,7 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 
 - No non-null assertion (use `as` assertion)
 - No explicit `any`
+- Error handling and observables should be handled by the logger, do not throw into the console.
 
 ## Repository Map
 
