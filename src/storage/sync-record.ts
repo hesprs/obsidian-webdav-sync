@@ -1,26 +1,28 @@
+import type { StatModel } from '~/model/stat.model';
 import { normalizeRemoteWalkPath } from '~/fs/utils/normalize-remote-walk-path';
 import {
 	createEmptyRemoteRecord,
 	createEmptySyncState,
 	type LocalRecordModel,
+	type PersistedSyncStateModel,
 	type RemoteRecordModel,
-	type SyncRecordModel,
 	type SyncStateModel,
 } from '~/model/sync-record.model';
-import { syncRecordKV, syncStateKV } from './kv';
+import {
+	normalizeRemoteDir,
+	normalizeRemotePath,
+	remoteBasename,
+	remoteDirname,
+	remotePathToAbsolute,
+} from '~/platform/path/remote-path';
+import { normalizeVaultPath } from '~/platform/path/vault-path';
+import { getPluginInstance, waitUntilPluginInstance } from '~/settings';
 
 export class SyncRecord {
 	constructor(
 		private namespace: string,
 		private remoteBaseDir: string,
 	) {}
-
-	private toLocalRecord(record: SyncRecordModel): LocalRecordModel {
-		return {
-			local: record.local,
-			base: record.base,
-		};
-	}
 
 	private normalizeLocalRecords(
 		localRecords: Map<string, LocalRecordModel> | Record<string, LocalRecordModel> | undefined,
@@ -46,7 +48,18 @@ export class SyncRecord {
 		};
 	}
 
-	private normalizeState(state: Partial<SyncStateModel> | undefined): SyncStateModel {
+	private serializeState(state: SyncStateModel): PersistedSyncStateModel {
+		const normalizedState = this.normalizeState(state);
+		return {
+			version: 1,
+			remoteRecord: normalizedState.remoteRecord,
+			localRecords: Object.fromEntries(normalizedState.localRecords.entries()),
+		};
+	}
+
+	private normalizeState(
+		state: Partial<SyncStateModel> | PersistedSyncStateModel | undefined,
+	): SyncStateModel {
 		if (!state) return createEmptySyncState();
 
 		return {
@@ -56,23 +69,19 @@ export class SyncRecord {
 		};
 	}
 
-	private async migrateLegacyLocalRecords(): Promise<Map<string, LocalRecordModel>> {
-		const legacyRecords = await syncRecordKV.get(this.namespace);
-		if (!legacyRecords) return new Map();
-
-		const localRecords = new Map<string, LocalRecordModel>();
-		for (const [path, record] of legacyRecords) {
-			localRecords.set(path, this.toLocalRecord(record));
-		}
-
-		await syncRecordKV.unset(this.namespace);
-		return localRecords;
+	private async getSyncStates() {
+		await waitUntilPluginInstance();
+		const plugin = getPluginInstance();
+		if (!plugin) throw new Error('Plugin instance is not ready');
+		plugin.settings.syncStates ??= {};
+		return {
+			plugin,
+			syncStates: plugin.settings.syncStates,
+		};
 	}
 
-	private buildRemoteStatMap(
-		remoteRecord: RemoteRecordModel,
-	): Map<string, SyncRecordModel['remote']> {
-		const remoteStats = new Map<string, SyncRecordModel['remote']>();
+	private buildRemoteStatMap(remoteRecord: RemoteRecordModel): Map<string, StatModel> {
+		const remoteStats = new Map<string, StatModel>();
 
 		for (const stats of Object.values(remoteRecord.nodes)) {
 			for (const stat of stats) {
@@ -88,18 +97,53 @@ export class SyncRecord {
 		return remoteStats;
 	}
 
-	private async loadState(): Promise<SyncStateModel> {
-		const existingState = await syncStateKV.get(this.namespace);
-		if (existingState) return this.normalizeState(existingState);
+	private buildRemoteStats(remoteRecord: RemoteRecordModel): StatModel[] {
+		return Array.from(this.buildRemoteStatMap(remoteRecord).values());
+	}
 
-		const migratedState = createEmptySyncState();
-		migratedState.localRecords = await this.migrateLegacyLocalRecords();
-		await syncStateKV.set(this.namespace, migratedState);
-		return migratedState;
+	private normalizeRemoteAbsolutePath(path: string): string {
+		return remotePathToAbsolute(this.remoteBaseDir, path);
+	}
+
+	private normalizeRemoteNodeKey(path: string): string {
+		return normalizeRemoteDir(this.normalizeRemoteAbsolutePath(path));
+	}
+
+	private normalizeRemoteStat(stat: StatModel): StatModel {
+		const path = this.normalizeRemoteAbsolutePath(stat.path);
+		return {
+			...stat,
+			path,
+			basename: stat.basename || remoteBasename(path),
+		};
+	}
+
+	private setRemoteRecordSource(
+		remoteRecord: RemoteRecordModel,
+		source: RemoteRecordModel['source'],
+	) {
+		remoteRecord.source = source;
+	}
+
+	private filterNodeChildren(remoteRecord: RemoteRecordModel, remotePath: string) {
+		for (const [nodePath, stats] of Object.entries(remoteRecord.nodes)) {
+			const nextStats = stats.filter((stat) => normalizeRemotePath(stat.path) !== remotePath);
+			if (nextStats.length === stats.length) continue;
+			remoteRecord.nodes[nodePath] = nextStats;
+		}
+	}
+
+	private async loadState(): Promise<SyncStateModel> {
+		const { syncStates } = await this.getSyncStates();
+		const existingState = syncStates[this.namespace];
+		if (existingState) return this.normalizeState(existingState);
+		return createEmptySyncState();
 	}
 
 	private async saveState(state: SyncStateModel): Promise<void> {
-		await syncStateKV.set(this.namespace, this.normalizeState(state));
+		const { plugin, syncStates } = await this.getSyncStates();
+		syncStates[this.namespace] = this.serializeState(state);
+		await plugin.saveSettings();
 	}
 
 	async getState(): Promise<SyncStateModel> {
@@ -110,9 +154,25 @@ export class SyncRecord {
 		await this.saveState(state);
 	}
 
+	async mutateState(mutator: (state: SyncStateModel) => void | Promise<void>): Promise<void> {
+		const state = await this.loadState();
+		await mutator(state);
+		await this.saveState(state);
+	}
+
+	async getLocalRecords(): Promise<Map<string, LocalRecordModel>> {
+		const state = await this.loadState();
+		return new Map(state.localRecords);
+	}
+
 	async getRemoteRecord(): Promise<RemoteRecordModel> {
 		const state = await this.loadState();
 		return state.remoteRecord;
+	}
+
+	async getRemoteStats(): Promise<StatModel[]> {
+		const state = await this.loadState();
+		return this.buildRemoteStats(state.remoteRecord);
 	}
 
 	async setRemoteRecord(remoteRecord: RemoteRecordModel): Promise<void> {
@@ -127,77 +187,95 @@ export class SyncRecord {
 		await this.saveState(state);
 	}
 
-	async clearLocalRecords(): Promise<void> {
-		const state = await this.loadState();
-		state.localRecords = new Map();
-		await this.saveState(state);
-	}
+	upsertRemotePathInState(state: SyncStateModel, stat: StatModel): void {
+		const normalizedStat = this.normalizeRemoteStat(stat);
+		const remoteRecord = state.remoteRecord;
+		const parentPath = this.normalizeRemoteNodeKey(remoteDirname(normalizedStat.path));
+		const siblings = remoteRecord.nodes[parentPath] ?? [];
+		const nextSiblings = siblings.filter(
+			(item) => normalizeRemotePath(item.path) !== normalizeRemotePath(normalizedStat.path),
+		);
+		nextSiblings.push(normalizedStat);
+		remoteRecord.nodes[parentPath] = nextSiblings;
 
-	async updateFileRecord(path: string, record: SyncRecordModel): Promise<void> {
-		const state = await this.loadState();
-		state.localRecords.set(path, this.toLocalRecord(record));
-		await this.saveState(state);
-	}
-
-	async deleteFileRecord(path: string): Promise<void> {
-		const state = await this.loadState();
-		if (!state.localRecords.has(path)) return;
-		state.localRecords.delete(path);
-		await this.saveState(state);
-	}
-
-	async getRecords(): Promise<Map<string, SyncRecordModel>> {
-		const state = await this.loadState();
-		const remoteStats = this.buildRemoteStatMap(state.remoteRecord);
-		const records = new Map<string, SyncRecordModel>();
-
-		for (const [path, record] of state.localRecords) {
-			const remote = remoteStats.get(path);
-			if (!remote) continue;
-
-			records.set(path, {
-				local: record.local,
-				remote,
-				base: record.base,
-			});
+		if (normalizedStat.isDir) {
+			const dirKey = this.normalizeRemoteNodeKey(normalizedStat.path);
+			remoteRecord.nodes[dirKey] ??= [];
 		}
 
-		return records;
+		this.setRemoteRecordSource(remoteRecord, 'task-updated');
 	}
 
-	async setRecords(records: Map<string, SyncRecordModel>) {
-		const state = await this.loadState();
-		state.localRecords = new Map(
-			Array.from(records.entries()).map(([path, record]) => [
-				path,
-				this.toLocalRecord(record),
-			]),
+	removeRemotePathInState(state: SyncStateModel, remotePath: string): void {
+		const normalizedRemotePath = normalizeRemotePath(
+			this.normalizeRemoteAbsolutePath(remotePath),
 		);
-		await this.saveState(state);
+		this.filterNodeChildren(state.remoteRecord, normalizedRemotePath);
+		delete state.remoteRecord.nodes[this.normalizeRemoteNodeKey(normalizedRemotePath)];
+		state.remoteRecord.queue = state.remoteRecord.queue.filter(
+			(path) => normalizeRemotePath(path) !== normalizedRemotePath,
+		);
+		this.setRemoteRecordSource(state.remoteRecord, 'task-updated');
 	}
 
-	async getRecord(path: string): Promise<SyncRecordModel | undefined> {
-		const records = await this.getRecords();
-		return records.get(path);
+	removeRemoteSubtreeInState(state: SyncStateModel, remotePath: string): void {
+		const normalizedRemotePath = normalizeRemotePath(
+			this.normalizeRemoteAbsolutePath(remotePath),
+		);
+		const normalizedRemoteDir = normalizeRemoteDir(normalizedRemotePath);
+
+		this.filterNodeChildren(state.remoteRecord, normalizedRemotePath);
+
+		for (const nodePath of Object.keys(state.remoteRecord.nodes)) {
+			if (nodePath === normalizedRemoteDir || nodePath.startsWith(normalizedRemoteDir)) {
+				delete state.remoteRecord.nodes[nodePath];
+				continue;
+			}
+
+			state.remoteRecord.nodes[nodePath] = state.remoteRecord.nodes[nodePath].filter(
+				(stat) => {
+					const childPath = normalizeRemotePath(stat.path);
+					return (
+						childPath !== normalizedRemotePath &&
+						!childPath.startsWith(normalizedRemoteDir)
+					);
+				},
+			);
+		}
+
+		state.remoteRecord.queue = state.remoteRecord.queue.filter((path) => {
+			const normalizedPath = normalizeRemotePath(path);
+			return (
+				normalizedPath !== normalizedRemotePath &&
+				!normalizedPath.startsWith(normalizedRemoteDir)
+			);
+		});
+
+		this.setRemoteRecordSource(state.remoteRecord, 'task-updated');
+	}
+
+	upsertLocalRecordInState(state: SyncStateModel, path: string, record: LocalRecordModel): void {
+		state.localRecords.set(normalizeVaultPath(path), record);
+	}
+
+	removeLocalRecordInState(state: SyncStateModel, path: string): void {
+		state.localRecords.delete(normalizeVaultPath(path));
+	}
+
+	removeLocalSubtreeInState(state: SyncStateModel, path: string): void {
+		const normalizedPath = normalizeVaultPath(path);
+		const normalizedDir = normalizedPath.length === 0 ? '' : `${normalizedPath}/`;
+
+		for (const key of Array.from(state.localRecords.keys())) {
+			if (key === normalizedPath || (normalizedDir && key.startsWith(normalizedDir))) {
+				state.localRecords.delete(key);
+			}
+		}
 	}
 
 	async drop() {
-		await Promise.all([syncStateKV.unset(this.namespace), syncRecordKV.unset(this.namespace)]);
-	}
-
-	async exists(path: string): Promise<boolean> {
-		const state = await this.loadState();
-		return state.localRecords.has(path);
-	}
-
-	async batchUpdate(updates: [string, SyncRecordModel][]): Promise<void> {
-		if (updates.length === 0) return;
-		const state = await this.loadState();
-
-		for (const [path, record] of updates) {
-			state.localRecords.set(path, this.toLocalRecord(record));
-		}
-
-		await this.saveState(state);
+		const { plugin, syncStates } = await this.getSyncStates();
+		delete syncStates[this.namespace];
+		await plugin.saveSettings();
 	}
 }

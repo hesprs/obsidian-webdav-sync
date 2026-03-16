@@ -15,11 +15,11 @@ import { hasFolderContentChanged } from './has-folder-content-changed';
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {
 		settings,
-		localStats,
-		remoteStats,
-		syncRecords,
+		currentLocalStats,
+		currentRemoteStats,
+		previousRemoteStats,
+		previousLocalRecords,
 		remoteBaseDir,
-		getBaseContent,
 		compareFileContent,
 		taskFactory,
 	} = input;
@@ -31,13 +31,41 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	}
 
 	// Filter out ignored files and extract StatModel from FsWalkResult
+	const localStats = currentLocalStats;
+	const remoteStats = currentRemoteStats;
 	const localStatsFiltered = localStats.filter((item) => !item.ignored).map((item) => item.stat);
 	const remoteStatsFiltered = remoteStats
+		.filter((item) => !item.ignored)
+		.map((item) => item.stat);
+	const previousRemoteStatsFiltered = previousRemoteStats
 		.filter((item) => !item.ignored)
 		.map((item) => item.stat);
 
 	const localStatsMap = new Map(localStatsFiltered.map((item) => [item.path, item]));
 	const remoteStatsMap = new Map(remoteStatsFiltered.map((item) => [item.path, item]));
+	const previousRemoteStatsMap = new Map(
+		previousRemoteStatsFiltered.map((item) => [item.path, item]),
+	);
+	const syncRecords = new Map(
+		Array.from(previousLocalRecords.entries()).flatMap(([path, record]) => {
+			const remote = previousRemoteStatsMap.get(path);
+			if (!remote) return [];
+			return [
+				[
+					path,
+					{
+						local: record.local,
+						remote,
+						baseText: record.baseText,
+					},
+				],
+			] as const;
+		}),
+	);
+	const cleanupCandidatePaths = new Set([
+		...previousLocalRecords.keys(),
+		...previousRemoteStatsMap.keys(),
+	]);
 	const mixedPath = new Set([...localStatsMap.keys(), ...remoteStatsMap.keys()]);
 
 	logger.debug(
@@ -82,11 +110,8 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				const remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
 				if (local) {
 					let localChanged = !isSameTime(local.mtime, record.local.mtime);
-					if (localChanged && record.base?.key) {
-						const baseContent = await getBaseContent(record.base.key);
-						if (baseContent) {
-							localChanged = !(await compareFileContent(local.path, baseContent));
-						}
+					if (localChanged && record.baseText) {
+						localChanged = !(await compareFileContent(local.path, record.baseText));
 					}
 					if (remoteChanged) {
 						if (localChanged) {
@@ -408,12 +433,14 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	}
 
 	// * clean orphaned records (both local and remote deleted)
-	for (const [recordPath, record] of syncRecords) {
+	for (const recordPath of cleanupCandidatePaths) {
 		const local = localStatsMap.get(recordPath);
 		const remote = remoteStatsMap.get(recordPath);
+		const hasPreviousLocal = previousLocalRecords.has(recordPath);
+		const hasPreviousRemote = previousRemoteStatsMap.has(recordPath);
 
 		// If both local and remote don't exist, but record exists, clean the record
-		if (!local && !remote) {
+		if (!local && !remote && (hasPreviousLocal || hasPreviousRemote)) {
 			logger.debug({
 				reason: 'cleaning orphaned sync record (both local and remote deleted)',
 				remotePath: remotePathToAbsolute(remoteBaseDir, recordPath),
@@ -421,7 +448,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				conditions: {
 					localExists: !!local,
 					remoteExists: !!remote,
-					recordExists: !!record,
+					recordExists: hasPreviousLocal || hasPreviousRemote,
 				},
 			});
 

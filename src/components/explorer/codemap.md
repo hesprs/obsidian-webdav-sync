@@ -1,92 +1,55 @@
-# WebDAV Explorer `src` Code Map
-
-Scope: `packages/webdav-explorer/src/` only (runtime source). Tests/docs/translation dictionaries are intentionally excluded.
+# src/components/explorer
 
 ## Responsibility
 
-This folder implements a small SolidJS explorer UI that lets users browse remote WebDAV directories and choose a target path.
+In-repo SolidJS explorer module used by sync settings/modals to select a remote base directory. This replaces the previously separate `webdav-explorer` package and now lives under plugin component code.
 
-Primary responsibilities:
+It provides:
 
-- Render a navigable directory view with folder-first sorting.
-- Allow creating a folder in the current directory.
-- Return the selected path to host code (`onConfirm`) or close the dialog (`onClose`).
-- Keep backend access abstract through an injected `fs` contract (`ls`, `mkdirs`).
-- Provide localized labels through a shared `t()` translator.
+- mountable explorer entrypoint for host DOM nodes,
+- navigation over remote paths with folder-first listing,
+- inline folder creation in current directory,
+- confirm/cancel callbacks to the hosting modal,
+- localized labels scoped to explorer UI.
 
-## Design
+## Design Patterns
 
-### Entry and composition
+- **Mount API boundary** (`index.tsx`): exports `mount(el, props)` so Obsidian modal code can embed explorer without Solid-specific wiring.
+- **Injected filesystem adapter** (`AppProps.fs`): explorer never imports WebDAV service directly; host provides `ls` and `mkdirs`.
+- **Signal-based navigation state** (`App.tsx`): path stack (`['/']` root seed) models breadcrumb depth; top-of-stack is `cwd`.
+- **Factory-owned list controller** (`createFileList()`): returns both render component and imperative `refresh()` trigger for post-create refetch.
+- **Error-to-notice conversion**: `ls`/`mkdirs` failures are surfaced through Obsidian `Notice` rather than thrown upward.
+- **Path utility normalization**: folder creation uses `joinRemotePath()` to compose valid remote paths.
 
-- `index.tsx`
-  - Imports global styles.
-  - Exposes `mount(el, props)` that renders `<App {...props} />` into a host element.
+## Data & Control Flow
 
-- `App.tsx`
-  - Owns top-level explorer state and actions.
-  - Defines integration contract:
-    - `fs.ls(path) => FileStat[] | Promise<FileStat[]>`
-    - `fs.mkdirs(path) => void | Promise<void>`
-  - Maintains:
-    - `stack` (path history), initialized to `['/']`
-    - `showNewFolder` (toggle for inline folder-creation row)
-  - Derives `cwd` from the top of `stack`.
+1. **Embedding path**
+   - Host modal calls `mount(containerEl, { fs, onConfirm, onClose })`.
+   - Explorer renders `App` and owns local navigation state.
 
-### List rendering model
+2. **Directory listing path**
+   - `FileList` requests `props.fs.ls(cwd)`.
+   - Entries are sorted with directories first, then `basename.localeCompare(..., ['zh'])`.
+   - Rows render as `Folder` (interactive) or `File` (display-only).
 
-- `components/FileList.tsx`
-  - Exposes `createFileList()` factory returning:
-    - `FileList` component
-    - `refresh()` trigger
-  - `FileList` keeps `items` signal and computes `sortedItems()`:
-    - directories before files
-    - same-type items sorted by `basename.localeCompare(..., ['zh'])`
-  - Fetches list data via `props.fs.ls(props.path)` and shows Obsidian `Notice` on failure.
-  - Re-runs fetch when path/reactive dependencies change and when `refresh()` bumps `version`.
+3. **Navigation path**
+   - Folder click pushes `path` into `stack`.
+   - Go Back pops one level (root-protected).
+   - `cwd` change drives list refresh.
 
-### Leaf UI components
+4. **New folder path**
+   - “New Folder” toggles inline `NewFolder` editor.
+   - Confirm computes `target = joinRemotePath(cwd, name)` and calls `fs.mkdirs(target)`.
+   - On success: hide editor + call `list.refresh()`.
 
-- `components/Folder.tsx`
-  - Clickable row with folder icon.
-  - Emits selected path via `onClick(path)`.
+5. **Selection completion path**
+   - Confirm emits current `cwd` to host via `onConfirm`.
+   - Cancel delegates to host `onClose`.
 
-- `components/File.tsx`
-  - Non-interactive file row (dimmed + not-allowed cursor).
-  - Used as fallback when an entry is not a directory.
+## Integration Points
 
-- `components/NewFolder.tsx`
-  - Inline input row with local `name` signal.
-  - Emits `onConfirm(name)` / `onCancel()`.
-  - Uses localized button labels.
-
-- `assets/global.css`
-  - Enables UnoCSS generation (`@unocss`).
-
-## Flow (UI + data)
-
-1. Host calls `mount(...)` with `AppProps`.
-2. `App` starts at `/`, creates a local file-list instance (`createFileList`).
-3. `FileList` fetches entries from `fs.ls(cwd)` and renders:
-   - `Folder` rows for directories
-   - `File` rows for files
-4. User clicks a folder:
-   - `Folder` -> `App.enter(path)` -> push onto `stack`
-   - `cwd` changes -> list refetches for new directory
-5. User clicks “Go Back”:
-   - `App.pop()` removes one level (never below root)
-   - `cwd` changes -> list refetches
-6. User clicks “New Folder”:
-   - `showNewFolder = true` displays `NewFolder`
-   - Confirm builds `target = path.join(cwd, name)` and calls `fs.mkdirs(target)`
-   - on success: hides input + `list.refresh()`
-   - on error: shows `Notice(error.message)`
-7. User clicks “Confirm” / “Cancel”:
-   - confirm sends current path through `onConfirm(cwd)`
-   - cancel calls `onClose()`
-
-## Integration details
-
-- **Host/plugin boundary**: `AppProps` is the full integration API for external callers.
-- **Backend boundary**: all filesystem operations are delegated to injected `fs`; no direct WebDAV client usage in UI code.
-- **Obsidian UI feedback**: operational failures are surfaced with `Notice` in both folder listing and folder creation flows.
-- **Localization usage**: UI strings are retrieved via `t(...)` from `src/i18n/index.ts`; locale dictionary files are outside this codemap scope.
+- **Upstream host (`SelectRemoteBaseDirModal`)**: provides concrete `ls`/`mkdirs` implementations and consumes selected path.
+- **Explorer subcomponents (`./components`)**: `FileList`, `Folder`, `File`, `NewFolder` implement rendering and input primitives.
+- **Explorer i18n (`./i18n`)**: `t()` translator and local dictionaries provide explorer-scoped strings.
+- **Shared style pipeline**: imports `~/assets/global.css` to enable UnoCSS utility classes/icons.
+- **Obsidian runtime**: `Notice` is used for user-visible operational errors.

@@ -1,7 +1,8 @@
 import { isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
+import type { StatModel } from '~/model/stat.model';
 import { useSettings } from '~/settings';
-import { getDBKey, getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import GlobMatch, {
 	type GlobMatchOptions,
 	isVoidGlobMatchOptions,
@@ -26,51 +27,73 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 
 	async walk(options?: FsWalkOptions) {
 		const settings = await useSettings();
+		const stateKey = getSyncStateKey({
+			vaultName: this.options.vault.getName(),
+			remoteBaseDir: this.options.remoteBaseDir,
+			serverUrl: this.options.remoteServerUrl || settings.serverUrl,
+			account: settings.account,
+		});
+
+		if (options?.remoteSource === 'stored-record') {
+			const traversal = new ResumableWebDAVTraversal({
+				remoteServerUrl: this.options.remoteServerUrl || settings.serverUrl,
+				token: this.options.token,
+				remoteBaseDir: this.options.remoteBaseDir,
+				stateKey,
+				saveInterval: 1,
+			});
+			const stats = await traversal.getStoredSnapshot();
+			return this.toWalkResults(stats);
+		}
+
 		const remoteServerUrl = this.options.remoteServerUrl || settings.serverUrl;
 		const traversal = new ResumableWebDAVTraversal({
 			remoteServerUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
-			stateKey: getDBKey(this.options.vault.getName(), this.options.remoteBaseDir),
-			legacyTraversalKey: await getTraversalWebDAVDBKey(
-				this.options.token,
-				this.options.remoteBaseDir,
-			),
+			stateKey,
 			saveInterval: 1,
 		});
 		let stats = await traversal.traverse({
-			freshness: options?.freshness ?? 'cached-ok',
+			freshness: options?.freshness ?? 'stored-ok',
 		});
 
+		return await this.toWalkResults(stats, settings?.filterRules);
+	}
+
+	private async toWalkResults(
+		stats: StatModel[],
+		filterRules?: {
+			exclusionRules?: GlobMatchOptions[];
+			inclusionRules?: GlobMatchOptions[];
+		},
+	) {
 		if (stats.length === 0) return [];
 
-		// Paths returned by traversal are expected to be already relative to remoteBaseDir
-		// (e.g. /Welcome.md). Some servers may still return base-prefixed absolute paths.
-		// Normalize both shapes into plugin-relative paths (e.g. Welcome.md).
-		stats = stats
-			.map((item) => {
+		const normalizedStats = stats
+			.map((item: StatModel) => {
 				const path = normalizeRemoteWalkPath(item.path, this.options.remoteBaseDir);
 				return {
 					...item,
 					path,
 				};
 			})
-			.filter((item) => item.path.length > 0)
-			.filter((item) => !isNil(item));
+			.filter((item: StatModel) => item.path.length > 0)
+			.filter((item: StatModel) => !isNil(item));
 
+		const settings = filterRules ? { filterRules } : await useSettings();
 		const exclusions = this.buildRules(settings?.filterRules.exclusionRules);
 		const inclusions = this.buildRules(settings?.filterRules.inclusionRules);
 
-		const includedStats = stats.filter((stat) =>
+		const includedStats = normalizedStats.filter((stat: StatModel) =>
 			needIncludeFromGlobRules(stat.path, inclusions, exclusions),
 		);
-		const completeStats = completeLossDir(stats, includedStats);
+		const completeStats = completeLossDir(normalizedStats, includedStats);
 		const completeStatPaths = new Set(completeStats.map((s) => s.path));
-		const results = stats.map((stat) => ({
+		return normalizedStats.map((stat: StatModel) => ({
 			stat,
 			ignored: !completeStatPaths.has(stat.path),
 		}));
-		return results;
 	}
 
 	private buildRules(rules: GlobMatchOptions[] = []): GlobMatch[] {

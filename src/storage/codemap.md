@@ -2,34 +2,32 @@
 
 ## Responsibility
 
-Provide persistent key-value storage primitives and domain stores for sync records, blob content, and WebDAV traversal cache.
+Persist and mutate per-sync-state records only. Storage in this directory is now scoped to `SyncRecord` state management backed by plugin settings (`plugin.settings.syncStates`).
 
 ## Design Patterns
 
-- Storage adapter wrapper (`useStorage`) over a generic async key-value interface.
-- Shared singleton KV instances (`kv.ts`) for consistent store access.
-- DAO-style domain layer (`SyncRecord`, `blobStore`) on top of raw KV operations.
-- Content-addressable blob storage using SHA-256 hash keys.
+- **State DAO (`SyncRecord`)**: encapsulates state load/normalize/mutate/save for a namespace (`stateKey`) and remote base directory.
+- **Persistence through settings**: read/write uses plugin-instance accessors (`waitUntilPluginInstance`, `getPluginInstance`) and `plugin.saveSettings()`.
+- **In-memory/runtime normalization boundary**: persisted `localRecords` (`Record`) are converted to runtime `Map`, and partial/legacy remote-record shapes are normalized before use.
+- **Path canonicalization on all mutations**: vault and remote paths are normalized (`normalizeVaultPath`, `normalizeRemotePath`, `remotePathToAbsolute`) before update/remove operations.
 
 ## Data & Control Flow
 
-1. `kv.ts` creates `localforage` instances (`syncRecordKV`, `blobKV`, `traverseWebDAVKV`).
-2. `useStorage` standardizes operations: `set/get/unset/clear/dump/restore`.
-3. `SyncRecord` performs read-modify-write updates on namespaced maps of sync metadata.
-4. `blobStore.store` hashes bytes, stores blob by hash key, and returns `{ key, value }`.
-5. Sync/traversal logic consumes these stores to persist state across runs.
+1. Callers construct `new SyncRecord(namespace, remoteBaseDir)`.
+2. `loadState()` reads `plugin.settings.syncStates[namespace]` (or creates empty state), then normalizes into runtime `SyncStateModel`.
+3. Read APIs expose either full state (`getState`) or projections (`getRemoteRecord`, `getRemoteStats`, `getLocalRecords`).
+4. Mutations run through `mutateState()` / helper methods (`upsertRemotePathInState`, `removeRemoteSubtreeInState`, `upsertLocalRecordInState`, etc.).
+5. `saveState()` serializes runtime `Map` back to persisted `Record`, writes to `syncStates`, and persists via `plugin.saveSettings()`.
+6. `drop()` removes a namespaced state entry from settings.
 
 ## Integration Points
 
-- External: `localforage` (IndexedDB-backed persistence).
-- Internal models/types: `StatModel`, `SyncRecordModel`.
-- Internal utilities: `sha256Base64` for blob key derivation.
-- Consumed by sync orchestration and WebDAV traversal persistence logic.
+- **Consumed by sync runtime**: `SyncEngine`, deciders, task layer, local FS adapter, and resumable WebDAV traversal build/use `SyncRecord`.
+- **Model contracts**: `StatModel`, `LocalRecordModel`, `RemoteRecordModel`, `SyncStateModel`, `PersistedSyncStateModel`.
+- **Path utilities**: remote/vault normalization and remote walk-path canonicalization.
+- **Settings module coupling**: depends on plugin singleton accessors from `src/settings/index.ts`.
 
 ## Key Files
 
 - `index.ts`: storage barrel export.
-- `kv.ts`: initializes named storage instances and cache types.
-- `use-storage.ts`: generic storage adapter with dump/restore utilities.
-- `sync-record.ts`: namespaced sync-record DAO.
-- `blob.ts`: content-addressable blob store API.
+- `sync-record.ts`: namespaced sync-state DAO with read APIs and path-aware mutation helpers.

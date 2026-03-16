@@ -1,32 +1,23 @@
-import { debounce } from 'lodash-es';
+import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
-import waitUntil from '~/utils/wait-until';
-import type SyncExecutorService from './sync-executor.service';
+import type SyncSchedulerService from './sync-scheduler.service';
 import WebDAVSyncPlugin from '..';
 
 export default class RealtimeSyncService {
-	private waiting = false;
-
-	private submitDirectly = async () => {
-		if (this.waiting) return;
-		this.waiting = true;
-		await waitUntil(() => this.plugin.isSyncing === false, 500);
-		this.waiting = false;
-		await this.syncExecutor.executeSync({ mode: SyncStartMode.AUTO_SYNC });
-	};
-
-	private submitSyncRequest = debounce(this.submitDirectly, 8000);
-
 	private onChange = async () => {
 		const settings = await useSettings();
 		if (!settings.realtimeSync) return;
-		await this.submitSyncRequest();
+		await this.syncScheduler.requestSync({
+			mode: SyncStartMode.AUTO_SYNC,
+			runKind: settings.useFastSyncOnLocalChange ? SyncRunKind.NUMB : SyncRunKind.NORMAL,
+			source: 'realtime',
+		});
 	};
 
 	constructor(
 		private plugin: WebDAVSyncPlugin,
-		private syncExecutor: SyncExecutorService,
+		private syncScheduler: SyncSchedulerService,
 	) {
 		this.plugin.registerEvent(this.vault.on('create', this.onChange));
 		this.plugin.registerEvent(this.vault.on('delete', this.onChange));
@@ -36,9 +27,5 @@ export default class RealtimeSyncService {
 
 	get vault() {
 		return this.plugin.app.vault;
-	}
-
-	unload() {
-		this.submitSyncRequest.cancel();
 	}
 }

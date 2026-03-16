@@ -259,7 +259,7 @@ This scheduler should become the single fan-in point for:
 
 ## Phased refactor progress
 
-Phase 1 is currently done.
+Phase 1, 2, 3 and 4 are reported to be done.
 
 ### Phase 1: State-model consolidation
 

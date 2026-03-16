@@ -2,35 +2,39 @@
 
 ## Responsibility
 
-Hosts shared, cross-cutting utilities for path normalization, stat conversion, local/remote traversal, request throttling, retries, logging, and general async helpers.
+Provides cross-cutting runtime primitives used by sync/fs/services: traversal, sync-state identity keys, locking, stat adapters, request wrappers, hashing, path relation checks, and async timing helpers.
 
 ## Design Patterns
 
-- Functional utility modules with small, focused exports.
-- Adapter conversions from Obsidian/WebDAV types to internal sync models.
-- Proxy/wrapper patterns for rate-limited WebDAV and guarded request handling.
-- Stateful traversal helper with resumable checkpoints for remote scans.
+- Focused utility modules with explicit platform adapters (`Vault`/WebDAV -> `StatModel`).
+- Stateful resumable traversal object (`ResumableWebDAVTraversal`) backed by persisted queue+node snapshots.
+- Concurrency controls:
+  - global API limiter (`api-limiter.ts`) for WebDAV directory listing pressure,
+  - keyed mutex (`mutex.ts`) to serialize traversal operations per sync-state key.
+- Guarded request wrapper (`request-url.ts`) that normalizes Obsidian request behavior and error semantics.
 
 ## Data & Control Flow
 
-1. Traversal helpers produce normalized `StatModel` snapshots from vault/WebDAV.
-2. Path/time utilities normalize and compare sync-relevant values.
-3. API wrappers route calls through limiter/retry/error-shaping layers.
-4. Task naming/formatting/logging helpers provide human-readable diagnostics.
-5. Sleep/wait helpers coordinate polling and interruptible async flows.
+1. `getSyncStateKey()` hashes `{vaultName, normalized remoteBaseDir, serverUrl, account}` to create per-target state namespace.
+2. `ResumableWebDAVTraversal` acquires per-key mutex, loads persisted remote snapshot (`SyncRecord.remoteRecord`), optionally clears stale/incompatible state, and performs BFS traversal.
+3. Traversal fetches directory contents through `apiLimiter.wrap(getDirectoryContents)`, retries on 503, periodically persists queue/nodes, and can resume after interruption.
+4. Stat adapters (`stat-vault-item`, `stat-webdav-item`, `file-stat-to-stat-model`) normalize external metadata for planner/task logic.
+5. Helper layer provides hashing (`sha256*`), path relation tests (`isSub`), timing/retry utilities (`sleep`, `waitUntil`, `breakableSleep`), and diagnostics/log formatting.
 
 ## Integration Points
 
-- Obsidian APIs (`Vault`, `TFile/TFolder`, `requestUrl`).
-- WebDAV client/types and directory listing operations.
-- Storage KV for resumable traversal checkpoints.
-- Sync engine/tasks consuming stat/path/name/retry helpers.
-- Third-party libs (`glob-to-regexp`, hashing/logging deps).
+- Sync and FS layers (`src/sync/*`, `src/fs/*`) are primary consumers.
+- Persistence integration via `src/storage/sync-record.ts` for traversal snapshots/state mutation.
+- Path normalization delegates to `src/platform/path/*` (remote/vault path policies).
+- Obsidian integrations: `Vault`, filesystem objects, `requestUrl`.
+- WebDAV integrations: directory content API + stat/content operations.
 
 ## Key Files
 
-- `traverse-webdav.ts`, `traverse-local-vault.ts` — snapshot builders.
-- `rate-limited-client.ts`, `api-limiter.ts`, `request-url.ts` — request control layer.
-- `stat-vault-item.ts`, `stat-webdav-item.ts`, `file-stat-to-stat-model.ts` — stat adapters.
-- `std-remote-path.ts`, `remote-path-to-local-path.ts`, `remote-path-to-absolute.ts` — path conversion.
-- `is-same-time.ts`, `is-503-error.ts`, `wait-until.ts`, `sleep.ts`, `breakable-sleep.ts` — sync/runtime guards.
+- `traverse-webdav.ts` — resumable remote BFS traversal with mutex + persisted checkpoints.
+- `get-sync-state-key.ts` — deterministic sync namespace key derivation.
+- `mutex.ts`, `api-limiter.ts` — concurrency/throttling primitives.
+- `request-url.ts` — normalized HTTP wrapper around Obsidian `requestUrl`.
+- `traverse-local-vault.ts` — local vault BFS traversal with ignore filtering.
+- `stat-vault-item.ts`, `stat-webdav-item.ts`, `file-stat-to-stat-model.ts` — stat normalization.
+- `sha256.ts`, `is-sub.ts`, `is-same-time.ts`, `is-503-error.ts` — shared decision/runtime helpers.

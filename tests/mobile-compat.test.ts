@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
-import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import { sha256Base64, sha256Hex } from '~/utils/sha256';
 
 describe('phase 1 mobile compatibility', () => {
@@ -13,9 +13,36 @@ describe('phase 1 mobile compatibility', () => {
 		expect(await sha256Base64(data)).toBe('LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=');
 	});
 
-	it('builds traversal cache keys from sha256 token digest', async () => {
-		expect(await getTraversalWebDAVDBKey('token', '/remote/base')).toBe(
-			'3c469e9d6c5875d37a43f353d4f88e61fcf812c66eee3457465a40b0da4153e0:/remote/base',
+	it('builds stable sync state keys from sync namespace identity', () => {
+		expect(
+			getSyncStateKey({
+				vaultName: 'Vault',
+				remoteBaseDir: '/remote/base/',
+				serverUrl: 'https://dav.example.com///',
+				account: 'alice',
+			}),
+		).toBe(
+			getSyncStateKey({
+				vaultName: 'Vault',
+				remoteBaseDir: '/remote/base',
+				serverUrl: 'https://dav.example.com',
+				account: 'alice',
+			}),
+		);
+		expect(
+			getSyncStateKey({
+				vaultName: 'Vault',
+				remoteBaseDir: '/remote/base',
+				serverUrl: 'https://dav.example.com',
+				account: 'alice',
+			}),
+		).not.toBe(
+			getSyncStateKey({
+				vaultName: 'Vault',
+				remoteBaseDir: '/remote/base',
+				serverUrl: 'https://dav.example.com',
+				account: 'bob',
+			}),
 		);
 	});
 

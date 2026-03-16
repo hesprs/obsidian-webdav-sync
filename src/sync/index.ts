@@ -17,12 +17,14 @@ import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
+import { SyncRunKind } from '~/model/sync-record.model';
 import { normalizeRemoteDir, remoteDirname } from '~/platform/path/remote-path';
 import { vaultDirname } from '~/platform/path/vault-path';
+import { useSettings } from '~/settings';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
 import { formatTime } from '~/utils/format-date';
-import { getDBKey, getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { is503Error } from '~/utils/is-503-error';
 import logger from '~/utils/logger';
@@ -73,10 +75,7 @@ export class SyncEngine {
 		this.remoteFs = new RemoteWebDAVFileSystem(this.options);
 		this.localFS = new LocalVaultFileSystem({
 			vault: this.options.vault,
-			syncRecord: new SyncRecord(
-				getDBKey(this.vault.getName(), this.remoteBaseDir),
-				this.remoteBaseDir,
-			),
+			syncRecord: new SyncRecord(this.getStateKey(), this.remoteBaseDir),
 		});
 		this.subscriptions.push(
 			onCancelSync().subscribe(() => {
@@ -85,7 +84,10 @@ export class SyncEngine {
 		);
 	}
 
-	async preparePlan(): Promise<PreparedSyncPlan> {
+	runKind: SyncRunKind = SyncRunKind.NORMAL;
+
+	async preparePlan(runKind: SyncRunKind = SyncRunKind.NORMAL): Promise<PreparedSyncPlan> {
+		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
 
@@ -97,6 +99,16 @@ export class SyncEngine {
 		}
 
 		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide();
+
+		if (runKind === SyncRunKind.NORMAL) {
+			const remoteRecord = await syncRecord.getRemoteRecord();
+			await syncRecord.setRemoteRecord({
+				...remoteRecord,
+				lastNormalSyncAt: Date.now(),
+				source: 'normal-sync',
+			});
+		}
+
 		const hasActionableTasks = tasks.some(
 			(task) => !(task instanceof NoopTask || task instanceof SkippedTask),
 		);
@@ -107,15 +119,24 @@ export class SyncEngine {
 		});
 	}
 
-	async start({ mode, plan }: { mode: SyncStartMode; plan?: PreparedSyncPlan }) {
+	async start({
+		mode,
+		plan,
+		runKind = SyncRunKind.NORMAL,
+	}: {
+		mode: SyncStartMode;
+		plan?: PreparedSyncPlan;
+		runKind?: SyncRunKind;
+	}) {
 		try {
+			this.runKind = runKind;
 			const showNotice = mode === SyncStartMode.MANUAL_SYNC;
 			emitPreparingSync({ showNotice });
 
 			const settings = this.settings;
 			const webdav = this.webdav;
 			const syncRecord = this.createSyncRecord();
-			const preparedPlan = plan ?? (await this.preparePlan());
+			const preparedPlan = plan ?? (await this.preparePlan(runKind));
 			const tasks = preparedPlan.tasks;
 
 			if (tasks.length === 0) {
@@ -163,8 +184,7 @@ export class SyncEngine {
 					const reuploadMap = new Map<RemoveLocalTask, PushTask | MkdirRemoteTask>();
 					const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
 					const pushTasks: PushTask[] = [];
-					// Cache paths that we've confirmed exist remotely
-					const remoteExistsCache = new Set<string>();
+					const knownRemotePaths = new Set<string>();
 
 					/**
 					 * Helper function to mark a path and all its parents as existing
@@ -172,10 +192,10 @@ export class SyncEngine {
 					const markPathAndParentsAsExisting = (remotePath: string) => {
 						let current = remotePath;
 						while (current && current !== '.' && current !== '' && current !== '/') {
-							if (remoteExistsCache.has(current)) {
+							if (knownRemotePaths.has(current)) {
 								break; // Already marked, all parents must be marked too
 							}
-							remoteExistsCache.add(current);
+							knownRemotePaths.add(current);
 							current = normalizeRemoteDir(remoteDirname(current));
 						}
 					};
@@ -208,7 +228,7 @@ export class SyncEngine {
 						if (existsInConfirmedTasks) return;
 
 						// Already confirmed to exist remotely
-						if (remoteExistsCache.has(parentRemotePath)) return;
+						if (knownRemotePaths.has(parentRemotePath)) return;
 
 						// Check if parent directory exists remotely using webdav.stat
 						try {
@@ -387,29 +407,28 @@ export class SyncEngine {
 	}
 
 	private createSyncRecord() {
-		return new SyncRecord(
-			getDBKey(this.vault.getName(), this.remoteBaseDir),
-			this.remoteBaseDir,
-		);
+		return new SyncRecord(this.getStateKey(), this.remoteBaseDir);
 	}
 
 	private async createTraversal() {
+		const settings = await useSettings();
 		return new ResumableWebDAVTraversal({
 			remoteServerUrl: this.options.remoteServerUrl || this.settings.serverUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
-			stateKey: getDBKey(this.vault.getName(), this.remoteBaseDir),
-			legacyTraversalKey: await getTraversalWebDAVDBKey(
-				this.options.token,
-				this.options.remoteBaseDir,
-			),
+			stateKey: getSyncStateKey({
+				vaultName: this.vault.getName(),
+				remoteBaseDir: this.remoteBaseDir,
+				serverUrl: this.options.remoteServerUrl || settings.serverUrl,
+				account: settings.account,
+			}),
 			saveInterval: 1,
 		});
 	}
 
-	private async clearTraversalCache() {
+	private async clearStoredRemoteSnapshot() {
 		const traversal = await this.createTraversal();
-		await traversal.clearCache();
+		await traversal.clearStoredSnapshot();
 	}
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
@@ -419,7 +438,7 @@ export class SyncEngine {
 		let remoteBaseDirExists = await webdav.exists(remoteBaseDir);
 
 		if (!remoteBaseDirExists)
-			await Promise.all([syncRecord.drop(), this.clearTraversalCache()]);
+			await Promise.all([syncRecord.drop(), this.clearStoredRemoteSnapshot()]);
 
 		while (!remoteBaseDirExists) {
 			if (this.isCancelled) return;
@@ -527,14 +546,7 @@ export class SyncEngine {
 	}
 
 	async updateMtimeInRecord(tasks: BaseTask[], results: TaskResult[]) {
-		return updateMtimeInRecordUtil(
-			this.plugin,
-			this.vault,
-			this.remoteBaseDir,
-			tasks,
-			results,
-			10,
-		);
+		return updateMtimeInRecordUtil(this.vault, tasks, results, 10);
 	}
 
 	private async handle503Error(waitMs: number) {
@@ -566,5 +578,14 @@ export class SyncEngine {
 
 	get settings() {
 		return this.plugin.settings;
+	}
+
+	private getStateKey() {
+		return getSyncStateKey({
+			vaultName: this.vault.getName(),
+			remoteBaseDir: this.remoteBaseDir,
+			serverUrl: this.options.remoteServerUrl || this.settings.serverUrl,
+			account: this.settings.account,
+		});
 	}
 }

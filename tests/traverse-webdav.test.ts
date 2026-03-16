@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RemoteRecordModel } from '~/model/sync-record.model';
 import { getDirectoryContents } from '~/api';
 
-const traverseCacheState = new Map<string, { queue: string[]; nodes: Record<string, unknown> }>();
 const remoteRecordState = new Map<string, RemoteRecordModel>();
 
 vi.mock('~/api', () => ({
@@ -12,20 +11,6 @@ vi.mock('~/api', () => ({
 vi.mock('~/utils/api-limiter', () => ({
 	apiLimiter: {
 		wrap: <T>(fn: T) => fn,
-	},
-}));
-
-vi.mock('~/storage', () => ({
-	traverseWebDAVKV: {
-		get: vi.fn(async (key: string) => traverseCacheState.get(key)),
-		set: vi.fn(
-			async (key: string, value: { queue: string[]; nodes: Record<string, unknown> }) => {
-				traverseCacheState.set(key, value);
-			},
-		),
-		unset: vi.fn(async (key: string) => {
-			traverseCacheState.delete(key);
-		}),
 	},
 }));
 
@@ -63,7 +48,6 @@ vi.mock('~/utils/logger', () => ({
 describe('ResumableWebDAVTraversal', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		traverseCacheState.clear();
 		remoteRecordState.clear();
 	});
 

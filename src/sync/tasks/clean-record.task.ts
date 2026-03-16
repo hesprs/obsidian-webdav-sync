@@ -4,10 +4,7 @@ import { BaseTask, toTaskError } from './task.interface';
 export default class CleanRecordTask extends BaseTask {
 	async exec() {
 		try {
-			const syncRecord = this.syncRecord;
-			await syncRecord.deleteFileRecord(this.localPath);
-
-			return { success: true, skipRecord: true } as const;
+			return { success: true } as const;
 		} catch (e) {
 			logger.error(this, e);
 			return {

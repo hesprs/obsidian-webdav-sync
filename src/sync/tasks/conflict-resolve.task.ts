@@ -1,9 +1,8 @@
 import { noop } from 'lodash-es';
 import type { StatModel } from '~/model/stat.model';
-import type { SyncRecordModel } from '~/model/sync-record.model';
+import type { PreviousSyncRecordModel } from '~/model/sync-record.model';
 import i18n from '~/i18n';
 import { arrayBufferEquals, toArrayBuffer, type BinaryLike } from '~/platform/binary';
-import { blobStore } from '~/storage/blob';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
@@ -25,7 +24,7 @@ export enum ConflictStrategy {
 export default class ConflictResolveTask extends BaseTask {
 	constructor(
 		public readonly options: BaseTaskOptions & {
-			record?: SyncRecordModel;
+			record?: PreviousSyncRecordModel;
 			strategy: ConflictStrategy;
 			remoteStat?: StatModel;
 			localStat?: StatModel;
@@ -152,11 +151,6 @@ export default class ConflictResolveTask extends BaseTask {
 			}
 
 			const { record } = this.options;
-			let baseBlob: Blob | null = null;
-			const baseKey = record?.base?.key;
-			if (baseKey) {
-				baseBlob = await blobStore.get(baseKey);
-			}
 
 			const localIsMergeable = isMergeablePath(file.path);
 			const remoteIsMergeable = isMergeablePath(this.remotePath);
@@ -167,7 +161,7 @@ export default class ConflictResolveTask extends BaseTask {
 
 			const localText = await new Blob([new Uint8Array(localBuffer)]).text();
 			const remoteText = await new Blob([new Uint8Array(remoteArrayBuffer)]).text();
-			const baseText = (await baseBlob?.text()) ?? localText;
+			const baseText = record?.baseText ?? localText;
 
 			const mergeResult = await resolveByIntelligentMerge({
 				localContentText: localText,

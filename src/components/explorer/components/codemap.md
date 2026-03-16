@@ -1,47 +1,45 @@
+# src/components/explorer/components
+
 ## Responsibility
 
-This directory contains all presentational and interaction components used by the explorer UI: listing entries, rendering folder/file rows, and collecting a new-folder name. It is the UI layer between `App.tsx` state orchestration and the injected filesystem operations.
+Provide explorer-internal view primitives and list controller logic:
+
+- render remote entry list (`FileList`),
+- render clickable directory rows (`Folder`),
+- render non-selectable file rows (`File`),
+- collect inline new-folder input (`NewFolder`).
 
 ## Design Patterns
 
-- Functional SolidJS components with typed props (`File`, `Folder`, `NewFolder`).
-- Factory pattern in `createFileList()`:
-  - Returns `refresh()` as an external trigger.
-  - Returns an inner `FileList` component that owns list state.
-- Dependency injection via props:
-  - `FileList` receives `fs` and `path` instead of importing a concrete backend.
-  - `Folder`/`NewFolder` emit events through callbacks.
-- Reactive state and effects:
-  - Signals for list versioning and item storage.
-  - Signal for controlled input value in `NewFolder`.
-  - Effect-based refresh in `FileList`.
-- Stateless leaf rendering:
-  - `File` is display-only and intentionally non-interactive.
-  - `Folder` is clickable and delegates navigation intent upward.
+- **Functional Solid components + typed props** for all leaves.
+- **Factory controller pattern** in `createFileList()` exposing:
+  - `FileList` render component,
+  - imperative `refresh()` trigger managed by version signal.
+- **Dependency injection over concrete IO**: `FileList` consumes `fs` from parent props and never imports WebDAV/network code.
+- **Reactive rendering**:
+  - `items` signal stores latest listing,
+  - sorted projection enforces directory-first ordering,
+  - version signal controls explicit refetch cycles.
+- **Intent delegation**: `Folder` and `NewFolder` only emit callbacks; parent decides navigation and mkdir behavior.
 
 ## Data & Control Flow
 
-- `App.tsx` calls `createFileList()` and renders `<list.FileList fs={props.fs} path={cwd()} .../>`.
-- Inside `FileList`:
-  - `refresh()` calls `props.fs.ls(props.path)` and stores results in `items`.
-  - `sortedItems()` orders entries with directories first, then locale-aware name sort (`localeCompare(..., ['zh'])`).
-  - Render loop maps each entry:
-    - `isDir === true` -> `Folder` with click callback.
-    - `isDir === false` -> `File` visual row.
-- External refresh path:
-  - Parent invokes `list.refresh()` after folder creation.
-  - Version signal change retriggers list effect and fetch cycle.
-- `NewFolder` flow:
-  - User input updates `name` signal.
-  - Confirm button calls `onConfirm(name())`.
-  - Cancel button calls `onCancel()`.
-- Error path:
-  - `fs.ls` failures are surfaced with Obsidian `Notice`.
+1. `App` constructs `const list = createFileList()` and renders `<list.FileList path={cwd()} fs={...} onClick={...} />`.
+2. `FileList` calls `props.fs.ls(props.path)` in `refresh()` and stores the result.
+3. `sortedItems()` orders by:
+   - directories before files,
+   - then `basename.localeCompare(..., ['zh'])` within same type.
+4. Render loop:
+   - `isDir` => `Folder` row with upward click callback,
+   - otherwise => dimmed `File` row.
+5. Parent-triggered refetch:
+   - `list.refresh()` increments internal `version`,
+   - effect observes version and performs next fetch cycle.
+6. `NewFolder` maintains local `name` signal and emits confirm/cancel actions.
 
 ## Integration Points
 
-- `FileList.tsx` imports `type fs` from `../App`, binding component contract to app-level filesystem abstraction.
-- `NewFolder.tsx` imports `t` from `../i18n` to localize button labels.
-- `FileList.tsx` imports `Notice` from `obsidian` for runtime error display.
-- Styling and icons rely on utility classes configured in UnoCSS (`i-custom:folder`, `i-custom:file`, `scrollbar-hide`, layout utility classes).
-- Components are consumed by `src/App.tsx`, which provides navigation and folder-creation orchestration.
+- `FileList.tsx` imports `type fs` from `../App` (shared filesystem contract).
+- `NewFolder.tsx` uses explorer-local translator `t` from `../i18n`.
+- `FileList.tsx` depends on Obsidian `Notice` for error surfacing.
+- Utility-class styling/icons (`i-custom:*`, layout classes) rely on project UnoCSS configuration.

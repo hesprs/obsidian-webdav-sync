@@ -2,23 +2,20 @@
 
 ## Responsibility
 
-Minimal MIME/path-type helper scope. Currently provides markdown-file detection from path strings in `is_markdown_path.ts`.
+Contains lightweight file-type predicates used by sync policy decisions. Current scope is markdown-path detection only.
 
 ## Design Patterns
 
-- Single-purpose stateless predicate: `isMarkdownPath(path)`.
-- Input normalization before classification:
-  - `trim()` removes surrounding whitespace.
-  - `toLowerCase()` makes extension matching case-insensitive.
-- Extension-based recognition only (`.md`, `.markdown`), with no filesystem access and no MIME sniffing.
+- Pure function classification (`isMarkdownPath(path)`).
+- Normalization-first matching (`trim` + lowercase).
+- Extension-only policy (`.md`, `.markdown`) with zero I/O.
 
 ## Data & Control Flow
 
-1. Receive raw path string.
-2. Normalize string casing and whitespace.
-3. Return boolean by suffix check against two markdown extensions.
+1. Input path string is normalized.
+2. Suffix check returns markdown eligibility.
 
 ## Integration Points
 
-- Exported predicate is consumed by higher-level sync/filter logic when deciding markdown-specific handling.
-- No direct dependency on Obsidian, WebDAV, or storage layers.
+- Consumed by `src/sync/utils/is-mergeable-path.ts` to gate text-merge logic and base-text capture.
+- No runtime dependency on Obsidian/WebDAV/storage.

@@ -14,6 +14,7 @@ import RealtimeSyncService from './services/realtime-sync.service';
 import ScheduledSyncService from './services/scheduled-sync.service';
 import { StatusService } from './services/status.service';
 import SyncExecutorService from './services/sync-executor.service';
+import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
@@ -34,7 +35,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		account: '',
 		credential: '',
 		remoteDir: '',
-		remoteCacheDir: '',
 		useGitStyle: false,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
 		confirmBeforeSync: true,
@@ -50,22 +50,25 @@ export default class WebDAVSyncPlugin extends Plugin {
 			maxSize: '30 MB',
 		},
 		realtimeSync: false,
+		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
 		autoSyncIntervalSeconds: 300,
+		syncStates: {},
 		language: undefined,
 	};
 
-	public commandService = new CommandService(this);
 	public eventsService = new EventsService(this);
 	public i18nService = new I18nService(this);
 	public loggerService = new LoggerService(this);
 	public progressService = new ProgressService(this);
-	public ribbonManager = new SyncRibbonManager(this);
 	public statusService = new StatusService(this);
 	public webDAVService = new WebDAVService(this);
 	public syncExecutorService = new SyncExecutorService(this);
-	public realtimeSyncService = new RealtimeSyncService(this, this.syncExecutorService);
-	public scheduledSyncService = new ScheduledSyncService(this, this.syncExecutorService);
+	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
+	public commandService = new CommandService(this);
+	public ribbonManager = new SyncRibbonManager(this);
+	public realtimeSyncService = new RealtimeSyncService(this, this.syncSchedulerService);
+	public scheduledSyncService = new ScheduledSyncService(this, this.syncSchedulerService);
 
 	async onload() {
 		await this.loadSettings();
@@ -79,9 +82,9 @@ export default class WebDAVSyncPlugin extends Plugin {
 		setPluginInstance(null);
 		emitCancelSync();
 		this.scheduledSyncService.unload();
+		this.syncSchedulerService.unload();
 		this.progressService.unload();
 		this.eventsService.unload();
-		this.realtimeSyncService.unload();
 		this.statusService.unload();
 	}
 

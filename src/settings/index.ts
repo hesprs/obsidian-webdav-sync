@@ -1,11 +1,11 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type WebDAVSyncPlugin from '~/index';
+import type { PersistedSyncStateModel } from '~/model/sync-record.model';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
-import CacheSettings from './cache';
 import CommonSettings from './common';
 import FilterSettings from './filter';
 import LogSettings from './log';
@@ -20,7 +20,6 @@ export interface PluginSettings {
 	account: string;
 	credential: string;
 	remoteDir: string;
-	remoteCacheDir?: string;
 	useGitStyle: boolean;
 	conflictStrategy: ConflictStrategy;
 	confirmBeforeSync: boolean;
@@ -34,8 +33,10 @@ export interface PluginSettings {
 		maxSize: string;
 	};
 	realtimeSync: boolean;
+	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
 	autoSyncIntervalSeconds: number;
+	syncStates?: Record<string, PersistedSyncStateModel>;
 	language?: 'zh' | 'en';
 }
 
@@ -43,6 +44,10 @@ let pluginInstance: WebDAVSyncPlugin | null = null;
 
 export function setPluginInstance(plugin: WebDAVSyncPlugin | null) {
 	pluginInstance = plugin;
+}
+
+export function getPluginInstance() {
+	return pluginInstance;
 }
 
 export function waitUntilPluginInstance() {
@@ -60,7 +65,6 @@ export class SyncSettingTab extends PluginSettingTab {
 	commonSettings: CommonSettings;
 	filterSettings: FilterSettings;
 	logSettings: LogSettings;
-	cacheSettings: CacheSettings;
 	warningContainerEl: HTMLElement;
 
 	constructor(app: App, plugin: WebDAVSyncPlugin) {
@@ -85,12 +89,6 @@ export class SyncSettingTab extends PluginSettingTab {
 			this,
 			this.containerEl.createDiv(),
 		);
-		this.cacheSettings = new CacheSettings(
-			this.app,
-			this.plugin,
-			this,
-			this.containerEl.createDiv(),
-		);
 		this.logSettings = new LogSettings(
 			this.app,
 			this.plugin,
@@ -107,7 +105,6 @@ export class SyncSettingTab extends PluginSettingTab {
 		await this.accountSettings.display();
 		await this.commonSettings.display();
 		await this.filterSettings.display();
-		await this.cacheSettings.display();
 		await this.logSettings.display();
 	}
 

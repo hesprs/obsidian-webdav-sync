@@ -9,6 +9,7 @@ export interface FsWalkResult {
 
 export interface FsWalkOptions {
 	freshness?: WalkFreshness;
+	remoteSource?: 'traversal' | 'stored-record';
 }
 
 export default abstract class AbstractFileSystem {

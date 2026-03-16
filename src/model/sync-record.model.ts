@@ -1,18 +1,19 @@
 import type { StatModel } from './stat.model';
 
-export interface BaseBlobRef {
-	key: string;
+export enum SyncRunKind {
+	NORMAL = 'normal',
+	NUMB = 'numb',
 }
 
 export interface LocalRecordModel {
 	local: StatModel;
-	base?: BaseBlobRef;
+	baseText?: string;
 }
 
-export interface SyncRecordModel {
+export interface PreviousSyncRecordModel {
 	local: StatModel;
 	remote: StatModel;
-	base?: BaseBlobRef;
+	baseText?: string;
 }
 
 export interface RemoteRecordModel {
@@ -27,6 +28,12 @@ export interface SyncStateModel {
 	version: 1;
 	remoteRecord: RemoteRecordModel;
 	localRecords: Map<string, LocalRecordModel>;
+}
+
+export interface PersistedSyncStateModel {
+	version: 1;
+	remoteRecord: RemoteRecordModel;
+	localRecords: Record<string, LocalRecordModel>;
 }
 
 export function createEmptyRemoteRecord(): RemoteRecordModel {

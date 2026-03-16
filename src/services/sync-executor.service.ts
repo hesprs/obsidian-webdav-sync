@@ -1,9 +1,11 @@
+import { SyncRunKind } from '~/model/sync-record.model';
 import { SyncEngine, SyncStartMode } from '~/sync';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';
 
 export interface SyncOptions {
 	mode: SyncStartMode;
+	runKind: SyncRunKind;
 }
 
 // TODO: don't instantiate SyncEngine every time
@@ -39,13 +41,14 @@ export default class SyncExecutorService {
 			webdav: await this.plugin.webDAVService.createWebDAVClient(),
 		});
 
-		const plan = await sync.preparePlan();
+		const plan = await sync.preparePlan(options.runKind);
 
 		if (!plan.hasActionableTasks) return false;
 
 		await sync.start({
 			mode: options.mode,
 			plan,
+			runKind: options.runKind,
 		});
 
 		return true;

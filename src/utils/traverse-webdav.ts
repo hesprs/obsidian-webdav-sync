@@ -1,8 +1,7 @@
 import type { StatModel } from '~/model/stat.model';
+import type { RemoteRecordModel } from '~/model/sync-record.model';
 import { getDirectoryContents } from '~/api';
-import { createEmptyRemoteRecord, type RemoteRecordModel } from '~/model/sync-record.model';
 import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
-import { traverseWebDAVKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
 import { Mutex } from '~/utils/mutex';
 import { apiLimiter } from './api-limiter';
@@ -14,7 +13,7 @@ import { type MaybePromise } from './types';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
 
-export type WalkFreshness = 'cached-ok' | 'fresh';
+export type WalkFreshness = 'stored-ok' | 'fresh';
 
 // Global mutex map: one lock per kvKey
 const traversalLocks = new Map<string, Mutex>();
@@ -48,13 +47,13 @@ export class ResumableWebDAVTraversal {
 	private token: string;
 	private remoteBaseDir: string;
 	private stateKey: string;
-	private legacyTraversalKey?: string;
 	private saveInterval: number;
 
 	private queue: string[] = [];
 	private nodes: Record<string, StatModel[]> = {};
 	private processedCount: number = 0;
-	private hasLoadedCache: boolean = false;
+	private hasLoadedSnapshot: boolean = false;
+	private loadedSnapshotIsComplete: boolean = false;
 
 	/**
 	 * Normalize directory path for use as nodes key
@@ -81,14 +80,12 @@ export class ResumableWebDAVTraversal {
 		token: string;
 		remoteBaseDir: string;
 		stateKey: string;
-		legacyTraversalKey?: string;
 		saveInterval?: number;
 	}) {
 		this.remoteServerUrl = options.remoteServerUrl;
 		this.token = options.token;
 		this.remoteBaseDir = options.remoteBaseDir;
 		this.stateKey = options.stateKey;
-		this.legacyTraversalKey = options.legacyTraversalKey;
 		this.saveInterval = Math.max(options.saveInterval || 1, 1);
 	}
 
@@ -104,14 +101,14 @@ export class ResumableWebDAVTraversal {
 		return await this.lock.runExclusive(async () => {
 			await this.loadState();
 
-			const freshness = options?.freshness ?? 'cached-ok';
-			const hasCompleteCache = this.hasCompleteCache();
+			const freshness = options?.freshness ?? 'stored-ok';
+			const hasCompleteSnapshot = this.hasCompleteSnapshot();
 
-			if (freshness === 'fresh' && (hasCompleteCache || this.queue.length > 0)) {
+			if (freshness === 'fresh' && (hasCompleteSnapshot || this.queue.length > 0)) {
 				await this.clearLoadedState();
 			}
 
-			if (freshness === 'cached-ok' && hasCompleteCache) return this.getAllFromCache();
+			if (freshness === 'stored-ok' && hasCompleteSnapshot) return this.getAllFromSnapshot();
 
 			if (this.queue.length === 0) {
 				this.queue = [this.remoteBaseDir];
@@ -120,12 +117,19 @@ export class ResumableWebDAVTraversal {
 
 			await this.bfsTraverse();
 			await this.saveState();
-			return this.getAllFromCache();
+			return this.getAllFromSnapshot();
 		});
 	}
 
-	hasCompleteCache(): boolean {
-		return this.hasLoadedCache && this.queue.length === 0;
+	async getStoredSnapshot(): Promise<StatModel[]> {
+		return await this.lock.runExclusive(async () => {
+			await this.loadState();
+			return this.getAllFromSnapshot();
+		});
+	}
+
+	hasCompleteSnapshot(): boolean {
+		return this.hasLoadedSnapshot && this.loadedSnapshotIsComplete && this.queue.length === 0;
 	}
 
 	/**
@@ -137,16 +141,16 @@ export class ResumableWebDAVTraversal {
 			const normalizedPath = this.normalizeDirPath(currentPath);
 
 			try {
-				const cachedItems = this.nodes[normalizedPath];
-				const resultItems = cachedItems
-					? cachedItems
+				const storedItems = this.nodes[normalizedPath];
+				const resultItems = storedItems
+					? storedItems
 					: (
 							await executeWithRetry(() =>
 								getContents(this.remoteServerUrl, this.token, currentPath),
 							)
 						).map(fileStatToStatModel);
 
-				if (!cachedItems) this.nodes[normalizedPath] = resultItems;
+				if (!storedItems) this.nodes[normalizedPath] = resultItems;
 
 				for (const item of resultItems) {
 					if (item.isDir)
@@ -174,9 +178,9 @@ export class ResumableWebDAVTraversal {
 	}
 
 	/**
-	 * Get all results from cache
+	 * Get all results from the stored remote snapshot
 	 */
-	private getAllFromCache(): StatModel[] {
+	private getAllFromSnapshot(): StatModel[] {
 		const results: StatModel[] = [];
 		for (const items of Object.values(this.nodes)) results.push(...items);
 		return results;
@@ -186,45 +190,37 @@ export class ResumableWebDAVTraversal {
 	 * Load state
 	 */
 	private async loadState(): Promise<void> {
-		let remoteRecord = await this.syncRecord.getRemoteRecord();
+		const remoteRecord = await this.syncRecord.getRemoteRecord();
 
-		if (!this.hasPersistedRemoteRecord(remoteRecord) && this.legacyTraversalKey) {
-			const legacyCache = await traverseWebDAVKV.get(this.legacyTraversalKey);
-			if (legacyCache) {
-				remoteRecord = {
-					...createEmptyRemoteRecord(),
-					queue: legacyCache.queue,
-					nodes: legacyCache.nodes,
-					isComplete: legacyCache.queue.length === 0,
-				};
-				await this.syncRecord.setRemoteRecord(remoteRecord);
-				await traverseWebDAVKV.unset(this.legacyTraversalKey);
-			}
-		}
-
-		const cache = remoteRecord;
-		if (cache) {
-			if (cache.queue.some((path) => !this.isPathWithinBase(path))) {
-				logger.warn('Detected stale traversal cache, clearing incompatible queue entries');
-				await this.syncRecord.clearRemoteRecord();
-				if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
-				this.queue = [];
-				this.nodes = {};
-				this.hasLoadedCache = false;
-				this.processedCount = 0;
-				return;
-			}
-
-			this.queue = cache.queue || [];
-			this.nodes = cache.nodes || {};
-			this.hasLoadedCache = true;
+		if (remoteRecord.queue.some((path) => !this.isPathWithinBase(path))) {
+			logger.warn(
+				'Detected stale remote traversal record, clearing incompatible queue entries',
+			);
+			await this.syncRecord.clearRemoteRecord();
+			this.queue = [];
+			this.nodes = {};
+			this.hasLoadedSnapshot = false;
 			this.processedCount = 0;
 			return;
 		}
 
-		this.queue = [];
-		this.nodes = {};
-		this.hasLoadedCache = false;
+		if (!remoteRecord.isComplete && remoteRecord.queue.length === 0) {
+			logger.warn(
+				'Detected incomplete remote snapshot without a traversal queue, resetting it',
+			);
+			await this.syncRecord.clearRemoteRecord();
+			this.queue = [];
+			this.nodes = {};
+			this.hasLoadedSnapshot = false;
+			this.loadedSnapshotIsComplete = false;
+			this.processedCount = 0;
+			return;
+		}
+
+		this.queue = remoteRecord.queue || [];
+		this.nodes = remoteRecord.nodes || {};
+		this.hasLoadedSnapshot = this.hasPersistedRemoteRecord(remoteRecord);
+		this.loadedSnapshotIsComplete = remoteRecord.isComplete;
 		this.processedCount = 0;
 	}
 
@@ -240,16 +236,16 @@ export class ResumableWebDAVTraversal {
 			isComplete: this.queue.length === 0,
 		};
 		await this.syncRecord.setRemoteRecord(nextRemoteRecord);
-		if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
-		this.hasLoadedCache = true;
+		this.hasLoadedSnapshot = true;
+		this.loadedSnapshotIsComplete = nextRemoteRecord.isComplete;
 	}
 
 	private async clearLoadedState(): Promise<void> {
 		await this.syncRecord.clearRemoteRecord();
-		if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
 		this.queue = [];
 		this.nodes = {};
-		this.hasLoadedCache = false;
+		this.hasLoadedSnapshot = false;
+		this.loadedSnapshotIsComplete = false;
 		this.processedCount = 0;
 	}
 
@@ -262,19 +258,23 @@ export class ResumableWebDAVTraversal {
 	}
 
 	/**
-	 * Clear cache (force re-traversal)
+	 * Clear stored remote traversal state
 	 */
-	async clearCache(): Promise<void> {
+	async clearStoredSnapshot(): Promise<void> {
 		await this.lock.runExclusive(async () => {
 			await this.clearLoadedState();
 		});
 	}
 
 	/**
-	 * Check if cache is valid
+	 * Check if stored snapshot is valid
 	 */
-	async isCacheValid(): Promise<boolean> {
-		const cache = await this.syncRecord.getRemoteRecord();
-		return Array.isArray(cache.queue) && cache.queue.length === 0 && !!cache.nodes;
+	async isStoredSnapshotValid(): Promise<boolean> {
+		const remoteRecord = await this.syncRecord.getRemoteRecord();
+		return (
+			remoteRecord.isComplete &&
+			Array.isArray(remoteRecord.queue) &&
+			remoteRecord.queue.length === 0
+		);
 	}
 }

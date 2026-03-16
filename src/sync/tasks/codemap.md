@@ -2,35 +2,37 @@
 
 ## Responsibility
 
-Implements executable sync commands (file transfer, mkdir/remove, conflict handling, bookkeeping) as atomic units consumed by the sync engine.
+Defines executable sync commands and their contracts. Each task mutates one sync concern (transfer, directory creation, deletion, conflict handling, or bookkeeping signal) and returns a normalized `TaskResult`.
 
 ## Design Patterns
 
 - Command pattern: one class per operation with `exec()`.
-- Shared base contract via task interfaces/result objects.
-- Template-style common behavior in base task helpers (path/context access).
-- Policy strategy in conflict task (merge strategy selected from settings).
+- Shared base abstraction (`BaseTask`) for path normalization, dependency access, JSON diagnostics, and error wrapping.
+- Result contract with state-update hinting: `TaskResult` supports `skipRecord` for operations that should not mutate sync state.
+- Strategy delegation in conflict handling (`ConflictStrategy`: diff/patch, latest-timestamp, skip).
 
 ## Data & Control Flow
 
-1. Planner instantiates task objects with context (`vault`, `webdav`, records, paths, settings).
-2. Task validates current state (existence/stat/content where required).
-3. Task performs local/remote mutation or produces noop/skip outcome.
-4. Returns typed `TaskResult` with success/failure and record-update hints.
-5. Engine aggregates results and persists mtime updates for eligible tasks.
+1. Planner builds tasks with `BaseTaskOptions` (`vault`, `webdav`, `remoteBaseDir`, paths, `SyncRecord`).
+2. `BaseTask` resolves relative remote paths to absolute and normalizes local vault paths before execution.
+3. Task implementations perform side effects:
+   - transfer: `PushTask`, `PullTask`,
+   - directory: `MkdirLocalTask`, `MkdirRemoteTask`, `MkdirsRemoteTask`,
+   - deletion: `RemoveLocalTask`, `RemoveRemoteTask`, `RemoveRemoteRecursivelyTask`,
+   - conflict: `ConflictResolveTask`,
+   - bookkeeping/policy: `NoopTask`, `SkippedTask`, `CleanRecordTask`, `FilenameErrorTask`.
+4. Failures are normalized via `toTaskError`; engine aggregates results and updates records only for eligible successes.
 
 ## Integration Points
 
-- Obsidian `Vault` API for local read/write/trash/folder ops.
-- WebDAV client for remote upload/download/delete/mkdir calls.
-- `src/sync/core/merge-utils.ts` for conflict resolution internals.
-- `src/storage/sync-record.ts` + blob store for record/base-content interactions.
-- Shared path/stat utilities from `src/utils/*`.
+- Used by planner (`src/sync/decision/*`) through `TaskFactory`.
+- Executed by orchestrator (`src/sync/index.ts`) with retry/cancel/progress logic.
+- Conflict internals depend on `src/sync/core/merge-utils.ts` and `~/utils/merge-dig-in`.
+- State mutation phase (`src/sync/utils/update-records.ts`) inspects task classes to derive deterministic sync-state updates.
 
 ## Key Files
 
-- `task.interface.ts` — base types and task contracts.
-- `push.task.ts`, `pull.task.ts` — file sync transfer actions.
-- `remove-local.task.ts`, `remove-remote.task.ts`, `remove-remote-recursively.task.ts` — deletion actions.
-- `mkdir-local.task.ts`, `mkdir-remote.task.ts`, `mkdirs-remote.task.ts` — directory creation actions.
-- `conflict-resolve.task.ts` — conflict merge and resolution handling.
+- `task.interface.ts` — `BaseTask`, `TaskResult`, `TaskError`, `toTaskError`.
+- `conflict-resolve.task.ts` — merge strategy dispatch + content reconciliation.
+- `mkdirs-remote.task.ts` / `remove-remote-recursively.task.ts` — optimized task variants produced by sync utils.
+- `skipped.task.ts` / `filename-error.task.ts` — policy-driven non-mutating outcomes.
