@@ -1,6 +1,6 @@
 import localforage from 'localforage';
 import type { StatModel } from '~/model/stat.model';
-import type { SyncRecordModel } from '~/model/sync-record.model';
+import type { SyncRecordModel, SyncStateModel } from '~/model/sync-record.model';
 import useStorage from './use-storage';
 
 const DB_NAME = 'WebDAV_Sync_Cache';
@@ -9,6 +9,13 @@ export const syncRecordKV = useStorage<Map<string, SyncRecordModel>>(
 	localforage.createInstance({
 		name: DB_NAME,
 		storeName: 'sync_record',
+	}),
+);
+
+export const syncStateKV = useStorage<SyncStateModel>(
+	localforage.createInstance({
+		name: DB_NAME,
+		storeName: 'sync_state',
 	}),
 );
 

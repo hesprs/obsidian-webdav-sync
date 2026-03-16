@@ -1,7 +1,7 @@
 import { isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
 import { useSettings } from '~/settings';
-import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import { getDBKey, getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import GlobMatch, {
 	type GlobMatchOptions,
 	isVoidGlobMatchOptions,
@@ -31,7 +31,11 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			remoteServerUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
-			kvKey: await getTraversalWebDAVDBKey(this.options.token, this.options.remoteBaseDir),
+			stateKey: getDBKey(this.options.vault.getName(), this.options.remoteBaseDir),
+			legacyTraversalKey: await getTraversalWebDAVDBKey(
+				this.options.token,
+				this.options.remoteBaseDir,
+			),
 			saveInterval: 1,
 		});
 		let stats = await traversal.traverse({

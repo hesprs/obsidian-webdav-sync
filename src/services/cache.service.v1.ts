@@ -4,11 +4,13 @@ import superjson from 'superjson';
 import type { ExportedStorage } from '~/settings/cache';
 import { getDirectoryContents } from '~/api';
 import i18n from '~/i18n';
+import { createEmptyRemoteRecord, type RemoteRecordModel } from '~/model/sync-record.model';
 import { toArrayBuffer, type BinaryLike } from '~/platform/binary';
 import { joinRemotePath } from '~/platform/path/remote-path';
 import { traverseWebDAVKV } from '~/storage';
+import { SyncRecord } from '~/storage/sync-record';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
-import { getTraversalWebDAVDBKey } from '~/utils/get-db-key';
+import { getDBKey, getTraversalWebDAVDBKey } from '~/utils/get-db-key';
 import logger from '~/utils/logger';
 import { uint8ArrayToArrayBuffer } from '~/utils/uint8array-to-arraybuffer';
 import type WebDAVSyncPlugin from '..';
@@ -28,12 +30,42 @@ export default class CacheServiceV1 {
 	async saveCache(filename: string) {
 		try {
 			const webdav = await this.plugin.webDAVService.createWebDAVClient();
-			const traverseWebDAVCache = await traverseWebDAVKV.get(
-				await getTraversalWebDAVDBKey(this.plugin.getToken(), this.plugin.remoteBaseDir),
+			const syncRecord = new SyncRecord(
+				getDBKey(this.plugin.app.vault.getName(), this.plugin.remoteBaseDir),
+				this.plugin.remoteBaseDir,
 			);
+			let remoteRecord = await syncRecord.getRemoteRecord();
+
+			if (
+				remoteRecord.queue.length === 0 &&
+				Object.keys(remoteRecord.nodes).length === 0 &&
+				!remoteRecord.isComplete
+			) {
+				const legacyCache = await traverseWebDAVKV.get(
+					await getTraversalWebDAVDBKey(
+						this.plugin.getToken(),
+						this.plugin.remoteBaseDir,
+					),
+				);
+
+				if (legacyCache) {
+					remoteRecord = {
+						...createEmptyRemoteRecord(),
+						queue: legacyCache.queue,
+						nodes: legacyCache.nodes,
+						isComplete: legacyCache.queue.length === 0,
+					};
+				}
+			}
 
 			const exportedStorage: ExportedStorage = {
-				traverseWebDAVCache: traverseWebDAVCache || undefined,
+				version: 2,
+				remoteRecord:
+					remoteRecord.queue.length > 0 ||
+					Object.keys(remoteRecord.nodes).length > 0 ||
+					remoteRecord.isComplete
+						? remoteRecord
+						: undefined,
 				exportedAt: new Date().toISOString(),
 			};
 
@@ -111,16 +143,18 @@ export default class CacheServiceV1 {
 			if (!exportedStorage) {
 				throw new Error('Invalid cache file format');
 			}
-			const { traverseWebDAVCache } = exportedStorage;
-			if (traverseWebDAVCache) {
-				await traverseWebDAVKV.set(
-					await getTraversalWebDAVDBKey(
-						this.plugin.getToken(),
-						this.plugin.remoteBaseDir,
-					),
-					traverseWebDAVCache,
-				);
-			}
+			const syncRecord = new SyncRecord(
+				getDBKey(this.plugin.app.vault.getName(), this.plugin.remoteBaseDir),
+				this.plugin.remoteBaseDir,
+			);
+			const remoteRecord = this.parseRemoteRecord(exportedStorage);
+			await syncRecord.setRemoteRecord({
+				...remoteRecord,
+				source: 'imported',
+			});
+			await traverseWebDAVKV.unset(
+				await getTraversalWebDAVDBKey(this.plugin.getToken(), this.plugin.remoteBaseDir),
+			);
 			new Notice(i18n.t('settings.cache.restoreModal.success'));
 			return Promise.resolve();
 			// oxlint-disable-next-line typescript/no-explicit-any
@@ -180,5 +214,33 @@ export default class CacheServiceV1 {
 			logger.error('Error loading cache file list:', error);
 			throw error;
 		}
+	}
+
+	private parseRemoteRecord(exportedStorage: ExportedStorage): RemoteRecordModel {
+		if (exportedStorage.version === 2) {
+			const remoteRecord = exportedStorage.remoteRecord;
+			if (!remoteRecord) return createEmptyRemoteRecord();
+			return {
+				...createEmptyRemoteRecord(),
+				...remoteRecord,
+				queue: Array.isArray(remoteRecord.queue) ? remoteRecord.queue : [],
+				nodes:
+					remoteRecord.nodes && typeof remoteRecord.nodes === 'object'
+						? remoteRecord.nodes
+						: {},
+				isComplete: remoteRecord.isComplete ?? remoteRecord.queue.length === 0,
+			};
+		}
+
+		if (exportedStorage.traverseWebDAVCache) {
+			return {
+				...createEmptyRemoteRecord(),
+				queue: exportedStorage.traverseWebDAVCache.queue,
+				nodes: exportedStorage.traverseWebDAVCache.nodes,
+				isComplete: exportedStorage.traverseWebDAVCache.queue.length === 0,
+			};
+		}
+
+		throw new Error('Invalid cache file format');
 	}
 }

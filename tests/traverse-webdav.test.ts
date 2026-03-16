@@ -1,7 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { RemoteRecordModel } from '~/model/sync-record.model';
 import { getDirectoryContents } from '~/api';
 
 const traverseCacheState = new Map<string, { queue: string[]; nodes: Record<string, unknown> }>();
+const remoteRecordState = new Map<string, RemoteRecordModel>();
 
 vi.mock('~/api', () => ({
 	getDirectoryContents: vi.fn(),
@@ -27,6 +29,30 @@ vi.mock('~/storage', () => ({
 	},
 }));
 
+vi.mock('~/storage/sync-record', () => ({
+	SyncRecord: class {
+		constructor(private namespace: string) {}
+
+		async getRemoteRecord(): Promise<RemoteRecordModel> {
+			return (
+				remoteRecordState.get(this.namespace) ?? {
+					queue: [],
+					nodes: {},
+					isComplete: false,
+				}
+			);
+		}
+
+		async setRemoteRecord(remoteRecord: RemoteRecordModel): Promise<void> {
+			remoteRecordState.set(this.namespace, remoteRecord);
+		}
+
+		async clearRemoteRecord(): Promise<void> {
+			remoteRecordState.delete(this.namespace);
+		}
+	},
+}));
+
 vi.mock('~/utils/logger', () => ({
 	default: {
 		error: vi.fn(),
@@ -38,6 +64,7 @@ describe('ResumableWebDAVTraversal', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 		traverseCacheState.clear();
+		remoteRecordState.clear();
 	});
 
 	it('uses remote-base-aware path when enqueuing child directories', async () => {
@@ -61,7 +88,7 @@ describe('ResumableWebDAVTraversal', () => {
 			remoteServerUrl: 'https://dav.example.com/dav',
 			token: 'token',
 			remoteBaseDir: '/test/',
-			kvKey: 'traverse-path-fix',
+			stateKey: 'traverse-path-fix',
 		});
 
 		await traversal.traverse();
@@ -104,12 +131,12 @@ describe('ResumableWebDAVTraversal', () => {
 			remoteServerUrl: 'https://dav.example.com/dav',
 			token: 'token',
 			remoteBaseDir: '/test/',
-			kvKey: 'traverse-404-skip',
+			stateKey: 'traverse-404-skip',
 		});
 
 		await expect(traversal.traverse()).resolves.toBeDefined();
 
-		const saved = traverseCacheState.get('traverse-404-skip');
+		const saved = remoteRecordState.get('traverse-404-skip');
 		expect(saved?.queue).toEqual([]);
 		expect(vi.mocked(getDirectoryContents)).toHaveBeenNthCalledWith(
 			2,

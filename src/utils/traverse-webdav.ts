@@ -1,7 +1,9 @@
 import type { StatModel } from '~/model/stat.model';
 import { getDirectoryContents } from '~/api';
+import { createEmptyRemoteRecord, type RemoteRecordModel } from '~/model/sync-record.model';
 import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
 import { traverseWebDAVKV } from '~/storage';
+import { SyncRecord } from '~/storage/sync-record';
 import { Mutex } from '~/utils/mutex';
 import { apiLimiter } from './api-limiter';
 import { fileStatToStatModel } from './file-stat-to-stat-model';
@@ -45,7 +47,8 @@ export class ResumableWebDAVTraversal {
 	private remoteServerUrl: string;
 	private token: string;
 	private remoteBaseDir: string;
-	private kvKey: string;
+	private stateKey: string;
+	private legacyTraversalKey?: string;
 	private saveInterval: number;
 
 	private queue: string[] = [];
@@ -77,18 +80,24 @@ export class ResumableWebDAVTraversal {
 		remoteServerUrl: string;
 		token: string;
 		remoteBaseDir: string;
-		kvKey: string;
+		stateKey: string;
+		legacyTraversalKey?: string;
 		saveInterval?: number;
 	}) {
 		this.remoteServerUrl = options.remoteServerUrl;
 		this.token = options.token;
 		this.remoteBaseDir = options.remoteBaseDir;
-		this.kvKey = options.kvKey;
+		this.stateKey = options.stateKey;
+		this.legacyTraversalKey = options.legacyTraversalKey;
 		this.saveInterval = Math.max(options.saveInterval || 1, 1);
 	}
 
+	private get syncRecord() {
+		return new SyncRecord(this.stateKey, this.remoteBaseDir);
+	}
+
 	get lock() {
-		return getTraversalLock(this.kvKey);
+		return getTraversalLock(this.stateKey);
 	}
 
 	async traverse(options?: { freshness?: WalkFreshness }): Promise<StatModel[]> {
@@ -177,11 +186,28 @@ export class ResumableWebDAVTraversal {
 	 * Load state
 	 */
 	private async loadState(): Promise<void> {
-		const cache = await traverseWebDAVKV.get(this.kvKey);
+		let remoteRecord = await this.syncRecord.getRemoteRecord();
+
+		if (!this.hasPersistedRemoteRecord(remoteRecord) && this.legacyTraversalKey) {
+			const legacyCache = await traverseWebDAVKV.get(this.legacyTraversalKey);
+			if (legacyCache) {
+				remoteRecord = {
+					...createEmptyRemoteRecord(),
+					queue: legacyCache.queue,
+					nodes: legacyCache.nodes,
+					isComplete: legacyCache.queue.length === 0,
+				};
+				await this.syncRecord.setRemoteRecord(remoteRecord);
+				await traverseWebDAVKV.unset(this.legacyTraversalKey);
+			}
+		}
+
+		const cache = remoteRecord;
 		if (cache) {
 			if (cache.queue.some((path) => !this.isPathWithinBase(path))) {
 				logger.warn('Detected stale traversal cache, clearing incompatible queue entries');
-				await traverseWebDAVKV.unset(this.kvKey);
+				await this.syncRecord.clearRemoteRecord();
+				if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
 				this.queue = [];
 				this.nodes = {};
 				this.hasLoadedCache = false;
@@ -206,19 +232,33 @@ export class ResumableWebDAVTraversal {
 	 * Save current state
 	 */
 	private async saveState(): Promise<void> {
-		await traverseWebDAVKV.set(this.kvKey, {
+		const currentRemoteRecord = await this.syncRecord.getRemoteRecord();
+		const nextRemoteRecord: RemoteRecordModel = {
+			...currentRemoteRecord,
 			queue: this.queue,
 			nodes: this.nodes,
-		});
+			isComplete: this.queue.length === 0,
+		};
+		await this.syncRecord.setRemoteRecord(nextRemoteRecord);
+		if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
 		this.hasLoadedCache = true;
 	}
 
 	private async clearLoadedState(): Promise<void> {
-		await traverseWebDAVKV.unset(this.kvKey);
+		await this.syncRecord.clearRemoteRecord();
+		if (this.legacyTraversalKey) await traverseWebDAVKV.unset(this.legacyTraversalKey);
 		this.queue = [];
 		this.nodes = {};
 		this.hasLoadedCache = false;
 		this.processedCount = 0;
+	}
+
+	private hasPersistedRemoteRecord(remoteRecord: RemoteRecordModel): boolean {
+		return (
+			remoteRecord.isComplete ||
+			remoteRecord.queue.length > 0 ||
+			Object.keys(remoteRecord.nodes).length > 0
+		);
 	}
 
 	/**
@@ -234,8 +274,7 @@ export class ResumableWebDAVTraversal {
 	 * Check if cache is valid
 	 */
 	async isCacheValid(): Promise<boolean> {
-		const cache = await traverseWebDAVKV.get(this.kvKey);
-		if (!cache) return false;
+		const cache = await this.syncRecord.getRemoteRecord();
 		return Array.isArray(cache.queue) && cache.queue.length === 0 && !!cache.nodes;
 	}
 }

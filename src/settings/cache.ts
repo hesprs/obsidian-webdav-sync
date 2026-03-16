@@ -1,4 +1,5 @@
 import { Notice, Setting } from 'obsidian';
+import type { RemoteRecordModel } from '~/model/sync-record.model';
 import type { TraverseWebDAVCache } from '~/storage';
 import CacheClearModal from '~/components/CacheClearModal';
 import CacheRestoreModal from '~/components/CacheRestoreModal';
@@ -12,7 +13,9 @@ import logger from '~/utils/logger';
 import BaseSettings from './settings.base';
 
 export interface ExportedStorage {
+	version: 2;
 	exportedAt: string;
+	remoteRecord?: RemoteRecordModel;
 	traverseWebDAVCache?: TraverseWebDAVCache;
 }
 

@@ -19,7 +19,6 @@ import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
 import { normalizeRemoteDir, remoteDirname } from '~/platform/path/remote-path';
 import { vaultDirname } from '~/platform/path/vault-path';
-import { syncRecordKV } from '~/storage';
 import { SyncRecord } from '~/storage/sync-record';
 import breakableSleep from '~/utils/breakable-sleep';
 import { formatTime } from '~/utils/format-date';
@@ -76,7 +75,7 @@ export class SyncEngine {
 			vault: this.options.vault,
 			syncRecord: new SyncRecord(
 				getDBKey(this.vault.getName(), this.remoteBaseDir),
-				syncRecordKV,
+				this.remoteBaseDir,
 			),
 		});
 		this.subscriptions.push(
@@ -388,7 +387,10 @@ export class SyncEngine {
 	}
 
 	private createSyncRecord() {
-		return new SyncRecord(getDBKey(this.vault.getName(), this.remoteBaseDir), syncRecordKV);
+		return new SyncRecord(
+			getDBKey(this.vault.getName(), this.remoteBaseDir),
+			this.remoteBaseDir,
+		);
 	}
 
 	private async createTraversal() {
@@ -396,7 +398,11 @@ export class SyncEngine {
 			remoteServerUrl: this.options.remoteServerUrl || this.settings.serverUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
-			kvKey: await getTraversalWebDAVDBKey(this.options.token, this.options.remoteBaseDir),
+			stateKey: getDBKey(this.vault.getName(), this.remoteBaseDir),
+			legacyTraversalKey: await getTraversalWebDAVDBKey(
+				this.options.token,
+				this.options.remoteBaseDir,
+			),
 			saveInterval: 1,
 		});
 	}

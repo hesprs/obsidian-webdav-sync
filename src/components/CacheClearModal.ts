@@ -1,6 +1,7 @@
 import { Modal, Setting } from 'obsidian';
 import i18n from '~/i18n';
-import { blobKV, syncRecordKV, traverseWebDAVKV } from '~/storage/kv';
+import { createEmptyRemoteRecord, type SyncStateModel } from '~/model/sync-record.model';
+import { blobKV, syncRecordKV, syncStateKV, traverseWebDAVKV } from '~/storage/kv';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
 
@@ -114,22 +115,41 @@ export default class CacheClearModal extends Modal {
 	 */
 	static async clearSelectedCaches(options: CacheClearOptions) {
 		const { syncRecordEnabled, blobEnabled, traverseWebDAVEnabled } = options;
-		const cleared = [];
+		const cleared: string[] = [];
 
 		try {
-			if (syncRecordEnabled) {
-				await syncRecordKV.clear();
-				cleared.push(i18n.t('settings.cache.clearModal.syncRecordCache.name'));
+			if (syncRecordEnabled || traverseWebDAVEnabled) {
+				const syncStates = (await syncStateKV.dump()) as Record<string, SyncStateModel>;
+
+				if (syncRecordEnabled && traverseWebDAVEnabled) {
+					await syncStateKV.clear();
+				} else {
+					for (const [key, state] of Object.entries(syncStates)) {
+						await syncStateKV.set(key, {
+							...state,
+							version: 1,
+							localRecords: syncRecordEnabled ? new Map() : state.localRecords,
+							remoteRecord: traverseWebDAVEnabled
+								? createEmptyRemoteRecord()
+								: state.remoteRecord,
+						});
+					}
+				}
+
+				if (syncRecordEnabled) {
+					await syncRecordKV.clear();
+					cleared.push(i18n.t('settings.cache.clearModal.syncRecordCache.name'));
+				}
+
+				if (traverseWebDAVEnabled) {
+					await traverseWebDAVKV.clear();
+					cleared.push(i18n.t('settings.cache.clearModal.traverseWebDAVCache.name'));
+				}
 			}
 
 			if (blobEnabled) {
 				await blobKV.clear();
 				cleared.push(i18n.t('settings.cache.clearModal.blobCache.name'));
-			}
-
-			if (traverseWebDAVEnabled) {
-				await traverseWebDAVKV.clear();
-				cleared.push(i18n.t('settings.cache.clearModal.traverseWebDAVCache.name'));
 			}
 
 			return cleared;

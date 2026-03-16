@@ -5,7 +5,6 @@ import type { BaseTask, TaskResult } from '~/sync/tasks/task.interface';
 import { emitSyncUpdateMtimeProgress } from '~/events';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import { normalizeRemoteDir } from '~/platform/path/remote-path';
-import { syncRecordKV } from '~/storage';
 import { blobStore } from '~/storage/blob';
 import { SyncRecord } from '~/storage/sync-record';
 import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
@@ -44,7 +43,7 @@ export async function updateMtimeInRecord(
 
 	const latestRemoteEntities = await remoteFs.walk({ freshness: 'fresh' });
 	const remoteEntityMap = new Map(latestRemoteEntities.map((e) => [e.stat.path, e]));
-	const syncRecord = new SyncRecord(getDBKey(vault.getName(), remoteBaseDir), syncRecordKV);
+	const syncRecord = new SyncRecord(getDBKey(vault.getName(), remoteBaseDir), remoteBaseDir);
 	const records = await syncRecord.getRecords();
 	const startAt = Date.now();
 	let completedCount = 0;
