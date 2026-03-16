@@ -2,16 +2,16 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 
 ## Commands
 
-- `pnpm lint`: format and fix fixable lint errors.
+- `pnpm lint`: format and fix fixable lint errors (always run before `pnpm check`).
 - `pnpm check`: check types, lint and format (no file change).
 - `pnpm dev`: fast build for daily debug.
-- `pnpm build`: build for distribution (DO NOT USE).
 - `pnpm test`: run all tests.
 
 ## Code Quality
 
 - No non-null assertion (use `as` assertion)
 - No explicit `any`
+- Error handling and observables should be handled by the logger, do not throw into the console.
 
 ## Repository Map
 

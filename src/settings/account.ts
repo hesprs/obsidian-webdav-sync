@@ -1,6 +1,5 @@
 import { Notice, Setting } from 'obsidian';
 import i18n from '~/i18n';
-import { is503Error } from '~/utils/is-503-error';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
@@ -95,10 +94,6 @@ export default class AccountSettings extends BaseSettings {
 							buttonEl.classList.add('success');
 							buttonEl.textContent = i18n.t('settings.checkConnection.successButton');
 							new Notice(i18n.t('settings.checkConnection.success'));
-						} else if (error && is503Error(error)) {
-							buttonEl.classList.add('error');
-							buttonEl.textContent = i18n.t('sync.error.requestsTooFrequent');
-							new Notice(i18n.t('sync.error.requestsTooFrequent'));
 						} else {
 							buttonEl.classList.add('error');
 							buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');

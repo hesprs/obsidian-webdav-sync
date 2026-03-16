@@ -1,8 +1,9 @@
 import { clamp } from 'lodash-es';
-import { useSettings } from '~/settings';
+import { SyncRunKind } from '~/model/sync-record.model';
+import { useSettings, type PluginSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import type WebDAVSyncPlugin from '..';
-import type SyncExecutorService from './sync-executor.service';
+import type SyncSchedulerService from './sync-scheduler.service';
 
 export default class ScheduledSyncService {
 	private autoSyncTimer: number | null = null;
@@ -10,7 +11,7 @@ export default class ScheduledSyncService {
 
 	constructor(
 		private plugin: WebDAVSyncPlugin,
-		private syncExecutor: SyncExecutorService,
+		private syncScheduler: SyncSchedulerService,
 	) {}
 
 	async start() {
@@ -19,28 +20,32 @@ export default class ScheduledSyncService {
 		if (settings.startupSyncDelaySeconds > 0) {
 			this.startupSyncTimer = window.setTimeout(async () => {
 				try {
-					await this.syncExecutor.executeSync({
+					await this.syncScheduler.requestSync({
 						mode: SyncStartMode.AUTO_SYNC,
+						runKind: SyncRunKind.NORMAL,
+						source: 'startup',
 					});
 				} finally {
-					this.startTimer(settings.autoSyncIntervalSeconds);
+					this.startTimer(await useSettings());
 				}
 			}, settings.startupSyncDelaySeconds * 1000);
 		} else {
-			this.startTimer(settings.autoSyncIntervalSeconds);
+			this.startTimer(settings);
 		}
 	}
 
-	private startTimer(intervalSeconds: number) {
+	private startTimer(settings: PluginSettings) {
 		this.stopTimer();
 
-		const intervalMs = intervalSeconds * 1000;
+		const intervalMs = settings.autoSyncIntervalSeconds * 1000;
 		const clampedIntervalMs = clamp(intervalMs, 0, 2 ** 31 - 1);
 
 		if (clampedIntervalMs > 0) {
 			this.autoSyncTimer = window.setInterval(async () => {
-				await this.syncExecutor.executeSync({
+				await this.syncScheduler.requestSync({
 					mode: SyncStartMode.AUTO_SYNC,
+					runKind: SyncRunKind.NORMAL,
+					source: 'interval',
 				});
 			}, clampedIntervalMs);
 		}
@@ -55,7 +60,7 @@ export default class ScheduledSyncService {
 
 	async updateInterval() {
 		const settings = await useSettings();
-		this.startTimer(settings.autoSyncIntervalSeconds);
+		this.startTimer(settings);
 	}
 
 	unload() {

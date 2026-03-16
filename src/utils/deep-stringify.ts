@@ -32,36 +32,17 @@ export default function deepStringify(
 	visited: Set<object> = new Set(),
 ): string | undefined {
 	// 1. Handle primitives, null, and unsupported types first
-	if (isNull(value)) {
-		return 'null';
-	}
-	if (isBoolean(value)) {
-		return String(value); // 'true' or 'false'
-	}
-	if (isString(value)) {
-		// Use native JSON.stringify for robust escaping AND quoting
-		return JSON.stringify(value);
-	}
-	if (isNumber(value)) {
-		return isFinite(value) ? String(value) : 'null'; // Handle NaN/Infinity
-	}
-	if (isUndefined(value) || isFunction(value) || isSymbol(value)) {
-		return undefined; // Omitted in objects, null in arrays (handled by caller)
-	}
-	if (typeof value === 'bigint') {
-		throw new TypeError('Do not know how to serialize a BigInt');
-	}
-	if (isRegExp(value)) {
-		return JSON.stringify(String(value));
-	}
+	if (isNull(value)) return 'null';
+	if (isBoolean(value)) return String(value);
+	if (isString(value)) return JSON.stringify(value);
+	if (isNumber(value)) return isFinite(value) ? String(value) : 'null';
+	if (isUndefined(value) || isFunction(value) || isSymbol(value)) return undefined;
+	if (typeof value === 'bigint') throw new TypeError('Do not know how to serialize a BigInt');
+	if (isRegExp(value)) return JSON.stringify(String(value));
 	// Handle Date objects explicitly
 	if (isDate(value)) {
-		if (isFinite(value.getTime())) {
-			// Stringify the ISO string to get the required quotes
-			return JSON.stringify(value.toISOString());
-		} else {
-			return 'null'; // Invalid date becomes null
-		}
+		if (isFinite(value.getTime())) return JSON.stringify(value.toISOString());
+		else return 'null';
 	}
 	if (isError(value)) {
 		return JSON.stringify({
@@ -78,9 +59,7 @@ export default function deepStringify(
 	}
 
 	// 2. Circular reference check
-	if (visited.has(value)) {
-		throw new TypeError('Converting circular structure to JSON');
-	}
+	if (visited.has(value)) throw new TypeError('Converting circular structure to JSON');
 	visited.add(value); // Add current object/array *before* recursive calls
 
 	let result: string | undefined;
@@ -111,9 +90,8 @@ export default function deepStringify(
 				} catch (error: unknown) {
 					// *** Handle getter error: stringify the error message ***
 					let errorMessage = 'Error accessing property';
-					if (error instanceof Error) {
-						errorMessage = error.message;
-					} else if (
+					if (error instanceof Error) errorMessage = error.message;
+					else if (
 						typeof error === 'object' &&
 						error !== null &&
 						'message' in error &&
@@ -124,9 +102,7 @@ export default function deepStringify(
 					} else {
 						try {
 							errorMessage = String(error);
-						} catch {
-							/* ignore */
-						}
+						} catch {}
 					}
 					// Use native stringify to quote and escape the error message string
 					stringifiedValue = JSON.stringify(errorMessage);

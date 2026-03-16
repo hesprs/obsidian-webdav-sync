@@ -1,5 +1,12 @@
+import type { StatModel } from '~/model/stat.model';
+import type { LocalRecordModel } from '~/model/sync-record.model';
 import { isSameTime } from '~/utils/is-same-time';
 import { isSub } from '~/utils/is-sub';
+
+type FolderSyncRecord = {
+	local?: LocalRecordModel['local'];
+	remote?: StatModel;
+};
 
 /**
  * Check if folder content has changed (based on sub-items check, not folder mtime)
@@ -12,8 +19,7 @@ import { isSub } from '~/utils/is-sub';
 export function hasFolderContentChanged(
 	folderPath: string,
 	stats: Array<{ path: string; mtime?: number; isDir: boolean }>,
-	// oxlint-disable-next-line typescript/no-explicit-any
-	syncRecords: Map<string, any>,
+	syncRecords: Map<string, FolderSyncRecord>,
 	side: 'local' | 'remote',
 ): boolean {
 	for (const sub of stats) {
@@ -32,7 +38,8 @@ export function hasFolderContentChanged(
 		// Case 2: sub-item has sync record, check if modified
 		// Only check mtime for files, not folders (folder mtime is unreliable)
 		if (!sub.isDir) {
-			const recordMtime = side === 'local' ? subRecord.local.mtime : subRecord.remote.mtime;
+			const recordStat = side === 'local' ? subRecord.local : subRecord.remote;
+			const recordMtime = recordStat?.mtime;
 			if (sub.mtime && recordMtime) {
 				if (!isSameTime(sub.mtime, recordMtime)) {
 					return true; // file modified

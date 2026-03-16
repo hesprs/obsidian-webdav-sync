@@ -2,31 +2,35 @@
 
 ## Responsibility
 
-Provides sync-specific helper functions for task-list optimization, path eligibility checks, ignored-content handling, and post-run record updates.
+Holds sync-runtime helper logic for task optimization, merge eligibility/ignored-path predicates, and deterministic post-task sync-state mutation.
 
 ## Design Patterns
 
-- Predicate helpers for gating behavior (`is-mergeable-path`, `has-ignored-in-folder`).
-- Reducer/aggregation transforms for batch optimization (`merge-mkdir-tasks`, `merge-remove-remote-tasks`).
-- Stateless utility style: functions accept inputs and return transformed outputs.
+- Pure predicates (`is-mergeable-path`, `has-ignored-in-folder`).
+- Task-list rewrite passes:
+  - `mergeMkdirTasks`: `MkdirRemoteTask[]` -> `MkdirsRemoteTask[]` by hierarchy grouping.
+  - `mergeRemoveRemoteTasks`: collapse nested remote deletes into top-level `RemoveRemoteRecursivelyTask`.
+- Task-driven state mutation pipeline in `update-records.ts` using explicit `TaskStateUpdate` variants.
 
 ## Data & Control Flow
 
-1. Engine/planner emits raw tasks and path context.
-2. Predicate utilities decide whether a path can be merged or should be skipped.
-3. Merge utilities collapse redundant mkdir/remove operations.
-4. `update-records` persists mtime/state changes after successful task execution.
+1. Planner/engine produce raw task list.
+2. Optimization helpers rewrite redundant mkdir/remove task sequences.
+3. After execution, `updateMtimeInRecord()` filters successful non-`skipRecord` tasks.
+4. Each task type is mapped to one or more state updates:
+   - subtree removal,
+   - path sync (stat local/remote, optionally capture `baseText` for mergeable files).
+5. Updates are applied in `SyncRecord.mutateState()` batches, with progress events emitted per chunk.
 
 ## Integration Points
 
-- Called by `src/sync/index.ts` during pre-exec optimization and post-exec persistence.
-- Consumes task types from `src/sync/tasks/*`.
-- Uses sync record storage APIs and path helpers from shared utils.
+- Called by `SyncEngine` (`src/sync/index.ts`) before execution and after each chunk.
+- Relies on task class taxonomy in `src/sync/tasks/*`.
+- Uses storage mutation primitives from `src/storage/sync-record.ts` (`upsert/remove path`, subtree removal).
+- Uses shared stat/path helpers from `src/utils/*` and markdown mergeability policy (`src/utils/mime`).
 
 ## Key Files
 
-- `merge-mkdir-tasks.ts` — removes redundant directory creation operations.
-- `merge-remove-remote-tasks.ts` — batches/optimizes remote deletions.
-- `is-mergeable-path.ts` — merge eligibility gate.
-- `has-ignored-in-folder.ts` — ignored-descendant detection.
-- `update-records.ts` — sync record update helper.
+- `update-records.ts` — canonical record update application logic.
+- `merge-mkdir-tasks.ts` / `merge-remove-remote-tasks.ts` — pre-execution optimization passes.
+- `has-ignored-in-folder.ts` / `is-mergeable-path.ts` — planning predicates.

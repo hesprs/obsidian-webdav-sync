@@ -2,7 +2,6 @@ import { Notice } from 'obsidian';
 import SyncConfirmModal from '~/components/SyncConfirmModal';
 import { emitCancelSync } from '~/events';
 import i18n from '~/i18n';
-import { SyncEngine, SyncStartMode } from '~/sync';
 import logger from '~/utils/logger';
 import WebDAVSyncPlugin from '..';
 
@@ -32,15 +31,7 @@ export default class CommandService {
 				}
 
 				const startSync = async () => {
-					const sync = new SyncEngine(plugin, {
-						webdav: await plugin.webDAVService.createWebDAVClient(),
-						vault: plugin.app.vault,
-						token: plugin.getToken(),
-						remoteBaseDir: plugin.remoteBaseDir,
-					});
-					await sync.start({
-						mode: SyncStartMode.MANUAL_SYNC,
-					});
+					await plugin.syncSchedulerService.requestManualSync();
 				};
 				if (plugin.settings.confirmBeforeSync)
 					new SyncConfirmModal(plugin.app, startSync).open();

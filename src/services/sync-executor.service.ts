@@ -1,23 +1,22 @@
+import { SyncRunKind } from '~/model/sync-record.model';
 import { SyncEngine, SyncStartMode } from '~/sync';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';
 
 export interface SyncOptions {
 	mode: SyncStartMode;
+	runKind: SyncRunKind;
 }
 
+// TODO: don't instantiate SyncEngine every time
 export default class SyncExecutorService {
 	constructor(private plugin: WebDAVSyncPlugin) {}
 
 	async executeSync(options: SyncOptions) {
-		if (this.plugin.isSyncing) {
-			return false;
-		}
+		if (this.plugin.isSyncing) return false;
 
 		// 检查账号配置，未配置时静默返回（自动同步场景）
-		if (!this.plugin.isAccountConfigured()) {
-			return false;
-		}
+		if (!this.plugin.isAccountConfigured()) return false;
 
 		await waitUntil(() => this.plugin.isSyncing === false, 500);
 
@@ -42,15 +41,14 @@ export default class SyncExecutorService {
 			webdav: await this.plugin.webDAVService.createWebDAVClient(),
 		});
 
-		const plan = await sync.preparePlan();
+		const plan = await sync.preparePlan(options.runKind);
 
-		if (!plan.hasActionableTasks) {
-			return false;
-		}
+		if (!plan.hasActionableTasks) return false;
 
 		await sync.start({
 			mode: options.mode,
 			plan,
+			runKind: options.runKind,
 		});
 
 		return true;

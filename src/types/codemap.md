@@ -1,19 +1,25 @@
-# Types Code Map
+# src/types
 
 ## Responsibility
 
-This directory provides extended TypeScript type definitions for the Obsidian API. Its primary purpose is to define internal or undocumented Obsidian APIs that are not included in the official `obsidian` type definitions, enabling type-safe access to these features within the plugin.
+Provide ambient TypeScript declarations that bridge runtime globals and undocumented Obsidian APIs used by the plugin.
 
 ## Design Patterns
 
-- **Module Augmentation**: Uses `declare module 'obsidian'` to extend the core Obsidian `App` interface with additional properties (e.g., `setting`).
-- **Interface Extension**: Defines custom interfaces like `ObsidianSetting` to describe the structure of internal Obsidian objects.
+- Module augmentation (`declare module 'obsidian'`) for internal API surface extension.
+- Global declaration files (`declare const ...`) for build-time/runtime-injected flags.
+- Declaration-only boundary: no runtime code, compiler contract only.
 
 ## Data & Control Flow
 
-As a collection of type definitions (`.d.ts`), there is no runtime data or control flow within this directory. Instead, it provides the structural metadata used by the TypeScript compiler to validate interactions with the Obsidian environment in other parts of the source code.
+No runtime execution. Type declarations are loaded by TypeScript during compilation and shape editor diagnostics + type checking across plugin code.
 
 ## Integration Points
 
-- **Obsidian API**: Directly augments the official `obsidian` module.
-- **Plugin Components**: Used by UI components or commands that need to programmatically interact with Obsidian's settings (e.g., `app.setting.openTabById()`).
+- Obsidian API augmentation consumed by UI/services that call internal settings APIs (`app.setting?.openTabById`).
+- Global `__DEV__` flag declaration consumed by runtime codepaths guarded for development builds.
+
+## Key Files
+
+- `obsidian-extended.d.ts`: augments `App` with optional internal `setting` API contract.
+- `globals.d.ts`: declares compile-time global `__DEV__` boolean.

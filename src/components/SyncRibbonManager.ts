@@ -3,7 +3,6 @@ import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '../index';
 import { emitCancelSync } from '../events';
 import i18n from '../i18n';
-import { SyncEngine, SyncStartMode } from '../sync/index';
 import SyncConfirmModal from './SyncConfirmModal';
 
 export class SyncRibbonManager {
@@ -36,15 +35,7 @@ export class SyncRibbonManager {
 				}
 
 				const startSync = async () => {
-					const sync = new SyncEngine(this.plugin, {
-						webdav: await this.plugin.webDAVService.createWebDAVClient(),
-						vault: this.plugin.app.vault,
-						token: this.plugin.getToken(),
-						remoteBaseDir: this.plugin.remoteBaseDir,
-					});
-					await sync.start({
-						mode: SyncStartMode.MANUAL_SYNC,
-					});
+					await this.plugin.syncSchedulerService.requestManualSync();
 				};
 				if (this.plugin.settings.confirmBeforeSync) {
 					new SyncConfirmModal(this.plugin.app, startSync).open();

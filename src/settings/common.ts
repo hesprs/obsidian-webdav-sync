@@ -124,6 +124,18 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
+			.setName(i18n.t('settings.useFastSyncOnLocalChange.name'))
+			.setDesc(i18n.t('settings.useFastSyncOnLocalChange.desc'))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.useFastSyncOnLocalChange)
+					.onChange(async (value) => {
+						this.plugin.settings.useFastSyncOnLocalChange = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(this.containerEl)
 			.setName(i18n.t('settings.startupSyncDelay.name'))
 			.setDesc(i18n.t('settings.startupSyncDelay.desc'))
 			.addText((text) => {

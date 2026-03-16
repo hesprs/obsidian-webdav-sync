@@ -5,12 +5,8 @@ import { normalizeVaultPath, vaultDirname } from '~/platform/path/vault-path';
 export async function mkdirsVault(vault: Vault, path: string) {
 	const stack: string[] = [];
 	let currentPath = normalizeVaultPath(path);
-	if (currentPath === '' || currentPath === '.') {
-		return;
-	}
-	if (vault.getAbstractFileByPath(currentPath)) {
-		return;
-	}
+	if (currentPath === '' || currentPath === '.') return;
+	if (vault.getAbstractFileByPath(currentPath)) return;
 	while (
 		currentPath !== '' &&
 		currentPath !== '.' &&
@@ -21,9 +17,7 @@ export async function mkdirsVault(vault: Vault, path: string) {
 	}
 	while (stack.length) {
 		const pop = stack.pop();
-		if (!pop) {
-			continue;
-		}
+		if (!pop) continue;
 		await vault.createFolder(pop);
 	}
 }

@@ -1,8 +1,10 @@
 # src
 
-## Top-level architecture
+## Responsibility
 
-`src/` is the plugin runtime root. It composes the Obsidian plugin entrypoint, sync engine, infrastructure adapters, and UI/service layers.
+`src/` is the plugin runtime root. It composes the Obsidian plugin entrypoint, sync scheduler/executor services, deterministic sync engine, platform adapters, and user-facing component modules.
+
+## System Entry Points
 
 Primary entry and wiring files:
 
@@ -10,7 +12,13 @@ Primary entry and wiring files:
 - `api.ts` — external/plugin-facing API surface.
 - `consts.ts`, `webdav-patch.ts` — runtime constants and environment patches.
 
-## Module boundaries
+## Design Patterns
+
+- Composition root in `index.ts` wires long-lived services, event subscribers, settings UI, and command/ribbon entrypoints.
+- Clear boundary split between orchestration (`services/`, `sync/`), infrastructure (`fs/`, `platform/`, `storage/`), and presentation (`components/`).
+- Platform normalization layer centralizes runtime-sensitive binary/crypto/path behavior instead of duplicating path logic in sync/fs code.
+
+## Module Boundaries
 
 ### Core orchestration
 
@@ -23,7 +31,9 @@ Primary entry and wiring files:
 
 - `fs/` — filesystem abstractions/adapters for local vault + WebDAV backends.
   - See: `src/fs/codemap.md`
-- `storage/` — persistence layer for blobs, key-value data, and sync records.
+- `platform/` — runtime-stable binary, crypto, and path primitives shared by fs/sync/utils.
+  - See: `src/platform/codemap.md`
+- `storage/` — persistence layer for sync-state records and remote traversal snapshots.
   - See: `src/storage/codemap.md`
 
 ### Configuration and contracts
@@ -39,21 +49,26 @@ Primary entry and wiring files:
 
 - `events/` — typed sync/vault event definitions and event contracts.
   - See: `src/events/codemap.md`
-- `components/` — UI modal/ribbon components used by plugin workflows.
+- `components/` — UI modal/ribbon components and embedded remote explorer used by plugin workflows.
   - See: `src/components/codemap.md`
 - `utils/` — cross-cutting pure helpers and small infra utilities.
   - See: `src/utils/codemap.md`
-- `explorer/` — self-contained WebDAV file explorer.
-  - See: `src/explorer/codemap.md`
 
 ### Localization and assets
 
 - `i18n/` — localization runtime and locale loading entrypoints.
 - `assets/` — packaged static assets (e.g., CSS).
 
-## High-level runtime flow
+## Data & Control Flow
 
 1. `index.ts` initializes plugin state and registers commands/UI.
-2. Service layer (`services/`) translates triggers into sync execution requests.
-3. Sync engine (`sync/`) computes and runs file operations using adapter boundaries (`fs/`, `storage/`).
-4. Event and UI modules (`events/`, `components/`) reflect progress/state to users.
+2. Service layer (`services/`) funnels manual/startup/interval/realtime triggers into the scheduler and guarded executor.
+3. Sync engine (`sync/`) computes plans and runs file operations using adapter boundaries (`fs/`, `platform/`, `storage/`).
+4. Event and UI modules (`events/`, `components/`) project progress/state to users, including the embedded remote explorer in settings flows.
+
+## Integration Points
+
+- `manifest.json` and Obsidian runtime lifecycle load the plugin entrypoint.
+- `src/services` consumes `src/sync`, `src/events`, `src/settings`, and WebDAV transport helpers.
+- `src/sync` consumes fs/platform/storage/model/utils layers for planning and execution.
+- `src/components` hosts settings and sync UX, including the in-repo explorer module.

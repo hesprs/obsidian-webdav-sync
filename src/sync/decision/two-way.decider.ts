@@ -1,5 +1,4 @@
-import { isEqual } from '~/platform/crypto';
-import { blobStore } from '~/storage/blob';
+import { SyncRunKind } from '~/model/sync-record.model';
 import type {
 	ConflictTaskOptions,
 	PullTaskOptions,
@@ -25,11 +24,18 @@ import { twoWayDecider } from './two-way.decider.function';
 export default class TwoWaySyncDecider extends BaseSyncDecider {
 	async decide(): Promise<BaseTask[]> {
 		const syncRecordStorage = this.getSyncRecordStorage();
-		const [records, localStats, remoteStats] = await Promise.all([
-			syncRecordStorage.getRecords(),
+		const [previousLocalRecords, previousRemoteRecord, currentLocalStats] = await Promise.all([
+			syncRecordStorage.getLocalRecords(),
+			syncRecordStorage.getRemoteRecord(),
 			this.sync.localFS.walk(),
-			this.sync.remoteFs.walk(),
 		]);
+		const previousRemoteStats = previousRemoteRecord
+			? await this.sync.remoteFs.walk({ remoteSource: 'stored-record' })
+			: [];
+		const currentRemoteStats =
+			this.sync.runKind === SyncRunKind.NUMB
+				? previousRemoteStats
+				: await this.sync.remoteFs.walk({ freshness: 'fresh' });
 
 		// 创建共用的task选项
 		const commonTaskOptions = {
@@ -65,21 +71,11 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 				new SkippedTask({ ...commonTaskOptions, ...options }),
 		};
 
-		const compareFileContent = async (
-			filePath: string,
-			baseContent: ArrayBuffer,
-		): Promise<boolean> => {
+		const compareFileContent = async (filePath: string, baseText: string): Promise<boolean> => {
 			const file = this.vault.getFileByPath(filePath);
 			if (!file) return false;
-			const currentContent = await this.vault.readBinary(file);
-			return isEqual(baseContent, currentContent);
-		};
-		const getBaseContent = async (key: string): Promise<ArrayBuffer | null> => {
-			const blob = await blobStore.get(key);
-			if (!blob) {
-				return null;
-			}
-			return await blob.arrayBuffer();
+			const currentContent = await this.vault.read(file);
+			return currentContent === baseText;
 		};
 
 		return await twoWayDecider({
@@ -89,11 +85,11 @@ export default class TwoWaySyncDecider extends BaseSyncDecider {
 				useGitStyle: this.settings.useGitStyle,
 				syncMode: this.settings.syncMode,
 			},
-			localStats,
-			remoteStats,
-			syncRecords: records,
+			currentLocalStats,
+			currentRemoteStats,
+			previousRemoteStats,
+			previousLocalRecords,
 			remoteBaseDir: this.remoteBaseDir,
-			getBaseContent,
 			compareFileContent,
 			taskFactory,
 		});

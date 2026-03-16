@@ -1,5 +1,6 @@
 import type { FsWalkResult } from '~/fs/fs.interface';
 import type { StatModel } from '~/model/stat.model';
+import type { LocalRecordModel } from '~/model/sync-record.model';
 import { SyncMode } from '~/settings';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
@@ -15,8 +16,10 @@ export interface SyncDecisionSettings {
 export interface SyncRecordItem {
 	remote: StatModel;
 	local: StatModel;
-	base?: { key: string };
+	baseText?: string;
 }
+
+export interface PreviousLocalRecordItem extends LocalRecordModel {}
 
 export interface TaskOptions {
 	remotePath: string;
@@ -78,11 +81,11 @@ export interface TaskFactory {
 
 export interface SyncDecisionInput {
 	settings: SyncDecisionSettings;
-	localStats: FsWalkResult[];
-	remoteStats: FsWalkResult[];
-	syncRecords: Map<string, SyncRecordItem>;
+	currentLocalStats: FsWalkResult[];
+	currentRemoteStats: FsWalkResult[];
+	previousRemoteStats: FsWalkResult[];
+	previousLocalRecords: Map<string, PreviousLocalRecordItem>;
 	remoteBaseDir: string;
-	getBaseContent: (key: string) => Promise<ArrayBuffer | null>;
-	compareFileContent: (filePath: string, baseContent: ArrayBuffer) => Promise<boolean>;
+	compareFileContent: (filePath: string, baseText: string) => Promise<boolean>;
 	taskFactory: TaskFactory;
 }

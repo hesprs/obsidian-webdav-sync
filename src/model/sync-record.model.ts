@@ -1,9 +1,53 @@
 import type { StatModel } from './stat.model';
 
-export interface SyncRecordModel {
+export enum SyncRunKind {
+	NORMAL = 'normal',
+	NUMB = 'numb',
+}
+
+export interface LocalRecordModel {
+	local: StatModel;
+	baseText?: string;
+}
+
+export interface PreviousSyncRecordModel {
 	local: StatModel;
 	remote: StatModel;
-	base?: {
-		key: string;
+	baseText?: string;
+}
+
+export interface RemoteRecordModel {
+	queue: string[];
+	nodes: Record<string, StatModel[]>;
+	isComplete: boolean;
+	lastNormalSyncAt?: number;
+	source?: 'normal-sync' | 'task-updated' | 'imported';
+}
+
+export interface SyncStateModel {
+	version: 1;
+	remoteRecord: RemoteRecordModel;
+	localRecords: Map<string, LocalRecordModel>;
+}
+
+export interface PersistedSyncStateModel {
+	version: 1;
+	remoteRecord: RemoteRecordModel;
+	localRecords: Record<string, LocalRecordModel>;
+}
+
+export function createEmptyRemoteRecord(): RemoteRecordModel {
+	return {
+		queue: [],
+		nodes: {},
+		isComplete: false,
+	};
+}
+
+export function createEmptySyncState(): SyncStateModel {
+	return {
+		version: 1,
+		remoteRecord: createEmptyRemoteRecord(),
+		localRecords: new Map(),
 	};
 }

@@ -3,9 +3,6 @@
 # npm
 node_modules
 
-# Exclude sourcemaps
-*.map
-
 # obsidian
 data.json
 

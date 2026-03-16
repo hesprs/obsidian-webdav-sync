@@ -1,10 +1,10 @@
 import { App, Modal } from 'obsidian';
 import { getDirectoryContents } from '~/api';
-import { mount as mountWebDAVExplorer } from '~/explorer';
+import { normalizeRemoteDir } from '~/platform/path/remote-path';
 import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
-import { stdRemotePath } from '~/utils/std-remote-path';
 import WebDAVSyncPlugin from '..';
+import { mount as mountWebDAVExplorer } from './explorer';
 
 export default class SelectRemoteBaseDirModal extends Modal {
 	constructor(
@@ -43,7 +43,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 				this.close();
 			},
 			onConfirm: async (path) => {
-				await Promise.resolve(this.onConfirm(stdRemotePath(path)));
+				await Promise.resolve(this.onConfirm(normalizeRemoteDir(path)));
 				explorer.remove();
 				this.close();
 			},

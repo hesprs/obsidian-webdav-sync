@@ -29,10 +29,10 @@ export default class SyncProgressModal extends Modal {
 	private stopButtonComponent!: ButtonComponent;
 	private hideButtonComponent!: ButtonComponent;
 
-	private cacheProgressBar!: HTMLDivElement;
-	private cacheProgressText!: HTMLDivElement;
-	private cacheProgressStats!: HTMLDivElement;
-	private cacheCurrentOperation!: HTMLDivElement;
+	private syncStateProgressBar!: HTMLDivElement;
+	private syncStateProgressText!: HTMLDivElement;
+	private syncStateProgressStats!: HTMLDivElement;
+	private syncStateCurrentOperation!: HTMLDivElement;
 
 	constructor(
 		private plugin: WebDAVSyncPlugin,
@@ -44,7 +44,7 @@ export default class SyncProgressModal extends Modal {
 			this.update();
 		});
 		this.updateMtimeSubscription = onSyncUpdateMtimeProgress().subscribe((progress) => {
-			this.updateCacheProgress(progress.total, progress.completed);
+			this.updateSyncStateProgress(progress.total, progress.completed);
 		});
 	}
 
@@ -202,29 +202,28 @@ export default class SyncProgressModal extends Modal {
 			cls: 'absolute w-full text-center text-3 leading-5 text-[var(--text-on-accent)] mix-blend-difference',
 		});
 
-		// Cache progress section
-		const cacheProgressSection = container.createDiv({
+		const syncStateProgressSection = container.createDiv({
 			cls: 'flex flex-col gap-1',
 		});
-		this.cacheCurrentOperation = cacheProgressSection.createDiv();
-		this.cacheCurrentOperation.setText(i18n.t('sync.updatingCache'));
-		this.cacheCurrentOperation.hide();
+		this.syncStateCurrentOperation = syncStateProgressSection.createDiv();
+		this.syncStateCurrentOperation.setText(i18n.t('sync.updatingSyncState'));
+		this.syncStateCurrentOperation.hide();
 
-		const cacheProgressStats = cacheProgressSection.createDiv({
+		const syncStateProgressStats = syncStateProgressSection.createDiv({
 			cls: 'text-3.25',
 		});
-		this.cacheProgressStats = cacheProgressStats;
-		this.cacheProgressStats.hide();
+		this.syncStateProgressStats = syncStateProgressStats;
+		this.syncStateProgressStats.hide();
 
-		const cacheProgressBarContainer = cacheProgressSection.createDiv({
+		const syncStateProgressBarContainer = syncStateProgressSection.createDiv({
 			cls: 'relative h-5 bg-[var(--background-secondary)] rounded overflow-hidden',
 		});
-		cacheProgressBarContainer.hide();
+		syncStateProgressBarContainer.hide();
 
-		this.cacheProgressBar = cacheProgressBarContainer.createDiv({
+		this.syncStateProgressBar = syncStateProgressBarContainer.createDiv({
 			cls: 'absolute h-full bg-[var(--interactive-accent)] w-0 transition-width',
 		});
-		this.cacheProgressText = cacheProgressBarContainer.createDiv({
+		this.syncStateProgressText = syncStateProgressBarContainer.createDiv({
 			cls: 'absolute w-full text-center text-3 leading-5 text-[var(--text-on-accent)] mix-blend-difference',
 		});
 
@@ -279,25 +278,29 @@ export default class SyncProgressModal extends Modal {
 		}
 	}
 
-	private updateCacheProgress(total: number, completed: number): void {
-		if (!this.cacheProgressBar || !this.cacheProgressText || !this.cacheProgressStats) {
+	private updateSyncStateProgress(total: number, completed: number): void {
+		if (
+			!this.syncStateProgressBar ||
+			!this.syncStateProgressText ||
+			!this.syncStateProgressStats
+		) {
 			return;
 		}
 
-		this.cacheCurrentOperation.show();
-		this.cacheProgressStats.show();
-		this.cacheProgressBar.parentElement?.show();
+		this.syncStateCurrentOperation.show();
+		this.syncStateProgressStats.show();
+		this.syncStateProgressBar.parentElement?.show();
 
 		const percent = Math.round((completed / total) * 100) || 0;
 
-		this.cacheProgressBar.style.width = `${percent}%`;
-		this.cacheProgressText.setText(
+		this.syncStateProgressBar.style.width = `${percent}%`;
+		this.syncStateProgressText.setText(
 			i18n.t('sync.percentComplete', {
 				percent,
 			}),
 		);
 
-		this.cacheProgressStats.setText(
+		this.syncStateProgressStats.setText(
 			i18n.t('sync.progressStats', {
 				completed,
 				total,
@@ -305,7 +308,7 @@ export default class SyncProgressModal extends Modal {
 		);
 
 		if (completed === total) {
-			this.cacheCurrentOperation.setText(i18n.t('sync.cacheUpdated'));
+			this.syncStateCurrentOperation.setText(i18n.t('sync.syncStateUpdated'));
 		}
 	}
 }

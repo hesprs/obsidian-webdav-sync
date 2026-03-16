@@ -38,7 +38,7 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 ## Features
 
 - 🔄 **Bidirectional syncing** between local vault and remote WebDAV
-- ⚡ **Incremental remote traversal** with cached acceleration, [elaborated in the code map](codemap.md#remote-cache)
+- ⚡ **Fast syncing mode** with cached acceleration for fast, sync-on-change syncing
 - 📁 **WebDAV explorer** for exploring remote directories
 - 🔀 **Conflict handling**:
   - Smart merge (diff/merge-based)
@@ -46,7 +46,7 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
   - Skip strategy
 - 🚀 **Strict / loose sync modes** for different vault sizes
 - 📦 **Large file skipping** via configurable size threshold
-- 🔁 **Robust file presence handling** that doesn't mess up your notes like Remotely Save, [elaborated in the code map](codemap.md#remotelocal-presence-resolution)
+- 🔁 **Robust file presence handling** that doesn't mess up your notes like Remotely Save
 
 ## Install & Setup
 
@@ -73,7 +73,7 @@ Configuration:
 
 ## Development Roadmap
 
-Below is a list of planned features and improvements, the faster this plugin is adopted and the stars ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
+Below is a list of planned features and improvements, the faster this plugin is adopted and the star ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
 
 - [ ] Support syncing files in the Obsidian config folder (`.obsidian/`)
 - [ ] Saving WebDAV credentials in Obsidian Keychain
