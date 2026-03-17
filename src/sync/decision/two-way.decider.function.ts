@@ -715,11 +715,10 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			}
 			continue;
 		}
-		if (!remote.isDir) {
+		if (!remote.isDir)
 			throw new Error(
 				`Folder conflict: local path ${local.path} is a folder but remote path ${remote.path} is a file`,
 			);
-		}
 	}
 
 	// Sort folder tasks to ensure correct execution order

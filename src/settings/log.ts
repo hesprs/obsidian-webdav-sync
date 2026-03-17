@@ -1,8 +1,6 @@
-import { isNil } from 'lodash-es';
 import { Notice, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import logger from '~/utils/logger';
-import logsStringify from '~/utils/logs-stringify';
 import BaseSettings from './settings.base';
 
 export default class LogSettings extends BaseSettings {
@@ -22,17 +20,10 @@ export default class LogSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.log.clearDesc'))
 			.addButton((button) => {
 				button.setButtonText(i18n.t('settings.log.clear')).onClick(() => {
-					this.plugin.loggerService.clear();
+					logger.clear();
 					new Notice(i18n.t('settings.log.cleared'));
 				});
 			});
-	}
-
-	get logs() {
-		return this.plugin.loggerService.logs
-			.map(logsStringify)
-			.filter((log) => !isNil(log))
-			.join('\n\n');
 	}
 
 	async saveLogsToNote() {
@@ -41,7 +32,7 @@ export default class LogSettings extends BaseSettings {
 			const fileName = `webdav-sync-logs-${timestamp}.md`;
 			const dirPath = 'webdav-sync/logs';
 			const filePath = `${dirPath}/${fileName}`;
-			const content = `# WebDAV Sync Plugin Logs\n\nGenerated at: ${new Date().toLocaleString()}\n\n---\n\n${this.logs}`;
+			const content = `# WebDAV Sync Plugin Logs\n\nGenerated at: ${new Date().toLocaleString()}\n\n---\n\n${logger.stringify()}`;
 
 			// 确保目录存在
 			const folderExists = this.app.vault.getFolderByPath(dirPath);
@@ -55,7 +46,8 @@ export default class LogSettings extends BaseSettings {
 			await this.app.workspace.getLeaf().openFile(file);
 		} catch (error) {
 			new Notice(i18n.t('settings.log.saveError'));
-			logger.error('Failed to save logs to note:', error);
+			logger.error('Failed to save logs to note');
+			logger.debug(error);
 		}
 	}
 }

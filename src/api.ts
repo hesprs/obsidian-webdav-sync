@@ -168,9 +168,7 @@ export async function getDirectoryContents(
 			contents.push(...parsedItems);
 
 			const linkHeader = response.headers['link'] || response.headers['Link'];
-			if (!linkHeader) {
-				break;
-			}
+			if (!linkHeader) break;
 
 			const nextLink = extractNextLink(linkHeader);
 			if (!nextLink) break;
@@ -179,7 +177,8 @@ export async function getDirectoryContents(
 			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (isRetryableError(e)) {
-				logger.error('Retryable WebDAV error, retrying...', e);
+				logger.error('WebDAV connection error, retrying...');
+				logger.debug(e);
 				await sleep(5_000);
 				continue;
 			}

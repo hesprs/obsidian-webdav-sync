@@ -215,7 +215,11 @@ export async function updateMtimeInRecord(
 				try {
 					return await prepareTaskUpdate(task);
 				} catch (error) {
-					logger.error('updateMtimeInRecord', error, task.toJSON());
+					const taskString = task.toJSON();
+					logger.error(
+						`Failed to update modification time in record for task ${taskString.taskName}`,
+					);
+					logger.debug(error, taskString);
 					return [];
 				} finally {
 					completedCount++;

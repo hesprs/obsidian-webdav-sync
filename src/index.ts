@@ -8,7 +8,6 @@ import { normalizeRemoteDir } from './platform/path/remote-path';
 import CommandService from './services/command.service';
 import EventsService from './services/events.service';
 import I18nService from './services/i18n.service';
-import LoggerService from './services/logger.service';
 import { ProgressService } from './services/progress.service';
 import RealtimeSyncService from './services/realtime-sync.service';
 import ScheduledSyncService from './services/scheduled-sync.service';
@@ -61,7 +60,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	public eventsService = new EventsService(this);
 	public i18nService = new I18nService(this);
-	public loggerService = new LoggerService(this);
 	public progressService = new ProgressService(this);
 	public statusService = new StatusService(this);
 	public webDAVService = new WebDAVService(this);

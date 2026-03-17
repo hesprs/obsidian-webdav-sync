@@ -131,7 +131,8 @@ export class SyncEngine {
 		try {
 			this.runKind = runKind;
 			const showNotice = mode === SyncStartMode.MANUAL_SYNC;
-			logger.debug('Sync started', { mode, runKind });
+			logger.info('Starting sync');
+			logger.debug({ mode, runKind });
 			emitPreparingSync({ showNotice });
 
 			const settings = this.settings;
@@ -193,9 +194,8 @@ export class SyncEngine {
 					const markPathAndParentsAsExisting = (remotePath: string) => {
 						let current = remotePath;
 						while (current && current !== '.' && current !== '' && current !== '/') {
-							if (knownRemotePaths.has(current)) {
-								break; // Already marked, all parents must be marked too
-							}
+							// Already marked, all parents must be marked too
+							if (knownRemotePaths.has(current)) break;
 							knownRemotePaths.add(current);
 							current = normalizeRemoteDir(remoteDirname(current));
 						}
@@ -379,7 +379,7 @@ export class SyncEngine {
 			}
 
 			const failedCount = allTasksResult.filter((r) => !r.success).length;
-			logger.debug('tasks result', allTasksResult, 'failed:', failedCount);
+			logger.debug(`Tasks failed: ${failedCount}`);
 
 			if (mode === SyncStartMode.MANUAL_SYNC && failedCount > 0) {
 				const failedTasksInfo: FailedTaskInfo[] = [];
@@ -397,12 +397,13 @@ export class SyncEngine {
 				new FailedTasksModal(this.app, failedTasksInfo).open();
 			}
 
-			logger.debug('Sync done');
+			logger.info('Sync done');
 			emitEndSync({ failedCount, showNotice });
 			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
 			emitSyncError(error);
-			logger.error('Sync error:', error);
+			logger.error('Sync error');
+			logger.debug(error);
 		} finally {
 			this.subscriptions.forEach((sub) => sub.unsubscribe());
 		}
@@ -479,12 +480,7 @@ export class SyncEngine {
 			(t) => !(t instanceof NoopTask || t instanceof CleanRecordTask),
 		);
 
-		logger.debug(`Starting to execute sync tasks`, {
-			totalTasks: tasks.length,
-			displayedTasks: tasksToDisplay.length,
-			totalDisplayableTasks: totalDisplayableTasks.length,
-			alreadyCompleted: allCompletedTasks.length,
-		});
+		logger.info(`Going to execute ${tasksToDisplay.length} tasks`);
 
 		for (let i = 0; i < tasks.length; ++i) {
 			const task = tasks[i];
@@ -493,18 +489,14 @@ export class SyncEngine {
 				break;
 			}
 
-			logger.debug(`Executing task [${i + 1}/${tasks.length}] ${task.localPath}`, {
-				taskName: getTaskName(task),
-				taskPath: task.localPath,
-			});
-
 			const taskResult = await this.executeWithRetry(task);
+			const taskName = task.toJSON().taskName;
 
-			logger.debug(`Task completed [${i + 1}/${tasks.length}] ${task.localPath}`, {
-				taskName: getTaskName(task),
-				taskPath: task.localPath,
-				result: taskResult,
-			});
+			const state = taskResult.success ? 'succeeded' : 'failed';
+			logger.info(`[${i + 1}/${tasks.length}] Task ${state}: ${taskName} ${task.localPath}`);
+			if (!taskResult.success) {
+				logger.debug(taskResult.error);
+			}
 
 			res[i] = taskResult;
 			// Only add substantial tasks to completed list for progress display
@@ -515,7 +507,7 @@ export class SyncEngine {
 		}
 
 		const successCount = res.filter((r) => r.success).length;
-		logger.debug(`All tasks execution completed`, {
+		logger.debug({
 			totalTasks: tasks.length,
 			successCount: successCount,
 			failedCount: tasks.length - successCount,
@@ -567,7 +559,7 @@ export class SyncEngine {
 				return await operation();
 			} catch (error) {
 				if (!isRetryableError(error)) {
-					logger.error(error);
+					logger.error('WebDAV operation failed, retrying...');
 					break;
 				}
 

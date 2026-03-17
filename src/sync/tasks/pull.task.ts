@@ -36,7 +36,8 @@ export default class PullTask extends BaseTask {
 			}
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(`Failed to pull file ${this.remotePath} from remote`);
+			logger.debug(e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

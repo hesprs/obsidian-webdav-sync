@@ -1,53 +1,60 @@
-export type LoggerLevel = 'debug' | 'info' | 'warn' | 'error';
+import { formatDateTime } from '~/utils/format-date';
+import deepStringify from './deep-stringify';
 
-export interface LoggerLogObject {
-	date: Date;
-	type: LoggerLevel;
-	args: unknown[];
-}
+type LogLevels = 'info' | 'warn' | 'error' | 'debug';
 
-export interface LoggerReporter {
-	log: (logObj: LoggerLogObject) => void;
-}
+type Log<T extends LogLevels> = {
+	date: string;
+	level: T;
+	args: T extends 'debug' ? Array<unknown> : string;
+};
 
+// TODO: make it a service
 class Logger {
-	private reporters: LoggerReporter[] = [];
+	// oxlint-disable-next-line typescript/no-explicit-any
+	private logs: Array<Log<any>> = [];
 
 	debug(...args: unknown[]) {
 		this.write('debug', args);
 	}
 
-	info(...args: unknown[]) {
+	info(args: string) {
 		this.write('info', args);
 	}
 
-	warn(...args: unknown[]) {
+	warn(args: string) {
 		this.write('warn', args);
 	}
 
-	error(...args: unknown[]) {
+	error(args: string) {
 		this.write('error', args);
 	}
 
-	addReporter(reporter: LoggerReporter) {
-		this.reporters.push(reporter);
+	clear() {
+		this.logs = [];
 	}
 
-	setReporters(reporters: LoggerReporter[]) {
-		this.reporters = [...reporters];
+	stringify(): string {
+		const logs = this.logs.map((log) => {
+			const { args, level, date } = log;
+			if (level === 'debug') {
+				const arg = args.length === 1 ? args[0] : args;
+				return `${date} - [${level}] - ${JSON.stringify(arg) ?? deepStringify(arg) ?? '[error]'}`;
+			} else return `${date} - [${level}] - ${args as string}`;
+		});
+		return logs.join('\n');
 	}
 
-	private write(type: LoggerLevel, args: unknown[]) {
-		const logObj: LoggerLogObject = {
-			date: new Date(),
-			type,
+	private write<T extends LogLevels>(level: T, args: Log<T>['args']) {
+		const logObj: Log<T> = {
+			date: formatDateTime(new Date()),
+			level,
 			args,
 		};
+		this.logs.push(logObj);
 
-		const consoleMethod = console[type] as (...consoleArgs: unknown[]) => void;
-		consoleMethod(...args);
-
-		for (const reporter of this.reporters) reporter.log(logObj);
+		const consoleMethod = console[level] as (...consoleArgs: unknown[]) => void;
+		consoleMethod(args);
 	}
 }
 

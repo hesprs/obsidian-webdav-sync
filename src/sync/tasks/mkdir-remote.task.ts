@@ -17,7 +17,8 @@ export default class MkdirRemoteTask extends BaseTask {
 			});
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(`Failed to create remote directory: ${this.remotePath}`);
+			logger.debug(e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

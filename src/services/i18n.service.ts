@@ -17,7 +17,8 @@ export default class I18nService {
 				void i18n.changeLanguage(code.toLowerCase());
 			}
 		} catch (e) {
-			logger.error(e);
+			logger.error('Failed to update i18n');
+			logger.debug(e);
 		}
 	};
 }
