@@ -30,12 +30,6 @@ export interface SyncStateModel {
 	localRecords: Map<string, LocalRecordModel>;
 }
 
-export interface PersistedSyncStateModel {
-	version: 1;
-	remoteRecord: RemoteRecordModel;
-	localRecords: Record<string, LocalRecordModel>;
-}
-
 export function createEmptyRemoteRecord(): RemoteRecordModel {
 	return {
 		queue: [],

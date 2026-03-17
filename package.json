@@ -27,6 +27,7 @@
 		"fast-xml-parser": "^5.5.5",
 		"glob-to-regexp": "^0.4.1",
 		"i18next": "^25.8.18",
+		"localspace": "^1.1.1",
 		"lodash-es": "^4.17.23",
 		"node-diff3": "^3.2.0",
 		"obsidian": "latest",

@@ -1,5 +1,5 @@
 import type { MaybePromise } from '~/types';
-import { SyncRecord } from '~/storage/sync-record';
+import { SyncRecord } from '~/storage';
 import type { SyncEngine } from '..';
 import { BaseTask } from '../tasks/task.interface';
 

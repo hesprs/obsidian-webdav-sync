@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { RemoteRecordModel } from '~/model/sync-record.model';
+import type { SyncStateStore } from '~/storage';
 import { getDirectoryContents } from '~/api';
 
 const remoteRecordState = new Map<string, RemoteRecordModel>();
+const syncStateStore = {} as SyncStateStore;
 
 vi.mock('~/api', () => ({
 	getDirectoryContents: vi.fn(),
@@ -73,6 +75,7 @@ describe('ResumableWebDAVTraversal', () => {
 			token: 'token',
 			remoteBaseDir: '/test/',
 			stateKey: 'traverse-path-fix',
+			syncStateStore,
 		});
 
 		await traversal.traverse();
@@ -116,6 +119,7 @@ describe('ResumableWebDAVTraversal', () => {
 			token: 'token',
 			remoteBaseDir: '/test/',
 			stateKey: 'traverse-404-skip',
+			syncStateStore,
 		});
 
 		await expect(traversal.traverse()).resolves.toBeDefined();

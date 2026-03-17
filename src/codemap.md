@@ -33,7 +33,7 @@ Primary entry and wiring files:
   - See: `src/fs/codemap.md`
 - `platform/` — runtime-stable binary, crypto, and path primitives shared by fs/sync/utils.
   - See: `src/platform/codemap.md`
-- `storage/` — persistence layer for sync-state records and remote traversal snapshots.
+- `storage/` — pluggable persistence boundary for sync state, with an IndexedDB-backed default store and a `SyncRecord` facade exported via the storage barrel.
   - See: `src/storage/codemap.md`
 
 ### Configuration and contracts
