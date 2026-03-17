@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.1.0 - 2026-03-17
+
+- Refactored the syncing process to only traverse remote directory once per normal sync.
+- Unified traversal cache with local last-sync record to become a single remote record.
+- Simplified and modernized remote record local database storage.
+- Introduced new numb syncing mode that avoids remote directory traversal entirely for high-frequency realtime syncing.
+
 ## Obsidian WebDAV Sync v1.0.0 - 2026-03-15
 
 - Re-engineered the plugin to be a general-purpose WebDAV syncing plugin.
