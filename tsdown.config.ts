@@ -27,7 +27,7 @@ export default defineConfig({
 			'@codemirror/state',
 			'@codemirror/view',
 		],
-		onlyAllowBundle: false,
+		onlyBundle: false,
 	},
 	outputOptions: {
 		file: 'dist/main.js',
