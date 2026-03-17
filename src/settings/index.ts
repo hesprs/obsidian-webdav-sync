@@ -1,6 +1,5 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
 import type WebDAVSyncPlugin from '~/index';
-import type { PersistedSyncStateModel } from '~/model/sync-record.model';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
@@ -36,7 +35,6 @@ export interface PluginSettings {
 	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
 	autoSyncIntervalSeconds: number;
-	syncStates?: Record<string, PersistedSyncStateModel>;
 	language?: 'zh' | 'en';
 }
 

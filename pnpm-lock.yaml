@@ -47,6 +47,9 @@ importers:
       i18next:
         specifier: ^25.8.18
         version: 25.8.18(typescript@5.9.3)
+      localspace:
+        specifier: ^1.1.1
+        version: 1.1.1
       lodash-es:
         specifier: ^4.17.23
         version: 4.17.23
@@ -1692,6 +1695,9 @@ packages:
     resolution: {integrity: sha512-/vlFKAoH5Cgt3Ie+JLhRbwOsCQePABiU3tJ1egGvyQ+33R/vcwM2Zl2QR/LzjsBeItPt3oSVXapn+m4nQDvpzw==}
     engines: {node: '>=14'}
 
+  localspace@1.1.1:
+    resolution: {integrity: sha512-jR94KRagg9P7dukNm1E1ZcppE8SieFkQ99xD8FpPAprn7l5IA2MJFP+IqgnnhGQITaKLMfVsvssRy8fWer37WA==}
+
   lodash-es@4.17.23:
     resolution: {integrity: sha512-kVI48u3PZr38HdYz98UmfPnXl2DXrpdctLrFLCd3kOx1xUkOmpFPx7gCWWM5MPkL/fD8zb+Ph0QzjGFs4+hHWg==}
 
@@ -1703,6 +1709,10 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
+
+  lz-string@1.5.0:
+    resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
+    hasBin: true
 
   magic-regexp@0.10.0:
     resolution: {integrity: sha512-Uly1Bu4lO1hwHUW0CQeSWuRtzCMNO00CmXtS8N6fyvB3B979GOEEeAkiTUDsmbYLAbvpUS/Kt5c4ibosAzVyVg==}
@@ -3639,6 +3649,10 @@ snapshots:
 
   lilconfig@3.1.3: {}
 
+  localspace@1.1.1:
+    dependencies:
+      lz-string: 1.5.0
+
   lodash-es@4.17.23: {}
 
   lodash.memoize@4.1.2: {}
@@ -3648,6 +3662,8 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
+
+  lz-string@1.5.0: {}
 
   magic-regexp@0.10.0:
     dependencies:

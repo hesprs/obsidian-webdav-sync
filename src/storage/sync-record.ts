@@ -1,10 +1,8 @@
 import type { StatModel } from '~/model/stat.model';
 import { normalizeRemoteWalkPath } from '~/fs/utils/normalize-remote-walk-path';
 import {
-	createEmptyRemoteRecord,
 	createEmptySyncState,
 	type LocalRecordModel,
-	type PersistedSyncStateModel,
 	type RemoteRecordModel,
 	type SyncStateModel,
 } from '~/model/sync-record.model';
@@ -16,12 +14,13 @@ import {
 	remotePathToAbsolute,
 } from '~/platform/path/remote-path';
 import { normalizeVaultPath } from '~/platform/path/vault-path';
-import { getPluginInstance, waitUntilPluginInstance } from '~/settings';
+import type { PersistedLocalRecordsModel, SyncStateStore } from './sync-state-store';
 
 export class SyncRecord {
 	constructor(
 		private namespace: string,
 		private remoteBaseDir: string,
+		private store: SyncStateStore,
 	) {}
 
 	private normalizeLocalRecords(
@@ -48,17 +47,18 @@ export class SyncRecord {
 		};
 	}
 
-	private serializeState(state: SyncStateModel): PersistedSyncStateModel {
-		const normalizedState = this.normalizeState(state);
-		return {
-			version: 1,
-			remoteRecord: normalizedState.remoteRecord,
-			localRecords: Object.fromEntries(normalizedState.localRecords.entries()),
-		};
+	private serializeLocalRecords(
+		localRecords: Map<string, LocalRecordModel>,
+	): PersistedLocalRecordsModel {
+		return Object.fromEntries(localRecords.entries());
 	}
 
 	private normalizeState(
-		state: Partial<SyncStateModel> | PersistedSyncStateModel | undefined,
+		state:
+			| (Omit<Partial<SyncStateModel>, 'localRecords'> & {
+					localRecords?: Map<string, LocalRecordModel> | PersistedLocalRecordsModel;
+			  })
+			| undefined,
 	): SyncStateModel {
 		if (!state) return createEmptySyncState();
 
@@ -66,17 +66,6 @@ export class SyncRecord {
 			version: 1,
 			remoteRecord: this.normalizeRemoteRecord(state.remoteRecord),
 			localRecords: this.normalizeLocalRecords(state.localRecords),
-		};
-	}
-
-	private async getSyncStates() {
-		await waitUntilPluginInstance();
-		const plugin = getPluginInstance();
-		if (!plugin) throw new Error('Plugin instance is not ready');
-		plugin.settings.syncStates ??= {};
-		return {
-			plugin,
-			syncStates: plugin.settings.syncStates,
 		};
 	}
 
@@ -134,16 +123,26 @@ export class SyncRecord {
 	}
 
 	private async loadState(): Promise<SyncStateModel> {
-		const { syncStates } = await this.getSyncStates();
-		const existingState = syncStates[this.namespace];
-		if (existingState) return this.normalizeState(existingState);
-		return createEmptySyncState();
+		const [remoteRecord, localRecords] = await Promise.all([
+			this.store.getRemote(this.namespace),
+			this.store.getLocal(this.namespace),
+		]);
+
+		return this.normalizeState({
+			remoteRecord,
+			localRecords,
+		});
 	}
 
 	private async saveState(state: SyncStateModel): Promise<void> {
-		const { plugin, syncStates } = await this.getSyncStates();
-		syncStates[this.namespace] = this.serializeState(state);
-		await plugin.saveSettings();
+		const normalizedState = this.normalizeState(state);
+		await Promise.all([
+			this.store.setRemote(this.namespace, normalizedState.remoteRecord),
+			this.store.setLocal(
+				this.namespace,
+				this.serializeLocalRecords(normalizedState.localRecords),
+			),
+		]);
 	}
 
 	async getState(): Promise<SyncStateModel> {
@@ -176,15 +175,11 @@ export class SyncRecord {
 	}
 
 	async setRemoteRecord(remoteRecord: RemoteRecordModel): Promise<void> {
-		const state = await this.loadState();
-		state.remoteRecord = this.normalizeRemoteRecord(remoteRecord);
-		await this.saveState(state);
+		await this.store.setRemote(this.namespace, this.normalizeRemoteRecord(remoteRecord));
 	}
 
 	async clearRemoteRecord(): Promise<void> {
-		const state = await this.loadState();
-		state.remoteRecord = createEmptyRemoteRecord();
-		await this.saveState(state);
+		await this.store.clearRemote(this.namespace);
 	}
 
 	upsertRemotePathInState(state: SyncStateModel, stat: StatModel): void {
@@ -274,8 +269,6 @@ export class SyncRecord {
 	}
 
 	async drop() {
-		const { plugin, syncStates } = await this.getSyncStates();
-		delete syncStates[this.namespace];
-		await plugin.saveSettings();
+		await this.store.delete(this.namespace);
 	}
 }

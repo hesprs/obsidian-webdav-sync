@@ -39,6 +39,7 @@ export default class SyncExecutorService {
 			remoteServerUrl: this.plugin.settings.serverUrl,
 			remoteBaseDir: this.plugin.remoteBaseDir,
 			webdav: await this.plugin.webDAVService.createWebDAVClient(),
+			syncStateStore: this.plugin.syncStateStore,
 		});
 
 		const plan = await sync.preparePlan(options.runKind);

@@ -17,6 +17,7 @@ import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
+import { IndexedDbSyncStateStore } from './storage';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
 
 function createGlobMathOptions(expr: string) {
@@ -53,9 +54,10 @@ export default class WebDAVSyncPlugin extends Plugin {
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
 		autoSyncIntervalSeconds: 300,
-		syncStates: {},
 		language: undefined,
 	};
+
+	public syncStateStore = new IndexedDbSyncStateStore();
 
 	public eventsService = new EventsService(this);
 	public i18nService = new I18nService(this);
@@ -72,6 +74,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		await this.syncStateStore.initialize().catch(() => undefined);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 

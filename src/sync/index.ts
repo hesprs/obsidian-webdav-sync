@@ -21,7 +21,7 @@ import { SyncRunKind } from '~/model/sync-record.model';
 import { normalizeRemoteDir, remoteDirname } from '~/platform/path/remote-path';
 import { vaultDirname } from '~/platform/path/vault-path';
 import { useSettings } from '~/settings';
-import { SyncRecord } from '~/storage/sync-record';
+import { SyncRecord } from '~/storage';
 import breakableSleep from '~/utils/breakable-sleep';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
@@ -68,13 +68,14 @@ export class SyncEngine {
 			remoteServerUrl?: string;
 			remoteBaseDir: string;
 			webdav: WebDAVClient;
+			syncStateStore: WebDAVSyncPlugin['syncStateStore'];
 		},
 	) {
 		this.options = Object.freeze(this.options);
 		this.remoteFs = new RemoteWebDAVFileSystem(this.options);
 		this.localFS = new LocalVaultFileSystem({
 			vault: this.options.vault,
-			syncRecord: new SyncRecord(this.getStateKey(), this.remoteBaseDir),
+			syncRecord: this.createSyncRecord(),
 		});
 		this.subscriptions.push(
 			onCancelSync().subscribe(() => {
@@ -408,7 +409,7 @@ export class SyncEngine {
 	}
 
 	private createSyncRecord() {
-		return new SyncRecord(this.getStateKey(), this.remoteBaseDir);
+		return new SyncRecord(this.getStateKey(), this.remoteBaseDir, this.plugin.syncStateStore);
 	}
 
 	private async createTraversal() {
@@ -423,6 +424,7 @@ export class SyncEngine {
 				serverUrl: this.options.remoteServerUrl || settings.serverUrl,
 				account: settings.account,
 			}),
+			syncStateStore: this.plugin.syncStateStore,
 			saveInterval: 1,
 		});
 	}

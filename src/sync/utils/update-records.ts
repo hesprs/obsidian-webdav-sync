@@ -5,7 +5,7 @@ import type { StatModel } from '~/model/stat.model';
 import type { LocalRecordModel } from '~/model/sync-record.model';
 import type { SyncStateModel } from '~/model/sync-record.model';
 import { emitSyncUpdateMtimeProgress } from '~/events';
-import { SyncRecord } from '~/storage/sync-record';
+import { SyncRecord } from '~/storage';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
@@ -21,6 +21,8 @@ import PushTask from '../tasks/push.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
+
+const MAX_BASE_TEXT_BYTES = 1024 * 1024;
 
 function isNotFoundError(error: unknown): boolean {
 	if (!error || typeof error !== 'object') return false;
@@ -46,6 +48,7 @@ async function statRemoteItem(task: BaseTask): Promise<StatModel | undefined> {
 
 async function createBaseText(vault: Vault, local: StatModel): Promise<string | undefined> {
 	if (local.isDir || !isMergeablePath(local.path)) return undefined;
+	if (local.size > MAX_BASE_TEXT_BYTES) return undefined;
 
 	const file = vault.getFileByPath(local.path);
 	if (!file) return undefined;

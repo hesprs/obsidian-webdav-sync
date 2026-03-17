@@ -1,8 +1,9 @@
 import type { StatModel } from '~/model/stat.model';
 import type { RemoteRecordModel } from '~/model/sync-record.model';
+import type { SyncStateStore } from '~/storage';
 import { getDirectoryContents } from '~/api';
 import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
-import { SyncRecord } from '~/storage/sync-record';
+import { SyncRecord } from '~/storage';
 import { Mutex } from '~/utils/mutex';
 import { type MaybePromise } from '../types';
 import { apiLimiter } from './api-limiter';
@@ -48,6 +49,7 @@ export class ResumableWebDAVTraversal {
 	private remoteBaseDir: string;
 	private stateKey: string;
 	private saveInterval: number;
+	private syncStateStore: SyncStateStore;
 
 	private queue: string[] = [];
 	private nodes: Record<string, StatModel[]> = {};
@@ -80,17 +82,19 @@ export class ResumableWebDAVTraversal {
 		token: string;
 		remoteBaseDir: string;
 		stateKey: string;
+		syncStateStore: SyncStateStore;
 		saveInterval?: number;
 	}) {
 		this.remoteServerUrl = options.remoteServerUrl;
 		this.token = options.token;
 		this.remoteBaseDir = options.remoteBaseDir;
 		this.stateKey = options.stateKey;
+		this.syncStateStore = options.syncStateStore;
 		this.saveInterval = Math.max(options.saveInterval || 1, 1);
 	}
 
 	private get syncRecord() {
-		return new SyncRecord(this.stateKey, this.remoteBaseDir);
+		return new SyncRecord(this.stateKey, this.remoteBaseDir, this.syncStateStore);
 	}
 
 	get lock() {

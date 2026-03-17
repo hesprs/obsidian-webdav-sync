@@ -1,6 +1,7 @@
 import { isNil } from 'lodash-es';
 import { Vault } from 'obsidian';
 import type { StatModel } from '~/model/stat.model';
+import type { SyncStateStore } from '~/storage';
 import { useSettings } from '~/settings';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import GlobMatch, {
@@ -22,6 +23,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			token: string;
 			remoteServerUrl?: string;
 			remoteBaseDir: string;
+			syncStateStore: SyncStateStore;
 		},
 	) {}
 
@@ -40,6 +42,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 				token: this.options.token,
 				remoteBaseDir: this.options.remoteBaseDir,
 				stateKey,
+				syncStateStore: this.options.syncStateStore,
 				saveInterval: 1,
 			});
 			const stats = await traversal.getStoredSnapshot();
@@ -52,6 +55,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
 			stateKey,
+			syncStateStore: this.options.syncStateStore,
 			saveInterval: 1,
 		});
 		let stats = await traversal.traverse({

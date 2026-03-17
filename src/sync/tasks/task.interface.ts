@@ -1,6 +1,6 @@
 import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
-import type { SyncRecord } from '~/storage/sync-record';
+import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
 import {
 	isAbsoluteRemotePath,
