@@ -47,9 +47,7 @@ class Logger {
 		const consoleMethod = console[type] as (...consoleArgs: unknown[]) => void;
 		consoleMethod(...args);
 
-		for (const reporter of this.reporters) {
-			reporter.log(logObj);
-		}
+		for (const reporter of this.reporters) reporter.log(logObj);
 	}
 }
 

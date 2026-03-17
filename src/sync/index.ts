@@ -130,6 +130,7 @@ export class SyncEngine {
 		try {
 			this.runKind = runKind;
 			const showNotice = mode === SyncStartMode.MANUAL_SYNC;
+			logger.debug('Sync started', { mode, runKind });
 			emitPreparingSync({ showNotice });
 
 			const settings = this.settings;
@@ -395,6 +396,7 @@ export class SyncEngine {
 				new FailedTasksModal(this.app, failedTasksInfo).open();
 			}
 
+			logger.debug('Sync done');
 			emitEndSync({ failedCount, showNotice });
 			// oxlint-disable-next-line typescript/no-explicit-any
 		} catch (error: any) {
@@ -553,13 +555,10 @@ export class SyncEngine {
 	private async retryWebDAVCall<T>(operation: () => Promise<T>) {
 		let retryCount = 0;
 		while (true) {
-			if (this.isCancelled) {
-				logger.error(i18n.t('sync.cancelled'));
-				break;
-			}
-			if (retryCount >= 3) {
-				logger.error('WebDAV connection failed, retries reach max limit');
-				break;
+			if (this.isCancelled || retryCount >= 3) {
+				if (this.isCancelled) logger.error(i18n.t('sync.cancelled'));
+				else logger.error('WebDAV connection failed, retries reach max limit.');
+				throw new Error('Sync Aborted');
 			}
 
 			try {
