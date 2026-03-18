@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## Obsidian WebDAV Sync v1.1.1 - 2026-03-18
 
-- Fixed #8 that XML decoding race condition could cause file name mismatch and false removal.
+- Fixed #9 that XML decoding race condition could cause file name mismatch and false removal.
 - Refactored observability pattern to deliver human-readable markdown support log.
 - Enhanced user feedback via more detailed status bar indicators and event notifications.
 
