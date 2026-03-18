@@ -6,3 +6,5 @@ export const API_VER_REQURL_ANDROID = '0.14.6'; // Android ver 1.2.1
 export const VALID_REQURL =
 	(!Platform.isAndroidApp && requireApiVersion(API_VER_REQURL)) ||
 	(Platform.isAndroidApp && requireApiVersion(API_VER_REQURL_ANDROID));
+
+export const IN_DEV = process.env.MODE === 'dev';

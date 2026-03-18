@@ -166,8 +166,7 @@ export class ResumableWebDAVTraversal {
 
 				if (this.processedCount % this.saveInterval === 0) await this.saveState();
 			} catch (err) {
-				logger.error(`Error processing ${currentPath}`);
-				logger.debug(err);
+				logger.error(`Error processing ${currentPath}`, err);
 
 				if (isNotFoundError(err)) {
 					this.queue.shift();

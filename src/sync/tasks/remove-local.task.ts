@@ -26,8 +26,7 @@ export default class RemoveLocalTask extends BaseTask {
 			await this.vault.trash(file, false);
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(`Failed to remove local file: ${this.localPath}`);
-			logger.debug(e);
+			logger.error(`Failed to remove local file: ${this.localPath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

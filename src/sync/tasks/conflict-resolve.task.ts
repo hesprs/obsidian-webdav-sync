@@ -61,8 +61,7 @@ export default class ConflictResolveTask extends BaseTask {
 					return { success: true, skipRecord: true } as const;
 			}
 		} catch (e) {
-			logger.error(`Failed to resolve conflict: ${this.localPath}`);
-			logger.debug(e);
+			logger.error(`Failed to resolve conflict: ${this.localPath}`, e);
 			return {
 				success: false,
 				error: toTaskError(e, this),
@@ -122,9 +121,9 @@ export default class ConflictResolveTask extends BaseTask {
 			return { success: true } as const;
 		} catch (e) {
 			logger.error(
-				`Failed to resolve conflict for ${this.localPath} by latest survive policy`,
+				`Failed to resolve conflict for ${this.localPath} by latest-survive policy`,
+				e,
 			);
-			logger.debug(e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}
@@ -216,8 +215,7 @@ export default class ConflictResolveTask extends BaseTask {
 
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(`Failed to resolve conflict for ${this.localPath} by smart merging`);
-			logger.debug(e);
+			logger.error(`Failed to resolve conflict for ${this.localPath} by smart merging`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

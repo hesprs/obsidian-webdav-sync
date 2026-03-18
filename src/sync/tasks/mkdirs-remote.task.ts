@@ -34,8 +34,7 @@ export default class MkdirsRemoteTask extends BaseTask {
 			});
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(`Failed to create remote directory recursively ${this.remotePath}`);
-			logger.debug(e);
+			logger.error(`Failed to create remote directory recursively ${this.remotePath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

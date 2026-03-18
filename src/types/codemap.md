@@ -17,9 +17,7 @@ No runtime execution. Type declarations are loaded by TypeScript during compilat
 ## Integration Points
 
 - Obsidian API augmentation consumed by UI/services that call internal settings APIs (`app.setting?.openTabById`).
-- Global `__DEV__` flag declaration consumed by runtime codepaths guarded for development builds.
 
 ## Key Files
 
 - `obsidian-extended.d.ts`: augments `App` with optional internal `setting` API contract.
-- `globals.d.ts`: declares compile-time global `__DEV__` boolean.

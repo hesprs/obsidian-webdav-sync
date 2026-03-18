@@ -1,3 +1,4 @@
+import { IN_DEV } from '~/consts';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { formatDateTime } from '~/utils/format-date';
 
@@ -415,6 +416,7 @@ class Logger {
 	}
 
 	private write(level: LogLevel, message: string, metadata?: unknown, context?: LogContext) {
+		if (!IN_DEV && level === 'debug') return;
 		const timestampMs = Date.now();
 		const mergedContext = {
 			category: 'app',

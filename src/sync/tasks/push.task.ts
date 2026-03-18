@@ -18,8 +18,7 @@ export default class PushTask extends BaseTask {
 			}
 			return { success: res };
 		} catch (e) {
-			logger.error(`Failed to push file ${this.localPath}`);
-			logger.debug(e);
+			logger.error(`Failed to push file ${this.localPath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}
