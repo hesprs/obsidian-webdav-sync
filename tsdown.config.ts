@@ -10,7 +10,7 @@ export default defineConfig({
 	platform: 'browser',
 	minify: !dev,
 	define: {
-		'process.env.MODE': process.env.MODE ?? 'prod',
+		'process.env.MODE': JSON.stringify(process.env.MODE) ?? '"prod"',
 	},
 	plugins: [solid()],
 	deps: {
