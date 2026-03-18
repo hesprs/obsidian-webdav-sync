@@ -151,13 +151,8 @@ class Logger {
 		this.write('error', message, metadata, context);
 	}
 
-	debug(messageOrMetadata: unknown, metadata?: unknown, context?: LogContext) {
-		if (typeof messageOrMetadata === 'string') {
-			this.write('debug', messageOrMetadata, metadata, context);
-			return;
-		}
-
-		this.write('debug', 'Debug data', messageOrMetadata, context);
+	debug(message: string, metadata?: unknown, context?: LogContext) {
+		this.write('debug', message, metadata, context);
 	}
 
 	clear() {
@@ -439,10 +434,6 @@ class Logger {
 		this.logs.push(entry);
 		if (this.logs.length > MAX_LOG_ENTRIES) {
 			this.logs.splice(0, this.logs.length - MAX_LOG_ENTRIES);
-		}
-
-		if (level === 'debug') {
-			return;
 		}
 
 		const consoleMethod = console[level] as (...consoleArgs: unknown[]) => void;

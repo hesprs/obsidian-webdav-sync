@@ -40,8 +40,7 @@ export class IndexedDbSyncStateStore implements SyncStateStore {
 			(error: unknown) => {
 				const storageError = createStorageUnavailableError(error);
 				this.initializationError = storageError;
-				logger.error('Failed to initialize sync state storage');
-				logger.debug(error);
+				logger.error('Failed to initialize sync state storage', error);
 				throw storageError;
 			},
 		);
@@ -113,8 +112,7 @@ export class IndexedDbSyncStateStore implements SyncStateStore {
 			await this.ensureReady();
 			return await action();
 		} catch (error) {
-			logger.error(`Failed to ${operation}`);
-			logger.debug(error);
+			logger.error(`Failed to ${operation}`, error);
 			throw error;
 		}
 	}

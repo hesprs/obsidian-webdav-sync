@@ -207,8 +207,7 @@ export async function getDirectoryContents(
 			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (isRetryableError(e)) {
-				logger.error('WebDAV connection error, retrying...');
-				logger.debug(e);
+				logger.error('WebDAV connection error, retrying...', e);
 				await sleep(5_000);
 				continue;
 			}
