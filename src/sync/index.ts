@@ -1,17 +1,19 @@
 import type { WebDAVClient } from 'webdav';
 import { chunk } from 'lodash-es';
-import { Notice, Platform, Vault } from 'obsidian';
+import { Platform, Vault } from 'obsidian';
 import { Subscription } from 'rxjs';
+import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
-import FailedTasksModal, { type FailedTaskInfo } from '~/components/FailedTasksModal';
 import TaskListConfirmModal from '~/components/TaskListConfirmModal';
 import {
-	emitEndSync,
-	emitPreparingSync,
-	emitStartSync,
-	emitSyncError,
-	emitSyncProgress,
+	emitSyncRun,
 	onCancelSync,
+	type SyncFailedTaskInfo,
+	type SyncPlanSummary,
+	type SyncProgressSummary,
+	type SyncRunSnapshot,
+	type SyncRunWarning,
+	updateSyncRunSnapshot,
 } from '~/events';
 import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
@@ -53,6 +55,14 @@ export interface PreparedSyncPlan {
 	readonly hasActionableTasks: boolean;
 }
 
+interface SyncResultSummary {
+	totalTasks: number;
+	succeededTasks: number;
+	failedTasks: number;
+	failed: SyncFailedTaskInfo[];
+}
+
+// TODO: split into multiple modules
 export class SyncEngine {
 	remoteFs: IFileSystem;
 	localFS: IFileSystem;
@@ -109,9 +119,7 @@ export class SyncEngine {
 			});
 		}
 
-		const hasActionableTasks = tasks.some(
-			(task) => !(task instanceof NoopTask || task instanceof SkippedTask),
-		);
+		const hasActionableTasks = tasks.some((task) => this.isActionableTask(task));
 
 		return Object.freeze({
 			tasks,
@@ -120,203 +128,134 @@ export class SyncEngine {
 	}
 
 	async start({
-		mode,
+		request,
 		plan,
-		runKind = SyncRunKind.NORMAL,
+		run,
 	}: {
-		mode: SyncStartMode;
+		request: SyncExecutionRequest;
 		plan?: PreparedSyncPlan;
-		runKind?: SyncRunKind;
-	}) {
+		run: SyncRunSnapshot;
+	}): Promise<SyncRunSnapshot> {
 		try {
-			this.runKind = runKind;
-			const showNotice = mode === SyncStartMode.MANUAL_SYNC;
-			logger.info('Starting sync');
-			logger.debug({ mode, runKind });
-			emitPreparingSync({ showNotice });
+			this.runKind = request.runKind;
 
 			const settings = this.settings;
-			const webdav = this.webdav;
 			const syncRecord = this.createSyncRecord();
-			const preparedPlan = plan ?? (await this.preparePlan(runKind));
+			const preparedPlan = plan ?? (await this.preparePlan(request.runKind));
 			const tasks = preparedPlan.tasks;
+			let currentRun = updateSyncRunSnapshot(run, {
+				planSummary: this.summarizePlan(tasks),
+			});
+			emitSyncRun(currentRun);
+			logger.info(
+				'Execution started',
+				{
+					event: 'execution_started',
+					trigger: currentRun.trigger,
+					sources: currentRun.sources,
+					mode: currentRun.mode,
+					runKind: currentRun.runKind,
+					planSummary: currentRun.planSummary,
+					progressSummary: currentRun.progressSummary,
+					timestamps: currentRun.timestamps,
+				},
+				{ category: 'sync.lifecycle' },
+			);
 
 			if (tasks.length === 0) {
-				emitEndSync({ showNotice, failedCount: 0 });
-				return;
+				currentRun = updateSyncRunSnapshot(currentRun, {
+					stage: 'completed_noop',
+					resultSummary: {
+						totalTasks: 0,
+						succeededTasks: 0,
+						failedTasks: 0,
+						failed: [],
+					},
+					timestamps: {
+						endedAt: Date.now(),
+					},
+				});
+				emitSyncRun(currentRun);
+				return currentRun;
 			}
 
-			const noopTasks = tasks.filter((t) => t instanceof NoopTask);
-			const skippedTasks = tasks.filter((t) => t instanceof SkippedTask);
-			let confirmedTasks = tasks.filter(
-				(t) => !(t instanceof NoopTask || t instanceof SkippedTask),
-			);
+			const noopTasks = tasks.filter((task) => task instanceof NoopTask);
+			const skippedTasks = tasks.filter((task) => task instanceof SkippedTask);
+			let confirmedTasks = tasks.filter((task) => this.isActionableTask(task));
 
 			const firstTaskIdxNeedingConfirmation = confirmedTasks.findIndex(
 				(t) => !(t instanceof CleanRecordTask),
 			);
 
 			if (this.isCancelled) {
-				emitSyncError(new Error(i18n.t('sync.cancelled')));
-				return;
+				currentRun = this.emitTerminalRun(currentRun, 'cancelled');
+				return currentRun;
 			}
 
-			if (showNotice && settings.confirmBeforeSync && firstTaskIdxNeedingConfirmation > -1) {
+			if (
+				request.mode === SyncStartMode.MANUAL_SYNC &&
+				settings.confirmBeforeSync &&
+				firstTaskIdxNeedingConfirmation > -1
+			) {
+				currentRun = updateSyncRunSnapshot(currentRun, {
+					stage: 'awaiting_confirmation',
+					planSummary: {
+						...this.summarizePlan(tasks),
+						requiresConfirmation: true,
+					},
+					timestamps: {
+						confirmationStartedAt: Date.now(),
+					},
+				});
+				emitSyncRun(currentRun);
 				const confirmExec = await new TaskListConfirmModal(this.app, confirmedTasks).open();
 				if (confirmExec.confirm) confirmedTasks = confirmExec.tasks;
 				else {
-					emitSyncError(new Error(i18n.t('sync.cancelled')));
-					return;
+					currentRun = this.emitTerminalRun(currentRun, 'cancelled');
+					return currentRun;
 				}
 			}
 
 			// Check for RemoveLocalTask during auto-sync and ask for confirmation
-			if (mode === SyncStartMode.AUTO_SYNC && settings.confirmBeforeDeleteInAutoSync) {
+			if (
+				request.mode === SyncStartMode.AUTO_SYNC &&
+				settings.confirmBeforeDeleteInAutoSync
+			) {
 				const removeLocalTasks = confirmedTasks.filter(
 					(t) => t instanceof RemoveLocalTask,
 				) as RemoveLocalTask[];
 				if (removeLocalTasks.length > 0) {
-					new Notice(i18n.t('deleteConfirm.warningNotice'), 3000);
+					currentRun = updateSyncRunSnapshot(currentRun, {
+						stage: 'awaiting_confirmation',
+						planSummary: {
+							...this.summarizePlan(tasks),
+							requiresDeleteConfirmation: true,
+							warnings: [
+								...this.getPlanWarnings(tasks),
+								{
+									code: 'delete_confirmation',
+									messageKey: 'deleteConfirm.warningNotice',
+								},
+							],
+						},
+						timestamps: {
+							confirmationStartedAt:
+								currentRun.timestamps.confirmationStartedAt ?? Date.now(),
+						},
+					});
+					emitSyncRun(currentRun);
 					const { tasksToDelete, tasksToReupload } = await new DeleteConfirmModal(
 						this.app,
 						removeLocalTasks,
 					).open();
 
-					// Create corresponding Push/Mkdir tasks for each task to reupload
-					const reuploadMap = new Map<RemoveLocalTask, PushTask | MkdirRemoteTask>();
-					const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
-					const pushTasks: PushTask[] = [];
-					const knownRemotePaths = new Set<string>();
-
-					/**
-					 * Helper function to mark a path and all its parents as existing
-					 */
-					const markPathAndParentsAsExisting = (remotePath: string) => {
-						let current = remotePath;
-						while (current && current !== '.' && current !== '' && current !== '/') {
-							// Already marked, all parents must be marked too
-							if (knownRemotePaths.has(current)) break;
-							knownRemotePaths.add(current);
-							current = normalizeRemoteDir(remoteDirname(current));
-						}
-					};
-
-					/**
-					 * Helper function to ensure parent directory exists or create mkdir task
-					 */
-					const ensureParentDir = async (localPath: string, remotePath: string) => {
-						const parentLocalPath = vaultDirname(localPath);
-						const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
-
-						// Root path or vault root, no need to check
-						if (parentLocalPath === '.' || parentLocalPath === '') return;
-
-						// Already collected in new tasks, no need to check remote
-						if (mkdirTasksMap.has(parentRemotePath)) return;
-
-						// Check if already exists in original tasks (from decider)
-						const existsInOriginalTasks = tasks.some(
-							(t) =>
-								t instanceof MkdirRemoteTask && t.remotePath === parentRemotePath,
-						);
-						if (existsInOriginalTasks) return;
-
-						// Already exists in confirmed tasks, no need to check remote
-						const existsInConfirmedTasks = confirmedTasks.some(
-							(t) =>
-								t instanceof MkdirRemoteTask && t.remotePath === parentRemotePath,
-						);
-						if (existsInConfirmedTasks) return;
-
-						// Already confirmed to exist remotely
-						if (knownRemotePaths.has(parentRemotePath)) return;
-
-						// Check if parent directory exists remotely using webdav.stat
-						try {
-							await webdav.stat(parentRemotePath);
-							// Directory exists, mark it and all parents as existing
-							markPathAndParentsAsExisting(parentRemotePath);
-						} catch {
-							// Directory doesn't exist, create mkdir task
-							// No need to check parent's parent since createDirectory uses recursive: true
-							const mkdirTask = new MkdirRemoteTask({
-								vault: this.vault,
-								webdav: webdav,
-								remoteBaseDir: this.remoteBaseDir,
-								remotePath: parentRemotePath,
-								localPath: parentLocalPath,
-								syncRecord: syncRecord,
-							});
-							mkdirTasksMap.set(parentRemotePath, mkdirTask);
-						}
-					};
-
-					for (const task of tasksToReupload) {
-						const stat = await statVaultItem(this.vault, task.localPath);
-						// File doesn't exist, skip
-						if (!stat) continue;
-
-						// Ensure parent directory exists
-						await ensureParentDir(task.localPath, task.remotePath);
-
-						if (stat.isDir) {
-							// Directory → MkdirRemoteTask
-							const mkdirTask = new MkdirRemoteTask(task.options);
-							reuploadMap.set(task, mkdirTask);
-							mkdirTasksMap.set(task.remotePath, mkdirTask);
-						} else {
-							// File → PushTask
-							const pushTask = new PushTask(task.options);
-							reuploadMap.set(task, pushTask);
-							pushTasks.push(pushTask);
-						}
-					}
-
-					const mkdirTasks = Array.from(mkdirTasksMap.values());
-
-					// Create set of tasks to delete
-					const deleteTaskSet = new Set(tasksToDelete);
-
-					// Remove parent directory delete tasks for reupload files
-					// If we reupload /a/b/c/file.png, we shouldn't delete /a, /a/b, or /a/b/c
-					for (const reuploadTask of tasksToReupload) {
-						let currentPath = reuploadTask.localPath;
-						// Check all parent paths
-						while (currentPath && currentPath !== '.' && currentPath !== '') {
-							currentPath = vaultDirname(currentPath);
-							if (currentPath === '.' || currentPath === '') {
-								break;
-							}
-							// Find and remove parent directory delete tasks
-							for (const deleteTask of deleteTaskSet) {
-								if (deleteTask.localPath === currentPath) {
-									deleteTaskSet.delete(deleteTask);
-									break;
-								}
-							}
-						}
-					}
-
-					// Replace task list, putting mkdir tasks first
-					const otherTasks: BaseTask[] = [];
-					const deleteTasks: RemoveLocalTask[] = [];
-
-					for (const t of confirmedTasks) {
-						if (!(t instanceof RemoveLocalTask)) {
-							otherTasks.push(t);
-							continue;
-						}
-						// If in delete list, keep RemoveLocalTask
-						if (deleteTaskSet.has(t)) {
-							deleteTasks.push(t);
-							continue;
-						}
-						// If in reupload list, already in mkdirTasks/pushTasks
-						// If not in any list (user cancelled), skip
-					}
-
-					// Reassemble task list: mkdir → other tasks → push → delete
-					confirmedTasks = [...mkdirTasks, ...otherTasks, ...pushTasks, ...deleteTasks];
+					confirmedTasks = await this.rebuildConfirmedTasksAfterDeleteConfirmation({
+						confirmedTasks,
+						originalTasks: tasks,
+						tasksToDelete,
+						tasksToReupload,
+						syncRecord,
+					});
 				}
 			}
 
@@ -336,77 +275,98 @@ export class SyncEngine {
 			const mergedRemoveRemoteTasks = mergeRemoveRemoteTasks(removeRemoteTasks);
 			const optimizedTasks = [...mergedRemoveRemoteTasks, ...mergedMkdirTasks, ...otherTasks];
 
-			if (confirmedTasks.length > 500 && Platform.isDesktopApp) {
-				new Notice(i18n.t('sync.suggestUseClientForManyTasks'), 5000);
-			}
-
-			const hasSubstantialTask = optimizedTasks.some(
-				(task) =>
-					!(
-						task instanceof NoopTask ||
-						task instanceof CleanRecordTask ||
-						task instanceof SkippedTask
-					),
-			);
-			if (showNotice && hasSubstantialTask) {
-				this.plugin.progressService.showProgressModal();
-			}
-
-			// Emit start sync event after all confirmations are done
-			emitStartSync({ showNotice });
-
 			const chunkSize = 200;
 			const taskChunks = chunk(optimizedTasks, chunkSize);
 			const allTasksResult: TaskResult[] = [];
 
-			const totalDisplayableTasks = optimizedTasks.filter(
-				(t) => !(t instanceof NoopTask || t instanceof CleanRecordTask),
+			const totalDisplayableTasks = optimizedTasks.filter((task) =>
+				this.isDisplayableTask(task),
 			);
 
 			// Track all completed tasks across all chunks
 			const allCompletedTasks: BaseTask[] = [];
+			currentRun = updateSyncRunSnapshot(currentRun, {
+				stage: 'executing',
+				planSummary: this.summarizePlan(tasks, optimizedTasks),
+				progressSummary: this.createProgressSummary(
+					totalDisplayableTasks,
+					allCompletedTasks,
+				),
+				timestamps: {
+					executionStartedAt: Date.now(),
+				},
+			});
+			emitSyncRun(currentRun);
 
 			for (const taskChunk of taskChunks) {
-				const chunkResult = await this.execTasks(
+				const chunkExecution = await this.execTasks(
+					currentRun,
 					taskChunk,
 					totalDisplayableTasks,
 					allCompletedTasks,
 				);
-				allTasksResult.push(...chunkResult);
-				await this.updateMtimeInRecord(taskChunk, chunkResult);
+				currentRun = chunkExecution.run;
+				allTasksResult.push(...chunkExecution.results);
+				await this.updateMtimeInRecord(taskChunk, chunkExecution.results);
 
 				if (this.isCancelled) break;
 			}
 
-			const failedCount = allTasksResult.filter((r) => !r.success).length;
-			logger.debug(`Tasks failed: ${failedCount}`);
-
-			if (mode === SyncStartMode.MANUAL_SYNC && failedCount > 0) {
-				const failedTasksInfo: FailedTaskInfo[] = [];
-				for (let i = 0; i < allTasksResult.length; i++) {
-					const result = allTasksResult[i];
-					if (!result.success && result.error) {
-						const task = result.error.task;
-						failedTasksInfo.push({
-							taskName: getTaskName(task),
-							localPath: task.options.localPath,
-							errorMessage: result.error.message,
-						});
-					}
-				}
-				new FailedTasksModal(this.app, failedTasksInfo).open();
-			}
-
-			logger.info('Sync done');
-			emitEndSync({ failedCount, showNotice });
-			// oxlint-disable-next-line typescript/no-explicit-any
-		} catch (error: any) {
-			emitSyncError(error);
-			logger.error('Sync error');
-			logger.debug(error);
+			const resultSummary = this.createResultSummary(allTasksResult);
+			const failedCount = resultSummary.failedTasks;
+			currentRun = updateSyncRunSnapshot(currentRun, {
+				stage: this.isCancelled ? 'cancelled' : failedCount > 0 ? 'failed' : 'completed',
+				progressSummary: this.createProgressSummary(
+					totalDisplayableTasks,
+					allCompletedTasks,
+				),
+				resultSummary,
+				errorSummary:
+					failedCount > 0
+						? {
+								message: i18n.t('sync.completeWithFailed', { failedCount }),
+							}
+						: undefined,
+				timestamps: {
+					endedAt: Date.now(),
+				},
+			});
+			emitSyncRun(currentRun);
+			this.logTerminalRun(currentRun);
+			return currentRun;
+		} catch (error) {
+			const failedRun = this.emitTerminalRun(run, 'failed', error);
+			return failedRun;
 		} finally {
 			this.subscriptions.forEach((sub) => sub.unsubscribe());
 		}
+	}
+
+	summarizePlan(tasks: BaseTask[], executableTasks: BaseTask[] = tasks): SyncPlanSummary {
+		const noopTasks = tasks.filter((task) => task instanceof NoopTask).length;
+		const skippedTasks = tasks.filter((task) => task instanceof SkippedTask).length;
+		const actionableTasks = executableTasks.filter(
+			(task) => !(task instanceof NoopTask || task instanceof SkippedTask),
+		).length;
+
+		return {
+			totalTasks: tasks.length,
+			actionableTasks,
+			noopTasks,
+			skippedTasks,
+			hasActionableTasks: actionableTasks > 0,
+			requiresConfirmation: false,
+			requiresDeleteConfirmation: false,
+			warnings: this.getPlanWarnings(executableTasks),
+		};
+	}
+
+	private isActionableTask(task: BaseTask): boolean {
+		return !(task instanceof NoopTask || task instanceof SkippedTask);
+	}
+
+	private isDisplayableTask(task: BaseTask): boolean {
+		return !(task instanceof NoopTask || task instanceof CleanRecordTask);
 	}
 
 	private createSyncRecord() {
@@ -435,6 +395,192 @@ export class SyncEngine {
 		await traversal.clearStoredSnapshot();
 	}
 
+	private async rebuildConfirmedTasksAfterDeleteConfirmation({
+		confirmedTasks,
+		originalTasks,
+		tasksToDelete,
+		tasksToReupload,
+		syncRecord,
+	}: {
+		confirmedTasks: BaseTask[];
+		originalTasks: BaseTask[];
+		tasksToDelete: RemoveLocalTask[];
+		tasksToReupload: RemoveLocalTask[];
+		syncRecord: SyncRecord;
+	}): Promise<BaseTask[]> {
+		const { mkdirTasks, pushTasks } = await this.buildReuploadTasks({
+			confirmedTasks,
+			originalTasks,
+			tasksToReupload,
+			syncRecord,
+		});
+		const deleteTaskSet = this.filterDeleteTasks(tasksToDelete, tasksToReupload);
+		const otherTasks: BaseTask[] = [];
+		const deleteTasks: RemoveLocalTask[] = [];
+
+		for (const task of confirmedTasks) {
+			if (!(task instanceof RemoveLocalTask)) {
+				otherTasks.push(task);
+				continue;
+			}
+
+			if (deleteTaskSet.has(task)) {
+				deleteTasks.push(task);
+			}
+		}
+
+		return [...mkdirTasks, ...otherTasks, ...pushTasks, ...deleteTasks];
+	}
+
+	private async buildReuploadTasks({
+		confirmedTasks,
+		originalTasks,
+		tasksToReupload,
+		syncRecord,
+	}: {
+		confirmedTasks: BaseTask[];
+		originalTasks: BaseTask[];
+		tasksToReupload: RemoveLocalTask[];
+		syncRecord: SyncRecord;
+	}): Promise<{
+		mkdirTasks: MkdirRemoteTask[];
+		pushTasks: PushTask[];
+	}> {
+		const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
+		const pushTasks: PushTask[] = [];
+		const knownRemotePaths = new Set<string>();
+
+		for (const task of tasksToReupload) {
+			const stat = await statVaultItem(this.vault, task.localPath);
+			if (!stat) {
+				continue;
+			}
+
+			await this.ensureReuploadParentDir({
+				confirmedTasks,
+				knownRemotePaths,
+				localPath: task.localPath,
+				mkdirTasksMap,
+				originalTasks,
+				remotePath: task.remotePath,
+				syncRecord,
+			});
+
+			if (stat.isDir) {
+				mkdirTasksMap.set(task.remotePath, new MkdirRemoteTask(task.options));
+				continue;
+			}
+
+			pushTasks.push(new PushTask(task.options));
+		}
+
+		return {
+			mkdirTasks: Array.from(mkdirTasksMap.values()),
+			pushTasks,
+		};
+	}
+
+	private async ensureReuploadParentDir({
+		confirmedTasks,
+		knownRemotePaths,
+		localPath,
+		mkdirTasksMap,
+		originalTasks,
+		remotePath,
+		syncRecord,
+	}: {
+		confirmedTasks: BaseTask[];
+		knownRemotePaths: Set<string>;
+		localPath: string;
+		mkdirTasksMap: Map<string, MkdirRemoteTask>;
+		originalTasks: BaseTask[];
+		remotePath: string;
+		syncRecord: SyncRecord;
+	}): Promise<void> {
+		const parentLocalPath = vaultDirname(localPath);
+		const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
+
+		if (parentLocalPath === '.' || parentLocalPath === '') {
+			return;
+		}
+
+		const parentAlreadyHandled =
+			mkdirTasksMap.has(parentRemotePath) ||
+			knownRemotePaths.has(parentRemotePath) ||
+			this.hasMkdirTaskForPath(originalTasks, parentRemotePath) ||
+			this.hasMkdirTaskForPath(confirmedTasks, parentRemotePath);
+
+		if (parentAlreadyHandled) {
+			return;
+		}
+
+		try {
+			await this.webdav.stat(parentRemotePath);
+			this.markRemotePathAndParentsAsExisting(knownRemotePaths, parentRemotePath);
+		} catch {
+			mkdirTasksMap.set(
+				parentRemotePath,
+				new MkdirRemoteTask({
+					vault: this.vault,
+					webdav: this.webdav,
+					remoteBaseDir: this.remoteBaseDir,
+					remotePath: parentRemotePath,
+					localPath: parentLocalPath,
+					syncRecord,
+				}),
+			);
+		}
+	}
+
+	private hasMkdirTaskForPath(tasks: BaseTask[], remotePath: string): boolean {
+		return tasks.some(
+			(task) => task instanceof MkdirRemoteTask && task.remotePath === remotePath,
+		);
+	}
+
+	private markRemotePathAndParentsAsExisting(
+		knownRemotePaths: Set<string>,
+		remotePath: string,
+	): void {
+		let currentPath = remotePath;
+
+		while (currentPath && currentPath !== '.' && currentPath !== '' && currentPath !== '/') {
+			if (knownRemotePaths.has(currentPath)) {
+				return;
+			}
+
+			knownRemotePaths.add(currentPath);
+			currentPath = normalizeRemoteDir(remoteDirname(currentPath));
+		}
+	}
+
+	private filterDeleteTasks(
+		tasksToDelete: RemoveLocalTask[],
+		tasksToReupload: RemoveLocalTask[],
+	): Set<RemoveLocalTask> {
+		const deleteTaskSet = new Set(tasksToDelete);
+
+		for (const reuploadTask of tasksToReupload) {
+			let currentPath = reuploadTask.localPath;
+
+			while (currentPath && currentPath !== '.' && currentPath !== '') {
+				currentPath = vaultDirname(currentPath);
+				if (currentPath === '.' || currentPath === '') {
+					break;
+				}
+
+				for (const deleteTask of deleteTaskSet) {
+					if (deleteTask.localPath === currentPath) {
+						deleteTaskSet.delete(deleteTask);
+						break;
+					}
+				}
+			}
+		}
+
+		return deleteTaskSet;
+	}
+
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
 		const webdav = this.webdav;
 		const remoteBaseDir = normalizeRemoteDir(this.options.remoteBaseDir);
@@ -453,9 +599,8 @@ export class SyncEngine {
 				});
 				remoteBaseDirExists = true;
 				continue;
-				// oxlint-disable-next-line typescript/no-explicit-any
-			} catch (e: any) {
-				if (isRetryableError(e)) {
+			} catch (error) {
+				if (isRetryableError(error)) {
 					await breakableSleep(onCancelSync(), 5000);
 					if (this.isCancelled) return;
 					remoteBaseDirExists = await this.retryWebDAVCall(() =>
@@ -464,62 +609,137 @@ export class SyncEngine {
 					continue;
 				}
 
-				throw e;
+				throw error;
 			}
 		}
 	}
 
 	private async execTasks(
+		run: SyncRunSnapshot,
 		tasks: BaseTask[],
 		totalDisplayableTasks: BaseTask[],
 		allCompletedTasks: BaseTask[],
 	) {
+		let currentRun = run;
 		const res: TaskResult[] = [];
-		// Filter out NoopTask and CleanRecordTask from total count for progress display
-		const tasksToDisplay = tasks.filter(
-			(t) => !(t instanceof NoopTask || t instanceof CleanRecordTask),
-		);
-
-		logger.info(`Going to execute ${tasksToDisplay.length} tasks`);
+		const tasksToDisplay = tasks.filter((task) => this.isDisplayableTask(task));
 
 		for (let i = 0; i < tasks.length; ++i) {
 			const task = tasks[i];
 			if (this.isCancelled) {
-				emitSyncError(new TaskError(i18n.t('sync.cancelled'), task));
 				break;
 			}
 
 			const taskResult = await this.executeWithRetry(task);
 			const taskName = task.toJSON().taskName;
 
-			const state = taskResult.success ? 'succeeded' : 'failed';
-			logger.info(`[${i + 1}/${tasks.length}] Task ${state}: ${taskName} ${task.localPath}`);
 			if (!taskResult.success) {
-				logger.debug(taskResult.error);
+				logger.warn(
+					'Task execution failed',
+					{
+						index: i + 1,
+						totalTasks: tasksToDisplay.length,
+						taskName,
+						localPath: task.localPath,
+						remotePath: task.remotePath,
+						error: taskResult.error,
+					},
+					{ category: 'sync.task' },
+				);
 			}
 
 			res[i] = taskResult;
 			// Only add substantial tasks to completed list for progress display
-			if (!(task instanceof NoopTask || task instanceof CleanRecordTask)) {
+			if (this.isDisplayableTask(task)) {
 				allCompletedTasks.push(task);
-				emitSyncProgress(totalDisplayableTasks.length, allCompletedTasks);
+				currentRun = updateSyncRunSnapshot(currentRun, {
+					progressSummary: this.createProgressSummary(
+						totalDisplayableTasks,
+						allCompletedTasks,
+					),
+				});
+				emitSyncRun(currentRun);
 			}
 		}
 
-		const successCount = res.filter((r) => r.success).length;
-		logger.debug({
-			totalTasks: tasks.length,
-			successCount: successCount,
-			failedCount: tasks.length - successCount,
-		});
+		return {
+			run: currentRun,
+			results: res,
+		};
+	}
 
-		return res;
+	private createProgressSummary(
+		totalDisplayableTasks: BaseTask[],
+		allCompletedTasks: BaseTask[],
+	): SyncProgressSummary {
+		return {
+			totalTasks: totalDisplayableTasks.length,
+			completedTasks: allCompletedTasks.length,
+			completed: [...allCompletedTasks],
+		};
+	}
+
+	private createResultSummary(results: TaskResult[]): SyncResultSummary {
+		const failed: SyncFailedTaskInfo[] = [];
+
+		for (const result of results) {
+			if (!result.success && result.error) {
+				const task = result.error.task;
+				failed.push({
+					taskName: getTaskName(task),
+					localPath: task.options.localPath,
+					errorMessage: result.error.message,
+				});
+			}
+		}
+
+		return {
+			totalTasks: results.length,
+			succeededTasks: results.filter((result) => result.success).length,
+			failedTasks: failed.length,
+			failed,
+		};
+	}
+
+	private getPlanWarnings(tasks: BaseTask[]): SyncRunWarning[] {
+		const warnings: SyncRunWarning[] = [];
+		if (tasks.length > 500 && Platform.isDesktopApp) {
+			warnings.push({
+				code: 'large_task_count',
+				messageKey: 'sync.suggestUseClientForManyTasks',
+			});
+		}
+		return warnings;
+	}
+
+	private emitTerminalRun(
+		run: SyncRunSnapshot,
+		stage: 'cancelled' | 'failed',
+		error?: unknown,
+	): SyncRunSnapshot {
+		const normalizedError = error instanceof Error ? error : undefined;
+		const nextRun = updateSyncRunSnapshot(run, {
+			stage,
+			errorSummary: normalizedError
+				? {
+						message: normalizedError.message,
+						name: normalizedError.name,
+					}
+				: undefined,
+			timestamps: {
+				endedAt: Date.now(),
+			},
+		});
+		emitSyncRun(nextRun);
+		this.logTerminalRun(nextRun, normalizedError);
+		return nextRun;
 	}
 
 	/**
 	 * Automatically handle 503 errors and retry task execution
 	 */
 	private async executeWithRetry(task: BaseTask): Promise<TaskResult> {
+		let attempt = 0;
 		while (true) {
 			if (this.isCancelled) {
 				return {
@@ -529,6 +749,18 @@ export class SyncEngine {
 			}
 			const taskResult = await task.exec();
 			if (!taskResult.success && isRetryableError(taskResult.error)) {
+				attempt++;
+				logger.warn(
+					'Retrying task after transient error',
+					{
+						attempt,
+						taskName: getTaskName(task),
+						localPath: task.localPath,
+						remotePath: task.remotePath,
+						error: taskResult.error,
+					},
+					{ category: 'sync.retry' },
+				);
 				await breakableSleep(onCancelSync(), 5000);
 				if (this.isCancelled) {
 					return {
@@ -550,8 +782,17 @@ export class SyncEngine {
 		let retryCount = 0;
 		while (true) {
 			if (this.isCancelled || retryCount >= 3) {
-				if (this.isCancelled) logger.error(i18n.t('sync.cancelled'));
-				else logger.error('WebDAV connection failed, retries reach max limit.');
+				if (this.isCancelled) {
+					logger.warn('WebDAV operation cancelled', undefined, {
+						category: 'sync.retry',
+					});
+				} else {
+					logger.error(
+						'WebDAV connection failed after retries',
+						{ retryCount },
+						{ category: 'sync.retry' },
+					);
+				}
 				throw new Error('Sync Aborted');
 			}
 
@@ -559,14 +800,53 @@ export class SyncEngine {
 				return await operation();
 			} catch (error) {
 				if (!isRetryableError(error)) {
-					logger.error('WebDAV operation failed, retrying...');
+					logger.error('WebDAV operation failed', { error }, { category: 'sync.retry' });
 					break;
 				}
 
-				await breakableSleep(onCancelSync(), 5000);
 				retryCount++;
+				logger.warn(
+					'Retrying WebDAV operation after transient error',
+					{ retryCount, error },
+					{ category: 'sync.retry' },
+				);
+				await breakableSleep(onCancelSync(), 5000);
 			}
 		}
+	}
+
+	private logTerminalRun(run: SyncRunSnapshot, error?: Error) {
+		const metadata = {
+			event: 'terminal_outcome',
+			trigger: run.trigger,
+			sources: run.sources,
+			mode: run.mode,
+			runKind: run.runKind,
+			stage: run.stage,
+			timestamps: run.timestamps,
+			planSummary: run.planSummary,
+			progressSummary: run.progressSummary,
+			resultSummary: run.resultSummary,
+			errorSummary: run.errorSummary,
+			error,
+		};
+
+		if (run.stage === 'failed') {
+			logger.error('Sync failed', metadata, { category: 'sync.lifecycle' });
+			return;
+		}
+
+		if (run.stage === 'cancelled') {
+			logger.warn('Sync cancelled', metadata, { category: 'sync.lifecycle' });
+			return;
+		}
+
+		if (run.stage === 'completed_noop') {
+			logger.info('Sync completed with no changes', metadata, { category: 'sync.lifecycle' });
+			return;
+		}
+
+		logger.info('Sync completed', metadata, { category: 'sync.lifecycle' });
 	}
 
 	get app() {

@@ -32,9 +32,8 @@ export default class LogSettings extends BaseSettings {
 			const fileName = `webdav-sync-logs-${timestamp}.md`;
 			const dirPath = 'webdav-sync/logs';
 			const filePath = `${dirPath}/${fileName}`;
-			const content = `# WebDAV Sync Plugin Logs\n\nGenerated at: ${new Date().toLocaleString()}\n\n---\n\n${logger.stringify()}`;
+			const content = logger.exportMarkdownReport();
 
-			// 确保目录存在
 			const folderExists = this.app.vault.getFolderByPath(dirPath);
 			if (!folderExists) {
 				await this.app.vault.createFolder(dirPath);
@@ -46,8 +45,7 @@ export default class LogSettings extends BaseSettings {
 			await this.app.workspace.getLeaf().openFile(file);
 		} catch (error) {
 			new Notice(i18n.t('settings.log.saveError'));
-			logger.error('Failed to save logs to note');
-			logger.debug(error);
+			logger.error('Failed to export support report', { error });
 		}
 	}
 }

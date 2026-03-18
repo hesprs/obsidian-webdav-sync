@@ -6,13 +6,13 @@ import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { emitCancelSync } from './events';
 import { normalizeRemoteDir } from './platform/path/remote-path';
 import CommandService from './services/command.service';
-import EventsService from './services/events.service';
 import I18nService from './services/i18n.service';
 import { ProgressService } from './services/progress.service';
 import RealtimeSyncService from './services/realtime-sync.service';
 import ScheduledSyncService from './services/scheduled-sync.service';
 import { StatusService } from './services/status.service';
 import SyncExecutorService from './services/sync-executor.service';
+import SyncObservabilityPresenterService from './services/sync-observability-presenter.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
@@ -58,10 +58,10 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	public syncStateStore = new IndexedDbSyncStateStore();
 
-	public eventsService = new EventsService(this);
 	public i18nService = new I18nService(this);
 	public progressService = new ProgressService(this);
 	public statusService = new StatusService(this);
+	public syncObservabilityPresenter = new SyncObservabilityPresenterService(this);
 	public webDAVService = new WebDAVService(this);
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
@@ -85,7 +85,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
 		this.progressService.unload();
-		this.eventsService.unload();
+		this.syncObservabilityPresenter.unload();
 		this.statusService.unload();
 	}
 
