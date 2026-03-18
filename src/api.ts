@@ -63,11 +63,41 @@ function extractNextLink(linkHeader: string): string | null {
 	return matches ? matches[1] : null;
 }
 
+function decodeXmlEntities(value: string): string {
+	return value.replaceAll(/&(#x?[\da-fA-F]+|amp|lt|gt|quot|apos);/g, (match, entity) => {
+		switch (entity) {
+			case 'amp':
+				return '&';
+			case 'lt':
+				return '<';
+			case 'gt':
+				return '>';
+			case 'quot':
+				return '"';
+			case 'apos':
+				return "'";
+		}
+
+		if (entity.startsWith('#x')) {
+			const codePoint = Number.parseInt(entity.slice(2), 16);
+			return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+		}
+
+		if (entity.startsWith('#')) {
+			const codePoint = Number.parseInt(entity.slice(1), 10);
+			return Number.isNaN(codePoint) ? match : String.fromCodePoint(codePoint);
+		}
+
+		return match;
+	});
+}
+
 function hrefToPathname(href: string): string {
-	if (href.startsWith('http://') || href.startsWith('https://')) {
-		return decodeURIComponent(new URL(href).pathname);
+	const decodedHref = decodeXmlEntities(href);
+	if (decodedHref.startsWith('http://') || decodedHref.startsWith('https://')) {
+		return decodeURIComponent(new URL(decodedHref).pathname);
 	}
-	return decodeURIComponent(href);
+	return decodeURIComponent(decodedHref);
 }
 
 function normalizePathForMatch(pathname: string): string {
