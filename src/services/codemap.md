@@ -11,7 +11,7 @@ Primary responsibilities in this folder:
 - Build and run `SyncEngine` plans through a guarded executor boundary.
 - Project sync lifecycle events into status bar text, notices, and progress modal state.
 - Build validated/rate-limited WebDAV clients and perform connection probes.
-- Manage runtime i18n selection and in-memory log capture.
+- Manage runtime i18n selection.
 
 ## Design Patterns
 
@@ -55,4 +55,4 @@ Primary responsibilities in this folder:
 - **Settings runtime**: `plugin.settings`, `useSettings()`, and `saveSettings()` (including interval updates from settings UI).
 - **Obsidian runtime APIs**: command registration, vault event hooks, status bar, notices, timer APIs.
 - **WebDAV transport**: `webdav` package client creation and method-level rate limiting.
-- **Cross-cutting utilities**: `waitUntil`, `apiLimiter`, i18n namespace, logger.
+- **Cross-cutting utilities**: `waitUntil`, `apiLimiter`, i18n namespace.

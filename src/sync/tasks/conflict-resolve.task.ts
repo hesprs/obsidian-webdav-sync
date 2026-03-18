@@ -39,24 +39,16 @@ export default class ConflictResolveTask extends BaseTask {
 			const local =
 				this.options.localStat ?? (await statVaultItem(this.vault, this.localPath));
 
-			if (!local) {
-				throw new Error('Local file not found: ' + this.localPath);
-			}
+			if (!local) throw new Error('Local file not found: ' + this.localPath);
 
 			const remote =
 				this.options.remoteStat ?? (await statWebDAVItem(this.webdav, this.remotePath));
 
-			if (remote.isDir) {
-				throw new Error('Remote path is a directory: ' + this.remotePath);
-			}
+			if (remote.isDir) throw new Error('Remote path is a directory: ' + this.remotePath);
 
-			if (local.isDir) {
-				throw new Error('Local path is a directory: ' + this.localPath);
-			}
+			if (local.isDir) throw new Error('Local path is a directory: ' + this.localPath);
 
-			if (local.size === 0 && remote.size === 0) {
-				return { success: true } as const;
-			}
+			if (local.size === 0 && remote.size === 0) return { success: true } as const;
 
 			switch (this.options.strategy) {
 				case ConflictStrategy.DiffMatchPatch:
@@ -69,7 +61,7 @@ export default class ConflictResolveTask extends BaseTask {
 					return { success: true, skipRecord: true } as const;
 			}
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(`Failed to resolve conflict: ${this.localPath}`, e);
 			return {
 				success: false,
 				error: toTaskError(e, this),
@@ -128,7 +120,10 @@ export default class ConflictResolveTask extends BaseTask {
 
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(
+				`Failed to resolve conflict for ${this.localPath} by latest-survive policy`,
+				e,
+			);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}
@@ -203,9 +198,7 @@ export default class ConflictResolveTask extends BaseTask {
 
 			// If mergedText is the same as remoteText, we only need to update localText if it's different.
 			if (mergedText === remoteText) {
-				if (mergedText !== localText) {
-					await this.vault.modify(file, mergedText);
-				}
+				if (mergedText !== localText) await this.vault.modify(file, mergedText);
 				return { success: true } as const;
 			}
 
@@ -218,13 +211,11 @@ export default class ConflictResolveTask extends BaseTask {
 				throw new Error(i18n.t('sync.error.failedToUploadMerged'));
 			}
 
-			if (localText !== mergedText) {
-				await this.vault.modify(file, mergedText);
-			}
+			if (localText !== mergedText) await this.vault.modify(file, mergedText);
 
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(`Failed to resolve conflict for ${this.localPath} by smart merging`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

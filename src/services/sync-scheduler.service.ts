@@ -1,7 +1,8 @@
+import type { SyncTrigger } from '~/events';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { SyncStartMode } from '~/sync';
 import type WebDAVSyncPlugin from '..';
-import type { SyncOptions } from './sync-executor.service';
+import type { SyncExecutionRequest, SyncOptions } from './sync-executor.service';
 import type SyncExecutorService from './sync-executor.service';
 
 const AUTO_SYNC_DEBOUNCE_MS = 8000;
@@ -9,7 +10,7 @@ const SYNC_IDLE_POLL_MS = 500;
 
 interface SyncRequest extends SyncOptions {
 	requestedAt: number;
-	source: 'realtime' | 'startup' | 'interval' | 'manual';
+	source: SyncTrigger;
 	resolve: (value: boolean) => void;
 	reject: (reason?: unknown) => void;
 }
@@ -28,7 +29,7 @@ export default class SyncSchedulerService {
 
 	requestSync(
 		options: SyncOptions & {
-			source: SyncRequest['source'];
+			source: SyncTrigger;
 		},
 	): Promise<boolean> {
 		return new Promise<boolean>((resolve, reject) => {
@@ -89,7 +90,7 @@ export default class SyncSchedulerService {
 		return Math.max(0, latestRequestAt + AUTO_SYNC_DEBOUNCE_MS - Date.now());
 	}
 
-	private reduceBatch(batch: SyncRequest[]): SyncOptions {
+	private reduceBatch(batch: SyncRequest[]): SyncExecutionRequest {
 		const mode = batch.some((request) => request.mode === SyncStartMode.MANUAL_SYNC)
 			? SyncStartMode.MANUAL_SYNC
 			: SyncStartMode.AUTO_SYNC;
@@ -98,7 +99,21 @@ export default class SyncSchedulerService {
 			? SyncRunKind.NORMAL
 			: SyncRunKind.NUMB;
 
-		return { mode, runKind };
+		return {
+			runId: crypto.randomUUID(),
+			trigger: this.getTrigger(batch),
+			sources: Array.from(new Set(batch.map((request) => request.source))),
+			queuedAt: Date.now(),
+			mode,
+			runKind,
+		};
+	}
+
+	private getTrigger(batch: SyncRequest[]): SyncTrigger {
+		if (batch.some((request) => request.source === 'manual')) return 'manual';
+		if (batch.some((request) => request.source === 'startup')) return 'startup';
+		if (batch.some((request) => request.source === 'interval')) return 'interval';
+		return 'realtime';
 	}
 
 	private async flush() {
@@ -123,7 +138,7 @@ export default class SyncSchedulerService {
 
 		try {
 			const result = await this.syncExecutor.executeSync(this.reduceBatch(batch));
-			for (const request of batch) request.resolve(result);
+			for (const request of batch) request.resolve(result.executed);
 		} catch (error) {
 			for (const request of batch) request.reject(error);
 		} finally {

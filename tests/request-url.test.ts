@@ -13,6 +13,7 @@ vi.mock('obsidian', async () => {
 
 vi.mock('~/utils/logger', () => ({
 	default: {
+		debug: vi.fn(),
 		error: vi.fn(),
 	},
 }));

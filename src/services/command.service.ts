@@ -25,7 +25,7 @@ export default class CommandService {
 							setting.openTabById(plugin.manifest.id);
 						}
 					} catch (error) {
-						logger.error('Failed to open settings:', error);
+						logger.error('Failed to open settings', error);
 					}
 					return;
 				}

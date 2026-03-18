@@ -7,10 +7,16 @@ interface FailedTaskInfo {
 	errorMessage: string;
 }
 
+interface FailedTasksContext {
+	syncType: string;
+	failedCount: number;
+}
+
 export default class FailedTasksModal extends Modal {
 	constructor(
 		app: App,
 		private failedTasks: FailedTaskInfo[],
+		private context?: FailedTasksContext,
 	) {
 		super(app);
 	}
@@ -25,6 +31,18 @@ export default class FailedTasksModal extends Modal {
 			cls: 'failed-tasks-instruction',
 		});
 		instruction.setText(i18n.t('failedTasks.instruction'));
+
+		if (this.context) {
+			const contextEl = contentEl.createEl('p', {
+				cls: 'failed-tasks-instruction',
+			});
+			contextEl.setText(
+				i18n.t('failedTasks.context', {
+					syncType: this.context.syncType,
+					failedCount: this.context.failedCount,
+				}),
+			);
+		}
 
 		const tableContainer = contentEl.createDiv({
 			cls: 'max-h-50vh overflow-y-auto',

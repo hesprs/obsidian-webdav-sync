@@ -29,7 +29,7 @@ export class SyncRibbonManager {
 							setting.openTabById(this.plugin.manifest.id);
 						}
 					} catch (error) {
-						logger.error('Failed to open settings:', error);
+						logger.error('Failed to open settings', error);
 					}
 					return;
 				}

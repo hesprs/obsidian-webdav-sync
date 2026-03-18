@@ -42,6 +42,7 @@ vi.mock('~/storage/sync-record', () => ({
 
 vi.mock('~/utils/logger', () => ({
 	default: {
+		debug: vi.fn(),
 		error: vi.fn(),
 		warn: vi.fn(),
 	},

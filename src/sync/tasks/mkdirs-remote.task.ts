@@ -25,8 +25,6 @@ export default class MkdirsRemoteTask extends BaseTask {
 		try {
 			const localStat = await statVaultItem(this.vault, this.localPath);
 			if (!localStat) {
-				logger.debug('MkdirsRemoteTask: local path:', this.localPath);
-				logger.debug('MkdirsRemoteTask: local stat is null');
 				throw new Error(i18n.t('sync.error.localPathNotFound', { path: this.localPath }));
 			}
 			// Create the deepest directory with recursive: true
@@ -36,7 +34,7 @@ export default class MkdirsRemoteTask extends BaseTask {
 			});
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(this, e);
+			logger.error(`Failed to create remote directory recursively ${this.remotePath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

@@ -16,11 +16,13 @@ import PullTask from '../sync/tasks/pull.task';
 import PushTask from '../sync/tasks/push.task';
 import RemoveLocalTask from '../sync/tasks/remove-local.task';
 import RemoveRemoteTask from '../sync/tasks/remove-remote.task';
+import { formatSyncRunType } from '../utils/format-sync-run-type';
 
 export default class SyncProgressModal extends Modal {
 	private progressBar!: HTMLDivElement;
 	private progressText!: HTMLDivElement;
 	private progressStats!: HTMLDivElement;
+	private currentStage!: HTMLDivElement;
 	private currentFile!: HTMLDivElement;
 	private filesList!: HTMLDivElement;
 	private syncCancelled = false;
@@ -53,6 +55,7 @@ export default class SyncProgressModal extends Modal {
 			!this.progressBar ||
 			!this.progressText ||
 			!this.progressStats ||
+			!this.currentStage ||
 			!this.currentFile ||
 			!this.filesList
 		) {
@@ -60,8 +63,10 @@ export default class SyncProgressModal extends Modal {
 		}
 
 		const progress = this.plugin.progressService.syncProgress;
+		const currentRun = this.plugin.progressService.currentRun;
 
-		const percent = Math.round((progress.completed.length / progress.total) * 100) || 0;
+		const percent = Math.round((progress.completedTasks / progress.totalTasks) * 100) || 0;
+		const syncType = currentRun ? formatSyncRunType(currentRun) : null;
 
 		this.progressBar.style.width = `${percent}%`;
 		this.progressText.setText(
@@ -72,29 +77,45 @@ export default class SyncProgressModal extends Modal {
 
 		this.progressStats.setText(
 			i18n.t('sync.progressStats', {
-				completed: progress.completed.length,
-				total: progress.total,
+				completed: progress.completedTasks,
+				total: progress.totalTasks,
 			}),
 		);
 
-		if (progress.completed.length > 0) {
-			if (this.plugin.progressService.syncEnd) {
-				this.stopButtonComponent.buttonEl.addClass('hidden');
-				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
-				this.currentFile.setText(i18n.t('sync.complete'));
-			} else if (this.syncCancelled) {
+		this.currentStage.setText(syncType ?? i18n.t('sync.progressTitle'));
+
+		if (currentRun?.stage === 'planning' || currentRun?.stage === 'queued') {
+			this.currentFile.setText(i18n.t('sync.preparing'));
+		} else if (currentRun?.stage === 'awaiting_confirmation') {
+			this.currentFile.setText(i18n.t('sync.awaitingConfirmation'));
+		} else if (currentRun?.stage === 'executing' && progress.completed.length === 0) {
+			this.currentFile.setText(i18n.t('sync.start'));
+		} else if (this.plugin.progressService.syncEnd) {
+			if (currentRun?.stage === 'cancelled' || this.syncCancelled) {
 				this.stopButtonComponent.buttonEl.addClass('hidden');
 				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
 				this.currentFile.setText(i18n.t('sync.cancelled'));
+			} else if (currentRun?.stage === 'failed') {
+				this.stopButtonComponent.buttonEl.addClass('hidden');
+				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
+				this.currentFile.setText(i18n.t('sync.failedStatus'));
+			} else if (currentRun?.stage === 'completed_noop') {
+				this.stopButtonComponent.buttonEl.addClass('hidden');
+				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
+				this.currentFile.setText(i18n.t('sync.alreadyUpToDate'));
 			} else {
-				const lastFile = progress.completed.at(-1);
-				if (lastFile) {
-					this.currentFile.setText(
-						i18n.t('sync.currentFile', {
-							path: lastFile.localPath,
-						}),
-					);
-				}
+				this.stopButtonComponent.buttonEl.addClass('hidden');
+				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
+				this.currentFile.setText(i18n.t('sync.complete'));
+			}
+		} else if (progress.completed.length > 0) {
+			const lastFile = progress.completed.at(-1);
+			if (lastFile) {
+				this.currentFile.setText(
+					i18n.t('sync.currentFile', {
+						path: lastFile.localPath,
+					}),
+				);
 			}
 		}
 
@@ -175,8 +196,8 @@ export default class SyncProgressModal extends Modal {
 			cls: 'flex flex-col gap-1',
 		});
 
-		const currentOperation = statusSection.createDiv();
-		currentOperation.setText(i18n.t('sync.syncingFiles'));
+		const currentStage = statusSection.createDiv();
+		currentStage.setText(i18n.t('sync.progressTitle'));
 
 		const currentFile = statusSection.createDiv({
 			cls: 'text-3 text-[var(--text-muted)] truncate overflow-hidden whitespace-nowrap',
@@ -243,6 +264,7 @@ export default class SyncProgressModal extends Modal {
 		this.progressBar = progressBar;
 		this.progressText = progressText;
 		this.progressStats = progressStats;
+		this.currentStage = currentStage;
 		this.currentFile = currentFile;
 		this.filesList = filesList;
 

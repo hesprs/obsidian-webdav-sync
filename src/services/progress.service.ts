@@ -1,31 +1,19 @@
 import { throttle } from 'lodash-es';
 import { Notice } from 'obsidian';
+import type { SyncProgressSummary, SyncRunSnapshot } from '~/events';
 import SyncProgressModal from '../components/SyncProgressModal';
-import { onEndSync, onStartSync, onSyncProgress, type UpdateSyncProgress } from '../events';
+import { onSyncRun } from '../events';
 import i18n from '../i18n';
 import WebDAVSyncPlugin from '../index';
 
 export class ProgressService {
 	private progressModal: SyncProgressModal | null = null;
-
-	public syncProgress: UpdateSyncProgress = {
-		total: 0,
-		completed: [],
-	};
-
-	syncEnd = false;
+	private currentRunSnapshot: SyncRunSnapshot | null = null;
 
 	private subscriptions = [
-		onStartSync().subscribe(() => {
-			this.syncEnd = false;
-			this.resetProgress();
-		}),
-		onEndSync().subscribe(() => {
-			this.syncEnd = true;
-			this.updateModal();
-		}),
-		onSyncProgress().subscribe((p) => {
-			this.syncProgress = p;
+		onSyncRun().subscribe((run) => {
+			if (!run) return;
+			this.currentRunSnapshot = run;
 			this.updateModal();
 		}),
 	];
@@ -38,15 +26,40 @@ export class ProgressService {
 		}
 	}, 200);
 
-	public resetProgress() {
-		this.syncProgress = {
-			total: 0,
-			completed: [],
-		};
+	get currentRun(): SyncRunSnapshot | null {
+		return this.currentRunSnapshot;
+	}
+
+	get syncProgress(): SyncProgressSummary {
+		return (
+			this.currentRunSnapshot?.progressSummary ?? {
+				totalTasks: 0,
+				completedTasks: 0,
+				completed: [],
+			}
+		);
+	}
+
+	get syncEnd(): boolean {
+		return (
+			this.currentRunSnapshot !== null &&
+			['completed', 'completed_noop', 'cancelled', 'failed'].includes(
+				this.currentRunSnapshot.stage,
+			)
+		);
+	}
+
+	private hasActiveRun(): boolean {
+		return (
+			this.currentRunSnapshot !== null &&
+			!['completed', 'completed_noop', 'cancelled', 'failed'].includes(
+				this.currentRunSnapshot.stage,
+			)
+		);
 	}
 
 	public showProgressModal() {
-		if (!this.plugin.isSyncing) {
+		if (!this.hasActiveRun()) {
 			new Notice(i18n.t('sync.notSyncing'));
 			return;
 		}
