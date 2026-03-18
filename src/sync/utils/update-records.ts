@@ -207,7 +207,6 @@ export async function updateMtimeInRecord(
 	if (!syncRecord) return;
 
 	let completedCount = 0;
-	const startAt = Date.now();
 
 	for (const taskChunk of chunk(successfulTasks, batchSize)) {
 		const chunkUpdates = await Promise.all(
@@ -215,7 +214,14 @@ export async function updateMtimeInRecord(
 				try {
 					return await prepareTaskUpdate(task);
 				} catch (error) {
-					logger.error('updateMtimeInRecord', error, task.toJSON());
+					logger.error(
+						'Failed to update sync state for task',
+						{
+							task: task.toJSON(),
+							error,
+						},
+						{ category: 'sync.state' },
+					);
 					return [];
 				} finally {
 					completedCount++;
@@ -233,11 +239,4 @@ export async function updateMtimeInRecord(
 
 		emitSyncUpdateMtimeProgress(successfulTasks.length, completedCount);
 	}
-
-	logger.debug('Records saving completed', {
-		recordsSize: (await syncRecord.getLocalRecords()).size,
-		elapsedMs: Date.now() - startAt,
-		updatedTaskCount: successfulTasks.length,
-		vault: vault.getName(),
-	});
 }

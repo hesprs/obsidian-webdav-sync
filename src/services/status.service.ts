@@ -1,5 +1,3 @@
-import { Notice } from 'obsidian';
-import i18n from '../i18n';
 import WebDAVSyncPlugin from '../index';
 import { formatRelativeTime } from '../utils/format-relative-time';
 
@@ -13,46 +11,22 @@ export class StatusService {
 		this.syncStatusBar = plugin.addStatusBarItem();
 	}
 
-	/**
-	 * Updates the sync status display in the status bar
-	 */
-	public updateSyncStatus(status: {
-		text: string;
-		isError?: boolean;
-		showNotice?: boolean;
-	}): void {
-		this.syncStatusBar.setText(status.text);
-
-		if (status.showNotice) {
-			new Notice(status.text);
-		}
+	public setCurrentStatus(text: string): void {
+		this.stopTimeUpdates();
+		this.syncStatusBar.setText(text);
 	}
 
-	/**
-	 * Set the last sync completion time and start updating the status bar
-	 */
-	public setLastSyncTime(timestamp: number, failedCount: number = 0): void {
+	public setLastSuccessfulStatus(timestamp: number, text: string): void {
 		this.lastSyncTime = timestamp;
-		this.baseStatusText =
-			failedCount > 0
-				? i18n.t('sync.completeWithFailed', { failedCount })
-				: i18n.t('sync.complete');
+		this.baseStatusText = text;
 
-		// Update immediately
 		this.updateStatusBarWithTime();
-
-		// Clear any existing interval
 		this.stopTimeUpdates();
-
-		// Update every minute
 		this.updateInterval = window.setInterval(() => {
 			this.updateStatusBarWithTime();
 		}, 60000);
 	}
 
-	/**
-	 * Updates the status bar with relative time
-	 */
 	private updateStatusBarWithTime(): void {
 		if (this.lastSyncTime === null) {
 			return;
@@ -71,9 +45,6 @@ export class StatusService {
 		}
 	}
 
-	/**
-	 * Stop updating the status bar time
-	 */
 	public stopTimeUpdates(): void {
 		if (this.updateInterval !== null) {
 			window.clearInterval(this.updateInterval);

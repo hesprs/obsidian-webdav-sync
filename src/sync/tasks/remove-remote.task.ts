@@ -7,7 +7,7 @@ export default class RemoveRemoteTask extends BaseTask {
 			await this.webdav.deleteFile(this.remotePath);
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(e);
+			logger.error(`Failed to remove remote file ${this.remotePath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

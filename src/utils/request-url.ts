@@ -32,7 +32,8 @@ export default async function requestUrl(p: RequestUrlParam | string) {
 	const res = await req(params);
 
 	if (res.status >= 400) {
-		if (!isExpectedNotFoundResponse(p, res)) logger.error(res);
+		if (!isExpectedNotFoundResponse(p, res))
+			logger.error(`Received unexpected status code ${res.status}`, res);
 		if (typeof p === 'string' || p.throw !== false) throw new RequestUrlError(res);
 	}
 
