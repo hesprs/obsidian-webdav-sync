@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.1.2 - 2026-03-19
+
+- Fixed observability chaos that causes the status bar always show "planning" when offline.
+- Refactored sync termination logic.
+
 ## Obsidian WebDAV Sync v1.1.1 - 2026-03-18
 
 - Fixed #9 that XML decoding race condition could cause file name mismatch and false removal.
