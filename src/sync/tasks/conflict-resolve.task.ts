@@ -12,7 +12,7 @@ import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
 	resolveByLatestTimestamp,
-} from '../core/merge-utils';
+} from '../utils/merge';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export enum ConflictStrategy {

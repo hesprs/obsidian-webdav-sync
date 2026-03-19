@@ -6,7 +6,7 @@ import {
 	resolveByLatestTimestamp,
 	type IntelligentMergeParams,
 	type LatestTimestampParams,
-} from '~/sync/core/merge-utils';
+} from '~/sync/utils/merge';
 
 function textToArrayBuffer(value: string): ArrayBuffer {
 	return new TextEncoder().encode(value).buffer;

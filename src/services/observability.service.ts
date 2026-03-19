@@ -2,12 +2,13 @@ import { Notice } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
 import { onSyncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import i18n from '~/i18n';
+import { formatRelativeTime } from '~/utils/format-relative-time';
 import { formatSyncRunType } from '~/utils/format-sync-run-type';
 import type WebDAVSyncPlugin from '..';
 
 const TERMINAL_STAGES: SyncRunStage[] = ['completed', 'completed_noop', 'cancelled', 'failed'];
 
-export default class SyncObservabilityPresenterService {
+export default class ObservabilityService {
 	private previousRun: SyncRunSnapshot | null = null;
 	private shownFailureModalRunIds = new Set<string>();
 	private subscriptions = [
@@ -17,11 +18,59 @@ export default class SyncObservabilityPresenterService {
 			this.previousRun = run;
 		}),
 	];
+	private syncStatusBar: HTMLElement;
+	private lastSyncTime: number | null = null;
+	private updateInterval: number | null = null;
+	private baseStatusText: string = '';
 
-	constructor(private plugin: WebDAVSyncPlugin) {}
+	constructor(private plugin: WebDAVSyncPlugin) {
+		this.syncStatusBar = plugin.addStatusBarItem();
+	}
 
 	unload() {
 		this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+		this.stopTimeUpdates();
+	}
+
+	private setCurrentStatus(text: string): void {
+		this.stopTimeUpdates();
+		this.syncStatusBar.setText(text);
+	}
+
+	private setLastSuccessfulStatus(timestamp: number, text: string): void {
+		this.lastSyncTime = timestamp;
+		this.baseStatusText = text;
+
+		this.updateStatusBarWithTime();
+		this.stopTimeUpdates();
+		this.updateInterval = window.setInterval(() => {
+			this.updateStatusBarWithTime();
+		}, 60000);
+	}
+
+	private updateStatusBarWithTime(): void {
+		if (this.lastSyncTime === null) {
+			return;
+		}
+
+		const now = Date.now();
+		const diffSeconds = Math.floor((now - this.lastSyncTime) / 1000);
+
+		// Don't show relative time if less than 60 seconds (just now)
+		if (diffSeconds < 60) {
+			this.syncStatusBar.setText(this.baseStatusText);
+		} else {
+			const relativeTime = formatRelativeTime(this.lastSyncTime);
+			const statusText = `${this.baseStatusText} (${relativeTime})`;
+			this.syncStatusBar.setText(statusText);
+		}
+	}
+
+	private stopTimeUpdates(): void {
+		if (this.updateInterval !== null) {
+			window.clearInterval(this.updateInterval);
+			this.updateInterval = null;
+		}
 	}
 
 	private apply(run: SyncRunSnapshot) {
@@ -39,11 +88,11 @@ export default class SyncObservabilityPresenterService {
 			(run.resultSummary?.failedTasks ?? 0) === 0 &&
 			run.timestamps.endedAt !== undefined
 		) {
-			this.plugin.statusService.setLastSuccessfulStatus(run.timestamps.endedAt, text);
+			this.setLastSuccessfulStatus(run.timestamps.endedAt, text);
 			return;
 		}
 
-		this.plugin.statusService.setCurrentStatus(text);
+		this.setCurrentStatus(text);
 	}
 
 	private applyNotice(run: SyncRunSnapshot, previousRun: SyncRunSnapshot | null) {

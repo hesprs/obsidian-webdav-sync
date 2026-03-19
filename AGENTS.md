@@ -14,6 +14,7 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 - Error handling and observables should be handled by the logger, do not throw into the console.
 - **Small refactor for simplicity and uniformity is always preferred than irresponsible fast patch.** Ask yourself: does this introduce inconsistency or duplication? Are there simpler ways? Is existing code not structured well or redundant? **Do not overdo refactoring, if your refactoring is not to simplify but add additional bloat, consider if you truly need it.**
 - For mobile compatibility, using any Node API is prohibited.
+- Use sentence case for UI text.
 
 ## Repository Map
 
