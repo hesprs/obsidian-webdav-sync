@@ -176,8 +176,8 @@ export default {
 		awaitingConfirmation: '等待确认',
 		updatingSyncState: '正在更新同步状态...',
 		syncStateUpdated: '同步状态已更新。',
-		failedStatus: '同步失败',
-		cancelled: '同步已取消',
+		failedStatus: '❌ 同步失败',
+		cancelled: '⭕ 同步已取消',
 		alreadyUpToDate: '✅ 已是最新状态',
 		upToDate: '✅ 已同步到最新',
 		noChangesToSync: '没有需要同步的更改',
@@ -190,8 +190,6 @@ export default {
 			normal: '普通',
 			numb: '快速',
 		},
-		suggestUseClientForManyTasks:
-			'提示：当同步任务较多时，建议优先使用 WebDAV 服务商提供的桌面同步客户端，通常更稳定。插件更适合轻量或移动端使用。',
 		fileOp: {
 			createLocalDir: '创建本地目录',
 			createRemoteDir: '创建远程目录',

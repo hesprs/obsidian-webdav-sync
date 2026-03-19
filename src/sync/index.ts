@@ -1,6 +1,6 @@
 import type { WebDAVClient } from 'webdav';
 import { chunk } from 'lodash-es';
-import { Platform, Vault } from 'obsidian';
+import { Vault } from 'obsidian';
 import { Subscription } from 'rxjs';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
@@ -12,7 +12,6 @@ import {
 	type SyncPlanSummary,
 	type SyncProgressSummary,
 	type SyncRunSnapshot,
-	type SyncRunWarning,
 	updateSyncRunSnapshot,
 } from '~/events';
 import IFileSystem from '~/fs/fs.interface';
@@ -33,6 +32,13 @@ import { statVaultItem } from '~/utils/stat-vault-item';
 import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
+import {
+	isSyncCancelledError,
+	SyncCancelledError,
+	SyncRetryExhaustedError,
+	toError,
+} from './errors';
+import { finalizeSyncRun } from './sync-run-terminal';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import NoopTask from './tasks/noop.task';
@@ -100,15 +106,10 @@ export class SyncEngine {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
-
-		if (this.isCancelled) {
-			return {
-				tasks: [],
-				hasActionableTasks: false,
-			};
-		}
+		this.throwIfCancelled();
 
 		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide();
+		this.throwIfCancelled();
 
 		if (runKind === SyncRunKind.NORMAL) {
 			const remoteRecord = await syncRecord.getRemoteRecord();
@@ -117,6 +118,7 @@ export class SyncEngine {
 				lastNormalSyncAt: Date.now(),
 				source: 'normal-sync',
 			});
+			this.throwIfCancelled();
 		}
 
 		const hasActionableTasks = tasks.some((task) => this.isActionableTask(task));
@@ -163,19 +165,17 @@ export class SyncEngine {
 			);
 
 			if (tasks.length === 0) {
-				currentRun = updateSyncRunSnapshot(currentRun, {
+				currentRun = finalizeSyncRun(currentRun, {
 					stage: 'completed_noop',
-					resultSummary: {
-						totalTasks: 0,
-						succeededTasks: 0,
-						failedTasks: 0,
-						failed: [],
-					},
-					timestamps: {
-						endedAt: Date.now(),
+					patch: {
+						resultSummary: {
+							totalTasks: 0,
+							succeededTasks: 0,
+							failedTasks: 0,
+							failed: [],
+						},
 					},
 				});
-				emitSyncRun(currentRun);
 				return currentRun;
 			}
 
@@ -188,7 +188,7 @@ export class SyncEngine {
 			);
 
 			if (this.isCancelled) {
-				currentRun = this.emitTerminalRun(currentRun, 'cancelled');
+				currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
 				return currentRun;
 			}
 
@@ -211,7 +211,7 @@ export class SyncEngine {
 				const confirmExec = await new TaskListConfirmModal(this.app, confirmedTasks).open();
 				if (confirmExec.confirm) confirmedTasks = confirmExec.tasks;
 				else {
-					currentRun = this.emitTerminalRun(currentRun, 'cancelled');
+					currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
 					return currentRun;
 				}
 			}
@@ -231,7 +231,6 @@ export class SyncEngine {
 							...this.summarizePlan(tasks),
 							requiresDeleteConfirmation: true,
 							warnings: [
-								...this.getPlanWarnings(tasks),
 								{
 									code: 'delete_confirmation',
 									messageKey: 'deleteConfirm.warningNotice',
@@ -314,28 +313,28 @@ export class SyncEngine {
 
 			const resultSummary = this.createResultSummary(allTasksResult);
 			const failedCount = resultSummary.failedTasks;
-			currentRun = updateSyncRunSnapshot(currentRun, {
+			currentRun = finalizeSyncRun(currentRun, {
 				stage: this.isCancelled ? 'cancelled' : failedCount > 0 ? 'failed' : 'completed',
-				progressSummary: this.createProgressSummary(
-					totalDisplayableTasks,
-					allCompletedTasks,
-				),
-				resultSummary,
-				errorSummary:
-					failedCount > 0
-						? {
-								message: i18n.t('sync.completeWithFailed', { failedCount }),
-							}
-						: undefined,
-				timestamps: {
-					endedAt: Date.now(),
+				patch: {
+					progressSummary: this.createProgressSummary(
+						totalDisplayableTasks,
+						allCompletedTasks,
+					),
+					resultSummary,
+					errorSummary:
+						failedCount > 0
+							? {
+									message: i18n.t('sync.completeWithFailed', { failedCount }),
+								}
+							: undefined,
 				},
 			});
-			emitSyncRun(currentRun);
-			this.logTerminalRun(currentRun);
 			return currentRun;
 		} catch (error) {
-			const failedRun = this.emitTerminalRun(run, 'failed', error);
+			const failedRun = finalizeSyncRun(run, {
+				stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
+				error,
+			});
 			return failedRun;
 		} finally {
 			this.subscriptions.forEach((sub) => sub.unsubscribe());
@@ -357,7 +356,7 @@ export class SyncEngine {
 			hasActionableTasks: actionableTasks > 0,
 			requiresConfirmation: false,
 			requiresDeleteConfirmation: false,
-			warnings: this.getPlanWarnings(executableTasks),
+			warnings: [],
 		};
 	}
 
@@ -591,7 +590,7 @@ export class SyncEngine {
 			await Promise.all([syncRecord.drop(), this.clearStoredRemoteSnapshot()]);
 
 		while (!remoteBaseDirExists) {
-			if (this.isCancelled) return;
+			this.throwIfCancelled();
 
 			try {
 				await webdav.createDirectory(this.options.remoteBaseDir, {
@@ -602,13 +601,12 @@ export class SyncEngine {
 			} catch (error) {
 				if (isRetryableError(error)) {
 					await breakableSleep(onCancelSync(), 5000);
-					if (this.isCancelled) return;
+					this.throwIfCancelled();
 					remoteBaseDirExists = await this.retryWebDAVCall(() =>
 						webdav.exists(remoteBaseDir),
 					);
 					continue;
 				}
-
 				throw error;
 			}
 		}
@@ -701,40 +699,6 @@ export class SyncEngine {
 		};
 	}
 
-	private getPlanWarnings(tasks: BaseTask[]): SyncRunWarning[] {
-		const warnings: SyncRunWarning[] = [];
-		if (tasks.length > 500 && Platform.isDesktopApp) {
-			warnings.push({
-				code: 'large_task_count',
-				messageKey: 'sync.suggestUseClientForManyTasks',
-			});
-		}
-		return warnings;
-	}
-
-	private emitTerminalRun(
-		run: SyncRunSnapshot,
-		stage: 'cancelled' | 'failed',
-		error?: unknown,
-	): SyncRunSnapshot {
-		const normalizedError = error instanceof Error ? error : undefined;
-		const nextRun = updateSyncRunSnapshot(run, {
-			stage,
-			errorSummary: normalizedError
-				? {
-						message: normalizedError.message,
-						name: normalizedError.name,
-					}
-				: undefined,
-			timestamps: {
-				endedAt: Date.now(),
-			},
-		});
-		emitSyncRun(nextRun);
-		this.logTerminalRun(nextRun, normalizedError);
-		return nextRun;
-	}
-
 	/**
 	 * Automatically handle 503 errors and retry task execution
 	 */
@@ -781,72 +745,47 @@ export class SyncEngine {
 	private async retryWebDAVCall<T>(operation: () => Promise<T>) {
 		let retryCount = 0;
 		while (true) {
-			if (this.isCancelled || retryCount >= 3) {
-				if (this.isCancelled) {
-					logger.warn('WebDAV operation cancelled', undefined, {
-						category: 'sync.retry',
-					});
-				} else {
-					logger.error(
-						'WebDAV connection failed after retries',
-						{ retryCount },
-						{ category: 'sync.retry' },
-					);
-				}
-				throw new Error('Sync Aborted');
-			}
+			this.throwIfCancelled();
 
 			try {
 				return await operation();
 			} catch (error) {
 				if (!isRetryableError(error)) {
 					logger.error('WebDAV operation failed', { error }, { category: 'sync.retry' });
-					break;
+					throw toError(error, 'WebDAV operation failed');
 				}
 
 				retryCount++;
+				const retryError = toError(error, 'WebDAV operation failed');
+				if (retryCount >= 3) {
+					logger.error(
+						'WebDAV connection failed after retries',
+						{ retryCount, error: retryError },
+						{ category: 'sync.retry' },
+					);
+					throw new SyncRetryExhaustedError(undefined, retryError);
+				}
+
 				logger.warn(
 					'Retrying WebDAV operation after transient error',
-					{ retryCount, error },
+					{ retryCount, error: retryError },
 					{ category: 'sync.retry' },
 				);
 				await breakableSleep(onCancelSync(), 5000);
+				this.throwIfCancelled();
 			}
 		}
 	}
 
-	private logTerminalRun(run: SyncRunSnapshot, error?: Error) {
-		const metadata = {
-			event: 'terminal_outcome',
-			trigger: run.trigger,
-			sources: run.sources,
-			mode: run.mode,
-			runKind: run.runKind,
-			stage: run.stage,
-			timestamps: run.timestamps,
-			planSummary: run.planSummary,
-			progressSummary: run.progressSummary,
-			resultSummary: run.resultSummary,
-			errorSummary: run.errorSummary,
-			error,
-		};
-
-		if (run.stage === 'failed') {
-			logger.error('Sync failed', metadata, { category: 'sync.lifecycle' });
+	private throwIfCancelled(): void {
+		if (!this.isCancelled) {
 			return;
 		}
 
-		if (run.stage === 'cancelled') {
-			logger.warn('Sync cancelled', metadata, { category: 'sync.lifecycle' });
-			return;
-		}
-
-		if (run.stage === 'completed_noop') {
-			logger.info('Sync completed with no changes', metadata, { category: 'sync.lifecycle' });
-			return;
-		}
-
-		logger.info('Sync completed', metadata, { category: 'sync.lifecycle' });
+		logger.warn('WebDAV operation cancelled', undefined, {
+			category: 'sync.retry',
+		});
+		throw new SyncCancelledError();
 	}
 
 	get app() {

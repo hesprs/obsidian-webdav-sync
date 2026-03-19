@@ -1,11 +1,11 @@
 import i18n from 'i18next';
-import en from './locales/en';
-import zh from './locales/zh';
+import en from './en';
+import zhHans from './zh-Hans';
 
 const defaultNS = 'translation';
 const resources = {
-	zh: {
-		translation: zh,
+	'zh-Hans': {
+		translation: zhHans,
 	},
 	en: {
 		translation: en,

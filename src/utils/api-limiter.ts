@@ -4,7 +4,7 @@ class ApiLimiter {
 	private activeCount = 0;
 	private lastStartTime = 0;
 	private readonly queue: Array<() => void> = [];
-	private timer: ReturnType<typeof setTimeout> | null = null;
+	private timer: number | null = null;
 
 	constructor({ maxConcurrent, minTime }: { maxConcurrent: number; minTime: number }) {
 		this.maxConcurrent = maxConcurrent;
@@ -40,7 +40,7 @@ class ApiLimiter {
 		const nextAllowed = this.lastStartTime + this.minTime;
 		if (now < nextAllowed) {
 			if (this.timer) return;
-			this.timer = setTimeout(() => {
+			this.timer = window.setTimeout(() => {
 				this.timer = null;
 				this.processQueue();
 			}, nextAllowed - now);

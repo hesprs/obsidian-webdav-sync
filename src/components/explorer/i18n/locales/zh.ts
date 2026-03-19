@@ -1,4 +1,4 @@
-const zh = {
+const zhHans = {
 	newFolder: '新建文件夹',
 	goBack: '返回上一层',
 	confirm: '确定',
@@ -6,4 +6,4 @@ const zh = {
 	currentPath: '当前路径',
 };
 
-export default zh;
+export default zhHans;

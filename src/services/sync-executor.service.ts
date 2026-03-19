@@ -7,7 +7,9 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { SyncRunKind } from '~/model/sync-record.model';
-import { SyncEngine, SyncStartMode } from '~/sync';
+import { type PreparedSyncPlan, SyncEngine, SyncStartMode } from '~/sync';
+import { isSyncCancelledError } from '~/sync/errors';
+import { finalizeSyncRun } from '~/sync/sync-run-terminal';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';
@@ -98,7 +100,17 @@ export default class SyncExecutorService {
 				{ category: 'sync.lifecycle' },
 			);
 
-			const plan = await sync.preparePlan(request.runKind);
+			let plan: PreparedSyncPlan;
+			try {
+				plan = await sync.preparePlan(request.runKind);
+			} catch (error) {
+				run = finalizeSyncRun(run, {
+					stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
+					error,
+				});
+				return { executed: true, run };
+			}
+
 			run = updateSyncRunSnapshot(run, {
 				planSummary: sync.summarizePlan(plan.tasks),
 			});
@@ -116,36 +128,17 @@ export default class SyncExecutorService {
 				{ category: 'sync.lifecycle' },
 			);
 
-			if (sync.isCancelled) {
-				run = updateSyncRunSnapshot(run, {
-					stage: 'cancelled',
-					timestamps: {
-						endedAt: Date.now(),
-					},
-				});
-				emitSyncRun(run);
-				logger.warn('Sync cancelled during planning', this.createTerminalLogMetadata(run), {
-					category: 'sync.lifecycle',
-				});
-				return { executed: true, run };
-			}
-
 			if (!plan.hasActionableTasks) {
-				run = updateSyncRunSnapshot(run, {
+				run = finalizeSyncRun(run, {
 					stage: 'completed_noop',
-					resultSummary: {
-						totalTasks: run.planSummary?.totalTasks ?? 0,
-						succeededTasks: 0,
-						failedTasks: 0,
-						failed: [],
+					patch: {
+						resultSummary: {
+							totalTasks: run.planSummary?.totalTasks ?? 0,
+							succeededTasks: 0,
+							failedTasks: 0,
+							failed: [],
+						},
 					},
-					timestamps: {
-						endedAt: Date.now(),
-					},
-				});
-				emitSyncRun(run);
-				logger.info('Sync completed with no changes', this.createTerminalLogMetadata(run), {
-					category: 'sync.lifecycle',
 				});
 				return { executed: true, run };
 			}
@@ -160,22 +153,6 @@ export default class SyncExecutorService {
 		} finally {
 			logger.popContext();
 		}
-	}
-
-	private createTerminalLogMetadata(run: SyncRunSnapshot) {
-		return {
-			event: 'terminal_outcome',
-			trigger: run.trigger,
-			sources: run.sources,
-			mode: run.mode,
-			runKind: run.runKind,
-			stage: run.stage,
-			timestamps: run.timestamps,
-			planSummary: run.planSummary,
-			progressSummary: run.progressSummary,
-			resultSummary: run.resultSummary,
-			errorSummary: run.errorSummary,
-		};
 	}
 
 	private toRunMode(mode: SyncStartMode): SyncRunMode {

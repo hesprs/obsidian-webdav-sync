@@ -14,14 +14,9 @@ export type SyncRunStage =
 	| 'cancelled'
 	| 'failed';
 
-export type SyncRunWarningCode = 'delete_confirmation' | 'large_task_count';
-export type SyncRunWarningMessageKey =
-	| 'deleteConfirm.warningNotice'
-	| 'sync.suggestUseClientForManyTasks';
-
 export interface SyncRunWarning {
-	code: SyncRunWarningCode;
-	messageKey: SyncRunWarningMessageKey;
+	code: 'delete_confirmation';
+	messageKey: 'deleteConfirm.warningNotice';
 }
 
 export interface SyncPlanSummary {

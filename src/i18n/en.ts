@@ -178,8 +178,8 @@ export default {
 		awaitingConfirmation: 'Waiting for confirmation',
 		updatingSyncState: 'Updating sync state...',
 		syncStateUpdated: 'Sync state updated.',
-		failedStatus: 'Sync failed',
-		cancelled: 'Sync cancelled',
+		failedStatus: '❌ Sync failed',
+		cancelled: '⭕ Sync cancelled',
 		alreadyUpToDate: '✅ Already up to date',
 		upToDate: '✅ Up to date',
 		noChangesToSync: 'No changes to sync',
@@ -192,8 +192,6 @@ export default {
 			normal: 'Normal',
 			numb: 'Fast',
 		},
-		suggestUseClientForManyTasks:
-			"Tip: When there are many sync tasks, using your WebDAV provider's desktop sync client may be more stable. This plugin is generally better suited for lightweight/mobile use.",
 		fileOp: {
 			createLocalDir: 'Create local directory',
 			createRemoteDir: 'Create remote directory',

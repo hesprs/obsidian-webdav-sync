@@ -254,11 +254,11 @@ export default class CommonSettings extends BaseSettings {
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption('', i18n.t('settings.language.auto'))
-					.addOption('zh', '简体中文')
+					.addOption('zh-Hans', '简体中文')
 					.addOption('en', 'English')
 					.setValue(this.plugin.settings.language || '')
 					.onChange(async (value: string) => {
-						if (value === 'zh' || value === 'en' || value === '' || isNil(value)) {
+						if (value === 'zh-Hans' || value === 'en' || value === '' || isNil(value)) {
 							this.plugin.settings.language = value || undefined;
 							await this.plugin.saveSettings();
 							await this.plugin.i18nService.update();
