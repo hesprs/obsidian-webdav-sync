@@ -405,13 +405,11 @@ class Logger {
 	private formatTimelineLine(entry: LogEntry): string {
 		const parts = [
 			`- ${entry.timestamp}`,
-			`[${entry.level}]`,
-			`[${entry.category}]`,
+			`**${entry.level.toUpperCase()}**`,
+			`\`${entry.category}\``,
 			entry.message,
 		];
-		if (entry.metadata !== undefined) {
-			parts.push(`— ${JSON.stringify(entry.metadata)}`);
-		}
+		if (entry.metadata !== undefined) parts.push(`— \`${JSON.stringify(entry.metadata)}\``);
 		return parts.join(' ');
 	}
 

@@ -5,9 +5,7 @@ import { normalizeVaultPath, vaultBasename } from '~/platform/path/vault-path';
 export async function statVaultItem(vault: Vault, path: string): Promise<StatModel | undefined> {
 	path = normalizeVaultPath(path);
 	const file = vault.getAbstractFileByPath(path);
-	if (!file) {
-		return undefined;
-	}
+	if (!file) return undefined;
 	if (file instanceof TFolder) {
 		return {
 			path,

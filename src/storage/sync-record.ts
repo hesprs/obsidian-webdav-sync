@@ -14,7 +14,7 @@ import {
 	remotePathToAbsolute,
 } from '~/platform/path/remote-path';
 import { normalizeVaultPath } from '~/platform/path/vault-path';
-import type { PersistedLocalRecordsModel, SyncStateStore } from './sync-state-store';
+import type { PersistedLocalRecordsModel, SyncStateStore } from './store.interface';
 
 export class SyncRecord {
 	constructor(

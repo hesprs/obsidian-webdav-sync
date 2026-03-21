@@ -14,6 +14,7 @@ import {
 	type SyncRunSnapshot,
 	updateSyncRunSnapshot,
 } from '~/events';
+import { finalizeSyncRun } from '~/events/sync-terminate';
 import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
@@ -38,7 +39,6 @@ import {
 	SyncRetryExhaustedError,
 	toError,
 } from './errors';
-import { finalizeSyncRun } from './sync-run-terminal';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import NoopTask from './tasks/noop.task';

@@ -6,10 +6,10 @@ import {
 	type SyncTrigger,
 	updateSyncRunSnapshot,
 } from '~/events';
+import { finalizeSyncRun } from '~/events/sync-terminate';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { type PreparedSyncPlan, SyncEngine, SyncStartMode } from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
-import { finalizeSyncRun } from '~/sync/sync-run-terminal';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';

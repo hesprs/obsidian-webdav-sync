@@ -1,4 +1,6 @@
+import type { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/model/sync-record.model';
+import type { SyncEngine } from '..';
 import type {
 	ConflictTaskOptions,
 	PullTaskOptions,
@@ -18,10 +20,34 @@ import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
 import SkippedTask from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
-import BaseSyncDecider from './base.decider';
 import { twoWayDecider } from './two-way.decider.function';
 
-export default class TwoWaySyncDecider extends BaseSyncDecider {
+export default class TwoWaySyncDecider {
+	constructor(
+		protected sync: SyncEngine,
+		protected syncRecordStorage: SyncRecord,
+	) {}
+
+	protected getSyncRecordStorage() {
+		return this.syncRecordStorage;
+	}
+
+	get webdav() {
+		return this.sync.webdav;
+	}
+
+	get settings() {
+		return this.sync.settings;
+	}
+
+	get vault() {
+		return this.sync.vault;
+	}
+
+	get remoteBaseDir() {
+		return this.sync.remoteBaseDir;
+	}
+
 	async decide(): Promise<BaseTask[]> {
 		const syncRecordStorage = this.getSyncRecordStorage();
 		const [previousLocalRecords, previousRemoteRecord, currentLocalStats] = await Promise.all([
