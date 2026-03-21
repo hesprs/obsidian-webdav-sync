@@ -1,11 +1,12 @@
-import i18n from '~/i18n';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-vault-item';
+import type { PlannedPathSnapshot } from '../decision/sync-decision.interface';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 interface MkdirsRemoteTaskOptions extends BaseTaskOptions {
+	local?: PlannedPathSnapshot['local'];
+	remote?: PlannedPathSnapshot['remote'];
 	// Additional paths that will be created along with the main path
-	additionalPaths: Array<{ localPath: string; remotePath: string }>;
+	additionalPaths: PlannedPathSnapshot[];
 }
 
 /**
@@ -14,7 +15,7 @@ interface MkdirsRemoteTaskOptions extends BaseTaskOptions {
  * Stores all paths for sync record updates.
  */
 export default class MkdirsRemoteTask extends BaseTask {
-	readonly additionalPaths: Array<{ localPath: string; remotePath: string }>;
+	readonly additionalPaths: PlannedPathSnapshot[];
 
 	constructor(options: MkdirsRemoteTaskOptions) {
 		super(options);
@@ -23,15 +24,20 @@ export default class MkdirsRemoteTask extends BaseTask {
 
 	async exec() {
 		try {
-			const localStat = await statVaultItem(this.vault, this.localPath);
-			if (!localStat) {
-				throw new Error(i18n.t('sync.error.localPathNotFound', { path: this.localPath }));
-			}
 			// Create the deepest directory with recursive: true
 			// This will automatically create all parent directories
 			await this.webdav.createDirectory(this.remotePath, {
 				recursive: true,
 			});
+
+			for (const pathSnapshot of this.getAllPaths()) {
+				await this.syncRecord.upsertSyncedDirectoryFromLocalSnapshot({
+					localPath: pathSnapshot.localPath,
+					remotePath: pathSnapshot.remotePath,
+					localStat: pathSnapshot.local?.stat,
+				});
+			}
+
 			return { success: true } as const;
 		} catch (e) {
 			logger.error(`Failed to create remote directory recursively ${this.remotePath}`, e);
@@ -42,9 +48,15 @@ export default class MkdirsRemoteTask extends BaseTask {
 	/**
 	 * Get all directory paths that will be created by this task
 	 */
-	getAllPaths(): Array<{ localPath: string; remotePath: string }> {
+	getAllPaths(): PlannedPathSnapshot[] {
+		const options = this.options as MkdirsRemoteTaskOptions;
 		return [
-			{ localPath: this.localPath, remotePath: this.remotePath },
+			{
+				localPath: this.localPath,
+				remotePath: this.remotePath,
+				local: options.local,
+				remote: options.remote,
+			},
 			...this.additionalPaths,
 		];
 	}

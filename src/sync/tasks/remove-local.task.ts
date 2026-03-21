@@ -1,30 +1,31 @@
+import type { RemoveLocalTaskOptions } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-vault-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask {
-	constructor(
-		public readonly options: BaseTaskOptions & {
-			recursive?: boolean;
-		},
-	) {
+	constructor(public readonly options: BaseTaskOptions & RemoveLocalTaskOptions) {
 		super(options);
 	}
 
 	async exec() {
 		try {
-			const stat = await statVaultItem(this.vault, this.localPath);
-			if (!stat) {
-				return {
-					success: true,
-				} as const;
+			const localSnapshot = this.options.local;
+			const localStat = localSnapshot?.stat;
+			const localFile = localSnapshot?.abstractFile;
+
+			if (!localStat || !localFile) {
+				throw new Error('missing local snapshot for remove: ' + this.localPath);
 			}
-			const file = this.vault.getAbstractFileByPath(this.localPath);
-			if (!file) {
-				throw new Error('cannot find file in local fs: ' + this.localPath);
+
+			await this.vault.trash(localFile, false);
+
+			if (localStat.isDir || this.options.recursive) {
+				await this.syncRecord.removeLocalRecordSubtree(this.localPath);
+			} else {
+				await this.syncRecord.removeLocalRecordPath(this.localPath);
 			}
-			await this.vault.trash(file, false);
-			return { success: true } as const;
+
+			return { success: true, skipRecord: true } as const;
 		} catch (e) {
 			logger.error(`Failed to remove local file: ${this.localPath}`, e);
 			return { success: false, error: toTaskError(e, this) };

@@ -19,10 +19,7 @@ export function toArrayBufferSync(data: ArrayBuffer | ArrayBufferView): ArrayBuf
 }
 
 export async function toArrayBuffer(data: BinaryLike): Promise<ArrayBuffer> {
-	if (data instanceof Blob) {
-		return data.arrayBuffer();
-	}
-
+	if (data instanceof Blob) return data.arrayBuffer();
 	return toArrayBufferSync(data);
 }
 

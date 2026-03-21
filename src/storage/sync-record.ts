@@ -13,7 +13,7 @@ import {
 	remoteDirname,
 	remotePathToAbsolute,
 } from '~/platform/path/remote-path';
-import { normalizeVaultPath } from '~/platform/path/vault-path';
+import { normalizeVaultPath, vaultBasename } from '~/platform/path/vault-path';
 import type { PersistedLocalRecordsModel, SyncStateStore } from './store.interface';
 
 export class SyncRecord {
@@ -112,6 +112,60 @@ export class SyncRecord {
 		source: RemoteRecordModel['source'],
 	) {
 		remoteRecord.source = source;
+	}
+
+	private projectLocalStat(path: string, stat: StatModel): StatModel {
+		const normalizedPath = normalizeVaultPath(path);
+		const basename = vaultBasename(normalizedPath);
+		if (stat.isDir) {
+			return {
+				path: normalizedPath,
+				basename,
+				isDir: true,
+				isDeleted: stat.isDeleted,
+				mtime: stat.mtime,
+			};
+		}
+
+		return {
+			path: normalizedPath,
+			basename,
+			isDir: false,
+			isDeleted: stat.isDeleted,
+			mtime: stat.mtime,
+			size: stat.size,
+		};
+	}
+
+	private createDirStat(path: string): StatModel {
+		const normalizedPath = normalizeVaultPath(path);
+		return {
+			path: normalizedPath,
+			basename: vaultBasename(normalizedPath),
+			isDir: true,
+			isDeleted: false,
+		};
+	}
+
+	private upsertSyncedFileInState(
+		state: SyncStateModel,
+		params: {
+			localPath: string;
+			remotePath: string;
+			syncedStat: StatModel;
+			baseText?: string;
+		},
+	): void {
+		const { localPath, remotePath, syncedStat, baseText } = params;
+		this.upsertLocalRecordInState(state, localPath, {
+			local: this.projectLocalStat(localPath, syncedStat),
+			...(baseText === undefined ? {} : { baseText }),
+		});
+		this.upsertRemotePathInState(state, {
+			...syncedStat,
+			path: remotePath,
+			basename: remoteBasename(remotePath),
+		});
 	}
 
 	private filterNodeChildren(remoteRecord: RemoteRecordModel, remotePath: string) {
@@ -266,6 +320,144 @@ export class SyncRecord {
 				state.localRecords.delete(key);
 			}
 		}
+	}
+
+	async removeLocalRecordPath(path: string): Promise<void> {
+		await this.mutateState((state) => {
+			this.removeLocalRecordInState(state, path);
+		});
+	}
+
+	async removeLocalRecordSubtree(path: string): Promise<void> {
+		await this.mutateState((state) => {
+			this.removeLocalSubtreeInState(state, path);
+		});
+	}
+
+	async removeRemoteRecordPath(path: string): Promise<void> {
+		await this.mutateState((state) => {
+			this.removeRemotePathInState(state, path);
+		});
+	}
+
+	async removeRemoteRecordSubtree(path: string): Promise<void> {
+		await this.mutateState((state) => {
+			this.removeRemoteSubtreeInState(state, path);
+		});
+	}
+
+	async cleanOrphanedRecordPaths(localPath: string, remotePath: string): Promise<void> {
+		await this.mutateState((state) => {
+			this.removeLocalSubtreeInState(state, localPath);
+			this.removeRemoteSubtreeInState(state, remotePath);
+		});
+	}
+
+	async upsertSyncedFileFromLocalSnapshot(params: {
+		localPath: string;
+		remotePath: string;
+		localStat: StatModel;
+		baseText?: string;
+	}): Promise<void> {
+		await this.mutateState((state) => {
+			const { localPath, remotePath, localStat, baseText } = params;
+			this.upsertSyncedFileInState(state, {
+				localPath,
+				remotePath,
+				syncedStat: localStat,
+				baseText,
+			});
+		});
+	}
+
+	async upsertSyncedFileFromRemoteSnapshot(params: {
+		localPath: string;
+		remotePath: string;
+		remoteStat: StatModel;
+		baseText?: string;
+	}): Promise<void> {
+		await this.mutateState((state) => {
+			const { localPath, remotePath, remoteStat, baseText } = params;
+			this.upsertSyncedFileInState(state, {
+				localPath,
+				remotePath,
+				syncedStat: remoteStat,
+				baseText,
+			});
+		});
+	}
+
+	async upsertMergedConflictFromSyntheticSnapshot(params: {
+		localPath: string;
+		remotePath: string;
+		mtime: number;
+		size: number;
+		baseText: string;
+	}): Promise<void> {
+		await this.mutateState((state) => {
+			const { localPath, remotePath, mtime, size, baseText } = params;
+			this.upsertSyncedFileInState(state, {
+				localPath,
+				remotePath,
+				syncedStat: {
+					path: localPath,
+					basename: vaultBasename(localPath),
+					isDir: false,
+					isDeleted: false,
+					mtime,
+					size,
+				},
+				baseText,
+			});
+		});
+	}
+
+	async upsertSyncedDirectoryFromLocalSnapshot(params: {
+		localPath: string;
+		remotePath: string;
+		localStat?: StatModel;
+	}): Promise<void> {
+		await this.mutateState((state) => {
+			const { localPath, remotePath, localStat } = params;
+			const resolvedLocalStat =
+				localStat && localStat.isDir ? localStat : this.createDirStat(localPath);
+			this.upsertLocalRecordInState(state, localPath, {
+				local: this.projectLocalStat(localPath, resolvedLocalStat),
+			});
+			this.upsertRemotePathInState(state, {
+				...resolvedLocalStat,
+				path: remotePath,
+				basename: remoteBasename(remotePath),
+				isDir: true,
+			});
+		});
+	}
+
+	async upsertSyncedDirectoryFromRemoteSnapshot(params: {
+		localPath: string;
+		remotePath: string;
+		remoteStat?: StatModel;
+	}): Promise<void> {
+		await this.mutateState((state) => {
+			const { localPath, remotePath, remoteStat } = params;
+			const resolvedRemoteStat =
+				remoteStat && remoteStat.isDir
+					? remoteStat
+					: {
+							...this.createDirStat(localPath),
+							path: remotePath,
+							basename: remoteBasename(remotePath),
+						};
+			this.upsertLocalRecordInState(state, localPath, {
+				local: this.projectLocalStat(localPath, resolvedRemoteStat),
+			});
+			this.upsertRemotePathInState(state, {
+				...resolvedRemoteStat,
+				path: remotePath,
+				basename: remoteBasename(remotePath),
+				isDir: true,
+			});
+		});
 	}
 
 	async drop() {

@@ -5,7 +5,11 @@ import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import { isSameTime } from '~/utils/is-same-time';
 import logger from '~/utils/logger';
-import type { SyncDecisionInput } from './sync-decision.interface';
+import type {
+	PlannedLocalSnapshot,
+	PlannedRemoteSnapshot,
+	SyncDecisionInput,
+} from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
@@ -21,7 +25,12 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		previousLocalRecords,
 		remoteBaseDir,
 		compareFileContent,
+		onProgress,
 		taskFactory,
+		createPlannedLocalFileSnapshot,
+		createPlannedRemoteFileSnapshot,
+		createPlannedLocalFolderSnapshot,
+		createPlannedRemoteFolderSnapshot,
 	} = input;
 
 	let maxFileSize = Infinity;
@@ -91,6 +100,139 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	const mkdirLocalTasks: BaseTask[] = [];
 	const mkdirRemoteTasks: BaseTask[] = [];
 	const noopFolderTasks: BaseTask[] = [];
+	const totalDecisionWorkUnits =
+		mixedPath.size +
+		cleanupCandidatePaths.size +
+		remoteStatsFiltered.filter((item) => item.isDir).length +
+		localStatsFiltered.filter((item) => item.isDir).length;
+	await onProgress?.({
+		subStage: 'deciding',
+		totalWorkUnits: totalDecisionWorkUnits,
+		completedWorkUnits: 0,
+	});
+
+	const createPushTaskWithSnapshot = async (
+		options: {
+			remotePath: string;
+			localPath: string;
+			remoteBaseDir: string;
+			local?: PlannedLocalSnapshot;
+			remote?: PlannedRemoteSnapshot;
+		},
+		localStat: PlannedLocalSnapshot['stat'],
+	) => {
+		const plannedLocal =
+			(await createPlannedLocalFileSnapshot(options.localPath, localStat)) ?? options.local;
+		tasks.push(
+			taskFactory.createPushTask({
+				...options,
+				local: plannedLocal,
+			}),
+		);
+	};
+
+	const createPullTaskWithSnapshot = async (
+		options: {
+			remotePath: string;
+			localPath: string;
+			remoteBaseDir: string;
+			local?: PlannedLocalSnapshot;
+			remote?: PlannedRemoteSnapshot;
+		},
+		remoteStat: PlannedRemoteSnapshot['stat'],
+	) => {
+		const plannedRemote =
+			(await createPlannedRemoteFileSnapshot(options.remotePath, remoteStat)) ??
+			options.remote;
+		tasks.push(
+			taskFactory.createPullTask({
+				...options,
+				remote: plannedRemote,
+			}),
+		);
+	};
+
+	const createMkdirRemoteTaskWithSnapshot = async (
+		options: { localPath: string; remotePath: string; remoteBaseDir: string },
+		localStat: PlannedLocalSnapshot['stat'],
+	) => {
+		const plannedLocal = await createPlannedLocalFolderSnapshot(options.localPath, localStat);
+		mkdirRemoteTasks.push(
+			taskFactory.createMkdirRemoteTask({
+				...options,
+				local: plannedLocal,
+			}),
+		);
+	};
+
+	const createRemoveLocalTaskWithSnapshot = async (
+		options: {
+			localPath: string;
+			remotePath: string;
+			remoteBaseDir: string;
+			recursive?: boolean;
+		},
+		localStat: PlannedLocalSnapshot['stat'],
+		targetTasks: BaseTask[] = tasks,
+	) => {
+		const plannedLocal = localStat.isDir
+			? await createPlannedLocalFolderSnapshot(options.localPath, localStat)
+			: await createPlannedLocalFileSnapshot(options.localPath, localStat);
+		targetTasks.push(
+			taskFactory.createRemoveLocalTask({
+				...options,
+				local: plannedLocal,
+			}),
+		);
+	};
+
+	const createConflictResolveTaskWithSnapshot = async (
+		options: {
+			remotePath: string;
+			localPath: string;
+			remoteBaseDir: string;
+			record?: typeof syncRecords extends Map<string, infer T> ? T : never;
+			strategy: ConflictStrategy;
+			useGitStyle: boolean;
+		},
+		localStat: PlannedLocalSnapshot['stat'],
+		remoteStat: PlannedRemoteSnapshot['stat'],
+	) => {
+		const [plannedLocal, plannedRemote] = await Promise.all([
+			createPlannedLocalFileSnapshot(options.localPath, localStat),
+			createPlannedRemoteFileSnapshot(options.remotePath, remoteStat),
+		]);
+		if (!plannedLocal) {
+			throw new Error(`Cannot plan local conflict snapshot: ${options.localPath}`);
+		}
+		if (!plannedRemote) {
+			throw new Error(`Cannot plan remote conflict snapshot: ${options.remotePath}`);
+		}
+		tasks.push(
+			taskFactory.createConflictResolveTask({
+				...options,
+				record: options.record,
+				local: plannedLocal,
+				remote: plannedRemote,
+			}),
+		);
+	};
+
+	const createMkdirLocalTaskWithSnapshot = async (
+		options: { localPath: string; remotePath: string; remoteBaseDir: string },
+		remoteStat: PlannedRemoteSnapshot['stat'],
+	) => {
+		const plannedRemote = await createPlannedRemoteFolderSnapshot(
+			options.remotePath,
+			remoteStat,
+		);
+		mkdirLocalTasks.push(
+			taskFactory.createMkdirLocalTask({
+				...options,
+				remote: plannedRemote,
+			}),
+		);
+	};
 
 	// * sync files
 	for (const p of mixedPath) {
@@ -101,6 +243,8 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			remotePath: p,
 			localPath: p,
 			remoteBaseDir,
+			local: local ? { stat: local } : undefined,
+			remote: remote ? { stat: remote } : undefined,
 		};
 		const localName = local?.path ?? 'none';
 		const remoteName = remote?.path ?? 'none';
@@ -144,18 +288,18 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							if (hasInvalidChar(local.path)) {
 								tasks.push(taskFactory.createFilenameErrorTask(options));
 							} else {
-								tasks.push(
-									taskFactory.createConflictResolveTask({
+								await createConflictResolveTaskWithSnapshot(
+									{
 										...options,
 										record,
 										strategy:
 											settings.conflictStrategy === 'latest-timestamp'
 												? ConflictStrategy.LatestTimeStamp
 												: ConflictStrategy.DiffMatchPatch,
-										localStat: local,
-										remoteStat: remote,
 										useGitStyle: settings.useGitStyle,
-									}),
+									},
+									local,
+									remote,
 								);
 							}
 
@@ -184,12 +328,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 								);
 								continue;
 							}
-							tasks.push(
-								taskFactory.createPullTask({
-									...options,
-									remoteSize: remote.size,
-								}),
-							);
+							await createPullTaskWithSnapshot(options, remote);
 							continue;
 						}
 					} else {
@@ -220,7 +359,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							if (hasInvalidChar(local.path)) {
 								tasks.push(taskFactory.createFilenameErrorTask(options));
 							} else {
-								tasks.push(taskFactory.createPushTask(options));
+								await createPushTaskWithSnapshot(options, local);
 							}
 							continue;
 						}
@@ -249,12 +388,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							);
 							continue;
 						}
-						tasks.push(
-							taskFactory.createPullTask({
-								...options,
-								remoteSize: remote.size,
-							}),
-						);
+						await createPullTaskWithSnapshot(options, remote);
 						continue;
 					} else {
 						logger.debug(`remove remote file ${remote.path}`, {
@@ -299,7 +433,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					if (hasInvalidChar(local.path)) {
 						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
-						tasks.push(taskFactory.createPushTask(options));
+						await createPushTaskWithSnapshot(options, local);
 					}
 					continue;
 				} else {
@@ -313,7 +447,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							localExists: !!local,
 						},
 					});
-					tasks.push(taskFactory.createRemoveLocalTask(options));
+					await createRemoveLocalTaskWithSnapshot(options, local);
 					continue;
 				}
 			}
@@ -363,14 +497,14 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					if (hasInvalidChar(local.path)) {
 						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
-						tasks.push(
-							taskFactory.createConflictResolveTask({
+						await createConflictResolveTaskWithSnapshot(
+							{
 								...options,
 								strategy: ConflictStrategy.DiffMatchPatch,
-								localStat: local,
-								remoteStat: remote,
 								useGitStyle: settings.useGitStyle,
-							}),
+							},
+							local,
+							remote,
 						);
 					}
 
@@ -398,7 +532,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						);
 						continue;
 					}
-					tasks.push(taskFactory.createPullTask({ ...options, remoteSize: remote.size }));
+					await createPullTaskWithSnapshot(options, remote);
 					continue;
 				}
 			} else {
@@ -428,7 +562,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					if (hasInvalidChar(local.path)) {
 						tasks.push(taskFactory.createFilenameErrorTask(options));
 					} else {
-						tasks.push(taskFactory.createPushTask(options));
+						await createPushTaskWithSnapshot(options, local);
 					}
 					continue;
 				}
@@ -510,12 +644,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					},
 				});
 
-				mkdirLocalTasks.push(
-					taskFactory.createMkdirLocalTask({
+				await createMkdirLocalTaskWithSnapshot(
+					{
 						localPath,
 						remotePath: remote.path,
 						remoteBaseDir,
-					}),
+					},
+					remote,
 				);
 				continue;
 			}
@@ -574,12 +709,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				},
 			});
 
-			mkdirLocalTasks.push(
-				taskFactory.createMkdirLocalTask({
+			await createMkdirLocalTaskWithSnapshot(
+				{
 					localPath,
 					remotePath: remote.path,
 					remoteBaseDir,
-				}),
+				},
+				remote,
 			);
 
 			continue;
@@ -633,12 +769,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							}),
 						);
 					} else {
-						mkdirRemoteTasks.push(
-							taskFactory.createMkdirRemoteTask({
+						await createMkdirRemoteTaskWithSnapshot(
+							{
 								localPath: local.path,
 								remotePath: local.path,
 								remoteBaseDir,
-							}),
+							},
+							local,
 						);
 					}
 					continue;
@@ -680,11 +817,19 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					},
 				});
 				removeLocalFolderTasks.push(
-					taskFactory.createRemoveLocalTask({
-						localPath: local.path,
-						remotePath: local.path,
-						remoteBaseDir,
-					}),
+					await (async () => {
+						const folderTasks: BaseTask[] = [];
+						await createRemoveLocalTaskWithSnapshot(
+							{
+								localPath: local.path,
+								remotePath: local.path,
+								remoteBaseDir,
+							},
+							local,
+							folderTasks,
+						);
+						return folderTasks[0];
+					})(),
 				);
 			} else {
 				logger.debug(`create remote folder according to local ${localName}`, {
@@ -705,12 +850,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						}),
 					);
 				} else {
-					mkdirRemoteTasks.push(
-						taskFactory.createMkdirRemoteTask({
+					await createMkdirRemoteTaskWithSnapshot(
+						{
 							localPath: local.path,
 							remotePath: local.path,
 							remoteBaseDir,
-						}),
+						},
+						local,
 					);
 				}
 				continue;
@@ -733,6 +879,12 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		...mkdirRemoteTasks,
 		...noopFolderTasks,
 	];
+
+	await onProgress?.({
+		subStage: 'deciding',
+		totalWorkUnits: totalDecisionWorkUnits,
+		completedWorkUnits: totalDecisionWorkUnits,
+	});
 
 	tasks.splice(0, 0, ...allFolderTasks);
 	return tasks;

@@ -60,6 +60,7 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 		});
 		let stats = await traversal.traverse({
 			freshness: options?.freshness ?? 'stored-ok',
+			onProgress: options?.onTraversalProgress,
 		});
 
 		return await this.toWalkResults(stats, settings?.filterRules);

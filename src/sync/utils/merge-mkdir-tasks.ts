@@ -1,5 +1,11 @@
+import type { PlannedPathSnapshot } from '../decision/sync-decision.interface';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import MkdirsRemoteTask from '../tasks/mkdirs-remote.task';
+
+type MkdirTaskOptionsWithSnapshot = MkdirRemoteTask['options'] & {
+	local?: PlannedPathSnapshot['local'];
+	remote?: PlannedPathSnapshot['remote'];
+};
 
 /**
  * Merge mkdir tasks that have parent-child relationships into MkdirsRemoteTask.
@@ -85,10 +91,15 @@ export function mergeMkdirTasks(mkdirTasks: MkdirRemoteTask[]): MkdirsRemoteTask
 		// All other paths are additional paths (empty if group.length === 1)
 		const additionalPaths = group
 			.filter((item) => item !== deepestItem)
-			.map((item) => ({
-				localPath: item.task.localPath,
-				remotePath: item.task.remotePath,
-			}));
+			.map((item) => {
+				const itemOptions = item.task.options as MkdirTaskOptionsWithSnapshot;
+				return {
+					localPath: item.task.localPath,
+					remotePath: item.task.remotePath,
+					local: itemOptions.local,
+					remote: itemOptions.remote,
+				};
+			});
 
 		const mkdirsTask = new MkdirsRemoteTask({
 			...deepestItem.task.options,

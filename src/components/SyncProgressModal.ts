@@ -63,9 +63,17 @@ export default class SyncProgressModal extends Modal {
 		}
 
 		const progress = this.plugin.progressService.syncProgress;
+		const planningProgress = this.plugin.progressService.planningProgress;
 		const currentRun = this.plugin.progressService.currentRun;
+		const isPlanningStage = currentRun?.stage === 'planning' || currentRun?.stage === 'queued';
+		const completedUnits = isPlanningStage
+			? (planningProgress?.completedWorkUnits ?? 0)
+			: progress.completedTasks;
+		const totalUnits = isPlanningStage
+			? (planningProgress?.totalWorkUnits ?? 0)
+			: progress.totalTasks;
 
-		const percent = Math.round((progress.completedTasks / progress.totalTasks) * 100) || 0;
+		const percent = Math.round((completedUnits / totalUnits) * 100) || 0;
 		const syncType = currentRun ? formatSyncRunType(currentRun) : null;
 
 		this.progressBar.style.width = `${percent}%`;
@@ -77,15 +85,25 @@ export default class SyncProgressModal extends Modal {
 
 		this.progressStats.setText(
 			i18n.t('sync.progressStats', {
-				completed: progress.completedTasks,
-				total: progress.totalTasks,
+				completed: completedUnits,
+				total: totalUnits,
 			}),
 		);
 
-		this.currentStage.setText(syncType ?? i18n.t('sync.progressTitle'));
+		this.currentStage.setText(
+			isPlanningStage && planningProgress
+				? `${syncType ?? i18n.t('sync.progressTitle')} · ${this.getPlanningStageText(planningProgress.subStage)}`
+				: (syncType ?? i18n.t('sync.progressTitle')),
+		);
 
-		if (currentRun?.stage === 'planning' || currentRun?.stage === 'queued') {
-			this.currentFile.setText(i18n.t('sync.preparing'));
+		if (isPlanningStage) {
+			this.currentFile.setText(
+				planningProgress?.currentItem
+					? i18n.t('sync.currentFile', {
+							path: planningProgress.currentItem,
+						})
+					: i18n.t('sync.preparing'),
+			);
 		} else if (currentRun?.stage === 'awaiting_confirmation') {
 			this.currentFile.setText(i18n.t('sync.awaitingConfirmation'));
 		} else if (currentRun?.stage === 'executing' && progress.completed.length === 0) {
@@ -173,6 +191,12 @@ export default class SyncProgressModal extends Modal {
 				}),
 			);
 		});
+	}
+
+	private getPlanningStageText(
+		stage: 'loading_records' | 'walking_local' | 'walking_remote' | 'deciding',
+	): string {
+		return i18n.t(`sync.planningStage.${stage}`);
 	}
 
 	onOpen() {

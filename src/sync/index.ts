@@ -9,6 +9,7 @@ import {
 	emitSyncRun,
 	onCancelSync,
 	type SyncFailedTaskInfo,
+	type SyncPlanningProgress,
 	type SyncPlanSummary,
 	type SyncProgressSummary,
 	type SyncRunSnapshot,
@@ -29,8 +30,8 @@ import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-vault-item';
 import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
+import type { PlannedPathSnapshot } from './decision/sync-decision.interface';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import {
@@ -49,7 +50,6 @@ import SkippedTask from './tasks/skipped.task';
 import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
 import { mergeMkdirTasks } from './utils/merge-mkdir-tasks';
 import { mergeRemoveRemoteTasks } from './utils/merge-remove-remote-tasks';
-import { updateMtimeInRecord as updateMtimeInRecordUtil } from './utils/update-records';
 
 export enum SyncStartMode {
 	MANUAL_SYNC = 'manual_sync',
@@ -66,6 +66,14 @@ interface SyncResultSummary {
 	succeededTasks: number;
 	failedTasks: number;
 	failed: SyncFailedTaskInfo[];
+}
+
+interface ReuploadSnapshotIndex {
+	byLocalPath: Map<string, PlannedPathSnapshot[]>;
+	byRemotePath: Map<string, PlannedPathSnapshot[]>;
+	knownRemoteDirPaths: Set<string>;
+	localPaths: Set<string>;
+	remotePaths: Set<string>;
 }
 
 // TODO: split into multiple modules
@@ -102,13 +110,20 @@ export class SyncEngine {
 
 	runKind: SyncRunKind = SyncRunKind.NORMAL;
 
-	async preparePlan(runKind: SyncRunKind = SyncRunKind.NORMAL): Promise<PreparedSyncPlan> {
+	async preparePlan(
+		runKind: SyncRunKind = SyncRunKind.NORMAL,
+		options?: {
+			onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
+		},
+	): Promise<PreparedSyncPlan> {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
 		this.throwIfCancelled();
 
-		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide();
+		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide({
+			onPlanningProgress: options?.onPlanningProgress,
+		});
 		this.throwIfCancelled();
 
 		if (runKind === SyncRunKind.NORMAL) {
@@ -306,7 +321,6 @@ export class SyncEngine {
 				);
 				currentRun = chunkExecution.run;
 				allTasksResult.push(...chunkExecution.results);
-				await this.updateMtimeInRecord(taskChunk, chunkExecution.results);
 
 				if (this.isCancelled) break;
 			}
@@ -445,32 +459,65 @@ export class SyncEngine {
 		mkdirTasks: MkdirRemoteTask[];
 		pushTasks: PushTask[];
 	}> {
+		const snapshotIndex = this.buildReuploadSnapshotIndex([
+			...originalTasks,
+			...confirmedTasks,
+			...tasksToReupload,
+		]);
 		const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
 		const pushTasks: PushTask[] = [];
-		const knownRemotePaths = new Set<string>();
+		const knownRemotePaths = new Set<string>(snapshotIndex.knownRemoteDirPaths);
 
 		for (const task of tasksToReupload) {
-			const stat = await statVaultItem(this.vault, task.localPath);
-			if (!stat) {
-				continue;
-			}
+			const plannedSnapshot = this.findPlannedSnapshot(
+				snapshotIndex,
+				task.localPath,
+				task.remotePath,
+			);
 
-			await this.ensureReuploadParentDir({
+			this.ensureReuploadParentDir({
 				confirmedTasks,
 				knownRemotePaths,
 				localPath: task.localPath,
 				mkdirTasksMap,
 				originalTasks,
 				remotePath: task.remotePath,
+				snapshotIndex,
 				syncRecord,
 			});
 
-			if (stat.isDir) {
-				mkdirTasksMap.set(task.remotePath, new MkdirRemoteTask(task.options));
+			const isDirectory = this.isReuploadDirectoryPath(
+				task.localPath,
+				task.remotePath,
+				plannedSnapshot,
+				snapshotIndex,
+			);
+
+			if (isDirectory) {
+				const reuploadMkdirOptions = {
+					...task.options,
+				} as MkdirRemoteTask['options'] & {
+					local?: PlannedPathSnapshot['local'];
+					remote?: PlannedPathSnapshot['remote'];
+				};
+				reuploadMkdirOptions.local = plannedSnapshot?.local;
+				reuploadMkdirOptions.remote = plannedSnapshot?.remote;
+
+				mkdirTasksMap.set(task.remotePath, new MkdirRemoteTask(reuploadMkdirOptions));
+				this.markRemotePathAndParentsAsExisting(knownRemotePaths, task.remotePath);
 				continue;
 			}
 
-			pushTasks.push(new PushTask(task.options));
+			const reuploadPushOptions = {
+				...task.options,
+			} as PushTask['options'] & {
+				local?: PlannedPathSnapshot['local'];
+				remote?: PlannedPathSnapshot['remote'];
+			};
+			reuploadPushOptions.local = plannedSnapshot?.local;
+			reuploadPushOptions.remote = plannedSnapshot?.remote;
+
+			pushTasks.push(new PushTask(reuploadPushOptions));
 		}
 
 		return {
@@ -479,13 +526,14 @@ export class SyncEngine {
 		};
 	}
 
-	private async ensureReuploadParentDir({
+	private ensureReuploadParentDir({
 		confirmedTasks,
 		knownRemotePaths,
 		localPath,
 		mkdirTasksMap,
 		originalTasks,
 		remotePath,
+		snapshotIndex,
 		syncRecord,
 	}: {
 		confirmedTasks: BaseTask[];
@@ -494,8 +542,9 @@ export class SyncEngine {
 		mkdirTasksMap: Map<string, MkdirRemoteTask>;
 		originalTasks: BaseTask[];
 		remotePath: string;
+		snapshotIndex: ReuploadSnapshotIndex;
 		syncRecord: SyncRecord;
-	}): Promise<void> {
+	}): void {
 		const parentLocalPath = vaultDirname(localPath);
 		const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
 
@@ -507,28 +556,156 @@ export class SyncEngine {
 			mkdirTasksMap.has(parentRemotePath) ||
 			knownRemotePaths.has(parentRemotePath) ||
 			this.hasMkdirTaskForPath(originalTasks, parentRemotePath) ||
-			this.hasMkdirTaskForPath(confirmedTasks, parentRemotePath);
+			this.hasMkdirTaskForPath(confirmedTasks, parentRemotePath) ||
+			snapshotIndex.knownRemoteDirPaths.has(parentRemotePath);
 
 		if (parentAlreadyHandled) {
 			return;
 		}
 
-		try {
-			await this.webdav.stat(parentRemotePath);
-			this.markRemotePathAndParentsAsExisting(knownRemotePaths, parentRemotePath);
-		} catch {
-			mkdirTasksMap.set(
-				parentRemotePath,
-				new MkdirRemoteTask({
-					vault: this.vault,
-					webdav: this.webdav,
-					remoteBaseDir: this.remoteBaseDir,
-					remotePath: parentRemotePath,
-					localPath: parentLocalPath,
-					syncRecord,
-				}),
-			);
+		const parentSnapshot = this.findPlannedSnapshot(
+			snapshotIndex,
+			parentLocalPath,
+			parentRemotePath,
+		);
+
+		const parentMkdirOptions = {
+			vault: this.vault,
+			webdav: this.webdav,
+			remoteBaseDir: this.remoteBaseDir,
+			remotePath: parentRemotePath,
+			localPath: parentLocalPath,
+			syncRecord,
+		} as MkdirRemoteTask['options'] & {
+			local?: PlannedPathSnapshot['local'];
+			remote?: PlannedPathSnapshot['remote'];
+		};
+		parentMkdirOptions.local = parentSnapshot?.local;
+		parentMkdirOptions.remote = parentSnapshot?.remote;
+
+		mkdirTasksMap.set(parentRemotePath, new MkdirRemoteTask(parentMkdirOptions));
+		this.markRemotePathAndParentsAsExisting(knownRemotePaths, parentRemotePath);
+	}
+
+	private buildReuploadSnapshotIndex(tasks: BaseTask[]): ReuploadSnapshotIndex {
+		const byLocalPath = new Map<string, PlannedPathSnapshot[]>();
+		const byRemotePath = new Map<string, PlannedPathSnapshot[]>();
+		const knownRemoteDirPaths = new Set<string>();
+		const localPaths = new Set<string>();
+		const remotePaths = new Set<string>();
+
+		for (const task of tasks) {
+			const plannedSnapshots = this.getTaskPlannedPathSnapshots(task);
+			for (const snapshot of plannedSnapshots) {
+				if (snapshot.localPath) {
+					localPaths.add(snapshot.localPath);
+					const localItems = byLocalPath.get(snapshot.localPath) ?? [];
+					localItems.push(snapshot);
+					byLocalPath.set(snapshot.localPath, localItems);
+				}
+
+				if (snapshot.remotePath) {
+					remotePaths.add(snapshot.remotePath);
+					const remoteItems = byRemotePath.get(snapshot.remotePath) ?? [];
+					remoteItems.push(snapshot);
+					byRemotePath.set(snapshot.remotePath, remoteItems);
+
+					if (snapshot.remote?.stat.isDir) {
+						this.markRemotePathAndParentsAsExisting(
+							knownRemoteDirPaths,
+							snapshot.remotePath,
+						);
+					} else if (snapshot.remote?.stat) {
+						const parentRemotePath = normalizeRemoteDir(
+							remoteDirname(snapshot.remotePath),
+						);
+						this.markRemotePathAndParentsAsExisting(
+							knownRemoteDirPaths,
+							parentRemotePath,
+						);
+					}
+				}
+			}
 		}
+
+		return {
+			byLocalPath,
+			byRemotePath,
+			knownRemoteDirPaths,
+			localPaths,
+			remotePaths,
+		};
+	}
+
+	private getTaskPlannedPathSnapshots(task: BaseTask): PlannedPathSnapshot[] {
+		const options = task.options as BaseTask['options'] & {
+			local?: PlannedPathSnapshot['local'];
+			remote?: PlannedPathSnapshot['remote'];
+			additionalPaths?: PlannedPathSnapshot[];
+		};
+		const plannedPaths: PlannedPathSnapshot[] = [
+			{
+				localPath: task.localPath,
+				remotePath: task.remotePath,
+				local: options.local,
+				remote: options.remote,
+			},
+		];
+
+		if (Array.isArray(options.additionalPaths)) {
+			plannedPaths.push(...options.additionalPaths);
+		}
+
+		return plannedPaths;
+	}
+
+	private findPlannedSnapshot(
+		snapshotIndex: ReuploadSnapshotIndex,
+		localPath: string,
+		remotePath: string,
+	): PlannedPathSnapshot | undefined {
+		const localMatches = snapshotIndex.byLocalPath.get(localPath) ?? [];
+		const exactLocal = localMatches.find((snapshot) => snapshot.remotePath === remotePath);
+		if (exactLocal) {
+			return exactLocal;
+		}
+
+		const remoteMatches = snapshotIndex.byRemotePath.get(remotePath) ?? [];
+		const exactRemote = remoteMatches.find((snapshot) => snapshot.localPath === localPath);
+		if (exactRemote) {
+			return exactRemote;
+		}
+
+		return localMatches[0] ?? remoteMatches[0];
+	}
+
+	private isReuploadDirectoryPath(
+		localPath: string,
+		remotePath: string,
+		plannedSnapshot: PlannedPathSnapshot | undefined,
+		snapshotIndex: ReuploadSnapshotIndex,
+	): boolean {
+		if (plannedSnapshot?.local?.stat) {
+			return plannedSnapshot.local.stat.isDir;
+		}
+
+		if (plannedSnapshot?.remote?.stat) {
+			return plannedSnapshot.remote.stat.isDir;
+		}
+
+		for (const candidateLocalPath of snapshotIndex.localPaths) {
+			if (candidateLocalPath.startsWith(localPath + '/')) {
+				return true;
+			}
+		}
+
+		for (const candidateRemotePath of snapshotIndex.remotePaths) {
+			if (candidateRemotePath.startsWith(remotePath + '/')) {
+				return true;
+			}
+		}
+
+		return true;
 	}
 
 	private hasMkdirTaskForPath(tasks: BaseTask[], remotePath: string): boolean {
@@ -736,10 +913,6 @@ export class SyncEngine {
 			}
 			return taskResult;
 		}
-	}
-
-	async updateMtimeInRecord(tasks: BaseTask[], results: TaskResult[]) {
-		return updateMtimeInRecordUtil(this.vault, tasks, results, 10);
 	}
 
 	private async retryWebDAVCall<T>(operation: () => Promise<T>) {

@@ -81,6 +81,12 @@ export default class SyncExecutorService {
 
 			run = updateSyncRunSnapshot(run, {
 				stage: 'planning',
+				planningProgress: {
+					subStage: 'loading_records',
+					totalWorkUnits: 0,
+					completedWorkUnits: 0,
+					currentItem: this.plugin.remoteBaseDir,
+				},
 				timestamps: {
 					planningStartedAt: Date.now(),
 				},
@@ -102,7 +108,14 @@ export default class SyncExecutorService {
 
 			let plan: PreparedSyncPlan;
 			try {
-				plan = await sync.preparePlan(request.runKind);
+				plan = await sync.preparePlan(request.runKind, {
+					onPlanningProgress: (planningProgress) => {
+						run = updateSyncRunSnapshot(run, {
+							planningProgress,
+						});
+						emitSyncRun(run);
+					},
+				});
 			} catch (error) {
 				run = finalizeSyncRun(run, {
 					stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',

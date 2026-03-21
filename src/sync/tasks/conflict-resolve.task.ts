@@ -1,13 +1,9 @@
-import { noop } from 'lodash-es';
-import type { StatModel } from '~/model/stat.model';
-import type { PreviousSyncRecordModel } from '~/model/sync-record.model';
+import type { ConflictTaskOptions } from '~/sync/decision/sync-decision.interface';
 import i18n from '~/i18n';
-import { arrayBufferEquals, toArrayBuffer, type BinaryLike } from '~/platform/binary';
+import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
-import { statVaultItem } from '~/utils/stat-vault-item';
-import { statWebDAVItem } from '~/utils/stat-webdav-item';
 import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
@@ -22,42 +18,110 @@ export enum ConflictStrategy {
 }
 
 export default class ConflictResolveTask extends BaseTask {
-	constructor(
-		public readonly options: BaseTaskOptions & {
-			record?: PreviousSyncRecordModel;
-			strategy: ConflictStrategy;
-			remoteStat?: StatModel;
-			localStat?: StatModel;
-			useGitStyle: boolean;
-		},
-	) {
+	constructor(public readonly options: BaseTaskOptions & ConflictTaskOptions) {
 		super(options);
+	}
+
+	private assertConflictMtime(mtime: number | undefined, path: string) {
+		if (mtime === undefined) {
+			throw new Error('missing planned mtime for conflict: ' + path);
+		}
+		return mtime;
+	}
+
+	private async getConflictSnapshots() {
+		const localStat = this.options.local?.stat;
+		const remoteStat = this.options.remote?.stat;
+		if (!localStat || localStat.isDir) {
+			throw new Error('missing local file snapshot for conflict: ' + this.localPath);
+		}
+		if (!remoteStat || remoteStat.isDir) {
+			throw new Error('missing remote file snapshot for conflict: ' + this.remotePath);
+		}
+
+		const localContent = this.options.local?.content;
+		const remoteContent = this.options.remote?.content;
+		if (!localContent) {
+			throw new Error('missing local content snapshot for conflict: ' + this.localPath);
+		}
+		if (!remoteContent) {
+			throw new Error('missing remote content snapshot for conflict: ' + this.remotePath);
+		}
+
+		return {
+			localStat,
+			remoteStat,
+			localBuffer: await toArrayBuffer(localContent),
+			remoteBuffer: await toArrayBuffer(remoteContent),
+		};
+	}
+
+	private isMergeableConflict() {
+		return isMergeablePath(this.localPath) && isMergeablePath(this.remotePath);
+	}
+
+	private async toText(content: ArrayBuffer) {
+		return await new Blob([new Uint8Array(content)]).text();
+	}
+
+	private async writeLocalBuffer(content: ArrayBuffer) {
+		await this.vault.adapter.writeBinary(this.localPath, content);
+	}
+
+	private async updateLatestTimestampRecord(params: {
+		winner: 'local' | 'remote';
+		localStat: ConflictTaskOptions['local']['stat'];
+		remoteStat: ConflictTaskOptions['remote']['stat'];
+		winnerContent: ArrayBuffer;
+	}) {
+		const { winner, localStat, remoteStat, winnerContent } = params;
+		const baseText = this.isMergeableConflict() ? await this.toText(winnerContent) : undefined;
+
+		if (winner === 'local') {
+			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
+				localPath: this.localPath,
+				remotePath: this.remotePath,
+				localStat,
+				baseText,
+			});
+			return;
+		}
+
+		await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
+			localPath: this.localPath,
+			remotePath: this.remotePath,
+			remoteStat,
+			baseText,
+		});
+	}
+
+	private async updateMergedRecord(params: {
+		mergedText: string;
+		localStat: ConflictTaskOptions['local']['stat'];
+		remoteStat: ConflictTaskOptions['remote']['stat'];
+	}) {
+		const mergedBytes = new TextEncoder().encode(params.mergedText);
+		const localMtime = this.assertConflictMtime(params.localStat.mtime, this.localPath);
+		const remoteMtime = this.assertConflictMtime(params.remoteStat.mtime, this.remotePath);
+		await this.syncRecord.upsertMergedConflictFromSyntheticSnapshot({
+			localPath: this.localPath,
+			remotePath: this.remotePath,
+			mtime: Math.max(localMtime, remoteMtime),
+			size: mergedBytes.byteLength,
+			baseText: params.mergedText,
+		});
 	}
 
 	async exec() {
 		try {
-			const local =
-				this.options.localStat ?? (await statVaultItem(this.vault, this.localPath));
-
-			if (!local) throw new Error('Local file not found: ' + this.localPath);
-
-			const remote =
-				this.options.remoteStat ?? (await statWebDAVItem(this.webdav, this.remotePath));
-
-			if (remote.isDir) throw new Error('Remote path is a directory: ' + this.remotePath);
-
-			if (local.isDir) throw new Error('Local path is a directory: ' + this.localPath);
-
-			if (local.size === 0 && remote.size === 0) return { success: true } as const;
+			const snapshots = await this.getConflictSnapshots();
 
 			switch (this.options.strategy) {
 				case ConflictStrategy.DiffMatchPatch:
-					return await this.execIntelligentMerge();
+					return await this.execIntelligentMerge(snapshots);
 				case ConflictStrategy.LatestTimeStamp:
-					return await this.execLatestTimeStamp(local, remote);
+					return await this.execLatestTimeStamp(snapshots);
 				case ConflictStrategy.Skip:
-					// Skip conflict resolution - keep files as they are
-					// Don't update record to preserve conflict state for next sync
 					return { success: true, skipRecord: true } as const;
 			}
 		} catch (e) {
@@ -69,52 +133,49 @@ export default class ConflictResolveTask extends BaseTask {
 		}
 	}
 
-	async execLatestTimeStamp(local: StatModel, remote: StatModel) {
+	async execLatestTimeStamp({
+		localStat,
+		remoteStat,
+		localBuffer,
+		remoteBuffer,
+	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
-			// At this point we know both local and remote are files (not directories)
-			// so mtime is guaranteed to exist
-			const localMtime = local.mtime as number;
-			const remoteMtime = remote.mtime as number;
-
-			if (remoteMtime === localMtime) {
-				return { success: true } as const;
-			}
-
-			const file = this.vault.getFileByPath(this.localPath);
-			if (!file) {
-				return {
-					success: false,
-					error: toTaskError(
-						new Error('cannot find file in local fs: ' + this.localPath),
-						this,
-					),
-				};
-			}
-			const localContent = await this.vault.readBinary(file);
-			const remoteContent = (await this.webdav.getFileContents(this.remotePath, {
-				details: false,
-				format: 'binary',
-			})) as BinaryLike;
-			const remoteArrayBuffer = await toArrayBuffer(remoteContent);
-
 			const result = resolveByLatestTimestamp({
-				localMtime,
-				remoteMtime,
-				localContent,
-				remoteContent: remoteArrayBuffer,
+				localMtime: localStat.mtime,
+				remoteMtime: remoteStat.mtime,
+				localContent: localBuffer,
+				remoteContent: remoteBuffer,
 			});
 
 			switch (result.status) {
 				case LatestTimestampResolution.UseRemote:
-					await this.vault.modifyBinary(file, result.content);
+					await this.writeLocalBuffer(result.content);
+					await this.updateLatestTimestampRecord({
+						winner: 'remote',
+						localStat,
+						remoteStat,
+						winnerContent: remoteBuffer,
+					});
 					break;
 				case LatestTimestampResolution.UseLocal:
 					await this.webdav.putFileContents(this.remotePath, result.content, {
 						overwrite: true,
 					});
+					await this.updateLatestTimestampRecord({
+						winner: 'local',
+						localStat,
+						remoteStat,
+						winnerContent: localBuffer,
+					});
 					break;
 				case LatestTimestampResolution.NoChange:
-					noop();
+					await this.updateLatestTimestampRecord({
+						winner: remoteStat.mtime > localStat.mtime ? 'remote' : 'local',
+						localStat,
+						remoteStat,
+						winnerContent:
+							remoteStat.mtime > localStat.mtime ? remoteBuffer : localBuffer,
+					});
 					break;
 			}
 
@@ -128,35 +189,29 @@ export default class ConflictResolveTask extends BaseTask {
 		}
 	}
 
-	async execIntelligentMerge() {
+	async execIntelligentMerge({
+		localStat,
+		remoteStat,
+		localBuffer,
+		remoteBuffer,
+	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
-			const file = this.vault.getFileByPath(this.localPath);
-			if (!file) {
-				throw new Error('cannot find file in local fs: ' + this.localPath);
-			}
-			const localBuffer = await this.vault.readBinary(file);
-			const remoteBuffer = (await this.webdav.getFileContents(this.remotePath, {
-				format: 'binary',
-				details: false,
-			})) as BinaryLike;
-			const remoteArrayBuffer = await toArrayBuffer(remoteBuffer);
-
-			if (arrayBufferEquals(localBuffer, remoteArrayBuffer)) {
+			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
+				await this.updateMergedRecord({
+					mergedText: await this.toText(localBuffer),
+					localStat,
+					remoteStat,
+				});
 				return { success: true } as const;
 			}
 
-			const { record } = this.options;
-
-			const localIsMergeable = isMergeablePath(file.path);
-			const remoteIsMergeable = isMergeablePath(this.remotePath);
-
-			if (!(localIsMergeable && remoteIsMergeable)) {
+			if (!this.isMergeableConflict()) {
 				throw new Error(i18n.t('sync.error.mergeNotSupported'));
 			}
 
-			const localText = await new Blob([new Uint8Array(localBuffer)]).text();
-			const remoteText = await new Blob([new Uint8Array(remoteArrayBuffer)]).text();
-			const baseText = record?.baseText ?? localText;
+			const localText = await this.toText(localBuffer);
+			const remoteText = await this.toText(remoteBuffer);
+			const baseText = this.options.record?.baseText ?? localText;
 
 			const mergeResult = await resolveByIntelligentMerge({
 				localContentText: localText,
@@ -165,54 +220,51 @@ export default class ConflictResolveTask extends BaseTask {
 			});
 
 			if (!mergeResult.success) {
-				// If patch_apply fails to resolve all, use mergeDigIn as a further fallback
 				const mergeDigInResult = mergeDigIn(localText, baseText, remoteText, {
 					stringSeparator: '\n',
 					useGitStyle: this.options.useGitStyle,
 				});
-				// mergeDigIn itself might produce conflict markers if it can't fully resolve.
-				// The task should handle this merged text (which might contain markers).
-				const mergedDmpText = mergeDigInResult.result.join('\n');
+				const mergedText = mergeDigInResult.result.join('\n');
 
-				const putResult = await this.webdav.putFileContents(
-					this.remotePath,
-					mergedDmpText,
-					{ overwrite: true },
-				);
+				const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
+					overwrite: true,
+				});
 
-				if (putResult) {
-					await this.vault.modify(file, mergedDmpText);
-					return { success: true } as const;
-				} else {
+				if (!putResult) {
 					throw new Error(i18n.t('sync.error.failedToUploadMerged'));
 				}
+
+				await this.writeLocalBuffer(new TextEncoder().encode(mergedText).buffer);
+				await this.updateMergedRecord({ mergedText, localStat, remoteStat });
+				return { success: true } as const;
 			}
 
 			if (mergeResult.isIdentical) {
-				// This case should be caught by the isEqual(localBuffer, remoteBuffer) check earlier,
-				// but resolveByIntelligentMerge also returns it.
+				await this.updateMergedRecord({
+					mergedText: localText,
+					localStat,
+					remoteStat,
+				});
 				return { success: true } as const;
 			}
 
 			const mergedText = mergeResult.mergedText as string;
 
-			// If mergedText is the same as remoteText, we only need to update localText if it's different.
-			if (mergedText === remoteText) {
-				if (mergedText !== localText) await this.vault.modify(file, mergedText);
-				return { success: true } as const;
+			if (mergedText !== remoteText) {
+				const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
+					overwrite: true,
+				});
+
+				if (!putResult) {
+					throw new Error(i18n.t('sync.error.failedToUploadMerged'));
+				}
 			}
 
-			// If mergedText is different from remoteText, then both remote and local need to be updated.
-			const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
-				overwrite: true,
-			});
-
-			if (!putResult) {
-				throw new Error(i18n.t('sync.error.failedToUploadMerged'));
+			if (localText !== mergedText) {
+				await this.writeLocalBuffer(new TextEncoder().encode(mergedText).buffer);
 			}
 
-			if (localText !== mergedText) await this.vault.modify(file, mergedText);
-
+			await this.updateMergedRecord({ mergedText, localStat, remoteStat });
 			return { success: true } as const;
 		} catch (e) {
 			logger.error(`Failed to resolve conflict for ${this.localPath} by smart merging`, e);
