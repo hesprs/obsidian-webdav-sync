@@ -16,7 +16,6 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
-import IFileSystem from '~/fs/fs.interface';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
@@ -78,8 +77,8 @@ interface ReuploadSnapshotIndex {
 
 // TODO: split into multiple modules
 export class SyncEngine {
-	remoteFs: IFileSystem;
-	localFS: IFileSystem;
+	remoteFs: RemoteWebDAVFileSystem;
+	localFS: LocalVaultFileSystem;
 	isCancelled: boolean = false;
 
 	private subscriptions: Subscription[] = [];
@@ -97,10 +96,7 @@ export class SyncEngine {
 	) {
 		this.options = Object.freeze(this.options);
 		this.remoteFs = new RemoteWebDAVFileSystem(this.options);
-		this.localFS = new LocalVaultFileSystem({
-			vault: this.options.vault,
-			syncRecord: this.createSyncRecord(),
-		});
+		this.localFS = new LocalVaultFileSystem(this.options);
 		this.subscriptions.push(
 			onCancelSync().subscribe(() => {
 				this.isCancelled = true;
@@ -401,11 +397,6 @@ export class SyncEngine {
 			syncStateStore: this.plugin.syncStateStore,
 			saveInterval: 1,
 		});
-	}
-
-	private async clearStoredRemoteSnapshot() {
-		const traversal = await this.createTraversal();
-		await traversal.clearStoredSnapshot();
 	}
 
 	private async rebuildConfirmedTasksAfterDeleteConfirmation({
@@ -740,8 +731,7 @@ export class SyncEngine {
 
 		let remoteBaseDirExists = await this.retryWebDAVCall(() => webdav.exists(remoteBaseDir));
 
-		if (!remoteBaseDirExists)
-			await Promise.all([syncRecord.drop(), this.clearStoredRemoteSnapshot()]);
+		if (!remoteBaseDirExists) await syncRecord.drop();
 
 		while (!remoteBaseDirExists) {
 			this.throwIfCancelled();

@@ -1,32 +1,27 @@
 import { Vault } from 'obsidian';
+import type { MaybePromise } from '~/types';
 import { useSettings } from '~/settings';
-import { SyncRecord } from '~/storage';
 import GlobMatch, {
 	type GlobMatchOptions,
 	isVoidGlobMatchOptions,
 	needIncludeFromGlobRules,
 } from '~/utils/glob-match';
-import { traverseLocalVault } from '~/utils/traverse-local-vault';
-import AbstractFileSystem from './fs.interface';
+import { traverseVault, type TraversalProgress } from '~/utils/traverse-vault';
 import completeLossDir from './utils/complete-loss-dir';
 
-export class LocalVaultFileSystem implements AbstractFileSystem {
-	constructor(
-		private readonly options: {
-			vault: Vault;
-			syncRecord: SyncRecord;
-		},
-	) {}
+export class LocalVaultFileSystem {
+	constructor(private readonly options: { vault: Vault }) {}
 
-	async walk() {
+	async walk(onProgress: (progress: TraversalProgress) => MaybePromise<void>) {
 		const settings = await useSettings();
 		const exclusions = this.buildRules(settings?.filterRules.exclusionRules);
 		const inclusions = this.buildRules(settings?.filterRules.inclusionRules);
 
-		const stats = await traverseLocalVault(
-			this.options.vault,
-			this.options.vault.getRoot().path,
-		);
+		const stats = await traverseVault({
+			vault: this.options.vault,
+			from: this.options.vault.getRoot().path,
+			onProgress,
+		});
 		const includedStats = stats.filter((stat) =>
 			needIncludeFromGlobRules(stat.path, inclusions, exclusions),
 		);

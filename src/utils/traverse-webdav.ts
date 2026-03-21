@@ -14,7 +14,7 @@ import sleep from './sleep';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
 
-export type WalkFreshness = 'stored-ok' | 'fresh';
+export type WalkFreshness = 'resume' | 'fresh';
 
 export interface TraversalProgress {
 	processedDirectories: number;
@@ -114,14 +114,14 @@ export class ResumableWebDAVTraversal {
 		return await this.lock.runExclusive(async () => {
 			await this.loadState();
 
-			const freshness = options?.freshness ?? 'stored-ok';
+			const freshness = options?.freshness ?? 'resume';
 			const hasCompleteSnapshot = this.hasCompleteSnapshot();
 
 			if (freshness === 'fresh' && (hasCompleteSnapshot || this.queue.length > 0)) {
 				await this.clearLoadedState();
 			}
 
-			if (freshness === 'stored-ok' && hasCompleteSnapshot) return this.getAllFromSnapshot();
+			if (freshness === 'resume' && hasCompleteSnapshot) return this.getAllFromSnapshot();
 
 			if (this.queue.length === 0) {
 				this.queue = [this.remoteBaseDir];
@@ -289,15 +289,6 @@ export class ResumableWebDAVTraversal {
 			remoteRecord.queue.length > 0 ||
 			Object.keys(remoteRecord.nodes).length > 0
 		);
-	}
-
-	/**
-	 * Clear stored remote traversal state
-	 */
-	async clearStoredSnapshot(): Promise<void> {
-		await this.lock.runExclusive(async () => {
-			await this.clearLoadedState();
-		});
 	}
 
 	/**

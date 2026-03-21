@@ -57,7 +57,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
-
 	public i18nService = new I18nService(this);
 	public progressService = new ProgressService(this);
 	public observabilityService = new ObservabilityService(this);
