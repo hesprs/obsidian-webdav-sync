@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.2.3 - 2026-03-22
+
+- Ignore syncing application time realtime syncing invocation to avoid duplicated syncing caused by syncing itself.
+- Fixed repeated vault re-upload due to file path and modification time mismatch.
+
 ## Obsidian WebDAV Sync v1.2.2 - 2026-03-22
 
 - Fixed sync progress not showing explicit progress in `Building plan` phase.

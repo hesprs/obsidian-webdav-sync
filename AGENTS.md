@@ -18,7 +18,7 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 ## Methodology
 
 - **Small refactor for simplicity and uniformity is always preferred than irresponsible fast patch.** Ask yourself: does this introduce inconsistency or duplication? Are there simpler ways? Is existing code not structured well or redundant? **Do not overdo refactoring, if your refactoring is not to simplify but add additional bloat, consider if you truly need it.**
-- Use fixers strategically to speed up development.
+- **Use fixers strategically to speed up development.**
 
 ## Repository Map
 

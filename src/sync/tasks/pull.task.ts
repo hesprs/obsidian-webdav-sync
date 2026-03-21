@@ -2,6 +2,7 @@ import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { toArrayBuffer, type BinaryLike } from '~/platform/binary';
 import { vaultDirname } from '~/platform/path/vault-path';
 import logger from '~/utils/logger';
+import { statVaultItem } from '~/utils/stat-vault-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PullTask extends BaseTask {
@@ -26,9 +27,8 @@ export default class PullTask extends BaseTask {
 			}
 
 			const arrayBuffer = await toArrayBuffer(remoteContent);
-			if (arrayBuffer.byteLength !== this.remoteSize) {
+			if (arrayBuffer.byteLength !== this.remoteSize)
 				throw new Error('Remote Size Not Match!');
-			}
 
 			const localDir = vaultDirname(this.localPath);
 			if (localDir !== '.' && localDir !== '') {
@@ -45,10 +45,15 @@ export default class PullTask extends BaseTask {
 			}
 
 			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
-			await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
+			// no race condition since we've just written it
+			const localStat = await statVaultItem(this.vault, this.localPath);
+			if (!localStat || localStat.isDir) {
+				throw new Error('failed to read local file stat after pull: ' + this.localPath);
+			}
+			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
 				localPath: this.localPath,
 				remotePath: this.remotePath,
-				remoteStat,
+				localStat,
 			});
 
 			return { success: true } as const;

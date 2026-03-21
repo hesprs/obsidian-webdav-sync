@@ -72,9 +72,7 @@ export default class TwoWaySyncDecider {
 		});
 
 		const previousLocalRecords = await this.syncRecordStorage.getLocalRecords();
-		const previousRemoteRecords = Object.values(
-			(await this.syncRecordStorage.getRemoteRecord()).nodes,
-		).flat();
+		const previousRemoteRecords = await this.syncRecordStorage.getRemoteStats();
 
 		await reportPlanningProgress({
 			subStage: 'walking_local',

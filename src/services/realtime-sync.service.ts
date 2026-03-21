@@ -1,3 +1,4 @@
+import { getCurrentSyncRun } from '~/events';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
@@ -8,6 +9,10 @@ export default class RealtimeSyncService {
 	private onChange = async () => {
 		const settings = await useSettings();
 		if (!settings.realtimeSync) return;
+
+		const currentRun = getCurrentSyncRun();
+		if (currentRun?.stage === 'executing') return;
+
 		await this.syncScheduler.requestSync({
 			mode: SyncStartMode.AUTO_SYNC,
 			runKind: settings.useFastSyncOnLocalChange ? SyncRunKind.NUMB : SyncRunKind.NORMAL,

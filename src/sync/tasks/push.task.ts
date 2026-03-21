@@ -24,9 +24,7 @@ export default class PushTask extends BaseTask {
 			const res = await this.webdav.putFileContents(this.remotePath, arrayBuffer, {
 				overwrite: true,
 			});
-			if (!res) {
-				throw new Error('Upload failed');
-			}
+			if (!res) throw new Error('Upload failed');
 
 			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
 				localPath: this.localPath,
