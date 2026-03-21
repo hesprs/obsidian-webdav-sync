@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.2.0 - 2026-03-21
+
+- Refactored the syncing process to finish local and remote file capturing at planning time, creating a snapshotted plan that will be used to sync. This avoids the edge case that the file changes between planning and execution.
+- Make records be updated immediately after finishing a sync task, which avoids redundant WebDAV requests and similar race condition above.
+- Display detailed planing phases in the status bar.
+- Fix debug log not being written in exported support log in development mode.
+
 ## Obsidian WebDAV Sync v1.1.2 - 2026-03-19
 
 - Fixed observability chaos that causes the status bar always show "planning" when offline.
@@ -18,9 +25,9 @@ All notable changes to this project will be documented in this file.
 - Refactored the syncing process to only traverse remote directory once per normal sync.
 - Unified traversal cache with local last-sync record to become a single remote record.
 - Simplified and modernized remote record local database storage.
-- Introduced new numb syncing mode that avoids remote directory traversal entirely for high-frequency realtime syncing.
+- Introduced new fast syncing mode that avoids remote directory traversal entirely for high-frequency realtime syncing.
 
-## Obsidian WebDAV Sync v1.0.0 - 2026-03-15
+## Obsidian WebDAV Sync v1.0.0 - 2026-03-16
 
 - Re-engineered the plugin to be a general-purpose WebDAV syncing plugin.
 - Allow custom WebDAV endpoints.

@@ -260,18 +260,21 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					}
 					if (remoteChanged) {
 						if (localChanged) {
-							logger.debug(`find conflict between ${localName} and ${remoteName}`, {
-								reason: 'both local and remote files changed',
-								remotePath: remotePathToAbsolute(remoteBaseDir, p),
-								localPath: p,
-								conditions: {
-									remoteChanged,
-									localChanged,
-									recordExists: !!record,
-									remoteExists: !!remote,
-									localExists: !!local,
+							logger.debug(
+								`Detected conflict between \`${localName}\` and \`${remoteName}\``,
+								{
+									reason: 'both local and remote files changed',
+									remotePath: remotePathToAbsolute(remoteBaseDir, p),
+									localPath: p,
+									conditions: {
+										remoteChanged,
+										localChanged,
+										recordExists: !!record,
+										remoteExists: !!remote,
+										localExists: !!local,
+									},
 								},
-							});
+							);
 							if (remote.size > maxFileSize || local.size > maxFileSize) {
 								tasks.push(
 									taskFactory.createSkippedTask({
@@ -305,7 +308,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 							continue;
 						} else {
-							logger.debug(`pull remote file ${remoteName} changes to local`, {
+							logger.debug(`Pull remote file \`${remoteName}\` changes to local`, {
 								reason: 'remote file changed',
 								remotePath: remotePathToAbsolute(remoteBaseDir, p),
 								localPath: p,
@@ -333,7 +336,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						}
 					} else {
 						if (localChanged) {
-							logger.debug(`push local file ${localName} changes to remote`, {
+							logger.debug(`Push local file \`${localName}\` changes to remote`, {
 								reason: 'local file changed',
 								remotePath: remotePathToAbsolute(remoteBaseDir, p),
 								localPath: p,
@@ -366,7 +369,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					}
 				} else {
 					if (remoteChanged) {
-						logger.debug(`pull remote file ${remoteName} to local`, {
+						logger.debug(`Pull remote file \`${remoteName}\` to local`, {
 							reason: 'remote file changed and local file does not exist',
 							remotePath: remotePathToAbsolute(remoteBaseDir, p),
 							localPath: p,
@@ -391,7 +394,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						await createPullTaskWithSnapshot(options, remote);
 						continue;
 					} else {
-						logger.debug(`remove remote file ${remote.path}`, {
+						logger.debug(`Remove remote file \`${remote.path}\``, {
 							reason: 'remote file is removable',
 							remotePath: remotePathToAbsolute(remoteBaseDir, p),
 							localPath: p,
@@ -408,7 +411,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			} else if (local) {
 				const localChanged = !isSameTime(local.mtime, record.local.mtime);
 				if (localChanged) {
-					logger.debug(`push local file ${localName} to remote`, {
+					logger.debug(`Push local file \`${localName}\` to remote`, {
 						reason: 'local file changed and remote file does not exist',
 						remotePath: remotePathToAbsolute(remoteBaseDir, p),
 						localPath: p,
@@ -437,7 +440,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					}
 					continue;
 				} else {
-					logger.debug(`remove local file ${localName}`, {
+					logger.debug(`Remove local file \`${localName}\``, {
 						reason: 'local file is removable',
 						remotePath: remotePathToAbsolute(remoteBaseDir, p),
 						localPath: p,
@@ -468,7 +471,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						continue;
 					}
 					logger.debug(
-						`find conflict between local file ${localName} and remote file ${remoteName}`,
+						`Detected conflict between local file \`${localName}\` and remote file ${remoteName}`,
 						{
 							reason: 'both local and remote files exist without a record',
 							remotePath: remotePathToAbsolute(remoteBaseDir, p),
@@ -510,7 +513,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 					continue;
 				} else {
-					logger.debug(`pull remote file ${remoteName} to local`, {
+					logger.debug(`Pull remote file \`${remoteName}\` to local`, {
 						reason: 'remote file exists without a local file',
 						remotePath: remotePathToAbsolute(remoteBaseDir, p),
 						localPath: p,
@@ -537,7 +540,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				}
 			} else {
 				if (local) {
-					logger.debug(`push local file ${localName} to remote`, {
+					logger.debug(`Push local file \`${localName}\` to remote`, {
 						reason: 'local file exists without a remote file',
 						remotePath: remotePathToAbsolute(remoteBaseDir, p),
 						localPath: p,
@@ -633,7 +636,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			);
 
 			if (remoteChanged) {
-				logger.debug(`create local folder according to remote ${remoteName}`, {
+				logger.debug(`Create local folder according to remote \`${remoteName}\``, {
 					reason: 'remote folder content changed',
 					remotePath: remotePathToAbsolute(remoteBaseDir, remote.path),
 					localPath: localPath,
@@ -657,7 +660,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 			if (hasIgnoredInFolder(remote.path, remoteStats)) {
 				const ignoredPaths = getIgnoredPathsInFolder(remote.path, remoteStats);
-				logger.debug(`skip removing remote folder`, {
+				logger.debug(`Skip removing remote folder \`${remoteName}\``, {
 					reason: 'remote folder contains ignored items',
 					remotePath: remotePathToAbsolute(remoteBaseDir, remote.path),
 					localPath: localPath,
@@ -680,7 +683,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				continue;
 			}
 
-			logger.debug(`remove remote folder ${remoteName}`, {
+			logger.debug(`Remove remote folder \`${remoteName}\``, {
 				reason: 'remote folder is removable (no content changes)',
 				remotePath: remotePathToAbsolute(remoteBaseDir, remote.path),
 				localPath: localPath,
@@ -699,7 +702,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			);
 			continue;
 		} else {
-			logger.debug(``, {
+			logger.debug(`Create  local folder according to remote \`${remoteName}\``, {
 				reason: 'remote folder does not exist locally',
 				remotePath: remotePathToAbsolute(remoteBaseDir, remote.path),
 				localPath: localPath,
@@ -750,7 +753,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				);
 
 				if (localChanged) {
-					logger.debug(`create remote folder according to local ${localName}`, {
+					logger.debug(`Create remote folder according to local \`${localName}\``, {
 						reason: 'local folder content changed',
 						remotePath: remotePathToAbsolute(remoteBaseDir, local.path),
 						localPath: local.path,
@@ -783,7 +786,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 				if (hasIgnoredInFolder(local.path, localStats)) {
 					const ignoredPaths = getIgnoredPathsInFolder(local.path, localStats);
-					logger.debug(`skip removing local folder ${localName}`, {
+					logger.debug(`Skip removing local folder \`${localName}\``, {
 						reason: '(contains ignored items)',
 						remotePath: remotePathToAbsolute(remoteBaseDir, local.path),
 						localPath: local.path,
@@ -806,7 +809,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					continue;
 				}
 
-				logger.debug(`remove local folder ${localName}`, {
+				logger.debug(`Remove local folder \`${localName}\``, {
 					reason: 'local folder is removable (no content changes)',
 					remotePath: remotePathToAbsolute(remoteBaseDir, local.path),
 					localPath: local.path,
@@ -832,7 +835,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					})(),
 				);
 			} else {
-				logger.debug(`create remote folder according to local ${localName}`, {
+				logger.debug(`Create remote folder according to local \`${localName}\``, {
 					reason: 'local folder does not exist remotely',
 					remotePath: remotePathToAbsolute(remoteBaseDir, local.path),
 					localPath: local.path,

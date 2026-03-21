@@ -437,9 +437,7 @@ export class SyncEngine {
 				continue;
 			}
 
-			if (deleteTaskSet.has(task)) {
-				deleteTasks.push(task);
-			}
+			if (deleteTaskSet.has(task)) deleteTasks.push(task);
 		}
 
 		return [...mkdirTasks, ...otherTasks, ...pushTasks, ...deleteTasks];
@@ -548,9 +546,7 @@ export class SyncEngine {
 		const parentLocalPath = vaultDirname(localPath);
 		const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
 
-		if (parentLocalPath === '.' || parentLocalPath === '') {
-			return;
-		}
+		if (parentLocalPath === '.' || parentLocalPath === '') return;
 
 		const parentAlreadyHandled =
 			mkdirTasksMap.has(parentRemotePath) ||
@@ -652,9 +648,7 @@ export class SyncEngine {
 			},
 		];
 
-		if (Array.isArray(options.additionalPaths)) {
-			plannedPaths.push(...options.additionalPaths);
-		}
+		if (Array.isArray(options.additionalPaths)) plannedPaths.push(...options.additionalPaths);
 
 		return plannedPaths;
 	}
@@ -672,9 +666,7 @@ export class SyncEngine {
 
 		const remoteMatches = snapshotIndex.byRemotePath.get(remotePath) ?? [];
 		const exactRemote = remoteMatches.find((snapshot) => snapshot.localPath === localPath);
-		if (exactRemote) {
-			return exactRemote;
-		}
+		if (exactRemote) return exactRemote;
 
 		return localMatches[0] ?? remoteMatches[0];
 	}
@@ -685,24 +677,14 @@ export class SyncEngine {
 		plannedSnapshot: PlannedPathSnapshot | undefined,
 		snapshotIndex: ReuploadSnapshotIndex,
 	): boolean {
-		if (plannedSnapshot?.local?.stat) {
-			return plannedSnapshot.local.stat.isDir;
-		}
-
-		if (plannedSnapshot?.remote?.stat) {
-			return plannedSnapshot.remote.stat.isDir;
-		}
+		if (plannedSnapshot?.local?.stat) return plannedSnapshot.local.stat.isDir;
+		if (plannedSnapshot?.remote?.stat) return plannedSnapshot.remote.stat.isDir;
 
 		for (const candidateLocalPath of snapshotIndex.localPaths) {
-			if (candidateLocalPath.startsWith(localPath + '/')) {
-				return true;
-			}
+			if (candidateLocalPath.startsWith(localPath + '/')) return true;
 		}
-
 		for (const candidateRemotePath of snapshotIndex.remotePaths) {
-			if (candidateRemotePath.startsWith(remotePath + '/')) {
-				return true;
-			}
+			if (candidateRemotePath.startsWith(remotePath + '/')) return true;
 		}
 
 		return true;
@@ -721,10 +703,7 @@ export class SyncEngine {
 		let currentPath = remotePath;
 
 		while (currentPath && currentPath !== '.' && currentPath !== '' && currentPath !== '/') {
-			if (knownRemotePaths.has(currentPath)) {
-				return;
-			}
-
+			if (knownRemotePaths.has(currentPath)) return;
 			knownRemotePaths.add(currentPath);
 			currentPath = normalizeRemoteDir(remoteDirname(currentPath));
 		}
@@ -741,9 +720,7 @@ export class SyncEngine {
 
 			while (currentPath && currentPath !== '.' && currentPath !== '') {
 				currentPath = vaultDirname(currentPath);
-				if (currentPath === '.' || currentPath === '') {
-					break;
-				}
+				if (currentPath === '.' || currentPath === '') break;
 
 				for (const deleteTask of deleteTaskSet) {
 					if (deleteTask.localPath === currentPath) {
@@ -801,9 +778,7 @@ export class SyncEngine {
 
 		for (let i = 0; i < tasks.length; ++i) {
 			const task = tasks[i];
-			if (this.isCancelled) {
-				break;
-			}
+			if (this.isCancelled) break;
 
 			const taskResult = await this.executeWithRetry(task);
 			const taskName = task.toJSON().taskName;
@@ -951,10 +926,7 @@ export class SyncEngine {
 	}
 
 	private throwIfCancelled(): void {
-		if (!this.isCancelled) {
-			return;
-		}
-
+		if (!this.isCancelled) return;
 		logger.warn('WebDAV operation cancelled', undefined, {
 			category: 'sync.retry',
 		});

@@ -56,7 +56,6 @@ interface RunReportSummary {
 }
 
 const MAX_LOG_ENTRIES = 1000;
-const MARKDOWN_EXPORT_LEVELS: LogLevel[] = ['info', 'warn', 'error'];
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -176,11 +175,10 @@ class Logger {
 	}
 
 	exportMarkdownReport(): string {
-		const exportedLogs = this.logs.filter((log) => MARKDOWN_EXPORT_LEVELS.includes(log.level));
 		const runGroups = new Map<string, LogEntry[]>();
 		const generalLogs: LogEntry[] = [];
 
-		for (const log of exportedLogs) {
+		for (const log of this.logs) {
 			if (!log.runId) {
 				generalLogs.push(log);
 				continue;
@@ -200,9 +198,8 @@ class Logger {
 			'',
 		];
 
-		if (runGroups.size === 0) {
-			lines.push('## Sync runs', '', 'No sync runs recorded.', '');
-		} else {
+		if (runGroups.size === 0) lines.push('## Sync runs', '', 'No sync runs recorded.', '');
+		else {
 			lines.push('## Sync runs', '');
 			const sortedRuns = Array.from(runGroups.entries()).sort(([, left], [, right]) => {
 				const leftTime = left[0]?.timestampMs ?? 0;
@@ -432,17 +429,12 @@ class Logger {
 		};
 
 		this.logs.push(entry);
-		if (this.logs.length > MAX_LOG_ENTRIES) {
+		if (this.logs.length > MAX_LOG_ENTRIES)
 			this.logs.splice(0, this.logs.length - MAX_LOG_ENTRIES);
-		}
 
 		const consoleMethod = console[level] as (...consoleArgs: unknown[]) => void;
-		if (entry.metadata === undefined) {
-			consoleMethod(`[${entry.category}] ${message}`);
-			return;
-		}
-
-		consoleMethod(`[${entry.category}] ${message}`, entry.metadata);
+		if (entry.metadata === undefined) consoleMethod(`[${entry.category}] ${message}`);
+		else consoleMethod(`[${entry.category}] ${message}`, entry.metadata);
 	}
 
 	private getCurrentContext(): LogContext {
