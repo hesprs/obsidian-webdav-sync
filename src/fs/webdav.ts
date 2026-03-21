@@ -10,13 +10,13 @@ import GlobMatch, {
 	needIncludeFromGlobRules,
 } from '~/utils/glob-match';
 import { ResumableWebDAVTraversal, type WalkFreshness } from '~/utils/traverse-webdav';
-import AbstractFileSystem, { type FsWalkOptions } from './fs.interface';
+import { type FsWalkOptions } from './fs.interface';
 import completeLossDir from './utils/complete-loss-dir';
 import { normalizeRemoteWalkPath } from './utils/normalize-remote-walk-path';
 
 export type { WalkFreshness };
 
-export class RemoteWebDAVFileSystem implements AbstractFileSystem {
+export class RemoteWebDAVFileSystem {
 	constructor(
 		private options: {
 			vault: Vault;
@@ -59,14 +59,14 @@ export class RemoteWebDAVFileSystem implements AbstractFileSystem {
 			saveInterval: 1,
 		});
 		let stats = await traversal.traverse({
-			freshness: options?.freshness ?? 'stored-ok',
+			freshness: options?.freshness ?? 'resume',
 			onProgress: options?.onTraversalProgress,
 		});
 
 		return await this.toWalkResults(stats, settings?.filterRules);
 	}
 
-	private async toWalkResults(
+	async toWalkResults(
 		stats: StatModel[],
 		filterRules?: {
 			exclusionRules?: GlobMatchOptions[];

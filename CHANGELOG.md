@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.2.2 - 2026-03-22
+
+- Fixed sync progress not showing explicit progress in `Building plan` phase.
+- Simplified progress reporting pipeline and reduced unnecessary traversals and updates.
+
 ## Obsidian WebDAV Sync v1.2.1 - 2026-03-21
 
 - Fixed 404 error during planning phase when a pull is requested.

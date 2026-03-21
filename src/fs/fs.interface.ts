@@ -12,7 +12,3 @@ export interface FsWalkOptions {
 	remoteSource?: 'traversal' | 'stored-record';
 	onTraversalProgress?: (progress: TraversalProgress) => MaybePromise<void>;
 }
-
-export default abstract class AbstractFileSystem {
-	abstract walk(options?: FsWalkOptions): MaybePromise<FsWalkResult[]>;
-}

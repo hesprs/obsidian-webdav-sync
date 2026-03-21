@@ -132,8 +132,8 @@ export interface SyncDecisionInput {
 	settings: SyncDecisionSettings;
 	currentLocalStats: FsWalkResult[];
 	currentRemoteStats: FsWalkResult[];
-	previousRemoteStats: FsWalkResult[];
-	previousLocalRecords: Map<string, PreviousLocalRecordItem>;
+	previousRemoteRecords: StatModel[];
+	previousLocalRecords: Map<string, LocalRecordModel>;
 	remoteBaseDir: string;
 	compareFileContent: (filePath: string, baseText: string) => Promise<boolean>;
 	onProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;

@@ -41,10 +41,6 @@ export default class TwoWaySyncDecider {
 		protected syncRecordStorage: SyncRecord,
 	) {}
 
-	protected getSyncRecordStorage() {
-		return this.syncRecordStorage;
-	}
-
 	get webdav() {
 		return this.sync.webdav;
 	}
@@ -64,56 +60,35 @@ export default class TwoWaySyncDecider {
 	async decide(options?: {
 		onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
 	}): Promise<BaseTask[]> {
-		const syncRecordStorage = this.getSyncRecordStorage();
 		const reportPlanningProgress = async (progress: SyncPlanningProgress) => {
 			await options?.onPlanningProgress?.(progress);
 		};
 
 		await reportPlanningProgress({
 			subStage: 'loading_records',
-			totalWorkUnits: 3,
+			totalWorkUnits: 0,
 			completedWorkUnits: 0,
 			currentItem: this.remoteBaseDir,
 		});
 
-		const previousLocalRecords = await syncRecordStorage.getLocalRecords();
-		await reportPlanningProgress({
-			subStage: 'loading_records',
-			totalWorkUnits: 3,
-			completedWorkUnits: 1,
-			currentItem: this.remoteBaseDir,
-		});
+		const previousLocalRecords = await this.syncRecordStorage.getLocalRecords();
+		const previousRemoteRecords = Object.values(
+			(await this.syncRecordStorage.getRemoteRecord()).nodes,
+		).flat();
 
-		const previousRemoteRecord = await syncRecordStorage.getRemoteRecord();
-		await reportPlanningProgress({
-			subStage: 'loading_records',
-			totalWorkUnits: 3,
-			completedWorkUnits: 2,
-			currentItem: this.remoteBaseDir,
-		});
-
-		const previousRemoteStats = previousRemoteRecord
-			? await this.sync.remoteFs.walk({ remoteSource: 'stored-record' })
-			: [];
-		await reportPlanningProgress({
-			subStage: 'loading_records',
-			totalWorkUnits: 3,
-			completedWorkUnits: 3,
-			currentItem: this.remoteBaseDir,
-		});
-
-		await reportPlanningProgress({
-			subStage: 'walking_local',
-			totalWorkUnits: 1,
-			completedWorkUnits: 0,
-			currentItem: this.vault.getRoot().path,
-		});
-		const currentLocalStats = await this.sync.localFS.walk();
 		await reportPlanningProgress({
 			subStage: 'walking_local',
 			totalWorkUnits: 1,
 			completedWorkUnits: 1,
 			currentItem: this.vault.getRoot().path,
+		});
+		const currentLocalStats = await this.sync.localFS.walk(async (progress) => {
+			await reportPlanningProgress({
+				subStage: 'walking_local',
+				totalWorkUnits: progress.totalDirectories,
+				completedWorkUnits: progress.processedDirectories,
+				currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+			});
 		});
 
 		await reportPlanningProgress({
@@ -124,7 +99,7 @@ export default class TwoWaySyncDecider {
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.NUMB
-				? previousRemoteStats
+				? await this.sync.remoteFs.toWalkResults(previousRemoteRecords)
 				: await this.sync.remoteFs.walk({
 						freshness: 'fresh',
 						onTraversalProgress: async (progress) => {
@@ -137,21 +112,12 @@ export default class TwoWaySyncDecider {
 						},
 					});
 
-		if (this.sync.runKind === SyncRunKind.NUMB) {
-			await reportPlanningProgress({
-				subStage: 'walking_remote',
-				totalWorkUnits: 1,
-				completedWorkUnits: 1,
-				currentItem: this.remoteBaseDir,
-			});
-		}
-
 		// 创建共用的task选项
 		const commonTaskOptions = {
 			webdav: this.webdav,
 			vault: this.vault,
 			remoteBaseDir: this.remoteBaseDir,
-			syncRecord: syncRecordStorage,
+			syncRecord: this.syncRecordStorage,
 		};
 
 		// 创建Task工厂
@@ -300,7 +266,7 @@ export default class TwoWaySyncDecider {
 			},
 			currentLocalStats,
 			currentRemoteStats,
-			previousRemoteStats,
+			previousRemoteRecords,
 			previousLocalRecords,
 			remoteBaseDir: this.remoteBaseDir,
 			compareFileContent,

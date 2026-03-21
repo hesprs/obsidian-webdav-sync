@@ -19,9 +19,9 @@ import { hasFolderContentChanged } from './has-folder-content-changed';
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {
 		settings,
-		currentLocalStats,
-		currentRemoteStats,
-		previousRemoteStats,
+		currentLocalStats: localStats,
+		currentRemoteStats: remoteStats,
+		previousRemoteRecords,
 		previousLocalRecords,
 		remoteBaseDir,
 		compareFileContent,
@@ -40,21 +40,14 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	}
 
 	// Filter out ignored files and extract StatModel from FsWalkResult
-	const localStats = currentLocalStats;
-	const remoteStats = currentRemoteStats;
 	const localStatsFiltered = localStats.filter((item) => !item.ignored).map((item) => item.stat);
 	const remoteStatsFiltered = remoteStats
-		.filter((item) => !item.ignored)
-		.map((item) => item.stat);
-	const previousRemoteStatsFiltered = previousRemoteStats
 		.filter((item) => !item.ignored)
 		.map((item) => item.stat);
 
 	const localStatsMap = new Map(localStatsFiltered.map((item) => [item.path, item]));
 	const remoteStatsMap = new Map(remoteStatsFiltered.map((item) => [item.path, item]));
-	const previousRemoteStatsMap = new Map(
-		previousRemoteStatsFiltered.map((item) => [item.path, item]),
-	);
+	const previousRemoteStatsMap = new Map(previousRemoteRecords.map((item) => [item.path, item]));
 	const syncRecords = new Map(
 		Array.from(previousLocalRecords.entries()).flatMap(([path, record]) => {
 			const remote = previousRemoteStatsMap.get(path);
@@ -103,13 +96,18 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	const totalDecisionWorkUnits =
 		mixedPath.size +
 		cleanupCandidatePaths.size +
-		remoteStatsFiltered.filter((item) => item.isDir).length +
-		localStatsFiltered.filter((item) => item.isDir).length;
-	await onProgress?.({
-		subStage: 'deciding',
-		totalWorkUnits: totalDecisionWorkUnits,
-		completedWorkUnits: 0,
-	});
+		remoteStatsFiltered.length +
+		localStatsFiltered.length;
+
+	let completedUnits = -1;
+	const updateProgress = async () => {
+		completedUnits++;
+		await onProgress?.({
+			subStage: 'deciding',
+			totalWorkUnits: totalDecisionWorkUnits,
+			completedWorkUnits: completedUnits,
+		});
+	};
 
 	const createPushTaskWithSnapshot = async (
 		options: {
@@ -236,6 +234,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 	// * sync files
 	for (const p of mixedPath) {
+		await updateProgress();
 		const remote = remoteStatsMap.get(p);
 		const local = localStatsMap.get(p);
 		const record = syncRecords.get(p);
@@ -575,6 +574,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 	// * clean orphaned records (both local and remote deleted)
 	for (const recordPath of cleanupCandidatePaths) {
+		await updateProgress();
 		const local = localStatsMap.get(recordPath);
 		const remote = remoteStatsMap.get(recordPath);
 		const hasPreviousLocal = previousLocalRecords.has(recordPath);
@@ -605,6 +605,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 	// * sync folder: remote -> local
 	for (const remote of remoteStatsFiltered) {
+		await updateProgress();
 		if (!remote.isDir) continue;
 		const localPath = remotePathToLocalRelative(remoteBaseDir, remote.path);
 		const local = localStatsMap.get(localPath);
@@ -727,6 +728,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 	// * sync folder: local -> remote
 	for (const local of localStatsFiltered) {
+		await updateProgress();
 		if (!local.isDir) continue;
 		const remote = remoteStatsMap.get(local.path);
 		const record = syncRecords.get(local.path);
@@ -872,6 +874,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			);
 	}
 
+	await updateProgress();
 	// Sort folder tasks to ensure correct execution order
 	removeRemoteFolderTasks.sort((a, b) => b.remotePath.length - a.remotePath.length);
 	removeLocalFolderTasks.sort((a, b) => b.localPath.length - a.localPath.length);
@@ -882,12 +885,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		...mkdirRemoteTasks,
 		...noopFolderTasks,
 	];
-
-	await onProgress?.({
-		subStage: 'deciding',
-		totalWorkUnits: totalDecisionWorkUnits,
-		completedWorkUnits: totalDecisionWorkUnits,
-	});
 
 	tasks.splice(0, 0, ...allFolderTasks);
 	return tasks;
