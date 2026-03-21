@@ -43,6 +43,10 @@ export default {
 			name: 'Use git-style conflict markers',
 			desc: 'Use <<<<<<< and >>>>>>> markers for conflicts instead of HTML tags',
 		},
+		showSyncStatusInNotificationOnMobile: {
+			name: 'Show sync status in mobile notification',
+			desc: 'Keep a mobile notice visible during sync and hide it two seconds after sync ends',
+		},
 		backupWarning: {
 			name: 'Backup warning',
 			desc: '⚠️ Note: Sync process will modify or delete local files. Please backup important files before syncing.',

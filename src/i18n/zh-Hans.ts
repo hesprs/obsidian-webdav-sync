@@ -44,6 +44,10 @@ export default {
 			name: '使用 Git 样式的冲突标记',
 			desc: '启用后将使用 <<<<<<< 和 >>>>>>> 等标记来显示冲突，而不是 HTML 标记',
 		},
+		showSyncStatusInNotificationOnMobile: {
+			name: '在移动端通知中显示同步状态',
+			desc: '同步期间持续显示通知，并在同步结束两秒后自动隐藏',
+		},
 		backupWarning: {
 			name: '备份提醒',
 			desc: '⚠️ 请注意：同步过程会修改或删除本地文件，建议在同步前备份重要文件。',
