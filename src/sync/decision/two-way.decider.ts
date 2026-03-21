@@ -2,6 +2,7 @@ import type { SyncPlanningProgress } from '~/events';
 import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/model/sync-record.model';
+import { joinRemotePath } from '~/platform/path/remote-path';
 import type { SyncEngine } from '..';
 import type {
 	CleanRecordTaskOptions,
@@ -240,7 +241,8 @@ export default class TwoWaySyncDecider {
 
 			const promise = (async (): Promise<PlannedRemoteSnapshot | undefined> => {
 				if (remoteStat.isDir) return undefined;
-				const content = (await this.webdav.getFileContents(remotePath, {
+				const absoluteRemotePath = joinRemotePath(this.remoteBaseDir, remotePath);
+				const content = (await this.webdav.getFileContents(absoluteRemotePath, {
 					format: 'binary',
 					details: false,
 				})) as BinaryLike;

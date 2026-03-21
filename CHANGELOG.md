@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## Obsidian WebDAV Sync v1.2.0 - 2026-03-21
 
+- Fixed 404 error during planning phase when a pull is requested.
+
+## Obsidian WebDAV Sync v1.2.0 - 2026-03-21
+
 - Refactored the syncing process to finish local and remote file capturing at planning time, creating a snapshotted plan that will be used to sync. This avoids the edge case that the file changes between planning and execution.
 - Make records be updated immediately after finishing a sync task, which avoids redundant WebDAV requests and similar race condition above.
 - Display detailed planing phases in the status bar.
