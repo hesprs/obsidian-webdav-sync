@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## Obsidian WebDAV Sync v1.2.0 - 2026-03-21
+## Obsidian WebDAV Sync v1.2.1 - 2026-03-21
 
 - Fixed 404 error during planning phase when a pull is requested.
 
