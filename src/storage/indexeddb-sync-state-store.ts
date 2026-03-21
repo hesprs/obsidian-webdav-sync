@@ -1,7 +1,7 @@
 import localspace from 'localspace';
 import type { RemoteRecordModel } from '~/model/sync-record.model';
 import logger from '~/utils/logger';
-import type { PersistedLocalRecordsModel, SyncStateStore } from './sync-state-store';
+import type { PersistedLocalRecordsModel, SyncStateStore } from './store.interface';
 
 type SyncStateMetaRecord = {
 	version: 1;

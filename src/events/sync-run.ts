@@ -14,6 +14,19 @@ export type SyncRunStage =
 	| 'cancelled'
 	| 'failed';
 
+export type SyncPlanningSubStage =
+	| 'loading_records'
+	| 'walking_local'
+	| 'walking_remote'
+	| 'deciding';
+
+export interface SyncPlanningProgress {
+	subStage: SyncPlanningSubStage;
+	totalWorkUnits: number;
+	completedWorkUnits: number;
+	currentItem?: string;
+}
+
 export interface SyncRunWarning {
 	code: 'delete_confirmation';
 	messageKey: 'deleteConfirm.warningNotice';
@@ -72,6 +85,7 @@ export interface SyncRunSnapshot {
 	runKind: SyncRunKind;
 	stage: SyncRunStage;
 	timestamps: SyncRunTimestamps;
+	planningProgress?: SyncPlanningProgress;
 	planSummary?: SyncPlanSummary;
 	progressSummary: SyncProgressSummary;
 	resultSummary?: SyncResultSummary;

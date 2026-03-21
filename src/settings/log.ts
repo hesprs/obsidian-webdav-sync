@@ -29,15 +29,13 @@ export default class LogSettings extends BaseSettings {
 	async saveLogsToNote() {
 		try {
 			const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-			const fileName = `webdav-sync-logs-${timestamp}.md`;
-			const dirPath = 'webdav-sync/logs';
+			const fileName = `${timestamp}.md`;
+			const dirPath = 'WebDAV Sync Logs';
 			const filePath = `${dirPath}/${fileName}`;
 			const content = logger.exportMarkdownReport();
 
 			const folderExists = this.app.vault.getFolderByPath(dirPath);
-			if (!folderExists) {
-				await this.app.vault.createFolder(dirPath);
-			}
+			if (!folderExists) await this.app.vault.createFolder(dirPath);
 
 			const file = await this.app.vault.create(filePath, content);
 			new Notice(i18n.t('settings.log.savedToNote', { fileName: filePath }));

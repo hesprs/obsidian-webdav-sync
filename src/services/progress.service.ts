@@ -1,6 +1,6 @@
 import { throttle } from 'lodash-es';
 import { Notice } from 'obsidian';
-import type { SyncProgressSummary, SyncRunSnapshot } from '~/events';
+import type { SyncPlanningProgress, SyncProgressSummary, SyncRunSnapshot } from '~/events';
 import SyncProgressModal from '../components/SyncProgressModal';
 import { onSyncRun } from '../events';
 import i18n from '../i18n';
@@ -38,6 +38,10 @@ export class ProgressService {
 				completed: [],
 			}
 		);
+	}
+
+	get planningProgress(): SyncPlanningProgress | null {
+		return this.currentRunSnapshot?.planningProgress ?? null;
 	}
 
 	get syncEnd(): boolean {

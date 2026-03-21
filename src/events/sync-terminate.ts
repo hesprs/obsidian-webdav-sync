@@ -1,3 +1,4 @@
+import logger from '~/utils/logger';
 import {
 	emitSyncRun,
 	type SyncErrorSummary,
@@ -5,8 +6,7 @@ import {
 	type SyncRunStage,
 	type SyncRunTimestamps,
 	updateSyncRunSnapshot,
-} from '~/events';
-import logger from '~/utils/logger';
+} from '.';
 
 type SyncTerminalStage = Extract<
 	SyncRunStage,
@@ -45,14 +45,8 @@ function createSyncErrorSummary(
 	error: Error | undefined,
 	errorSummary: SyncErrorSummary | undefined,
 ): SyncErrorSummary | undefined {
-	if (errorSummary !== undefined) {
-		return errorSummary;
-	}
-
-	if (!error) {
-		return undefined;
-	}
-
+	if (errorSummary !== undefined) return errorSummary;
+	if (!error) return undefined;
 	return {
 		message: error.message,
 		name: error.name,
@@ -75,20 +69,11 @@ function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 		error,
 	};
 
-	if (run.stage === 'failed') {
+	if (run.stage === 'failed')
 		logger.error('Sync failed', metadata, { category: 'sync.lifecycle' });
-		return;
-	}
-
-	if (run.stage === 'cancelled') {
+	else if (run.stage === 'cancelled')
 		logger.warn('Sync cancelled', metadata, { category: 'sync.lifecycle' });
-		return;
-	}
-
-	if (run.stage === 'completed_noop') {
+	else if (run.stage === 'completed_noop')
 		logger.info('Sync completed with no changes', metadata, { category: 'sync.lifecycle' });
-		return;
-	}
-
-	logger.info('Sync completed', metadata, { category: 'sync.lifecycle' });
+	else logger.info('Sync completed', metadata, { category: 'sync.lifecycle' });
 }

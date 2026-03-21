@@ -20,9 +20,6 @@ export function isSyncCancelledError(error: unknown): error is SyncCancelledErro
 }
 
 export function toError(error: unknown, fallbackMessage: string): Error {
-	if (error instanceof Error) {
-		return error;
-	}
-
+	if (error instanceof Error) return error;
 	return new Error(typeof error === 'string' ? error : fallbackMessage);
 }

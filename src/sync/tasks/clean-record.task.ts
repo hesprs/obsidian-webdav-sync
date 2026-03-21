@@ -2,6 +2,7 @@ import { BaseTask } from './task.interface';
 
 export default class CleanRecordTask extends BaseTask {
 	async exec() {
-		return { success: true } as const;
+		await this.syncRecord.cleanOrphanedRecordPaths(this.localPath, this.remotePath);
+		return { success: true, skipRecord: true } as const;
 	}
 }

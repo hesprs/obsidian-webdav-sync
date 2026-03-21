@@ -16,6 +16,12 @@ const getContents = apiLimiter.wrap(getDirectoryContents);
 
 export type WalkFreshness = 'stored-ok' | 'fresh';
 
+export interface TraversalProgress {
+	processedDirectories: number;
+	totalDirectories: number;
+	currentDirectory?: string;
+}
+
 // Global mutex map: one lock per kvKey
 const traversalLocks = new Map<string, Mutex>();
 
@@ -101,7 +107,10 @@ export class ResumableWebDAVTraversal {
 		return getTraversalLock(this.stateKey);
 	}
 
-	async traverse(options?: { freshness?: WalkFreshness }): Promise<StatModel[]> {
+	async traverse(options?: {
+		freshness?: WalkFreshness;
+		onProgress?: (progress: TraversalProgress) => MaybePromise<void>;
+	}): Promise<StatModel[]> {
 		return await this.lock.runExclusive(async () => {
 			await this.loadState();
 
@@ -119,7 +128,9 @@ export class ResumableWebDAVTraversal {
 				this.processedCount = 0;
 			}
 
-			await this.bfsTraverse();
+			await this.reportProgress(options?.onProgress);
+
+			await this.bfsTraverse(options?.onProgress);
 			await this.saveState();
 			return this.getAllFromSnapshot();
 		});
@@ -139,7 +150,9 @@ export class ResumableWebDAVTraversal {
 	/**
 	 * BFS traversal (initial scan or resume)
 	 */
-	private async bfsTraverse(): Promise<void> {
+	private async bfsTraverse(
+		onProgress?: (progress: TraversalProgress) => MaybePromise<void>,
+	): Promise<void> {
 		while (this.queue.length > 0) {
 			const currentPath = this.queue[0];
 			const normalizedPath = this.normalizeDirPath(currentPath);
@@ -163,6 +176,7 @@ export class ResumableWebDAVTraversal {
 
 				this.queue.shift();
 				this.processedCount++;
+				await this.reportProgress(onProgress, normalizedPath);
 
 				if (this.processedCount % this.saveInterval === 0) await this.saveState();
 			} catch (err) {
@@ -171,6 +185,7 @@ export class ResumableWebDAVTraversal {
 				if (isNotFoundError(err)) {
 					this.queue.shift();
 					this.processedCount++;
+					await this.reportProgress(onProgress, normalizedPath);
 					await this.saveState();
 					continue;
 				}
@@ -179,6 +194,21 @@ export class ResumableWebDAVTraversal {
 				throw err;
 			}
 		}
+	}
+
+	private async reportProgress(
+		onProgress?: (progress: TraversalProgress) => MaybePromise<void>,
+		currentDirectory?: string,
+	): Promise<void> {
+		if (!onProgress) {
+			return;
+		}
+
+		await onProgress({
+			processedDirectories: this.processedCount,
+			totalDirectories: this.processedCount + this.queue.length,
+			currentDirectory,
+		});
 	}
 
 	/**

@@ -1,5 +1,5 @@
 import type { FsWalkResult } from '~/fs/fs.interface';
-import { isSub } from '../../utils/is-sub';
+import { isSub } from '~/utils/is-sub';
 
 /**
  * Check if there are any ignored files/folders within a directory

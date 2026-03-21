@@ -147,7 +147,7 @@ export default class ObservabilityService {
 		switch (run.stage) {
 			case 'queued':
 			case 'planning':
-				return `${syncType} · ${i18n.t('sync.preparing')}`;
+				return this.getPlanningStatusText(syncType, run);
 			case 'awaiting_confirmation':
 				return `${syncType} · ${i18n.t('sync.awaitingConfirmation')}`;
 			case 'executing': {
@@ -173,6 +173,15 @@ export default class ObservabilityService {
 						})}`
 					: `${syncType} · ${i18n.t('sync.failedStatus')}`;
 		}
+	}
+
+	private getPlanningStatusText(syncType: string, run: SyncRunSnapshot): string {
+		const planningProgress = run.planningProgress;
+		if (!planningProgress) return `${syncType} · ${i18n.t('sync.preparing')}`;
+		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
+		const stageText = i18n.t(`sync.planningStage.${subStage}`);
+		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
+		return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
 	}
 
 	private getNoticeText(
