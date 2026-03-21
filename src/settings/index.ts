@@ -19,6 +19,7 @@ export interface PluginSettings {
 	account: string;
 	credential: string;
 	remoteDir: string;
+	showSyncStatusInNotificationOnMobile: boolean;
 	useGitStyle: boolean;
 	conflictStrategy: ConflictStrategy;
 	confirmBeforeSync: boolean;

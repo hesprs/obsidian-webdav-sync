@@ -92,6 +92,19 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
+			.setName(i18n.t('settings.showSyncStatusInNotificationOnMobile.name'))
+			.setDesc(i18n.t('settings.showSyncStatusInNotificationOnMobile.desc'))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.showSyncStatusInNotificationOnMobile)
+					.onChange(async (value) => {
+						this.plugin.settings.showSyncStatusInNotificationOnMobile = value;
+						await this.plugin.saveSettings();
+						this.plugin.observabilityService.syncMobileNoticeWithSettings();
+					}),
+			);
+
+		new Setting(this.containerEl)
 			.setName(i18n.t('settings.confirmBeforeSync.name'))
 			.setDesc(i18n.t('settings.confirmBeforeSync.desc'))
 			.addToggle((toggle) =>

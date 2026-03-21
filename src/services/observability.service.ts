@@ -1,4 +1,4 @@
-import { Notice } from 'obsidian';
+import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
 import { onSyncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import i18n from '~/i18n';
@@ -7,6 +7,7 @@ import { formatSyncRunType } from '~/utils/format-sync-run-type';
 import type WebDAVSyncPlugin from '..';
 
 const TERMINAL_STAGES: SyncRunStage[] = ['completed', 'completed_noop', 'cancelled', 'failed'];
+const MOBILE_SYNC_NOTICE_HIDE_DELAY = 2000;
 
 export default class ObservabilityService {
 	private previousRun: SyncRunSnapshot | null = null;
@@ -22,6 +23,8 @@ export default class ObservabilityService {
 	private lastSyncTime: number | null = null;
 	private updateInterval: number | null = null;
 	private baseStatusText: string = '';
+	private mobileSyncNotice: Notice | null = null;
+	private mobileSyncNoticeHideTimeout: number | null = null;
 
 	constructor(private plugin: WebDAVSyncPlugin) {
 		this.syncStatusBar = plugin.addStatusBarItem();
@@ -30,6 +33,13 @@ export default class ObservabilityService {
 	unload() {
 		this.subscriptions.forEach((subscription) => subscription.unsubscribe());
 		this.stopTimeUpdates();
+		this.hideMobileSyncNotice();
+	}
+
+	syncMobileNoticeWithSettings() {
+		if (!this.shouldUseMobileSyncNotice()) {
+			this.hideMobileSyncNotice();
+		}
 	}
 
 	private setCurrentStatus(text: string): void {
@@ -76,9 +86,29 @@ export default class ObservabilityService {
 	private apply(run: SyncRunSnapshot) {
 		this.plugin.toggleSyncUI(!TERMINAL_STAGES.includes(run.stage));
 		this.applyStatus(run);
+		this.applyMobileSyncNotice(run);
 		this.applyNotice(run, this.previousRun);
 		this.applyProgressModal(run, this.previousRun);
 		this.applyFailureModal(run);
+	}
+
+	private applyMobileSyncNotice(run: SyncRunSnapshot) {
+		if (!this.shouldUseMobileSyncNotice()) {
+			this.hideMobileSyncNotice();
+			return;
+		}
+
+		this.clearMobileSyncNoticeHideTimeout();
+		const text = this.getStatusText(run);
+
+		if (this.mobileSyncNotice) this.mobileSyncNotice.setMessage(text);
+		else this.mobileSyncNotice = new Notice(text, 0);
+
+		if (TERMINAL_STAGES.includes(run.stage)) {
+			this.mobileSyncNoticeHideTimeout = window.setTimeout(() => {
+				this.hideMobileSyncNotice();
+			}, MOBILE_SYNC_NOTICE_HIDE_DELAY);
+		}
 	}
 
 	private applyStatus(run: SyncRunSnapshot) {
@@ -102,10 +132,29 @@ export default class ObservabilityService {
 			return;
 		}
 
-		const noticeText = this.getNoticeText(run, previousRun);
-		if (noticeText) {
-			new Notice(noticeText);
+		if (this.shouldUseMobileSyncNotice()) {
+			return;
 		}
+
+		const noticeText = this.getNoticeText(run, previousRun);
+		if (noticeText) new Notice(noticeText);
+	}
+
+	private shouldUseMobileSyncNotice(): boolean {
+		return Platform.isMobile && this.plugin.settings.showSyncStatusInNotificationOnMobile;
+	}
+
+	private clearMobileSyncNoticeHideTimeout(): void {
+		if (this.mobileSyncNoticeHideTimeout !== null) {
+			window.clearTimeout(this.mobileSyncNoticeHideTimeout);
+			this.mobileSyncNoticeHideTimeout = null;
+		}
+	}
+
+	private hideMobileSyncNotice(): void {
+		this.clearMobileSyncNoticeHideTimeout();
+		this.mobileSyncNotice?.hide();
+		this.mobileSyncNotice = null;
 	}
 
 	private applyProgressModal(run: SyncRunSnapshot, previousRun: SyncRunSnapshot | null) {

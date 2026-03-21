@@ -34,6 +34,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		account: '',
 		credential: '',
 		remoteDir: '',
+		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
 		confirmBeforeSync: true,

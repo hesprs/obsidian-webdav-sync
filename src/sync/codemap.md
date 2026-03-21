@@ -2,30 +2,43 @@
 
 ## Responsibility
 
-Owns sync-run orchestration: build a prepared plan, enforce confirmation policy, optimize tasks, execute with cancellation/retry behavior, and persist sync-state mutations after each execution batch.
+Implements the sync domain runtime: produce a deterministic task plan from local/remote/state snapshots, run the plan with confirmation/retry/cancel controls, and publish lifecycle/progress/result snapshots for services/UI.
+
+Primary responsibilities in this folder:
+
+- Orchestrate plan preparation and execution (`SyncEngine` in `index.ts`).
+- Convert snapshots + records into concrete task commands (`decision/*`).
+- Execute atomic sync commands (`tasks/*`) where each task owns its own storage mutation behavior.
+- Optimize task lists before execution (`utils/merge-mkdir-tasks.ts`, `utils/merge-remove-remote-tasks.ts`).
+- Centralize sync-specific error taxonomy (`errors.ts`) and merge policies (`utils/merge.ts`).
 
 ## Design Patterns
 
-- Two-phase orchestration (`SyncEngine`): `preparePlan()` computes immutable plan metadata; `start()` executes with UI gates and progress/event side effects.
-- Command execution model (`tasks/*`): all operations implement `BaseTask.exec()` and return typed `TaskResult` with optional `skipRecord` semantics.
-- Planner/executor split: `TwoWaySyncDecider` produces task graph; engine does not contain branch-heavy diff logic.
-- Post-plan optimization passes: mkdir/remove-remote tasks are collapsed into recursive/batched variants before execution.
-- Fault-tolerant loop: transient 503 handling (`executeWithRetry` + `breakableSleep`) and global cancel subscription.
+- **Two-phase orchestration**: `preparePlan()` builds immutable plan data (`tasks`, `hasActionableTasks`); `start()` runs execution and updates run snapshots.
+- **Planner/runner separation**: `TwoWaySyncDecider` + `twoWayDecider()` handle branch-heavy state transitions; `SyncEngine` handles execution lifecycle and policy gates.
+- **Command pattern for operations**: all task classes extend `BaseTask` and return `TaskResult` (`success | failure`, optional `skipRecord`).
+- **Task-local state mutation**: sync-record updates now happen inside task `exec()` implementations (upsert/remove/clean/merged updates), with `skipRecord` signaling non-mutating follow-up behavior.
+- **Pre-execution rewrite passes**: mkdir/remove-remote tasks are collapsed into recursive/batched variants to reduce remote API calls.
+- **Resilient execution loop**: retryable WebDAV/task failures are retried with `breakableSleep`; cancellation propagates through `SyncCancelledError`.
 
 ## Data & Control Flow
 
-1. `preparePlan(runKind)` creates `SyncRecord` scoped by `getSyncStateKey`, ensures remote base dir exists, and clears stale remote snapshot/records when base dir is missing.
-2. `TwoWaySyncDecider.decide()` returns raw `BaseTask[]` from current snapshots + persisted state.
-3. `start()` classifies tasks into noop/skipped/actionable, applies manual confirmation (`TaskListConfirmModal`), and optional auto-sync delete confirmation (`DeleteConfirmModal`) with reupload conversion (`RemoveLocalTask` -> `PushTask`/`MkdirRemoteTask`).
-4. Task list is deduplicated, optimized (`mergeMkdirTasks`, `mergeRemoveRemoteTasks`), and chunked (size 200).
-5. `execTasks()` runs sequentially per chunk, emits progress for displayable tasks only (excluding `NoopTask`/`CleanRecordTask`), and records per-task outcomes.
-6. `updateMtimeInRecord()` applies deterministic state updates for successful tasks after each chunk.
-7. Engine emits lifecycle events (`preparing`, `start`, `progress`, `update-mtime`, `end`, `error`) and surfaces failed-task details in manual mode.
+1. `SyncEngine.preparePlan(runKind)` builds a state-keyed `SyncRecord`, ensures remote base directory exists, and drops stale records + stored remote snapshot when the base directory is missing.
+2. `TwoWaySyncDecider.decide()` loads previous records, local walk, and remote walk (fresh or stored for `SyncRunKind.NUMB`), then delegates to `twoWayDecider()`.
+3. `twoWayDecider()` generates `BaseTask[]` using `TaskFactory`:
+   - file transitions (push/pull/remove/conflict/noop/skipped/filename-error),
+   - orphaned-record cleanup (`CleanRecordTask`),
+   - folder transitions using descendant-change checks (`hasFolderContentChanged`) and ignored-item guards (`hasIgnoredInFolder`).
+4. `SyncEngine.start()` emits plan summary, applies manual confirmation (`TaskListConfirmModal`) and optional auto-delete confirmation (`DeleteConfirmModal`), including reupload conversion for selected `RemoveLocalTask`s.
+5. Confirmed tasks are deduplicated, optimized (`mergeMkdirTasks`, `mergeRemoveRemoteTasks`), chunked (200), then executed sequentially with per-task retry (`executeWithRetry`).
+6. Progress snapshots include displayable tasks only (exclude `NoopTask` and `CleanRecordTask`); failures are aggregated into `resultSummary.failed`.
+7. Engine finalizes run state (`completed`, `completed_noop`, `failed`, `cancelled`) and maps cancellation/retry exhaustion via `isSyncCancelledError`, `SyncCancelledError`, and `SyncRetryExhaustedError`.
 
 ## Integration Points
 
-- Filesystem adapters: `src/fs/local-vault.ts`, `src/fs/webdav.ts`.
-- State persistence: `src/storage/sync-record.ts` (local records + remote traversal snapshot).
-- Traversal lifecycle: `src/utils/traverse-webdav.ts` (`ResumableWebDAVTraversal`) via state-keyed snapshot management.
-- UI/event layer: modals + notices + `src/events` emitter/subscriber contracts.
-- Runtime services: `WebDAVSyncPlugin` settings/progress service and WebDAV client primitives (`exists`, `createDirectory`, `stat`, content ops).
+- **Filesystem boundaries**: `LocalVaultFileSystem` and `RemoteWebDAVFileSystem` provide walk snapshots used by decision logic.
+- **Persistence boundary**: `SyncRecord` (`src/storage`) stores local/remote records, subtree removals, merged conflict snapshots, and remote traversal metadata.
+- **Traversal snapshot lifecycle**: `ResumableWebDAVTraversal` is used to clear stored remote snapshots when base-dir state is reset.
+- **Services/event pipeline**: scheduler/executor services provide run requests; `emitSyncRun`/`updateSyncRunSnapshot`/`finalizeSyncRun` expose lifecycle and progress to UI.
+- **UI confirmation modals**: `TaskListConfirmModal` and `DeleteConfirmModal` gate destructive/manual execution paths.
+- **Platform/util dependencies**: path normalization/conversion helpers, retryability checks, i18n, and logger are shared across engine, planner, and tasks.

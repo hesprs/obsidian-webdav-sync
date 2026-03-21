@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Make records be updated immediately after finishing a sync task, which avoids redundant WebDAV requests and similar race condition above.
 - Display detailed planing phases in the status bar.
 - Fix debug log not being written in exported support log in development mode.
+- Added new option "Show sync status in mobile notification" to improve observability on mobile devices.
 
 ## Obsidian WebDAV Sync v1.1.2 - 2026-03-19
 

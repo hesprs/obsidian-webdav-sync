@@ -2,38 +2,35 @@
 
 ## Responsibility
 
-Provide the sync-state persistence boundary for the plugin. This directory no longer persists via plugin settings; it defines and consumes a dedicated store abstraction (`SyncStateStore`) and exposes `SyncRecord` as the runtime-facing DAO/facade for sync state.
+Provide sync-state persistence as an explicit storage boundary for the plugin. This directory defines the pluggable store contract (`SyncStateStore`), provides the default IndexedDB-backed implementation (`IndexedDbSyncStateStore`), and exposes `SyncRecord` as the namespace-scoped state facade used by sync/traversal runtime flows.
 
 ## Design Patterns
 
-- **Storage abstraction boundary (`SyncStateStore`)**: interface-first contract for lifecycle and CRUD split by state slice (`initialize`, `get/set/clearRemote`, `get/setLocal`, `delete`).
-- **Default adapter implementation (`IndexedDbSyncStateStore`)**: localspace-backed IndexedDB adapter with readiness gating (`initialize`/`ensureReady`) and guarded execution (`run`) that logs failures and surfaces storage-unavailable errors.
-- **DAO/facade (`SyncRecord`)**: namespace-scoped state API that coordinates remote and local persistence independently while presenting unified `SyncStateModel` operations to sync runtime callers.
-- **Normalization boundary**: persisted local records (`Record<string, LocalRecordModel>`) are normalized to runtime `Map`; partial/legacy remote payloads are normalized into a complete `RemoteRecordModel` shape.
-- **Path-aware mutation helpers**: remote/local upsert/remove/subtree operations canonicalize paths before mutating in-memory state.
+- **Interface-first storage boundary**: `SyncStateStore` (`initialize`, split remote/local read-write, namespace delete) decouples storage consumers from backend details.
+- **Adapter implementation with readiness/error guards**: `IndexedDbSyncStateStore` wraps localspace IndexedDB with one-time initialization, operation wrapper (`run`), and centralized logging for unavailable storage / operation failures.
+- **DAO/facade over split persistence**: `SyncRecord` composes `getRemote/getLocal` and `setRemote/setLocal` into unified `SyncStateModel` operations and higher-level mutation APIs.
+- **Normalization boundary**: persisted local records are stored as `Record<string, LocalRecordModel>` and normalized to runtime `Map`; remote state is normalized from partial payloads to a complete `RemoteRecordModel` shape.
+- **Path-canonical mutation model**: all remote/local updates normalize vault/remote paths before upsert/remove/subtree deletion, preventing key drift and duplicate logical entries.
 
 ## Data & Control Flow
 
-1. Composition root creates a `SyncStateStore` (typically `IndexedDbSyncStateStore`) and injects it into `SyncRecord(namespace, remoteBaseDir, store)`.
-2. Store initialization is explicit (`initialize()`), then each operation is executed through adapter guards (`ensureReady` + `run`).
-3. `SyncRecord.loadState()` reads remote and local slices independently (`getRemote` + `getLocal`) and normalizes to runtime `SyncStateModel` (`{ version, remoteRecord, localRecords: Map }`).
-4. Reads return full state or projections (`getState`, `getRemoteRecord`, `getRemoteStats`, `getLocalRecords`).
-5. Writes are split by concern:
-   - full-state write: `setRemote` + `setLocal`
-   - remote-only write/clear: `setRemoteRecord` / `clearRemoteRecord`
-   - delete namespace: `delete`
-6. Mutation flows use path-aware helpers (`upsert/remove remote`, `upsert/remove local`, subtree removals) then persist via split remote/local writes.
+1. Plugin composition creates a single `IndexedDbSyncStateStore`, initializes it, and passes it to storage consumers.
+2. Runtime callers create `SyncRecord(namespace, remoteBaseDir, store)` for a specific sync namespace.
+3. `SyncRecord.loadState()` reads remote and local slices in parallel, then normalizes into `SyncStateModel` (`version`, `remoteRecord`, `localRecords: Map`).
+4. Read APIs return full state (`getState`) or projections (`getRemoteRecord`, `getRemoteStats`, `getLocalRecords`).
+5. Mutation APIs (`mutateState` and specialized helpers for synced files/dirs, subtree cleanup, orphan cleanup) modify in-memory normalized state, then persist split slices (`setRemote` + `setLocal`).
+6. Remote-only operations (`setRemoteRecord`, `clearRemoteRecord`) and namespace drop (`drop` -> `store.delete`) bypass full-state persistence when appropriate.
 
 ## Integration Points
 
-- **Model contracts**: `SyncStateModel` (`version`, `remoteRecord`, `localRecords`) and related record models from `src/model/sync-record.model.ts`.
-- **Sync runtime consumers**: sync orchestration/task flows depend on `SyncRecord` for state reads, mutation staging, and persistence.
-- **Path/platform utilities**: remote/vault normalization and remote-walk normalization are used to keep stored keys and stat paths canonical.
-- **Decoupling note**: plugin settings singleton coupling was removed from this directory; storage no longer depends on `plugin.settings.syncStates` or `plugin.saveSettings()`.
+- **Composition root** (`src/index.ts`): owns store lifecycle (`new IndexedDbSyncStateStore()`, `initialize()`).
+- **Sync orchestration** (`src/sync/index.ts`): instantiates `SyncRecord` with state key and remote base directory; uses it for record reads/mutations during task execution.
+- **Remote traversal stack** (`src/utils/traverse-webdav.ts`, `src/fs/webdav.ts`): consumes `SyncStateStore` for resumable/stored remote snapshots.
+- **Model + path utilities**: depends on `src/model/sync-record.model.ts` and path normalization helpers (`~/platform/path/*`, `normalizeRemoteWalkPath`) to keep persisted/derived paths canonical.
 
 ## Key Files
 
-- `index.ts`: barrel exports (`indexeddb-sync-state-store`, `sync-record`, `sync-state-store`).
-- `sync-state-store.ts`: `SyncStateStore` contract and `PersistedLocalRecordsModel` persisted shape.
-- `indexeddb-sync-state-store.ts`: IndexedDB/localspace store adapter with per-namespace meta/remote/local keys and guarded operations.
-- `sync-record.ts`: namespace-scoped DAO/facade that normalizes state, performs path-aware mutation, and persists remote/local slices independently.
+- `index.ts`: barrel exports for `SyncRecord`, store interface types, and store implementation.
+- `store.interface.ts`: `SyncStateStore` contract plus `PersistedLocalRecordsModel` persisted local-state shape.
+- `store.ts`: `IndexedDbSyncStateStore` localspace IndexedDB adapter with per-namespace meta/remote/local keys and guarded operations.
+- `sync-record.ts`: namespace-scoped sync-state facade with normalization, projection, and path-aware remote/local mutation helpers.
