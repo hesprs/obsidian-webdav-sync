@@ -7,6 +7,14 @@ class RequestUrlError extends Error {
 	}
 }
 
+function getSafeResponseMetadata(res: RequestUrlResponse) {
+	return {
+		status: res.status,
+		headers: { ...res.headers },
+		text: res.text,
+	};
+}
+
 function isExpectedNotFoundResponse(
 	input: RequestUrlParam | string,
 	res: RequestUrlResponse,
@@ -33,7 +41,10 @@ export default async function requestUrl(p: RequestUrlParam | string) {
 
 	if (res.status >= 400) {
 		if (!isExpectedNotFoundResponse(p, res))
-			logger.error(`Received unexpected status code ${res.status}`, res);
+			logger.error(
+				`Received unexpected status code ${res.status}`,
+				getSafeResponseMetadata(res),
+			);
 		if (typeof p === 'string' || p.throw !== false) throw new RequestUrlError(res);
 	}
 
