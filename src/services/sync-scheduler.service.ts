@@ -78,9 +78,8 @@ export default class SyncSchedulerService {
 	}
 
 	private getNextDelayMs() {
-		if (this.pendingRequests.some((request) => request.mode === SyncStartMode.MANUAL_SYNC)) {
+		if (this.pendingRequests.some((request) => request.mode === SyncStartMode.MANUAL_SYNC))
 			return 0;
-		}
 
 		const latestRequestAt = this.pendingRequests.reduce(
 			(latest, request) => Math.max(latest, request.requestedAt),

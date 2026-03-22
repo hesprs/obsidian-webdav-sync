@@ -31,16 +31,34 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
+      - name: Detect release mode
+        run: |
+          if [[ "${{ github.ref_name }}" == *-* ]]; then
+            echo "IS_PRERELEASE=true" >> $GITHUB_ENV
+          else
+            echo "IS_PRERELEASE=false" >> $GITHUB_ENV
+          fi
+
       - name: Build plugin
-        run: pnpm build
+        run: |
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            pnpm dev
+          else
+            pnpm build
+          fi
 
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           tag="${GITHUB_REF#refs/tags/}"
+          prerelease_flag=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            prerelease_flag="--prerelease"
+          fi
 
           gh release create "$tag" \
             --title="$tag" \
             --notes-file=release-notes.md \
+            $prerelease_flag \
             dist/main.js dist/manifest.json dist/styles.css

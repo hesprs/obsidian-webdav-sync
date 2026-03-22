@@ -7,6 +7,7 @@ import type { RequestOptionsWithState } from 'webdav';
 import { Platform, type RequestUrlParam } from 'obsidian';
 import { getPatcher } from 'webdav';
 import { VALID_REQURL } from '~/consts';
+import logger from './utils/logger'; // TODO: delete
 import requestUrl from './utils/request-url';
 
 /**
@@ -73,7 +74,43 @@ if (VALID_REQURL) {
 			throw: false,
 		};
 
+		// TODO: delete
+		logger.debug(
+			'Patched webdav request started',
+			{
+				url: requestOptions.url,
+				method: requestOptions.method,
+				headers: retractedHeaders,
+				contentType: reqContentType,
+				dataType:
+					requestOptions.data instanceof ArrayBuffer
+						? 'arrayBuffer'
+						: typeof requestOptions.data,
+				dataLength:
+					typeof requestOptions.data === 'string'
+						? requestOptions.data.length
+						: requestOptions.data instanceof ArrayBuffer
+							? requestOptions.data.byteLength
+							: undefined,
+			},
+			{ category: 'webdav.patch' },
+		);
+
 		let r = await requestUrl(p);
+
+		// TODO: delete
+		logger.debug(
+			'Patched webdav request received response',
+			{
+				url: p.url,
+				method: requestOptions.method,
+				status: r.status,
+				headers: r.headers,
+				textLength: r.text.length,
+				textPreview: r.text.slice(0, 300),
+			},
+			{ category: 'webdav.patch' },
+		);
 
 		if (
 			r.status === 401 &&
@@ -83,7 +120,33 @@ if (VALID_REQURL) {
 			requestOptions.method.toUpperCase() === 'PROPFIND'
 		) {
 			p.url = `${requestOptions.url}/`;
+
+			// TODO: delete
+			logger.debug(
+				'Patched webdav request retries with trailing slash',
+				{
+					originalUrl: requestOptions.url,
+					retryUrl: p.url,
+					method: requestOptions.method,
+				},
+				{ category: 'webdav.patch' },
+			);
+
 			r = await requestUrl(p);
+
+			// TODO: delete
+			logger.debug(
+				'Patched webdav trailing slash retry response',
+				{
+					url: p.url,
+					method: requestOptions.method,
+					status: r.status,
+					headers: r.headers,
+					textLength: r.text.length,
+					textPreview: r.text.slice(0, 300),
+				},
+				{ category: 'webdav.patch' },
+			);
 		}
 		const rspHeaders = objKeyToLower({ ...r.headers });
 		for (const key in rspHeaders) {
@@ -93,6 +156,18 @@ if (VALID_REQURL) {
 				}
 			}
 		}
+
+		// TODO: delete
+		logger.debug(
+			'Patched webdav response wrapped for webdav client',
+			{
+				url: p.url,
+				method: requestOptions.method,
+				status: r.status,
+				headerKeys: Object.keys(rspHeaders),
+			},
+			{ category: 'webdav.patch' },
+		);
 
 		let r2: Response | undefined = undefined;
 		const statusText = STATUS_TEXTS[r.status];
