@@ -3,7 +3,6 @@ import { remotePathToAbsolute } from '~/platform/path/remote-path';
 import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
-import { isSameTime } from '~/utils/is-same-time';
 import logger from '~/utils/logger';
 import type {
 	PlannedLocalSnapshot,
@@ -14,6 +13,7 @@ import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { SkipReason } from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
 import { getIgnoredPathsInFolder, hasIgnoredInFolder } from '../utils/has-ignored-in-folder';
+import { isSameTime } from '../utils/is-same-time';
 import { hasFolderContentChanged } from './has-folder-content-changed';
 
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
@@ -249,209 +249,28 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		const remoteName = remote?.path ?? 'none';
 		if (local?.isDir || remote?.isDir) continue;
 
+		let caseName: keyof typeof operations = 'NONE';
+		let remoteChanged = false;
+		let localChanged = false;
+
 		if (record) {
 			if (remote) {
-				const remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
+				remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
 				if (local) {
-					let localChanged = !isSameTime(local.mtime, record.local.mtime);
-					if (localChanged && record.baseText) {
+					localChanged = !isSameTime(local.mtime, record.local.mtime);
+					if (localChanged && record.baseText)
 						localChanged = !(await compareFileContent(local.path, record.baseText));
-					}
-					if (remoteChanged) {
-						if (localChanged) {
-							logger.debug(
-								`Detected conflict between \`${localName}\` and \`${remoteName}\``,
-								{
-									reason: 'both local and remote files changed',
-									remotePath: remotePathToAbsolute(remoteBaseDir, p),
-									localPath: p,
-									conditions: {
-										remoteChanged,
-										localChanged,
-										recordExists: !!record,
-										remoteExists: !!remote,
-										localExists: !!local,
-									},
-								},
-							);
-							if (remote.size > maxFileSize || local.size > maxFileSize) {
-								tasks.push(
-									taskFactory.createSkippedTask({
-										...options,
-										reason: SkipReason.FileTooLarge,
-										maxSize: maxFileSize,
-										remoteSize: remote.size,
-										localSize: local.size,
-									}),
-								);
-								continue;
-							}
-
-							if (hasInvalidChar(local.path)) {
-								tasks.push(taskFactory.createFilenameErrorTask(options));
-							} else {
-								await createConflictResolveTaskWithSnapshot(
-									{
-										...options,
-										record,
-										strategy:
-											settings.conflictStrategy === 'latest-timestamp'
-												? ConflictStrategy.LatestTimeStamp
-												: ConflictStrategy.DiffMatchPatch,
-										useGitStyle: settings.useGitStyle,
-									},
-									local,
-									remote,
-								);
-							}
-
-							continue;
-						} else {
-							logger.debug(`Pull remote file \`${remoteName}\` changes to local`, {
-								reason: 'remote file changed',
-								remotePath: remotePathToAbsolute(remoteBaseDir, p),
-								localPath: p,
-								conditions: {
-									remoteChanged,
-									recordExists: !!record,
-									remoteExists: !!remote,
-									localExists: !!local,
-								},
-							});
-							if (remote.size > maxFileSize) {
-								tasks.push(
-									taskFactory.createSkippedTask({
-										...options,
-										reason: SkipReason.FileTooLarge,
-										maxSize: maxFileSize,
-										remoteSize: remote.size,
-										localSize: local.size,
-									}),
-								);
-								continue;
-							}
-							await createPullTaskWithSnapshot(options, remote);
-							continue;
-						}
-					} else {
-						if (localChanged) {
-							logger.debug(`Push local file \`${localName}\` changes to remote`, {
-								reason: 'local file changed',
-								remotePath: remotePathToAbsolute(remoteBaseDir, p),
-								localPath: p,
-								conditions: {
-									localChanged,
-									recordExists: !!record,
-									remoteExists: !!remote,
-									localExists: !!local,
-								},
-							});
-							if (local.size > maxFileSize) {
-								tasks.push(
-									taskFactory.createSkippedTask({
-										...options,
-										reason: SkipReason.FileTooLarge,
-										maxSize: maxFileSize,
-										remoteSize: remote.size,
-										localSize: local.size,
-									}),
-								);
-								continue;
-							}
-							if (hasInvalidChar(local.path)) {
-								tasks.push(taskFactory.createFilenameErrorTask(options));
-							} else {
-								await createPushTaskWithSnapshot(options, local);
-							}
-							continue;
-						}
-					}
+					if (remoteChanged && localChanged) caseName = 'RECORD_REMOTE_LOCAL_CONFLICT';
+					else if (remoteChanged) caseName = 'RECORD_REMOTE_LOCAL_PULL';
+					else if (localChanged) caseName = 'RECORD_REMOTE_LOCAL_PUSH';
 				} else {
-					if (remoteChanged) {
-						logger.debug(`Pull remote file \`${remoteName}\` to local`, {
-							reason: 'remote file changed and local file does not exist',
-							remotePath: remotePathToAbsolute(remoteBaseDir, p),
-							localPath: p,
-							conditions: {
-								remoteChanged,
-								recordExists: !!record,
-								remoteExists: !!remote,
-								localExists: !!local,
-							},
-						});
-						if (remote.size > maxFileSize) {
-							tasks.push(
-								taskFactory.createSkippedTask({
-									...options,
-									reason: SkipReason.FileTooLarge,
-									maxSize: maxFileSize,
-									remoteSize: remote.size,
-								}),
-							);
-							continue;
-						}
-						await createPullTaskWithSnapshot(options, remote);
-						continue;
-					} else {
-						logger.debug(`Remove remote file \`${remote.path}\``, {
-							reason: 'remote file is removable',
-							remotePath: remotePathToAbsolute(remoteBaseDir, p),
-							localPath: p,
-							conditions: {
-								recordExists: !!record,
-								remoteExists: !!remote,
-								localExists: !!local,
-							},
-						});
-						tasks.push(taskFactory.createRemoveRemoteTask(options));
-						continue;
-					}
+					if (remoteChanged) caseName = 'RECORD_REMOTE_NOLOCAL_PULL';
+					else caseName = 'RECORD_REMOTE_NOLOCAL_REMOVE';
 				}
 			} else if (local) {
-				const localChanged = !isSameTime(local.mtime, record.local.mtime);
-				if (localChanged) {
-					logger.debug(`Push local file \`${localName}\` to remote`, {
-						reason: 'local file changed and remote file does not exist',
-						remotePath: remotePathToAbsolute(remoteBaseDir, p),
-						localPath: p,
-						conditions: {
-							localChanged,
-							recordExists: !!record,
-							remoteExists: !!remote,
-							localExists: !!local,
-						},
-					});
-					if (local.size > maxFileSize) {
-						tasks.push(
-							taskFactory.createSkippedTask({
-								...options,
-								reason: SkipReason.FileTooLarge,
-								localSize: local.size,
-								maxSize: maxFileSize,
-							}),
-						);
-						continue;
-					}
-					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options));
-					} else {
-						await createPushTaskWithSnapshot(options, local);
-					}
-					continue;
-				} else {
-					logger.debug(`Remove local file \`${localName}\``, {
-						reason: 'local file is removable',
-						remotePath: remotePathToAbsolute(remoteBaseDir, p),
-						localPath: p,
-						conditions: {
-							recordExists: !!record,
-							remoteExists: !!remote,
-							localExists: !!local,
-						},
-					});
-					await createRemoveLocalTaskWithSnapshot(options, local);
-					continue;
-				}
+				localChanged = !isSameTime(local.mtime, record.local.mtime);
+				if (localChanged) caseName = 'RECORD_NOREMOTE_LOCAL_PUSH';
+				else caseName = 'RECORD_NOREMOTE_LOCAL_REMOVE';
 			}
 		} else {
 			if (remote) {
@@ -461,115 +280,322 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						!remote.isDeleted &&
 						!remote.isDir &&
 						remote.size === local.size
-					) {
-						tasks.push(
-							taskFactory.createNoopTask({
-								...options,
-							}),
-						);
-						continue;
-					}
-					logger.debug(
-						`Detected conflict between local file \`${localName}\` and remote file ${remoteName}`,
-						{
-							reason: 'both local and remote files exist without a record',
-							remotePath: remotePathToAbsolute(remoteBaseDir, p),
-							localPath: p,
-							conditions: {
-								recordExists: !!record,
-								remoteExists: !!remote,
-								localExists: !!local,
-							},
-						},
-					);
-
-					if (remote.size > maxFileSize || local.size > maxFileSize) {
-						tasks.push(
-							taskFactory.createSkippedTask({
-								...options,
-								reason: SkipReason.FileTooLarge,
-								remoteSize: remote.size,
-								localSize: local.size,
-								maxSize: maxFileSize,
-							}),
-						);
-						continue;
-					}
-
-					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options));
-					} else {
-						await createConflictResolveTaskWithSnapshot(
-							{
-								...options,
-								strategy: ConflictStrategy.DiffMatchPatch,
-								useGitStyle: settings.useGitStyle,
-							},
-							local,
-							remote,
-						);
-					}
-
-					continue;
-				} else {
-					logger.debug(`Pull remote file \`${remoteName}\` to local`, {
-						reason: 'remote file exists without a local file',
-						remotePath: remotePathToAbsolute(remoteBaseDir, p),
-						localPath: p,
-						conditions: {
-							recordExists: !!record,
-							remoteExists: !!remote,
-							localExists: !!local,
-						},
-					});
-
-					if (remote.size > maxFileSize) {
-						tasks.push(
-							taskFactory.createSkippedTask({
-								...options,
-								reason: SkipReason.FileTooLarge,
-								remoteSize: remote.size,
-								maxSize: maxFileSize,
-							}),
-						);
-						continue;
-					}
-					await createPullTaskWithSnapshot(options, remote);
-					continue;
-				}
-			} else {
-				if (local) {
-					logger.debug(`Push local file \`${localName}\` to remote`, {
-						reason: 'local file exists without a remote file',
-						remotePath: remotePathToAbsolute(remoteBaseDir, p),
-						localPath: p,
-						conditions: {
-							recordExists: !!record,
-							remoteExists: !!remote,
-							localExists: !!local,
-						},
-					});
-
-					if (local.size > maxFileSize) {
-						tasks.push(
-							taskFactory.createSkippedTask({
-								...options,
-								reason: SkipReason.FileTooLarge,
-								localSize: local.size,
-								maxSize: maxFileSize,
-							}),
-						);
-						continue;
-					}
-					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options));
-					} else {
-						await createPushTaskWithSnapshot(options, local);
-					}
-					continue;
-				}
-			}
+					)
+						caseName = 'NORECORD_REMOTE_LOCAL_NOOP';
+					else caseName = 'NORECORD_REMOTE_LOCAL_CONFLICT';
+				} else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
+			} else if (local) caseName = 'NORECORD_NOREMOTE_LOCAL_PUSH';
 		}
+
+		const operations = {
+			NONE: async () => false,
+			RECORD_REMOTE_LOCAL_CONFLICT: async () => {
+				if (!remote || !local) return false;
+				logger.debug(`Detected conflict between \`${localName}\` and \`${remoteName}\``, {
+					reason: 'both local and remote files changed',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						remoteChanged,
+						localChanged,
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				if (remote.size > maxFileSize || local.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							maxSize: maxFileSize,
+							remoteSize: remote.size,
+							localSize: local.size,
+						}),
+					);
+					return true;
+				}
+
+				if (hasInvalidChar(local.path)) {
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+				} else {
+					await createConflictResolveTaskWithSnapshot(
+						{
+							...options,
+							record,
+							strategy:
+								settings.conflictStrategy === 'latest-timestamp'
+									? ConflictStrategy.LatestTimeStamp
+									: ConflictStrategy.DiffMatchPatch,
+							useGitStyle: settings.useGitStyle,
+						},
+						local,
+						remote,
+					);
+				}
+
+				return true;
+			},
+			RECORD_REMOTE_LOCAL_PULL: async () => {
+				if (!remote || !local) return false;
+				logger.debug(`Pull remote file \`${remoteName}\` changes to local`, {
+					reason: 'remote file changed',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						remoteChanged,
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				if (remote.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							maxSize: maxFileSize,
+							remoteSize: remote.size,
+							localSize: local.size,
+						}),
+					);
+					return true;
+				}
+				await createPullTaskWithSnapshot(options, remote);
+				return true;
+			},
+			RECORD_REMOTE_LOCAL_PUSH: async () => {
+				if (!remote || !local) return false;
+				logger.debug(`Push local file \`${localName}\` changes to remote`, {
+					reason: 'local file changed',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						localChanged,
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				if (local.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							maxSize: maxFileSize,
+							remoteSize: remote.size,
+							localSize: local.size,
+						}),
+					);
+					return true;
+				}
+				if (hasInvalidChar(local.path)) {
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+				} else {
+					await createPushTaskWithSnapshot(options, local);
+				}
+				return true;
+			},
+			RECORD_REMOTE_NOLOCAL_PULL: async () => {
+				if (!remote) return false;
+				logger.debug(`Pull remote file \`${remoteName}\` to local`, {
+					reason: 'remote file changed and local file does not exist',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						remoteChanged,
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				if (remote.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							maxSize: maxFileSize,
+							remoteSize: remote.size,
+						}),
+					);
+					return true;
+				}
+				await createPullTaskWithSnapshot(options, remote);
+				return true;
+			},
+			RECORD_REMOTE_NOLOCAL_REMOVE: async () => {
+				if (!remote) return false;
+				logger.debug(`Remove remote file \`${remote.path}\``, {
+					reason: 'remote file is removable',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				tasks.push(taskFactory.createRemoveRemoteTask(options));
+				return true;
+			},
+			RECORD_NOREMOTE_LOCAL_PUSH: async () => {
+				if (!local) return false;
+				logger.debug(`Push local file \`${localName}\` to remote`, {
+					reason: 'local file changed and remote file does not exist',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						localChanged,
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				if (local.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							localSize: local.size,
+							maxSize: maxFileSize,
+						}),
+					);
+					return true;
+				}
+				if (hasInvalidChar(local.path)) {
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+				} else {
+					await createPushTaskWithSnapshot(options, local);
+				}
+				return true;
+			},
+			RECORD_NOREMOTE_LOCAL_REMOVE: async () => {
+				if (!local) return false;
+				logger.debug(`Remove local file \`${localName}\``, {
+					reason: 'local file is removable',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+				await createRemoveLocalTaskWithSnapshot(options, local);
+				return true;
+			},
+			NORECORD_REMOTE_LOCAL_NOOP: async () => {
+				tasks.push(
+					taskFactory.createNoopTask({
+						...options,
+					}),
+				);
+				return true;
+			},
+			NORECORD_REMOTE_LOCAL_CONFLICT: async () => {
+				if (!remote || !local) return false;
+				logger.debug(
+					`Detected conflict between local file \`${localName}\` and remote file ${remoteName}`,
+					{
+						reason: 'both local and remote files exist without a record',
+						remotePath: remotePathToAbsolute(remoteBaseDir, p),
+						localPath: p,
+						conditions: {
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					},
+				);
+
+				if (remote.size > maxFileSize || local.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							remoteSize: remote.size,
+							localSize: local.size,
+							maxSize: maxFileSize,
+						}),
+					);
+					return true;
+				}
+
+				if (hasInvalidChar(local.path)) {
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+				} else {
+					await createConflictResolveTaskWithSnapshot(
+						{
+							...options,
+							strategy: ConflictStrategy.DiffMatchPatch,
+							useGitStyle: settings.useGitStyle,
+						},
+						local,
+						remote,
+					);
+				}
+
+				return true;
+			},
+			NORECORD_REMOTE_NOLOCAL_PULL: async () => {
+				if (!remote) return false;
+				logger.debug(`Pull remote file \`${remoteName}\` to local`, {
+					reason: 'remote file exists without a local file',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+
+				if (remote.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							remoteSize: remote.size,
+							maxSize: maxFileSize,
+						}),
+					);
+					return true;
+				}
+				await createPullTaskWithSnapshot(options, remote);
+				return true;
+			},
+			NORECORD_NOREMOTE_LOCAL_PUSH: async () => {
+				if (!local) return false;
+				logger.debug(`Push local file \`${localName}\` to remote`, {
+					reason: 'local file exists without a remote file',
+					remotePath: remotePathToAbsolute(remoteBaseDir, p),
+					localPath: p,
+					conditions: {
+						recordExists: !!record,
+						remoteExists: !!remote,
+						localExists: !!local,
+					},
+				});
+
+				if (local.size > maxFileSize) {
+					tasks.push(
+						taskFactory.createSkippedTask({
+							...options,
+							reason: SkipReason.FileTooLarge,
+							localSize: local.size,
+							maxSize: maxFileSize,
+						}),
+					);
+					return true;
+				}
+				if (hasInvalidChar(local.path))
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+				else await createPushTaskWithSnapshot(options, local);
+				return true;
+			},
+		};
+
+		if (await operations[caseName]()) continue;
 	}
 
 	// * clean orphaned records (both local and remote deleted)

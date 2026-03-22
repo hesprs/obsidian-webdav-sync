@@ -199,15 +199,9 @@ export class SyncRecord {
 		]);
 	}
 
-	async getState(): Promise<SyncStateModel> {
-		return await this.loadState();
-	}
-
-	async setState(state: SyncStateModel): Promise<void> {
-		await this.saveState(state);
-	}
-
-	async mutateState(mutator: (state: SyncStateModel) => void | Promise<void>): Promise<void> {
+	private async mutateState(
+		mutator: (state: SyncStateModel) => void | Promise<void>,
+	): Promise<void> {
 		const state = await this.loadState();
 		await mutator(state);
 		await this.saveState(state);
@@ -236,7 +230,7 @@ export class SyncRecord {
 		await this.store.clearRemote(this.namespace);
 	}
 
-	upsertRemotePathInState(state: SyncStateModel, stat: StatModel): void {
+	private upsertRemotePathInState(state: SyncStateModel, stat: StatModel): void {
 		const normalizedStat = this.normalizeRemoteStat(stat);
 		const remoteRecord = state.remoteRecord;
 		const parentPath = this.normalizeRemoteNodeKey(remoteDirname(normalizedStat.path));
@@ -255,7 +249,7 @@ export class SyncRecord {
 		this.setRemoteRecordSource(remoteRecord, 'task-updated');
 	}
 
-	removeRemotePathInState(state: SyncStateModel, remotePath: string): void {
+	private removeRemotePathInState(state: SyncStateModel, remotePath: string): void {
 		const normalizedRemotePath = normalizeRemotePath(
 			this.normalizeRemoteAbsolutePath(remotePath),
 		);
@@ -267,7 +261,7 @@ export class SyncRecord {
 		this.setRemoteRecordSource(state.remoteRecord, 'task-updated');
 	}
 
-	removeRemoteSubtreeInState(state: SyncStateModel, remotePath: string): void {
+	private removeRemoteSubtreeInState(state: SyncStateModel, remotePath: string): void {
 		const normalizedRemotePath = normalizeRemotePath(
 			this.normalizeRemoteAbsolutePath(remotePath),
 		);
@@ -303,15 +297,19 @@ export class SyncRecord {
 		this.setRemoteRecordSource(state.remoteRecord, 'task-updated');
 	}
 
-	upsertLocalRecordInState(state: SyncStateModel, path: string, record: LocalRecordModel): void {
+	private upsertLocalRecordInState(
+		state: SyncStateModel,
+		path: string,
+		record: LocalRecordModel,
+	): void {
 		state.localRecords.set(normalizeVaultPath(path), record);
 	}
 
-	removeLocalRecordInState(state: SyncStateModel, path: string): void {
+	private removeLocalRecordInState(state: SyncStateModel, path: string): void {
 		state.localRecords.delete(normalizeVaultPath(path));
 	}
 
-	removeLocalSubtreeInState(state: SyncStateModel, path: string): void {
+	private removeLocalSubtreeInState(state: SyncStateModel, path: string): void {
 		const normalizedPath = normalizeVaultPath(path);
 		const normalizedDir = normalizedPath.length === 0 ? '' : `${normalizedPath}/`;
 

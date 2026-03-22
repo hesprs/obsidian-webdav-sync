@@ -1,7 +1,12 @@
 import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
-import { normalizeRemotePath, remoteBasename } from '~/platform/path/remote-path';
+import { Platform } from 'obsidian';
+import {
+	normalizeRemoteDir,
+	normalizeRemotePath,
+	remoteBasename,
+} from '~/platform/path/remote-path';
 import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
 import requestUrl from './utils/request-url';
@@ -85,6 +90,12 @@ function buildStripPrefixes(serverUrl: string): string[] {
 	return [endpointPath];
 }
 
+function buildDirectoryUrl(serverUrl: string, path: string): string {
+	const normalizedPath = Platform.isIosApp ? normalizeRemoteDir(path) : normalizeRemotePath(path);
+	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
+	return `${serverUrl}${encodedPath}`;
+}
+
 function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): FileStat | null {
 	const props = getValidProps(item);
 	if (!props) return null;
@@ -123,9 +134,10 @@ export async function getDirectoryContents(
 
 	const contents: FileStat[] = [];
 	const normalizedPath = normalizeRemotePath(path);
-	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
+	const requestPath = Platform.isIosApp ? normalizeRemoteDir(path) : normalizedPath;
+	const encodedPath = requestPath.split('/').map(encodeURIComponent).join('/');
 	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
-	let currentUrl = `${endpoint}${encodedPath}`;
+	let currentUrl = buildDirectoryUrl(endpoint, path);
 
 	// TODO: delete
 	logger.debug(
@@ -134,6 +146,7 @@ export async function getDirectoryContents(
 			serverUrl,
 			path,
 			normalizedPath,
+			requestPath,
 			encodedPath,
 			currentUrl,
 			stripPrefixes,

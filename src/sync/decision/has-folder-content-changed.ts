@@ -1,7 +1,7 @@
 import type { StatModel } from '~/model/stat.model';
 import type { LocalRecordModel } from '~/model/sync-record.model';
-import { isSameTime } from '~/utils/is-same-time';
 import { isSub } from '~/utils/is-sub';
+import { isSameTime } from '../utils/is-same-time';
 
 type FolderSyncRecord = {
 	local?: LocalRecordModel['local'];
