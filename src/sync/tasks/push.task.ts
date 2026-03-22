@@ -9,6 +9,10 @@ export default class PushTask extends BaseTask {
 		super(options);
 	}
 
+	private async toText(content: ArrayBuffer) {
+		return await new Blob([new Uint8Array(content)]).text();
+	}
+
 	async exec() {
 		try {
 			const localStat = this.options.local?.stat;
@@ -28,12 +32,16 @@ export default class PushTask extends BaseTask {
 			if (!res) throw new Error('Upload failed');
 
 			// no race condition since we've just uploaded it
-			const syncedStat = await statWebDAVItem(this.webdav, this.remotePath);
-			if (!syncedStat || syncedStat.isDir)
-				throw new Error('failed to read remote file stat after push: ' + this.localPath);
-			await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
+			const baseText = await this.toText(arrayBuffer);
+			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!remoteStat || remoteStat.isDir)
+				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
+			await this.syncRecord.upsertSyncedFileFromSnapshots({
 				remotePath: this.remotePath,
-				syncedStat,
+				localPath: this.localPath,
+				localStat,
+				remoteStat,
+				baseText,
 			});
 
 			return { success: true } as const;

@@ -1,5 +1,6 @@
 import type { MkdirLocalTaskOptions } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
+import { statVaultItem } from '~/utils/stat-vault-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class MkdirLocalTask extends BaseTask {
@@ -19,11 +20,17 @@ export default class MkdirLocalTask extends BaseTask {
 					// Ignore existing-dir and parent creation races.
 				}
 			}
+			const localStat = await statVaultItem(this.vault, this.localPath);
+			if (!localStat || !localStat.isDir)
+				throw new Error(
+					`failed to read local directory stat after creation: ${this.localPath}`,
+				);
 
-			await this.syncRecord.upsertSyncedDirectoryFromRemoteSnapshot({
+			await this.syncRecord.upsertSyncedDirectoryFromSnapshots({
 				localPath: this.localPath,
 				remotePath: this.remotePath,
 				remoteStat: this.options.remote?.stat,
+				localStat,
 			});
 
 			return { success: true } as const;

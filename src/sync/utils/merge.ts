@@ -96,15 +96,11 @@ export async function resolveByIntelligentMerge(
 ): Promise<IntelligentMergeResult> {
 	const { localContentText, remoteContentText, baseContentText } = params;
 
-	if (localContentText === remoteContentText) {
-		return { success: true, isIdentical: true };
-	}
+	if (localContentText === remoteContentText) return { success: true, isIdentical: true };
 
 	const diff3MergedText = diff3MergeStrings(baseContentText, localContentText, remoteContentText);
 
-	if (diff3MergedText !== false) {
-		return { success: true, mergedText: diff3MergedText };
-	}
+	if (diff3MergedText !== false) return { success: true, mergedText: diff3MergedText };
 
 	const dmp = new diff_match_patch();
 	dmp.Match_Threshold = 0.2;
@@ -114,9 +110,7 @@ export async function resolveByIntelligentMerge(
 	const patches = dmp.patch_make(baseContentText, diffs);
 	let [mergedDmpText, solveResult] = dmp.patch_apply(patches, localContentText);
 
-	if (solveResult.includes(false)) {
-		return { success: false };
-	}
+	if (solveResult.includes(false)) return { success: false };
 
 	return { success: true, mergedText: mergedDmpText };
 }

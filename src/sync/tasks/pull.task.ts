@@ -15,6 +15,10 @@ export default class PullTask extends BaseTask {
 		return remoteStat && !remoteStat.isDir ? remoteStat.size : 0;
 	}
 
+	private async toText(content: ArrayBuffer) {
+		return await new Blob([new Uint8Array(content)]).text();
+	}
+
 	async exec() {
 		try {
 			const remoteStat = this.options.remote?.stat;
@@ -47,12 +51,16 @@ export default class PullTask extends BaseTask {
 			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
 
 			// no race condition since we've just written it
-			const syncedStat = await statVaultItem(this.vault, this.localPath);
-			if (!syncedStat || syncedStat.isDir)
-				throw new Error('failed to read local file stat after pull: ' + this.localPath);
-			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
+			const baseText = await this.toText(arrayBuffer);
+			const localStat = await statVaultItem(this.vault, this.localPath);
+			if (!localStat || localStat.isDir)
+				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
+			await this.syncRecord.upsertSyncedFileFromSnapshots({
 				localPath: this.localPath,
-				syncedStat,
+				remotePath: this.remotePath,
+				localStat,
+				remoteStat,
+				baseText,
 			});
 
 			return { success: true } as const;
