@@ -5,7 +5,12 @@ vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
 }));
 vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));
-vi.mock('~/utils/logger', () => ({ default: { error: vi.fn() } }));
+vi.mock('~/utils/logger', () => ({
+	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
+	},
+}));
 vi.mock('~/utils/sleep', () => ({ default: vi.fn() }));
 
 describe('getDirectoryContents', () => {
