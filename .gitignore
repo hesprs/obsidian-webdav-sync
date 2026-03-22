@@ -1,4 +1,7 @@
 .vscode
+.slim
+**/codemap.md
+PLAN.md
 
 # npm
 node_modules
@@ -12,6 +15,7 @@ data.json
 
 # Environment variables
 .env
+.ignore
 
 # build output
 dist

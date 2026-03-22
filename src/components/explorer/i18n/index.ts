@@ -1,7 +1,7 @@
 import * as i18n from '@solid-primitives/i18n';
 import { createResource, createSignal } from 'solid-js';
-import en from './locales/en';
-import zh from './locales/zh';
+import en from './en';
+import zh from './zh';
 
 export type Locale = 'zh' | 'en';
 
