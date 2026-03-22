@@ -1,4 +1,5 @@
 import logger from '~/utils/logger';
+import { statWebDAVItem } from '~/utils/stat-webdav-item';
 import type { PlannedPathSnapshot } from '../decision/sync-decision.interface';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
@@ -24,23 +25,27 @@ export default class MkdirsRemoteTask extends BaseTask {
 
 	async exec() {
 		try {
-			// Create the deepest directory with recursive: true
-			// This will automatically create all parent directories
 			await this.webdav.createDirectory(this.remotePath, {
 				recursive: true,
 			});
 
 			for (const pathSnapshot of this.getAllPaths()) {
-				await this.syncRecord.upsertSyncedDirectoryFromLocalSnapshot({
+				const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+				if (!remoteStat || !remoteStat.isDir)
+					throw new Error(
+						`failed to read remote directory stat after creation: ${this.remotePath}`,
+					);
+				await this.syncRecord.upsertSyncedDirectoryFromSnapshots({
 					localPath: pathSnapshot.localPath,
 					remotePath: pathSnapshot.remotePath,
 					localStat: pathSnapshot.local?.stat,
+					remoteStat,
 				});
 			}
 
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(`Failed to create remote directory recursively ${this.remotePath}`, e);
+			logger.error(`Failed to create remote directory recursively: ${this.remotePath}`, e);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

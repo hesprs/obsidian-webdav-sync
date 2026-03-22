@@ -101,6 +101,12 @@ export class IndexedDbSyncStateStore implements SyncStateStore {
 		});
 	}
 
+	async clear(): Promise<void> {
+		await this.run('clear sync state', async () => {
+			await this.store.clear();
+		});
+	}
+
 	private async ensureReady(): Promise<void> {
 		if (this.initializationError) throw this.initializationError;
 		await this.initialize();

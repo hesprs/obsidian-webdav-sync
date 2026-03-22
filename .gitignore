@@ -2,6 +2,7 @@
 .slim
 **/codemap.md
 PLAN.md
+LOG.md
 
 # npm
 node_modules

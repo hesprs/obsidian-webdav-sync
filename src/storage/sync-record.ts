@@ -147,31 +147,23 @@ export class SyncRecord {
 		};
 	}
 
-	private upsertSyncedLocalFileInState(
+	private upsertSyncedFileInState(
 		state: SyncStateModel,
 		params: {
 			localPath: string;
-			syncedStat: StatModel;
+			remotePath: string;
+			localStat: StatModel;
+			remoteStat: StatModel;
 			baseText?: string;
 		},
 	): void {
-		const { localPath, syncedStat, baseText } = params;
+		const { localPath, localStat, baseText, remotePath, remoteStat } = params;
 		this.upsertLocalRecordInState(state, localPath, {
-			local: this.projectLocalStat(localPath, syncedStat),
+			local: this.projectLocalStat(localPath, localStat),
 			...(baseText === undefined ? {} : { baseText }),
 		});
-	}
-
-	private upsertSyncedRemoteFileInState(
-		state: SyncStateModel,
-		params: {
-			remotePath: string;
-			syncedStat: StatModel;
-		},
-	): void {
-		const { remotePath, syncedStat } = params;
 		this.upsertRemotePathInState(state, {
-			...syncedStat,
+			...remoteStat,
 			path: remotePath,
 			basename: remoteBasename(remotePath),
 		});
@@ -360,80 +352,28 @@ export class SyncRecord {
 		});
 	}
 
-	async upsertSyncedFileFromLocalSnapshot(params: {
+	async upsertSyncedFileFromSnapshots(params: {
 		localPath: string;
-		syncedStat: StatModel;
+		remotePath: string;
+		localStat: StatModel;
+		remoteStat: StatModel;
 		baseText?: string;
 	}): Promise<void> {
 		await this.mutateState((state) => {
-			this.upsertSyncedLocalFileInState(state, params);
+			this.upsertSyncedFileInState(state, params);
 		});
 	}
 
-	async upsertSyncedFileFromRemoteSnapshot(params: {
-		remotePath: string;
-		syncedStat: StatModel;
-	}): Promise<void> {
-		await this.mutateState((state) => {
-			this.upsertSyncedRemoteFileInState(state, params);
-		});
-	}
-
-	async upsertMergedConflictFromSyntheticSnapshot(params: {
-		localPath: string;
-		remotePath: string;
-		mtime: number;
-		size: number;
-		baseText: string;
-	}): Promise<void> {
-		await this.mutateState((state) => {
-			const { localPath, remotePath, mtime, size, baseText } = params;
-			const options = {
-				localPath,
-				remotePath,
-				syncedStat: {
-					path: localPath,
-					basename: vaultBasename(localPath),
-					isDir: false,
-					isDeleted: false,
-					mtime,
-					size,
-				},
-				baseText,
-			};
-			this.upsertSyncedLocalFileInState(state, options);
-			this.upsertSyncedRemoteFileInState(state, options);
-		});
-	}
-
-	async upsertSyncedDirectoryFromLocalSnapshot(params: {
+	async upsertSyncedDirectoryFromSnapshots(params: {
 		localPath: string;
 		remotePath: string;
 		localStat?: StatModel;
-	}): Promise<void> {
-		await this.mutateState((state) => {
-			const { localPath, remotePath, localStat } = params;
-			const resolvedLocalStat =
-				localStat && localStat.isDir ? localStat : this.createDirStat(localPath);
-			this.upsertLocalRecordInState(state, localPath, {
-				local: this.projectLocalStat(localPath, resolvedLocalStat),
-			});
-			this.upsertRemotePathInState(state, {
-				...resolvedLocalStat,
-				path: remotePath,
-				basename: remoteBasename(remotePath),
-				isDir: true,
-			});
-		});
-	}
-
-	async upsertSyncedDirectoryFromRemoteSnapshot(params: {
-		localPath: string;
-		remotePath: string;
 		remoteStat?: StatModel;
 	}): Promise<void> {
 		await this.mutateState((state) => {
-			const { localPath, remotePath, remoteStat } = params;
+			const { localPath, remotePath, localStat, remoteStat } = params;
+			const resolvedLocalStat =
+				localStat && localStat.isDir ? localStat : this.createDirStat(localPath);
 			const resolvedRemoteStat =
 				remoteStat && remoteStat.isDir
 					? remoteStat
@@ -443,7 +383,7 @@ export class SyncRecord {
 							basename: remoteBasename(remotePath),
 						};
 			this.upsertLocalRecordInState(state, localPath, {
-				local: this.projectLocalStat(localPath, resolvedRemoteStat),
+				local: this.projectLocalStat(localPath, resolvedLocalStat),
 			});
 			this.upsertRemotePathInState(state, {
 				...resolvedRemoteStat,

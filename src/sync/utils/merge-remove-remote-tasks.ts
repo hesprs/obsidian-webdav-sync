@@ -2,8 +2,9 @@ import { normalizeRemotePath } from '~/platform/path/remote-path';
 import { isSub } from '~/utils/is-sub';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
+import { BaseTask } from '../tasks/task.interface';
 
-export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): RemoveRemoteRecursivelyTask[] {
+export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): BaseTask[] {
 	if (tasks.length === 0) return [];
 
 	// 过滤掉空路径或无效任务
@@ -25,7 +26,7 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): RemoveRemoteR
 		return pathA.localeCompare(pathB);
 	});
 
-	const result: RemoveRemoteRecursivelyTask[] = [];
+	const result: BaseTask[] = [];
 	const selectedPaths: string[] = [];
 
 	for (const task of sortedTasks) {
@@ -38,8 +39,13 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): RemoveRemoteR
 		});
 
 		if (!shouldSkip) {
+			const hasDescendants = sortedTasks.some((candidate) => {
+				if (candidate === task) return false;
+				return isSub(path, normalizeRemotePath(candidate.remotePath));
+			});
+
 			selectedPaths.push(path);
-			result.push(new RemoveRemoteRecursivelyTask(task.options));
+			result.push(hasDescendants ? new RemoveRemoteRecursivelyTask(task.options) : task);
 		}
 	}
 

@@ -59,12 +59,7 @@ export default {
 			latestTimestamp: '使用最新版本',
 			skip: '跳过冲突',
 		},
-		help: {
-			name: '如何获取 WebDAV 账号和凭证？',
-			desc: '点击查看帮助文档',
-		},
 		sections: {
-			account: '账号设置',
 			common: '通用设置',
 			filters: '过滤规则',
 		},
@@ -123,6 +118,12 @@ export default {
 				name: '包含规则',
 				desc: '符合规则的文件/文件夹会被同步，如果和排除规则有冲突，会优先选择包含规则。',
 			},
+		},
+		clearRecord: {
+			name: '清除记录',
+			desc: 'WebDAV 同步使用记录文件来解析本地与远程文件之间的同步操作。当遇到同步问题时，此选项允许您清除该记录。',
+			button: '清除',
+			cleared: '记录已清除',
 		},
 		skipLargeFiles: {
 			name: '跳过大文件',

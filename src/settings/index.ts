@@ -1,7 +1,6 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab } from 'obsidian';
 import type WebDAVSyncPlugin from '~/index';
 import type { GlobMatchOptions } from '~/utils/glob-match';
-import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
@@ -64,12 +63,10 @@ export class SyncSettingTab extends PluginSettingTab {
 	commonSettings: CommonSettings;
 	filterSettings: FilterSettings;
 	logSettings: LogSettings;
-	warningContainerEl: HTMLElement;
 
 	constructor(app: App, plugin: WebDAVSyncPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
-		this.warningContainerEl = this.containerEl.createDiv();
 		this.accountSettings = new AccountSettings(
 			this.app,
 			this.plugin,
@@ -97,10 +94,6 @@ export class SyncSettingTab extends PluginSettingTab {
 	}
 
 	async display() {
-		this.warningContainerEl.empty();
-		new Setting(this.warningContainerEl)
-			.setName(i18n.t('settings.backupWarning.name'))
-			.setDesc(i18n.t('settings.backupWarning.desc'));
 		await this.accountSettings.display();
 		await this.commonSettings.display();
 		await this.filterSettings.display();

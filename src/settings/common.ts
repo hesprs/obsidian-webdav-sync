@@ -262,6 +262,16 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
+			.setName(i18n.t('settings.clearRecord.name'))
+			.setDesc(i18n.t('settings.clearRecord.desc'))
+			.addButton((button) =>
+				button.setButtonText(i18n.t('settings.clearRecord.button')).onClick(async () => {
+					await this.plugin.syncStateStore.clear();
+					new Notice(i18n.t('settings.clearRecord.cleared'));
+				}),
+			);
+
+		new Setting(this.containerEl)
 			.setName(i18n.t('settings.language.name'))
 			.setDesc(i18n.t('settings.language.desc'))
 			.addDropdown((dropdown) =>

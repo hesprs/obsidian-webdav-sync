@@ -1,5 +1,6 @@
 import type { MkdirRemoteTaskOptions } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
+import { statWebDAVItem } from '~/utils/stat-webdav-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class MkdirRemoteTask extends BaseTask {
@@ -13,10 +14,17 @@ export default class MkdirRemoteTask extends BaseTask {
 				recursive: true,
 			});
 
-			await this.syncRecord.upsertSyncedDirectoryFromLocalSnapshot({
+			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!remoteStat || !remoteStat.isDir)
+				throw new Error(
+					`failed to read remote directory stat after creation: ${this.remotePath}`,
+				);
+
+			await this.syncRecord.upsertSyncedDirectoryFromSnapshots({
 				localPath: this.localPath,
 				remotePath: this.remotePath,
 				localStat: this.options.local?.stat,
+				remoteStat,
 			});
 
 			return { success: true } as const;
