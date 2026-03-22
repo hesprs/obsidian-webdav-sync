@@ -72,4 +72,29 @@ describe('requestUrl', () => {
 
 		expect(logger.error).toHaveBeenCalledOnce();
 	});
+
+	it('logs safe response metadata instead of raw response objects', async () => {
+		vi.mocked(obsidianRequestUrl).mockResolvedValue({
+			status: 401,
+			text: '<html>unauthorized</html>',
+			headers: { 'content-type': 'text/html' },
+			json: () => {
+				throw new SyntaxError("JSON Parse error: Unrecognized token '<'");
+			},
+		} as never);
+
+		await expect(
+			requestUrl({
+				url: 'https://dav.example.com/test',
+				method: 'DELETE',
+				throw: false,
+			}),
+		).resolves.toMatchObject({ status: 401 });
+
+		expect(logger.error).toHaveBeenCalledWith('Received unexpected status code 401', {
+			status: 401,
+			headers: { 'content-type': 'text/html' },
+			text: '<html>unauthorized</html>',
+		});
+	});
 });
