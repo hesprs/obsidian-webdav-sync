@@ -1,6 +1,7 @@
 import type { PushTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { toArrayBuffer } from '~/platform/binary';
 import logger from '~/utils/logger';
+import { statWebDAVItem } from '~/utils/stat-webdav-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PushTask extends BaseTask {
@@ -26,10 +27,14 @@ export default class PushTask extends BaseTask {
 			});
 			if (!res) throw new Error('Upload failed');
 
-			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
+			// no race condition since we've just uploaded it
+			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!remoteStat || remoteStat.isDir)
+				throw new Error('failed to read remote file stat after push: ' + this.localPath);
+			await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
 				localPath: this.localPath,
 				remotePath: this.remotePath,
-				localStat,
+				remoteStat,
 			});
 
 			return { success: true } as const;

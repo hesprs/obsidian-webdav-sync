@@ -45,11 +45,11 @@ export default class PullTask extends BaseTask {
 			}
 
 			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
+
 			// no race condition since we've just written it
 			const localStat = await statVaultItem(this.vault, this.localPath);
-			if (!localStat || localStat.isDir) {
+			if (!localStat || localStat.isDir)
 				throw new Error('failed to read local file stat after pull: ' + this.localPath);
-			}
 			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
 				localPath: this.localPath,
 				remotePath: this.remotePath,

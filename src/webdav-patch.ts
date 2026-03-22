@@ -35,7 +35,7 @@ const STATUS_TEXTS: Record<number, string> = {
 	405: 'Method Not Allowed',
 	409: 'Conflict',
 	412: 'Precondition Failed',
-	423: 'Locked', // Common in WebDAV
+	423: 'Locked',
 	500: 'Internal Server Error',
 	502: 'Bad Gateway',
 	503: 'Service Unavailable',
@@ -49,6 +49,17 @@ const STATUS_TEXTS: Record<number, string> = {
 function onlyAscii(str: string) {
 	// oxlint-disable-next-line no-control-regex
 	return !/[^\u0000-\u00ff]/g.test(str);
+}
+
+function useSlashedDirectoryUrlOnIos(url: string, method: string): string {
+	if (!Platform.isIosApp || method.toUpperCase() !== 'PROPFIND') return url;
+	if (url.endsWith('/')) return url;
+
+	const parsedUrl = new URL(url);
+	if (parsedUrl.pathname.endsWith('/') || parsedUrl.pathname.endsWith('.md')) return url;
+
+	parsedUrl.pathname = `${parsedUrl.pathname}/`;
+	return parsedUrl.toString();
 }
 
 if (VALID_REQURL) {
@@ -65,8 +76,13 @@ if (VALID_REQURL) {
 			retractedHeaders['authorization'] = '<retracted>';
 		}
 
+		const requestUrlValue = useSlashedDirectoryUrlOnIos(
+			requestOptions.url,
+			requestOptions.method,
+		);
+
 		const p: RequestUrlParam = {
-			url: requestOptions.url,
+			url: requestUrlValue,
 			method: requestOptions.method,
 			body: requestOptions.data as string | ArrayBuffer,
 			headers: transformedHeaders,
@@ -78,7 +94,8 @@ if (VALID_REQURL) {
 		logger.debug(
 			'Patched webdav request started',
 			{
-				url: requestOptions.url,
+				url: requestUrlValue,
+				originalUrl: requestOptions.url,
 				method: requestOptions.method,
 				headers: retractedHeaders,
 				contentType: reqContentType,
@@ -112,42 +129,6 @@ if (VALID_REQURL) {
 			{ category: 'webdav.patch' },
 		);
 
-		if (
-			r.status === 401 &&
-			Platform.isIosApp &&
-			!requestOptions.url.endsWith('/') &&
-			!requestOptions.url.endsWith('.md') &&
-			requestOptions.method.toUpperCase() === 'PROPFIND'
-		) {
-			p.url = `${requestOptions.url}/`;
-
-			// TODO: delete
-			logger.debug(
-				'Patched webdav request retries with trailing slash',
-				{
-					originalUrl: requestOptions.url,
-					retryUrl: p.url,
-					method: requestOptions.method,
-				},
-				{ category: 'webdav.patch' },
-			);
-
-			r = await requestUrl(p);
-
-			// TODO: delete
-			logger.debug(
-				'Patched webdav trailing slash retry response',
-				{
-					url: p.url,
-					method: requestOptions.method,
-					status: r.status,
-					headers: r.headers,
-					textLength: r.text.length,
-					textPreview: r.text.slice(0, 300),
-				},
-				{ category: 'webdav.patch' },
-			);
-		}
 		const rspHeaders = objKeyToLower({ ...r.headers });
 		for (const key in rspHeaders) {
 			if (rspHeaders.hasOwnProperty(key)) {
