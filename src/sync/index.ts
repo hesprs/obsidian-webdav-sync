@@ -44,11 +44,9 @@ import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import NoopTask from './tasks/noop.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
-import RemoveRemoteTask from './tasks/remove-remote.task';
 import SkippedTask from './tasks/skipped.task';
 import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
-import { mergeMkdirTasks } from './utils/merge-mkdir-tasks';
-import { mergeRemoveRemoteTasks } from './utils/merge-remove-remote-tasks';
+import { optimizeTasks } from './utils/optimize-tasks';
 
 export enum SyncStartMode {
 	MANUAL_SYNC = 'manual_sync',
@@ -272,18 +270,7 @@ export class SyncEngine {
 			const confirmedTasksUniq = Array.from(
 				new Set([...confirmedTasks, ...noopTasks, ...skippedTasks]),
 			);
-
-			// Merge mkdir and remove remote tasks with parent-child relationships to reduce API calls
-			const mkdirTasks = confirmedTasksUniq.filter((t) => t instanceof MkdirRemoteTask);
-			const removeRemoteTasks = confirmedTasksUniq.filter(
-				(t) => t instanceof RemoveRemoteTask,
-			);
-			const otherTasks = confirmedTasksUniq.filter(
-				(t) => !(t instanceof MkdirRemoteTask || t instanceof RemoveRemoteTask),
-			);
-			const mergedMkdirTasks = mergeMkdirTasks(mkdirTasks);
-			const mergedRemoveRemoteTasks = mergeRemoveRemoteTasks(removeRemoteTasks);
-			const optimizedTasks = [...mergedRemoveRemoteTasks, ...mergedMkdirTasks, ...otherTasks];
+			const optimizedTasks = optimizeTasks(confirmedTasksUniq);
 
 			const chunkSize = 200;
 			const taskChunks = chunk(optimizedTasks, chunkSize);

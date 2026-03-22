@@ -901,17 +901,12 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	}
 
 	await updateProgress();
-	// Sort folder tasks to ensure correct execution order
-	removeRemoteFolderTasks.sort((a, b) => b.remotePath.length - a.remotePath.length);
-	removeLocalFolderTasks.sort((a, b) => b.localPath.length - a.localPath.length);
-	const allFolderTasks = [
+	tasks.push(
 		...removeRemoteFolderTasks,
 		...removeLocalFolderTasks,
 		...mkdirLocalTasks,
 		...mkdirRemoteTasks,
 		...noopFolderTasks,
-	];
-
-	tasks.splice(0, 0, ...allFolderTasks);
+	);
 	return tasks;
 }
