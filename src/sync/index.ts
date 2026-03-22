@@ -273,7 +273,7 @@ export class SyncEngine {
 				new Set([...confirmedTasks, ...noopTasks, ...skippedTasks]),
 			);
 
-			// Merge mkdir tasks with parent-child relationships to reduce API calls
+			// Merge mkdir and remove remote tasks with parent-child relationships to reduce API calls
 			const mkdirTasks = confirmedTasksUniq.filter((t) => t instanceof MkdirRemoteTask);
 			const removeRemoteTasks = confirmedTasksUniq.filter(
 				(t) => t instanceof RemoveRemoteTask,

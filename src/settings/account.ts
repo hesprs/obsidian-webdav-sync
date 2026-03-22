@@ -22,7 +22,9 @@ export default class AccountSettings extends BaseSettings {
 
 	async display() {
 		this.containerEl.empty();
-		new Setting(this.containerEl).setName(i18n.t('settings.sections.account')).setHeading();
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.backupWarning.name'))
+			.setDesc(i18n.t('settings.backupWarning.desc'));
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.serverUrl.name'))

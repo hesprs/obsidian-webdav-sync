@@ -97,13 +97,8 @@ export default {
 				'Value exceeds maximum limit of {{max}} minutes (1 day), automatically adjusted',
 		},
 		sections: {
-			account: 'Account',
 			common: 'General',
 			filters: 'Filter rules',
-		},
-		help: {
-			name: 'How to get WebDAV account and credential?',
-			desc: 'Click to view help documentation',
 		},
 		filters: {
 			name: 'Sync filters',
@@ -132,6 +127,12 @@ export default {
 			placeholder: 'e.g., 10 MiB or 500 KiB',
 			invalidFormat: 'Invalid file size format. Please use formats like "10MB" or "500KB"',
 			exceedsMaxSize: 'File size exceeds maximum limit of 500MB',
+		},
+		clearRecord: {
+			name: 'Clear record',
+			desc: 'WebDAV sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
+			button: 'Clear',
+			cleared: 'Record cleared',
 		},
 		log: {
 			title: 'Support logs',
