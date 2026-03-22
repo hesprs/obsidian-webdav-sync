@@ -80,18 +80,15 @@ export default class ConflictResolveTask extends BaseTask {
 		if (winner === 'local') {
 			await this.syncRecord.upsertSyncedFileFromLocalSnapshot({
 				localPath: this.localPath,
-				remotePath: this.remotePath,
-				localStat,
+				syncedStat: localStat,
 				baseText,
 			});
 			return;
 		}
 
 		await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
-			localPath: this.localPath,
 			remotePath: this.remotePath,
-			remoteStat,
-			baseText,
+			syncedStat: remoteStat,
 		});
 	}
 
@@ -255,9 +252,7 @@ export default class ConflictResolveTask extends BaseTask {
 					overwrite: true,
 				});
 
-				if (!putResult) {
-					throw new Error(i18n.t('sync.error.failedToUploadMerged'));
-				}
+				if (!putResult) throw new Error(i18n.t('sync.error.failedToUploadMerged'));
 			}
 
 			if (localText !== mergedText) {
