@@ -28,13 +28,12 @@ export default class PushTask extends BaseTask {
 			if (!res) throw new Error('Upload failed');
 
 			// no race condition since we've just uploaded it
-			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
-			if (!remoteStat || remoteStat.isDir)
+			const syncedStat = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!syncedStat || syncedStat.isDir)
 				throw new Error('failed to read remote file stat after push: ' + this.localPath);
 			await this.syncRecord.upsertSyncedFileFromRemoteSnapshot({
-				localPath: this.localPath,
 				remotePath: this.remotePath,
-				remoteStat,
+				syncedStat,
 			});
 
 			return { success: true } as const;

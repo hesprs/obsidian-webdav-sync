@@ -36,11 +36,6 @@ interface WebDAVResponse {
 	};
 }
 
-// TODO: delete
-function getResponsePreview(text: string): string {
-	return text.slice(0, 300);
-}
-
 function isSuccessStatus(status?: string): boolean {
 	if (!status) return true;
 	const match = status.match(/\s(\d{3})(?:\s|$)/);
@@ -133,40 +128,11 @@ export async function getDirectoryContents(
 	if (!endpoint) throw new Error('WebDAV server URL is not configured');
 
 	const contents: FileStat[] = [];
-	const normalizedPath = normalizeRemotePath(path);
-	const requestPath = Platform.isIosApp ? normalizeRemoteDir(path) : normalizedPath;
-	const encodedPath = requestPath.split('/').map(encodeURIComponent).join('/');
 	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 	let currentUrl = buildDirectoryUrl(endpoint, path);
 
-	// TODO: delete
-	logger.debug(
-		'WebDAV directory listing started',
-		{
-			serverUrl,
-			path,
-			normalizedPath,
-			requestPath,
-			encodedPath,
-			currentUrl,
-			stripPrefixes,
-		},
-		{ category: 'webdav.api' },
-	);
-
 	while (true) {
 		try {
-			// TODO: delete
-			logger.debug(
-				'WebDAV PROPFIND request prepared',
-				{
-					url: currentUrl,
-					normalizedPath,
-					depth: '1',
-				},
-				{ category: 'webdav.api' },
-			);
-
 			const response = await requestUrl({
 				url: currentUrl,
 				method: 'PROPFIND',
@@ -187,19 +153,6 @@ export async function getDirectoryContents(
 </propfind>`,
 			});
 
-			// TODO: delete
-			logger.debug(
-				'WebDAV PROPFIND response ready for XML parse',
-				{
-					url: currentUrl,
-					status: response.status,
-					headers: response.headers,
-					textLength: response.text.length,
-					textPreview: getResponsePreview(response.text),
-				},
-				{ category: 'webdav.api' },
-			);
-
 			const parseXml = new XMLParser({
 				attributeNamePrefix: '',
 				removeNSPrefix: true,
@@ -212,19 +165,6 @@ export async function getDirectoryContents(
 			});
 			const result: WebDAVResponse = parseXml.parse(response.text);
 
-			// TODO: delete
-			logger.debug(
-				'WebDAV PROPFIND XML parsed',
-				{
-					url: currentUrl,
-					hasMultistatus: !!result.multistatus,
-					responseCount: Array.isArray(result.multistatus.response)
-						? result.multistatus.response.length
-						: 1,
-				},
-				{ category: 'webdav.api' },
-			);
-
 			const items = Array.isArray(result.multistatus.response)
 				? result.multistatus.response
 				: [result.multistatus.response];
@@ -233,18 +173,6 @@ export async function getDirectoryContents(
 				.slice(1)
 				.map((item) => convertToFileStat(stripPrefixes, item))
 				.filter((item): item is FileStat => item !== null);
-
-			// TODO: delete
-			logger.debug(
-				'WebDAV PROPFIND items converted',
-				{
-					url: currentUrl,
-					itemCount: items.length,
-					parsedItemCount: parsedItems.length,
-					linkHeader: response.headers['link'] || response.headers['Link'],
-				},
-				{ category: 'webdav.api' },
-			);
 
 			contents.push(...parsedItems);
 
@@ -256,29 +184,7 @@ export async function getDirectoryContents(
 			const nextUrl = new URL(nextLink);
 			nextUrl.pathname = decodeURI(nextUrl.pathname);
 			currentUrl = nextUrl.toString();
-
-			// TODO: delete
-			logger.debug(
-				'WebDAV PROPFIND pagination continues',
-				{
-					nextLink,
-					nextUrl: currentUrl,
-				},
-				{ category: 'webdav.api' },
-			);
 		} catch (e) {
-			// TODO: delete
-			logger.debug(
-				'WebDAV directory listing failed',
-				{
-					url: currentUrl,
-					path,
-					normalizedPath,
-					error: e,
-				},
-				{ category: 'webdav.api' },
-			);
-
 			if (isRetryableError(e)) {
 				logger.error('WebDAV connection error, retrying...', e);
 				await sleep(5_000);
@@ -287,17 +193,6 @@ export async function getDirectoryContents(
 			throw e;
 		}
 	}
-
-	// TODO: delete
-	logger.debug(
-		'WebDAV directory listing completed',
-		{
-			path,
-			normalizedPath,
-			contentCount: contents.length,
-		},
-		{ category: 'webdav.api' },
-	);
 
 	return contents;
 }

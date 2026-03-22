@@ -147,20 +147,29 @@ export class SyncRecord {
 		};
 	}
 
-	private upsertSyncedFileInState(
+	private upsertSyncedLocalFileInState(
 		state: SyncStateModel,
 		params: {
 			localPath: string;
-			remotePath: string;
 			syncedStat: StatModel;
 			baseText?: string;
 		},
 	): void {
-		const { localPath, remotePath, syncedStat, baseText } = params;
+		const { localPath, syncedStat, baseText } = params;
 		this.upsertLocalRecordInState(state, localPath, {
 			local: this.projectLocalStat(localPath, syncedStat),
 			...(baseText === undefined ? {} : { baseText }),
 		});
+	}
+
+	private upsertSyncedRemoteFileInState(
+		state: SyncStateModel,
+		params: {
+			remotePath: string;
+			syncedStat: StatModel;
+		},
+	): void {
+		const { remotePath, syncedStat } = params;
 		this.upsertRemotePathInState(state, {
 			...syncedStat,
 			path: remotePath,
@@ -353,35 +362,20 @@ export class SyncRecord {
 
 	async upsertSyncedFileFromLocalSnapshot(params: {
 		localPath: string;
-		remotePath: string;
-		localStat: StatModel;
+		syncedStat: StatModel;
 		baseText?: string;
 	}): Promise<void> {
 		await this.mutateState((state) => {
-			const { localPath, remotePath, localStat, baseText } = params;
-			this.upsertSyncedFileInState(state, {
-				localPath,
-				remotePath,
-				syncedStat: localStat,
-				baseText,
-			});
+			this.upsertSyncedLocalFileInState(state, params);
 		});
 	}
 
 	async upsertSyncedFileFromRemoteSnapshot(params: {
-		localPath: string;
 		remotePath: string;
-		remoteStat: StatModel;
-		baseText?: string;
+		syncedStat: StatModel;
 	}): Promise<void> {
 		await this.mutateState((state) => {
-			const { localPath, remotePath, remoteStat, baseText } = params;
-			this.upsertSyncedFileInState(state, {
-				localPath,
-				remotePath,
-				syncedStat: remoteStat,
-				baseText,
-			});
+			this.upsertSyncedRemoteFileInState(state, params);
 		});
 	}
 
@@ -394,7 +388,7 @@ export class SyncRecord {
 	}): Promise<void> {
 		await this.mutateState((state) => {
 			const { localPath, remotePath, mtime, size, baseText } = params;
-			this.upsertSyncedFileInState(state, {
+			const options = {
 				localPath,
 				remotePath,
 				syncedStat: {
@@ -406,7 +400,9 @@ export class SyncRecord {
 					size,
 				},
 				baseText,
-			});
+			};
+			this.upsertSyncedLocalFileInState(state, options);
+			this.upsertSyncedRemoteFileInState(state, options);
 		});
 	}
 
