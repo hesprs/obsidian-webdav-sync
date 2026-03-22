@@ -5,7 +5,12 @@ vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
 }));
 vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));
-vi.mock('~/utils/logger', () => ({ default: { error: vi.fn() } }));
+vi.mock('~/utils/logger', () => ({
+	default: {
+		debug: vi.fn(),
+		error: vi.fn(),
+	},
+}));
 vi.mock('~/utils/sleep', () => ({ default: vi.fn() }));
 
 describe('getDirectoryContents', () => {
@@ -224,6 +229,40 @@ describe('getDirectoryContents', () => {
 
 		expect(files).toHaveLength(1);
 		expect(files[0].filename).toBe('/test/abc/');
+		expect(files[0].type).toBe('directory');
+	});
+
+	it('decodes XML entities', async () => {
+		const { getDirectoryContents } = await import('../src/api');
+		vi.mocked(requestUrl).mockResolvedValue({
+			headers: {},
+			text: `<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>/dav/&lt;test&gt;/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>/dav/&lt;test&gt;/ab &amp; c/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>`,
+		} as never);
+
+		const files = await getDirectoryContents(
+			'https://dav.example.com/dav',
+			'token',
+			'/<test>/',
+		);
+
+		expect(files).toHaveLength(1);
+		expect(files[0].filename).toBe('/<test>/ab & c/');
 		expect(files[0].type).toBe('directory');
 	});
 });

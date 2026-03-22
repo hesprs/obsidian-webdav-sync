@@ -159,6 +159,20 @@ export class ResumableWebDAVTraversal {
 
 			try {
 				const storedItems = this.nodes[normalizedPath];
+
+				// TODO: delete
+				logger.debug(
+					'Remote traversal processing directory',
+					{
+						currentPath,
+						normalizedPath,
+						usedStoredItems: !!storedItems,
+						queueLength: this.queue.length,
+						processedCount: this.processedCount,
+					},
+					{ category: 'webdav.traversal' },
+				);
+
 				const resultItems = storedItems
 					? storedItems
 					: (
@@ -166,6 +180,18 @@ export class ResumableWebDAVTraversal {
 								getContents(this.remoteServerUrl, this.token, currentPath),
 							)
 						).map(fileStatToStatModel);
+
+				// TODO: delete
+				logger.debug(
+					'Remote traversal received directory items',
+					{
+						currentPath,
+						normalizedPath,
+						resultItemCount: resultItems.length,
+						directoryCount: resultItems.filter((item) => item.isDir).length,
+					},
+					{ category: 'webdav.traversal' },
+				);
 
 				if (!storedItems) this.nodes[normalizedPath] = resultItems;
 
@@ -176,6 +202,19 @@ export class ResumableWebDAVTraversal {
 
 				this.queue.shift();
 				this.processedCount++;
+
+				// TODO: delete
+				logger.debug(
+					'Remote traversal directory completed',
+					{
+						currentPath,
+						normalizedPath,
+						remainingQueueLength: this.queue.length,
+						processedCount: this.processedCount,
+					},
+					{ category: 'webdav.traversal' },
+				);
+
 				await this.reportProgress(onProgress, normalizedPath);
 
 				if (this.processedCount % this.saveInterval === 0) await this.saveState();
