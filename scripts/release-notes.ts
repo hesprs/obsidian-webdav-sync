@@ -57,7 +57,7 @@ try {
 	}
 
 	console.log(`Extracting release notes for ${versionTag}...`);
-	const notes = versionTag.contains('-')
+	const notes = versionTag.includes('-')
 		? 'Development release built for debug purpose, not recommended for real usage.'
 		: extractNotes(versionTag);
 	writeFileSync(OUTPUT_PATH, notes);
