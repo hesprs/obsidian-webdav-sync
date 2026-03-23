@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.2.4 - 2026-03-23
+
+- Fixed iOS-specific JSON parsing error originated from different trailing slash handling.
+- Fixed deleted files / folders come back due to asymmetric record update.
+- Fixed repeating fetch / upload files due to record inconsistency.
+- Fixed file not found error due to the race that a file's parent directory is deleted before the file is deleted uring remote deletion propagation.
+- Reordered the plugin settings interface.
+- Added new option "Clear records" to clear all local / records saved in local indexed database.
+
 ## Obsidian WebDAV Sync v1.2.3 - 2026-03-22
 
 - Ignore syncing application time realtime syncing invocation to avoid duplicated syncing caused by syncing itself.
