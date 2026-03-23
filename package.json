@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-webdav-sync",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"private": true,
 	"type": "module",
 	"main": "main.js",
