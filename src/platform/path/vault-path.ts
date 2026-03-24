@@ -1,3 +1,7 @@
+function normalizeVaultSegment(segment: string): string {
+	return segment.normalize('NFC');
+}
+
 function splitVaultSegments(path: string): string[] {
 	const normalized = path.replaceAll('\\', '/');
 	const segments = normalized.split('/');
@@ -11,7 +15,7 @@ function splitVaultSegments(path: string): string[] {
 			resolved.pop();
 			continue;
 		}
-		resolved.push(segment);
+		resolved.push(normalizeVaultSegment(segment));
 	}
 
 	return resolved;

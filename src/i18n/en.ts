@@ -182,6 +182,7 @@ export default {
 		syncingFiles: '⌛️ Syncing files...',
 		awaitingConfirmation: 'Waiting for confirmation',
 		planningStage: {
+			pre_connecting: '📋 Pre-connecting',
 			loading_records: '📋 Loading records',
 			walking_local: '📋 Walking local',
 			walking_remote: '📋 Walking remote',

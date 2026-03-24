@@ -714,7 +714,7 @@ export class SyncEngine {
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
 		const webdav = this.webdav;
-		const remoteBaseDir = normalizeRemoteDir(this.options.remoteBaseDir);
+		const remoteBaseDir = normalizeRemoteDir(this.remoteBaseDir);
 
 		let remoteBaseDirExists = await this.retryWebDAVCall(() => webdav.exists(remoteBaseDir));
 
@@ -724,7 +724,7 @@ export class SyncEngine {
 			this.throwIfCancelled();
 
 			try {
-				await webdav.createDirectory(this.options.remoteBaseDir, {
+				await webdav.createDirectory(remoteBaseDir, {
 					recursive: true,
 				});
 				remoteBaseDirExists = true;
@@ -923,7 +923,7 @@ export class SyncEngine {
 	}
 
 	get remoteBaseDir() {
-		return this.options.remoteBaseDir;
+		return normalizeRemoteDir(this.options.remoteBaseDir);
 	}
 
 	get settings() {
