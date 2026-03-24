@@ -1,5 +1,9 @@
 import { normalizeVaultPath } from './vault-path';
 
+function normalizeRemoteSegment(segment: string): string {
+	return segment.normalize('NFC');
+}
+
 function splitRemoteSegments(path: string): string[] {
 	const normalized = path.replaceAll('\\', '/');
 	const segments = normalized.split('/');
@@ -11,7 +15,7 @@ function splitRemoteSegments(path: string): string[] {
 			resolved.pop();
 			continue;
 		}
-		resolved.push(segment);
+		resolved.push(normalizeRemoteSegment(segment));
 	}
 
 	return resolved;
