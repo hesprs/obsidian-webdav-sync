@@ -73,6 +73,14 @@ export default class CommonSettings extends BaseSettings {
 						ConflictStrategy.LatestTimeStamp,
 						i18n.t('settings.conflictStrategy.latestTimestamp'),
 					)
+					.addOption(
+						ConflictStrategy.KeepLocal,
+						i18n.t('settings.conflictStrategy.keepLocal'),
+					)
+					.addOption(
+						ConflictStrategy.KeepRemote,
+						i18n.t('settings.conflictStrategy.keepRemote'),
+					)
 					.addOption(ConflictStrategy.Skip, i18n.t('settings.conflictStrategy.skip'))
 					.setValue(this.plugin.settings.conflictStrategy)
 					.onChange(async (value) => {
