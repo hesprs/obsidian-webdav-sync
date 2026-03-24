@@ -82,7 +82,7 @@ export default class SyncExecutorService {
 			run = updateSyncRunSnapshot(run, {
 				stage: 'planning',
 				planningProgress: {
-					subStage: 'loading_records',
+					subStage: 'pre_connecting',
 					totalWorkUnits: 0,
 					completedWorkUnits: 0,
 					currentItem: this.plugin.remoteBaseDir,

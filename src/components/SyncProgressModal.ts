@@ -194,7 +194,12 @@ export default class SyncProgressModal extends Modal {
 	}
 
 	private getPlanningStageText(
-		stage: 'loading_records' | 'walking_local' | 'walking_remote' | 'deciding',
+		stage:
+			| 'loading_records'
+			| 'walking_local'
+			| 'walking_remote'
+			| 'deciding'
+			| 'pre_connecting',
 	): string {
 		return i18n.t(`sync.planningStage.${stage}`);
 	}

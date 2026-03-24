@@ -14,7 +14,8 @@ export type SyncRunStage =
 	| 'cancelled'
 	| 'failed';
 
-export type SyncPlanningSubStage =
+type SyncPlanningSubStage =
+	| 'pre_connecting'
 	| 'loading_records'
 	| 'walking_local'
 	| 'walking_remote'
@@ -139,9 +140,8 @@ export function updateSyncRunSnapshot(
 		updatedAt,
 	};
 
-	if (timestamps.endedAt !== undefined) {
+	if (timestamps.endedAt !== undefined)
 		timestamps.durationMs = timestamps.endedAt - timestamps.queuedAt;
-	}
 
 	return {
 		...snapshot,

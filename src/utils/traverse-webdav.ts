@@ -2,7 +2,11 @@ import type { StatModel } from '~/model/stat.model';
 import type { RemoteRecordModel } from '~/model/sync-record.model';
 import type { SyncStateStore } from '~/storage';
 import { getDirectoryContents } from '~/api';
-import { joinRemotePath, normalizeRemoteDir } from '~/platform/path/remote-path';
+import {
+	joinRemotePath,
+	normalizeRemoteDir,
+	normalizeRemotePath,
+} from '~/platform/path/remote-path';
 import { SyncRecord } from '~/storage';
 import { Mutex } from '~/utils/mutex';
 import { type MaybePromise } from '../types';
@@ -93,7 +97,7 @@ export class ResumableWebDAVTraversal {
 	}) {
 		this.remoteServerUrl = options.remoteServerUrl;
 		this.token = options.token;
-		this.remoteBaseDir = options.remoteBaseDir;
+		this.remoteBaseDir = normalizeRemoteDir(options.remoteBaseDir);
 		this.stateKey = options.stateKey;
 		this.syncStateStore = options.syncStateStore;
 		this.saveInterval = Math.max(options.saveInterval || 1, 1);
@@ -124,7 +128,7 @@ export class ResumableWebDAVTraversal {
 			if (freshness === 'resume' && hasCompleteSnapshot) return this.getAllFromSnapshot();
 
 			if (this.queue.length === 0) {
-				this.queue = [this.remoteBaseDir];
+				this.queue = [this.normalizeDirPath(this.remoteBaseDir)];
 				this.processedCount = 0;
 			}
 
@@ -170,8 +174,9 @@ export class ResumableWebDAVTraversal {
 				if (!storedItems) this.nodes[normalizedPath] = resultItems;
 
 				for (const item of resultItems) {
-					if (item.isDir)
-						this.queue.push(this.resolveTraversalPath(currentPath, item.path));
+					if (item.isDir) {
+						this.queue.push(this.resolveTraversalPath(normalizedPath, item.path));
+					}
 				}
 
 				this.queue.shift();
@@ -251,8 +256,18 @@ export class ResumableWebDAVTraversal {
 			return;
 		}
 
-		this.queue = remoteRecord.queue || [];
-		this.nodes = remoteRecord.nodes || {};
+		this.queue = (remoteRecord.queue || []).map((path) => this.normalizeDirPath(path));
+		this.nodes = Object.fromEntries(
+			Object.entries(remoteRecord.nodes || {}).map(([path, stats]) => [
+				this.normalizeDirPath(path),
+				stats.map((stat) => ({
+					...stat,
+					path: stat.isDir
+						? this.normalizeDirPath(stat.path)
+						: normalizeRemotePath(stat.path),
+				})),
+			]),
+		);
 		this.hasLoadedSnapshot = this.hasPersistedRemoteRecord(remoteRecord);
 		this.loadedSnapshotIsComplete = remoteRecord.isComplete;
 		this.processedCount = 0;
@@ -265,7 +280,7 @@ export class ResumableWebDAVTraversal {
 		const currentRemoteRecord = await this.syncRecord.getRemoteRecord();
 		const nextRemoteRecord: RemoteRecordModel = {
 			...currentRemoteRecord,
-			queue: this.queue,
+			queue: this.queue.map((path) => this.normalizeDirPath(path)),
 			nodes: this.nodes,
 			isComplete: this.queue.length === 0,
 		};

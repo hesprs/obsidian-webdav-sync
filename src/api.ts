@@ -75,9 +75,7 @@ function hrefToPathname(href: string): string {
 }
 
 function normalizePathForMatch(pathname: string): string {
-	const normalized = decodeURIComponent(pathname || '/');
-	if (normalized === '' || normalized === '/') return '/';
-	return normalized.endsWith('/') ? normalized.slice(0, -1) : normalized;
+	return normalizeRemotePath(hrefToPathname(pathname || '/'));
 }
 
 function buildStripPrefixes(serverUrl: string): string[] {
@@ -96,7 +94,7 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 	if (!props) return null;
 
 	const isDir = isCollectionResource(props.resourcetype);
-	const hrefPathname = hrefToPathname(item.href);
+	const hrefPathname = normalizePathForMatch(item.href);
 
 	let relativePath = hrefPathname;
 	for (const prefix of stripPrefixes) {
@@ -106,7 +104,9 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 		}
 	}
 
-	const filename = `/${(relativePath || '/').replace(/^\/+/, '')}`;
+	const filename = isDir
+		? normalizeRemoteDir(relativePath || '/')
+		: normalizeRemotePath(relativePath || '/');
 
 	return {
 		filename,
@@ -182,7 +182,9 @@ export async function getDirectoryContents(
 			const nextLink = extractNextLink(linkHeader);
 			if (!nextLink) break;
 			const nextUrl = new URL(nextLink);
-			nextUrl.pathname = decodeURI(nextUrl.pathname);
+			nextUrl.pathname = Platform.isIosApp
+				? normalizeRemoteDir(hrefToPathname(nextUrl.pathname))
+				: normalizeRemotePath(hrefToPathname(nextUrl.pathname));
 			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (isRetryableError(e)) {

@@ -26,17 +26,30 @@ export class SyncRecord {
 	private normalizeLocalRecords(
 		localRecords: Map<string, LocalRecordModel> | Record<string, LocalRecordModel> | undefined,
 	): Map<string, LocalRecordModel> {
-		if (localRecords instanceof Map) return localRecords;
-		if (!localRecords || typeof localRecords !== 'object') return new Map();
-		return new Map(Object.entries(localRecords));
+		const entries =
+			localRecords instanceof Map
+				? Array.from(localRecords.entries())
+				: localRecords && typeof localRecords === 'object'
+					? Object.entries(localRecords)
+					: [];
+
+		return new Map(
+			entries.map(([path, record]) => [
+				normalizeVaultPath(path),
+				this.normalizeLocalRecord(record),
+			]),
+		);
 	}
 
 	private normalizeRemoteRecord(
 		remoteRecord: Partial<RemoteRecordModel> | undefined,
 	): RemoteRecordModel {
-		const queue = Array.isArray(remoteRecord?.queue) ? remoteRecord.queue : [];
-		const nodes =
-			remoteRecord?.nodes && typeof remoteRecord.nodes === 'object' ? remoteRecord.nodes : {};
+		const queue = Array.isArray(remoteRecord?.queue)
+			? Array.from(
+					new Set(remoteRecord.queue.map((path) => this.normalizeRemoteNodeKey(path))),
+				)
+			: [];
+		const nodes = this.normalizeRemoteNodes(remoteRecord?.nodes);
 
 		return {
 			queue,
@@ -51,6 +64,37 @@ export class SyncRecord {
 		localRecords: Map<string, LocalRecordModel>,
 	): PersistedLocalRecordsModel {
 		return Object.fromEntries(localRecords.entries());
+	}
+
+	private normalizeLocalRecord(record: LocalRecordModel): LocalRecordModel {
+		return {
+			...record,
+			local: this.projectLocalStat(record.local.path, record.local),
+		};
+	}
+
+	private normalizeRemoteNodes(nodes: unknown): Record<string, StatModel[]> {
+		if (!nodes || typeof nodes !== 'object') return {};
+
+		const normalizedNodes: Record<string, StatModel[]> = {};
+
+		for (const [nodePath, stats] of Object.entries(nodes)) {
+			if (!Array.isArray(stats)) continue;
+
+			const normalizedNodePath = this.normalizeRemoteNodeKey(nodePath);
+			const mergedStats = new Map<string, StatModel>(
+				(normalizedNodes[normalizedNodePath] ?? []).map((stat) => [stat.path, stat]),
+			);
+
+			for (const stat of stats) {
+				const normalizedStat = this.normalizeRemoteStat(stat);
+				mergedStats.set(normalizedStat.path, normalizedStat);
+			}
+
+			normalizedNodes[normalizedNodePath] = Array.from(mergedStats.values());
+		}
+
+		return normalizedNodes;
 	}
 
 	private normalizeState(
@@ -303,7 +347,7 @@ export class SyncRecord {
 		path: string,
 		record: LocalRecordModel,
 	): void {
-		state.localRecords.set(normalizeVaultPath(path), record);
+		state.localRecords.set(normalizeVaultPath(path), this.normalizeLocalRecord(record));
 	}
 
 	private removeLocalRecordInState(state: SyncStateModel, path: string): void {
