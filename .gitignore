@@ -7,6 +7,9 @@ MEMORY.md
 
 # npm
 node_modules
+pnpm-lock.yaml
+bun.lock
+bun.lockb
 
 # obsidian
 data.json
