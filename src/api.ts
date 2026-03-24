@@ -104,7 +104,9 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 		}
 	}
 
-	const filename = normalizeRemotePath(relativePath || '/');
+	const filename = isDir
+		? normalizeRemoteDir(relativePath || '/')
+		: normalizeRemotePath(relativePath || '/');
 
 	return {
 		filename,
