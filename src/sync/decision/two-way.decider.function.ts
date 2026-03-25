@@ -323,10 +323,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						{
 							...options,
 							record,
-							strategy:
-								settings.conflictStrategy === 'latest-timestamp'
-									? ConflictStrategy.LatestTimeStamp
-									: ConflictStrategy.DiffMatchPatch,
+							strategy: settings.conflictStrategy,
 							useGitStyle: settings.useGitStyle,
 						},
 						local,
@@ -527,7 +524,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					await createConflictResolveTaskWithSnapshot(
 						{
 							...options,
-							strategy: ConflictStrategy.DiffMatchPatch,
+							strategy: settings.conflictStrategy,
 							useGitStyle: settings.useGitStyle,
 						},
 						local,
