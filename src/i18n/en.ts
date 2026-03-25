@@ -56,6 +56,8 @@ export default {
 			desc: 'Choose how to resolve file conflicts. \nNote: We recommend backing up important files before using auto-merge to prevent data loss.',
 			diffMatchPatch: 'Smart merge (recommended)',
 			latestTimestamp: 'Use latest version',
+			keepLocal: 'Keep local version',
+			keepRemote: 'Keep remote version',
 			skip: 'Skip conflicts',
 		},
 		confirmBeforeSync: {

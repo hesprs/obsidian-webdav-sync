@@ -17,6 +17,8 @@ import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diff-match-patch',
 	LatestTimeStamp = 'latest-timestamp',
+	KeepLocal = 'keep-local',
+	KeepRemote = 'keep-remote',
 	Skip = 'skip',
 }
 
@@ -113,6 +115,10 @@ export default class ConflictResolveTask extends BaseTask {
 					return await this.execIntelligentMerge(snapshots);
 				case ConflictStrategy.LatestTimeStamp:
 					return await this.execLatestTimeStamp(snapshots);
+				case ConflictStrategy.KeepLocal:
+					return await this.execKeepLocal(snapshots);
+				case ConflictStrategy.KeepRemote:
+					return await this.execKeepRemote(snapshots);
 				case ConflictStrategy.Skip:
 					return { success: true, skipRecord: true } as const;
 			}
@@ -175,6 +181,68 @@ export default class ConflictResolveTask extends BaseTask {
 		} catch (e) {
 			logger.error(
 				`Failed to resolve conflict for ${this.localPath} by latest-survive policy`,
+				e,
+			);
+			return { success: false, error: toTaskError(e, this) };
+		}
+	}
+
+	async execKeepLocal({
+		localStat,
+		localBuffer,
+	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
+		try {
+			await this.webdav.putFileContents(this.remotePath, localBuffer, {
+				overwrite: true,
+			});
+			const newRemoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!newRemoteStat || newRemoteStat.isDir)
+				throw new Error(
+					`failed to read remote file stat after keep-local merge: ${this.localPath}`,
+				);
+
+			const baseText = await this.toText(localBuffer);
+			await this.syncRecord.upsertSyncedFileFromSnapshots({
+				remotePath: this.remotePath,
+				localPath: this.localPath,
+				localStat,
+				remoteStat: newRemoteStat,
+				baseText,
+			});
+			return { success: true } as const;
+		} catch (e) {
+			logger.error(
+				`Failed to resolve conflict for ${this.localPath} by keep-local policy`,
+				e,
+			);
+			return { success: false, error: toTaskError(e, this) };
+		}
+	}
+
+	async execKeepRemote({
+		remoteStat,
+		remoteBuffer,
+	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
+		try {
+			await this.writeLocalBuffer(remoteBuffer);
+			const newLocalStat = await statVaultItem(this.vault, this.localPath);
+			if (!newLocalStat || newLocalStat.isDir)
+				throw new Error(
+					`failed to read local file stat after keep-remote merge: ${this.localPath}`,
+				);
+
+			const baseText = await this.toText(remoteBuffer);
+			await this.syncRecord.upsertSyncedFileFromSnapshots({
+				remotePath: this.remotePath,
+				localPath: this.localPath,
+				localStat: newLocalStat,
+				remoteStat,
+				baseText,
+			});
+			return { success: true } as const;
+		} catch (e) {
+			logger.error(
+				`Failed to resolve conflict for ${this.localPath} by keep-remote policy`,
 				e,
 			);
 			return { success: false, error: toTaskError(e, this) };
