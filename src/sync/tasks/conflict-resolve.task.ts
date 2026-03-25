@@ -201,9 +201,7 @@ export default class ConflictResolveTask extends BaseTask {
 					`failed to read remote file stat after keep-local merge: ${this.localPath}`,
 				);
 
-			const baseText = this.isMergeableConflict()
-				? await this.toText(localBuffer)
-				: undefined;
+			const baseText = await this.toText(localBuffer);
 			await this.syncRecord.upsertSyncedFileFromSnapshots({
 				remotePath: this.remotePath,
 				localPath: this.localPath,
@@ -233,9 +231,7 @@ export default class ConflictResolveTask extends BaseTask {
 					`failed to read local file stat after keep-remote merge: ${this.localPath}`,
 				);
 
-			const baseText = this.isMergeableConflict()
-				? await this.toText(remoteBuffer)
-				: undefined;
+			const baseText = await this.toText(remoteBuffer);
 			await this.syncRecord.upsertSyncedFileFromSnapshots({
 				remotePath: this.remotePath,
 				localPath: this.localPath,
