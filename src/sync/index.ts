@@ -230,9 +230,7 @@ export class SyncEngine {
 				request.mode === SyncStartMode.AUTO_SYNC &&
 				settings.confirmBeforeDeleteInAutoSync
 			) {
-				const removeLocalTasks = confirmedTasks.filter(
-					(t) => t instanceof RemoveLocalTask,
-				) as RemoveLocalTask[];
+				const removeLocalTasks = confirmedTasks.filter((t) => t instanceof RemoveLocalTask);
 				if (removeLocalTasks.length > 0) {
 					currentRun = updateSyncRunSnapshot(currentRun, {
 						stage: 'awaiting_confirmation',
@@ -399,7 +397,7 @@ export class SyncEngine {
 		tasksToReupload: RemoveLocalTask[];
 		syncRecord: SyncRecord;
 	}): Promise<BaseTask[]> {
-		const { mkdirTasks, pushTasks } = await this.buildReuploadTasks({
+		const { mkdirTasks, pushTasks } = this.buildReuploadTasks({
 			confirmedTasks,
 			originalTasks,
 			tasksToReupload,
@@ -421,7 +419,7 @@ export class SyncEngine {
 		return [...mkdirTasks, ...otherTasks, ...pushTasks, ...deleteTasks];
 	}
 
-	private async buildReuploadTasks({
+	private buildReuploadTasks({
 		confirmedTasks,
 		originalTasks,
 		tasksToReupload,
@@ -431,10 +429,10 @@ export class SyncEngine {
 		originalTasks: BaseTask[];
 		tasksToReupload: RemoveLocalTask[];
 		syncRecord: SyncRecord;
-	}): Promise<{
+	}): {
 		mkdirTasks: MkdirRemoteTask[];
 		pushTasks: PushTask[];
-	}> {
+	} {
 		const snapshotIndex = this.buildReuploadSnapshotIndex([
 			...originalTasks,
 			...confirmedTasks,

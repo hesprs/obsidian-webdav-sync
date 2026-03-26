@@ -9,7 +9,7 @@ const MAX_FILE_SIZE = '500MB';
 const MAX_BYTES = bytesParse(MAX_FILE_SIZE, { mode: 'jedec' }) ?? 524288000;
 
 export default class ControlsSettings extends BaseSettings {
-	async display() {
+	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.control')).setHeading();
 

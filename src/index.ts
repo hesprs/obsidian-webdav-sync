@@ -74,11 +74,10 @@ export default class WebDAVSyncPlugin extends Plugin {
 		await this.syncStateStore.initialize().catch(() => undefined);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
-
 		await this.scheduledSyncService.start();
 	}
 
-	async onunload() {
+	onunload() {
 		setPluginInstance(null);
 		emitCancelSync();
 		this.scheduledSyncService.unload();

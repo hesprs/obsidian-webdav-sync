@@ -110,7 +110,7 @@ export default {
 		},
 		filters: {
 			name: '过滤器',
-			desc: '添加同步时需要忽略文件或文件夹路径，例如: .DS_Store, .git',
+			desc: '添加同步时需要忽略文件或文件夹路径',
 			add: '添加规则',
 			remove: '删除',
 			confirmRemove: '确认删除',

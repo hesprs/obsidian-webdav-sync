@@ -1,4 +1,5 @@
 import { parse as bytesParse } from 'bytes-iec';
+import { SyncPlanningSubStage } from '~/events';
 import { remotePathToAbsolute } from '~/platform/path/remote-path';
 import { remotePathToLocalRelative } from '~/platform/path/remote-path';
 import { SyncMode } from '~/settings';
@@ -103,7 +104,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	const updateProgress = async () => {
 		completedUnits++;
 		await onProgress?.({
-			subStage: 'deciding',
+			subStage: SyncPlanningSubStage.deciding,
 			totalWorkUnits: totalDecisionWorkUnits,
 			completedWorkUnits: completedUnits,
 		});
@@ -150,11 +151,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		);
 	};
 
-	const createMkdirRemoteTaskWithSnapshot = async (
+	const createMkdirRemoteTaskWithSnapshot = (
 		options: { localPath: string; remotePath: string; remoteBaseDir: string },
 		localStat: PlannedLocalSnapshot['stat'],
 	) => {
-		const plannedLocal = await createPlannedLocalFolderSnapshot(options.localPath, localStat);
+		const plannedLocal = createPlannedLocalFolderSnapshot(options.localPath, localStat);
 		mkdirRemoteTasks.push(
 			taskFactory.createMkdirRemoteTask({
 				...options,
@@ -174,7 +175,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		targetTasks: BaseTask[] = tasks,
 	) => {
 		const plannedLocal = localStat.isDir
-			? await createPlannedLocalFolderSnapshot(options.localPath, localStat)
+			? createPlannedLocalFolderSnapshot(options.localPath, localStat)
 			: await createPlannedLocalFileSnapshot(options.localPath, localStat);
 		targetTasks.push(
 			taskFactory.createRemoveLocalTask({
@@ -216,14 +217,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		);
 	};
 
-	const createMkdirLocalTaskWithSnapshot = async (
+	const createMkdirLocalTaskWithSnapshot = (
 		options: { localPath: string; remotePath: string; remoteBaseDir: string },
 		remoteStat: PlannedRemoteSnapshot['stat'],
 	) => {
-		const plannedRemote = await createPlannedRemoteFolderSnapshot(
-			options.remotePath,
-			remoteStat,
-		);
+		const plannedRemote = createPlannedRemoteFolderSnapshot(options.remotePath, remoteStat);
 		mkdirLocalTasks.push(
 			taskFactory.createMkdirLocalTask({
 				...options,
@@ -288,7 +286,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		}
 
 		const operations = {
-			NONE: async () => false,
+			NONE: () => false,
 			RECORD_REMOTE_LOCAL_CONFLICT: async () => {
 				if (!remote || !local) return false;
 				logger.debug(`Detected conflict between \`${localName}\` and \`${remoteName}\``, {
@@ -420,7 +418,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				await createPullTaskWithSnapshot(options, remote);
 				return true;
 			},
-			RECORD_REMOTE_NOLOCAL_REMOVE: async () => {
+			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
 				if (!remote) return false;
 				logger.debug(`Remove remote file \`${remote.path}\``, {
 					reason: 'remote file is removable',
@@ -481,7 +479,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				await createRemoveLocalTaskWithSnapshot(options, local);
 				return true;
 			},
-			NORECORD_REMOTE_LOCAL_NOOP: async () => {
+			NORECORD_REMOTE_LOCAL_NOOP: () => {
 				tasks.push(
 					taskFactory.createNoopTask({
 						...options,
@@ -671,7 +669,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					},
 				});
 
-				await createMkdirLocalTaskWithSnapshot(
+				createMkdirLocalTaskWithSnapshot(
 					{
 						localPath,
 						remotePath: remote.path,
@@ -736,7 +734,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				},
 			});
 
-			await createMkdirLocalTaskWithSnapshot(
+			createMkdirLocalTaskWithSnapshot(
 				{
 					localPath,
 					remotePath: remote.path,
@@ -797,7 +795,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							}),
 						);
 					} else {
-						await createMkdirRemoteTaskWithSnapshot(
+						createMkdirRemoteTaskWithSnapshot(
 							{
 								localPath: local.path,
 								remotePath: local.path,
@@ -878,7 +876,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						}),
 					);
 				} else {
-					await createMkdirRemoteTaskWithSnapshot(
+					createMkdirRemoteTaskWithSnapshot(
 						{
 							localPath: local.path,
 							remotePath: local.path,

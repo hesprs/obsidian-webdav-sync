@@ -1,6 +1,7 @@
 import {
 	createQueuedSyncRunSnapshot,
 	emitSyncRun,
+	SyncPlanningSubStage,
 	type SyncRunMode,
 	type SyncRunSnapshot,
 	type SyncTrigger,
@@ -65,7 +66,7 @@ export default class SyncExecutorService {
 				token: this.plugin.getToken(),
 				remoteServerUrl: this.plugin.settings.serverUrl,
 				remoteBaseDir: this.plugin.remoteBaseDir,
-				webdav: await this.plugin.webDAVService.createWebDAVClient(),
+				webdav: this.plugin.webDAVService.createWebDAVClient(),
 				syncStateStore: this.plugin.syncStateStore,
 			});
 
@@ -82,7 +83,7 @@ export default class SyncExecutorService {
 			run = updateSyncRunSnapshot(run, {
 				stage: 'planning',
 				planningProgress: {
-					subStage: 'pre_connecting',
+					subStage: SyncPlanningSubStage.preConnecting,
 					totalWorkUnits: 0,
 					completedWorkUnits: 0,
 					currentItem: this.plugin.remoteBaseDir,

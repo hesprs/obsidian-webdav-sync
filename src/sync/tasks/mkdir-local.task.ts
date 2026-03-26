@@ -20,7 +20,7 @@ export default class MkdirLocalTask extends BaseTask {
 					// Ignore existing-dir and parent creation races.
 				}
 			}
-			const localStat = await statVaultItem(this.vault, this.localPath);
+			const localStat = statVaultItem(this.vault, this.localPath);
 			if (!localStat || !localStat.isDir)
 				throw new Error(
 					`failed to read local directory stat after creation: ${this.localPath}`,

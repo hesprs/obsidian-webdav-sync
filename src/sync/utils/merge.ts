@@ -85,15 +85,13 @@ function diff3MergeStrings(
 	const result: string[][] = [];
 	for (const region of regions) {
 		if (region.ok) {
-			result.push(region.ok as string[]);
+			result.push(region.ok);
 		}
 	}
 	return result.flat().join('\n');
 }
 
-export async function resolveByIntelligentMerge(
-	params: IntelligentMergeParams,
-): Promise<IntelligentMergeResult> {
+export function resolveByIntelligentMerge(params: IntelligentMergeParams): IntelligentMergeResult {
 	const { localContentText, remoteContentText, baseContentText } = params;
 
 	if (localContentText === remoteContentText) return { success: true, isIdentical: true };

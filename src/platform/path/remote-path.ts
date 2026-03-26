@@ -27,12 +27,12 @@ export function isAbsoluteRemotePath(path: string): boolean {
 
 export function normalizeRemotePath(path: string): `/${string}` {
 	const normalized = splitRemoteSegments(path).join('/');
-	return (normalized === '' ? '/' : `/${normalized}`) as `/${string}`;
+	return normalized === '' ? '/' : `/${normalized}`;
 }
 
-export function normalizeRemoteDir(path: string): `/${string}/` {
+export function normalizeRemoteDir(path: string): `/${string}/` | '/' {
 	const normalized = normalizeRemotePath(path);
-	return (normalized === '/' ? '/' : `${normalized}/`) as `/${string}/`;
+	return normalized === '/' ? '/' : `${normalized}/`;
 }
 
 export function joinRemotePath(...parts: string[]): `/${string}` {

@@ -1,14 +1,11 @@
 import { isNil } from 'lodash-es';
 import deepStringify from '~/utils/deep-stringify';
 
-// oxlint-disable-next-line typescript/no-explicit-any
-type General = any;
-
 export async function sha256Digest(data: BufferSource): Promise<ArrayBuffer> {
 	return globalThis.crypto.subtle.digest('SHA-256', data);
 }
 
-export function hash(input: General): string {
+export function hash(input: unknown): string {
 	const str = typeof input === 'string' ? input : deepStringify(input);
 	if (isNil(str)) throw new Error('hash failed');
 	let hash = 0x811c9dc5;
@@ -19,7 +16,7 @@ export function hash(input: General): string {
 	return (hash >>> 0).toString(16);
 }
 
-export function isEqual(a: General, b: General): boolean {
+export function isEqual(a: unknown, b: unknown): boolean {
 	if (a === b) return true;
 	if (a === null || b === null) return false;
 	if (typeof a !== typeof b) return false;
@@ -32,12 +29,14 @@ export function isEqual(a: General, b: General): boolean {
 
 	if (a instanceof Date && b instanceof Date) return a.getTime() === b.getTime();
 
-	const keysA = Object.keys(a);
-	const keysB = Object.keys(b);
+	type GeneralObj = Record<string, unknown>;
+
+	const keysA = Object.keys(a as GeneralObj);
+	const keysB = Object.keys(b as GeneralObj);
 	if (keysA.length !== keysB.length) return false;
 	for (const key of keysA) {
 		if (!keysB.includes(key)) return false;
-		if (!isEqual(a[key], b[key])) return false;
+		if (!isEqual((a as GeneralObj)[key], (b as GeneralObj)[key])) return false;
 	}
 
 	return true;

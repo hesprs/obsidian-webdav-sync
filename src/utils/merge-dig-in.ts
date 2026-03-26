@@ -1,5 +1,3 @@
-// @ts-nocheck
-
 import { diff3Merge, diffComm } from 'node-diff3';
 
 /**
@@ -9,19 +7,19 @@ export function mergeDigIn(
 	a: string[] | string,
 	o: string[] | string,
 	b: string[] | string,
-	options: {
+	_options: {
 		excludeFalseConflicts?: boolean;
 		stringSeparator?: string | RegExp;
 		useGitStyle?: boolean;
 	},
 ) {
-	const defaults = {
+	const options = {
 		excludeFalseConflicts: true,
 		stringSeparator: /\s+/,
 		label: {},
 		useGitStyle: false,
+		..._options,
 	};
-	options = Object.assign(defaults, options);
 
 	const aSection = options.useGitStyle ? '<<<<<<<' : `<mark class="conflict ours">`;
 	const xSection = options.useGitStyle ? '=======' : '</mark><mark class="conflict theirs">';
@@ -32,20 +30,15 @@ export function mergeDigIn(
 	let result: string[] = [];
 
 	regions.forEach((region) => {
-		if (region.ok) {
-			result = result.concat(region.ok);
-		} else {
-			const c = diffComm(region.conflict?.a, region.conflict?.b);
+		if (region.ok) result = result.concat(region.ok);
+		else {
+			const c = diffComm(region.conflict?.a as string[], region.conflict?.b as string[]);
 			for (let j = 0; j < c.length; j++) {
-				let inner = c[j];
-				if (inner.common) {
-					result = result.concat(inner.common);
-				} else {
-					conflict = true;
-					result = result.concat([aSection], inner.buffer1, [xSection], inner.buffer2, [
-						bSection,
-					]);
-				}
+				const inner = c[j];
+				conflict = true;
+				result = result.concat([aSection], inner.buffer1, [xSection], inner.buffer2, [
+					bSection,
+				]);
 			}
 		}
 	});

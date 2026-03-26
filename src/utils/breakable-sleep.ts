@@ -4,7 +4,7 @@ export default function <T>(ob: Observable<T>, ms: number) {
 	return new Promise<void>((resolve, reject) => {
 		const sub = ob.subscribe({
 			next: () => finish(),
-			error: (err) => {
+			error: (err: Error) => {
 				window.clearTimeout(timer);
 				sub.unsubscribe();
 				reject(err);

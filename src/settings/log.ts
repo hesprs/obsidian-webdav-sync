@@ -4,7 +4,7 @@ import logger from '~/utils/logger';
 import BaseSettings from './settings.base';
 
 export default class LogSettings extends BaseSettings {
-	async display() {
+	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.log.title')).setHeading();
 		new Setting(this.containerEl)

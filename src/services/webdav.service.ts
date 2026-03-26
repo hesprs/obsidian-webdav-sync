@@ -7,8 +7,7 @@ export function createRateLimitedWebDAVClient(client: WebDAVClient): WebDAVClien
 		get(target, prop, receiver) {
 			const value = Reflect.get(target, prop, receiver);
 			if (typeof value === 'function') {
-				// oxlint-disable-next-line typescript/no-explicit-any
-				return (...args: any[]) => {
+				return (...args: unknown[]) => {
 					return apiLimiter.schedule(() => value.apply(target, args));
 				};
 			}
@@ -40,7 +39,7 @@ export class WebDAVService {
 		return parsedUrl.toString().replace(/\/+$/, '');
 	}
 
-	async createWebDAVClient(): Promise<WebDAVClient> {
+	createWebDAVClient(): WebDAVClient {
 		const client = createClient(this.getServerUrl(), {
 			username: this.plugin.settings.account,
 			password: this.plugin.settings.credential,
@@ -50,12 +49,11 @@ export class WebDAVService {
 
 	async checkWebDAVConnection(): Promise<{ error?: Error; success: boolean }> {
 		try {
-			const client = await this.createWebDAVClient();
+			const client = this.createWebDAVClient();
 			return { success: await client.exists('/') };
-			// oxlint-disable-next-line typescript/no-explicit-any
-		} catch (error: any) {
+		} catch (error) {
 			return {
-				error,
+				error: error as Error,
 				success: false,
 			};
 		}

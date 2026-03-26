@@ -13,15 +13,11 @@ export class SyncRibbonManager {
 		this.startRibbonEl = this.plugin.addRibbonIcon(
 			'refresh-ccw',
 			i18n.t('sync.startButton'),
-			async () => {
-				if (this.plugin.isSyncing) {
-					return;
-				}
+			() => {
+				if (this.plugin.isSyncing) return;
 
-				// 检查账号配置
 				if (!this.plugin.isAccountConfigured()) {
 					new Notice(i18n.t('sync.error.accountNotConfigured'));
-					// 打开设置页面，引导用户配置账号
 					try {
 						const setting = this.plugin.app.setting;
 						if (setting) {
@@ -37,11 +33,9 @@ export class SyncRibbonManager {
 				const startSync = async () => {
 					await this.plugin.syncSchedulerService.requestManualSync();
 				};
-				if (this.plugin.settings.confirmBeforeSync) {
+				if (this.plugin.settings.confirmBeforeSync)
 					new SyncConfirmModal(this.plugin.app, startSync).open();
-				} else {
-					void startSync();
-				}
+				else void startSync();
 			},
 		);
 		this.stopRibbonEl = this.plugin.addRibbonIcon('square', i18n.t('sync.stopButton'), () =>

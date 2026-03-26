@@ -38,8 +38,7 @@ async function executeWithRetry<T>(func: () => MaybePromise<T>): Promise<T> {
 	while (true) {
 		try {
 			return await func();
-			// oxlint-disable-next-line typescript/no-explicit-any
-		} catch (err: any) {
+		} catch (err) {
 			if (isRetryableError(err)) await sleep(5_000);
 			else throw err;
 		}

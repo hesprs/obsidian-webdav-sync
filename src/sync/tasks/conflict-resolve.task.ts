@@ -15,10 +15,10 @@ import {
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export enum ConflictStrategy {
-	DiffMatchPatch = 'diff-match-patch',
-	LatestTimeStamp = 'latest-timestamp',
-	KeepLocal = 'keep-local',
-	KeepRemote = 'keep-remote',
+	DiffMatchPatch = 'diffMatchPatch',
+	LatestTimeStamp = 'latestTimestamp',
+	KeepLocal = 'keepLocal',
+	KeepRemote = 'keepRemote',
 	Skip = 'skip',
 }
 
@@ -91,7 +91,7 @@ export default class ConflictResolveTask extends BaseTask {
 			});
 		} else {
 			// no race condition since we've just written it
-			const newLocalStat = await statVaultItem(this.vault, this.localPath);
+			const newLocalStat = statVaultItem(this.vault, this.localPath);
 			if (!newLocalStat || newLocalStat.isDir)
 				throw new Error(
 					`failed to read remote file stat after timestamp merge: ${this.localPath}`,
@@ -225,7 +225,7 @@ export default class ConflictResolveTask extends BaseTask {
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
 			await this.writeLocalBuffer(remoteBuffer);
-			const newLocalStat = await statVaultItem(this.vault, this.localPath);
+			const newLocalStat = statVaultItem(this.vault, this.localPath);
 			if (!newLocalStat || newLocalStat.isDir)
 				throw new Error(
 					`failed to read local file stat after keep-remote merge: ${this.localPath}`,
@@ -275,7 +275,7 @@ export default class ConflictResolveTask extends BaseTask {
 			const remoteText = await this.toText(remoteBuffer);
 			const baseText = this.options.record?.baseText ?? localText;
 			let mergedText: string;
-			const mergeResult = await resolveByIntelligentMerge({
+			const mergeResult = resolveByIntelligentMerge({
 				localContentText: localText,
 				remoteContentText: remoteText,
 				baseContentText: baseText,
@@ -317,7 +317,7 @@ export default class ConflictResolveTask extends BaseTask {
 			}
 			if (localText !== mergedText) {
 				await this.writeLocalBuffer(new TextEncoder().encode(mergedText).buffer);
-				const fetchedLocalStat = await statVaultItem(this.vault, this.localPath);
+				const fetchedLocalStat = statVaultItem(this.vault, this.localPath);
 				if (!fetchedLocalStat || fetchedLocalStat.isDir)
 					throw new Error(
 						`failed to read local file stat after intelligent merge: ${this.localPath}`,
