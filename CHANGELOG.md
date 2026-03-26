@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v1.3.0 - 2026-03-26
+
+- Fixed iOS-specific Unicode normalization inconsistency that causes different file with the same name to be created in the WebDAV.
+- Introduce 'Keep Local' and 'Keep Remote' conflict resolution strategies by @quantavil.
+- Added option `Realtime sync delay` to adjust custom debounce time for realtime sync and changed the default value to 5s.
+- Reorganized settings categories.
+
 ## Obsidian WebDAV Sync v1.2.4 - 2026-03-23
 
 - Fixed iOS-specific JSON parsing error originated from different trailing slash handling.

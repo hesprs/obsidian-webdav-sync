@@ -1,4 +1,5 @@
 import { Notice, Setting } from 'obsidian';
+import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
 import BaseSettings from './settings.base';
 
@@ -66,9 +67,35 @@ export default class AccountSettings extends BaseSettings {
 			});
 
 		this.displayCheckConnection();
-	}
 
-	async hide() {}
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.remoteDir.name'))
+			.setDesc(i18n.t('settings.remoteDir.desc'))
+			.addText((text) => {
+				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder'))
+					.setValue(this.plugin.remoteBaseDir)
+					.onChange(async (value) => {
+						this.plugin.settings.remoteDir = value;
+						await this.plugin.saveSettings();
+					});
+				text.inputEl.addEventListener('blur', () => {
+					this.plugin.settings.remoteDir = this.plugin.remoteBaseDir;
+				});
+			})
+			.addButton((button) => {
+				button.setIcon('folder').onClick(() => {
+					// 检查账号配置
+					if (!this.plugin.isAccountConfigured()) {
+						new Notice(i18n.t('sync.error.accountNotConfigured'));
+						return;
+					}
+					new SelectRemoteBaseDirModal(this.app, this.plugin, async (path) => {
+						this.plugin.settings.remoteDir = path;
+						await this.plugin.saveSettings();
+					}).open();
+				});
+			});
+	}
 
 	private displayCheckConnection() {
 		new Setting(this.containerEl)

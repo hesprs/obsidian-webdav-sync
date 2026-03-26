@@ -5,7 +5,6 @@ import type WebDAVSyncPlugin from '..';
 import type { SyncExecutionRequest, SyncOptions } from './sync-executor.service';
 import type SyncExecutorService from './sync-executor.service';
 
-const AUTO_SYNC_DEBOUNCE_MS = 8000;
 const SYNC_IDLE_POLL_MS = 500;
 
 interface SyncRequest extends SyncOptions {
@@ -17,9 +16,7 @@ interface SyncRequest extends SyncOptions {
 
 export default class SyncSchedulerService {
 	private pendingRequests: SyncRequest[] = [];
-
 	private flushTimer: number | null = null;
-
 	private isFlushing = false;
 
 	constructor(
@@ -86,7 +83,7 @@ export default class SyncSchedulerService {
 			0,
 		);
 
-		return Math.max(0, latestRequestAt + AUTO_SYNC_DEBOUNCE_MS - Date.now());
+		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSyncDelay - Date.now());
 	}
 
 	private reduceBatch(batch: SyncRequest[]): SyncExecutionRequest {

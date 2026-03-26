@@ -5,6 +5,7 @@ import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
+import ControlsSettings from './controls';
 import FilterSettings from './filter';
 import LogSettings from './log';
 
@@ -32,9 +33,10 @@ export interface PluginSettings {
 		maxSize: string;
 	};
 	realtimeSync: boolean;
+	realtimeSyncDelay: number;
 	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
-	autoSyncIntervalSeconds: number;
+	scheduledSyncIntervalSeconds: number;
 	language?: 'zh-Hans' | 'en';
 }
 
@@ -63,6 +65,7 @@ export class SyncSettingTab extends PluginSettingTab {
 	commonSettings: CommonSettings;
 	filterSettings: FilterSettings;
 	logSettings: LogSettings;
+	controlsSettings: ControlsSettings;
 
 	constructor(app: App, plugin: WebDAVSyncPlugin) {
 		super(app, plugin);
@@ -74,6 +77,12 @@ export class SyncSettingTab extends PluginSettingTab {
 			this.containerEl.createDiv(),
 		);
 		this.commonSettings = new CommonSettings(
+			this.app,
+			this.plugin,
+			this,
+			this.containerEl.createDiv(),
+		);
+		this.controlsSettings = new ControlsSettings(
 			this.app,
 			this.plugin,
 			this,
@@ -96,11 +105,8 @@ export class SyncSettingTab extends PluginSettingTab {
 	async display() {
 		await this.accountSettings.display();
 		await this.commonSettings.display();
+		await this.controlsSettings.display();
 		await this.filterSettings.display();
 		await this.logSettings.display();
-	}
-
-	async hide() {
-		await this.accountSettings.hide();
 	}
 }

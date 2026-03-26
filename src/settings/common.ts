@@ -1,64 +1,14 @@
-import { parse as bytesParse } from 'bytes-iec';
 import { clamp, isNil } from 'lodash-es';
-import { Notice, Setting, TextComponent } from 'obsidian';
-import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
+import { Notice, Setting } from 'obsidian';
 import i18n from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
-import { isNumeric } from '~/utils/is-numeric';
 import { SyncMode } from './index';
 import BaseSettings from './settings.base';
-
-const MAX_FILE_SIZE = '500MB';
-const MAX_BYTES = bytesParse(MAX_FILE_SIZE, { mode: 'jedec' }) ?? 524288000;
 
 export default class CommonSettings extends BaseSettings {
 	async display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.common')).setHeading();
-
-		new Setting(this.containerEl)
-			.setName(i18n.t('settings.remoteDir.name'))
-			.setDesc(i18n.t('settings.remoteDir.desc'))
-			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder'))
-					.setValue(this.plugin.remoteBaseDir)
-					.onChange(async (value) => {
-						this.plugin.settings.remoteDir = value;
-						await this.plugin.saveSettings();
-					});
-				text.inputEl.addEventListener('blur', () => {
-					this.plugin.settings.remoteDir = this.plugin.remoteBaseDir;
-					void this.display();
-				});
-			})
-			.addButton((button) => {
-				button.setIcon('folder').onClick(() => {
-					// 检查账号配置
-					if (!this.plugin.isAccountConfigured()) {
-						new Notice(i18n.t('sync.error.accountNotConfigured'));
-						return;
-					}
-					new SelectRemoteBaseDirModal(this.app, this.plugin, async (path) => {
-						this.plugin.settings.remoteDir = path;
-						await this.plugin.saveSettings();
-						void this.display();
-					}).open();
-				});
-			});
-
-		new Setting(this.containerEl)
-			.setName(i18n.t('settings.skipLargeFiles.name'))
-			.setDesc(i18n.t('settings.skipLargeFiles.desc'))
-			.addText((text) => {
-				const currentValue = this.plugin.settings.skipLargeFiles.maxSize.trim();
-				text.setPlaceholder(i18n.t('settings.skipLargeFiles.placeholder')).setValue(
-					currentValue,
-				);
-
-				text.inputEl.addEventListener('blur', () => {
-					void this.handleMaxFileSizeBlur(text);
-				});
-			});
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.conflictStrategy.name'))
@@ -203,24 +153,26 @@ export default class CommonSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.autoSyncInterval.name'))
-			.setDesc(i18n.t('settings.autoSyncInterval.desc'))
+			.setName(i18n.t('settings.scheduledSyncInterval.name'))
+			.setDesc(i18n.t('settings.scheduledSyncInterval.desc'))
 			.addText((text) => {
 				const MAX_MINUTES = 1440; // 1 day
-				text.setPlaceholder(i18n.t('settings.autoSyncInterval.placeholder'))
+				text.setPlaceholder(i18n.t('settings.scheduledSyncInterval.placeholder'))
 					.setValue(
-						Math.round(this.plugin.settings.autoSyncIntervalSeconds / 60).toString(),
+						Math.round(
+							this.plugin.settings.scheduledSyncIntervalSeconds / 60,
+						).toString(),
 					)
 					.onChange(async (value) => {
 						const numValue = parseFloat(value);
 						if (!isNaN(numValue)) {
 							const clampedValue = clamp(numValue, 0, MAX_MINUTES);
-							this.plugin.settings.autoSyncIntervalSeconds = clampedValue * 60;
+							this.plugin.settings.scheduledSyncIntervalSeconds = clampedValue * 60;
 							await this.plugin.saveSettings();
 							await this.plugin.scheduledSyncService.updateInterval();
 							if (clampedValue !== numValue) {
 								new Notice(
-									i18n.t('settings.autoSyncInterval.exceedsMax', {
+									i18n.t('settings.scheduledSyncInterval.exceedsMax', {
 										max: MAX_MINUTES,
 									}),
 								);
@@ -236,16 +188,16 @@ export default class CommonSettings extends BaseSettings {
 					text.setValue(finalValue.toString());
 
 					if (isNaN(numValue)) {
-						new Notice(i18n.t('settings.autoSyncInterval.invalidValue'));
+						new Notice(i18n.t('settings.scheduledSyncInterval.invalidValue'));
 					} else if (finalValue !== numValue) {
 						new Notice(
-							i18n.t('settings.autoSyncInterval.exceedsMax', {
+							i18n.t('settings.scheduledSyncInterval.exceedsMax', {
 								max: MAX_MINUTES,
 							}),
 						);
 					}
 
-					this.plugin.settings.autoSyncIntervalSeconds = finalValue * 60;
+					this.plugin.settings.scheduledSyncIntervalSeconds = finalValue * 60;
 					await this.plugin.saveSettings();
 					await this.plugin.scheduledSyncService.updateInterval();
 				});
@@ -297,40 +249,5 @@ export default class CommonSettings extends BaseSettings {
 						}
 					}),
 			);
-	}
-
-	private async handleMaxFileSizeBlur(component: TextComponent) {
-		let value = component.getValue().trim();
-		// Empty value: restore to default max size
-		if (!value) {
-			value = MAX_FILE_SIZE;
-		}
-		// Plain number without unit: append 'B' for better UX
-		else if (
-			isNumeric(value) ||
-			(isNil(bytesParse(value)) && !isNil(bytesParse(value + 'B')))
-		) {
-			value += 'B';
-		}
-		// Validate the input format
-		const parsedBytes = bytesParse(value, { mode: 'jedec' });
-		// Invalid format (e.g., "100FOO"): show error and revert to last saved value
-		if (parsedBytes === null) {
-			new Notice(i18n.t('settings.skipLargeFiles.invalidFormat'));
-			component.setValue(this.plugin.settings.skipLargeFiles.maxSize);
-			return;
-		}
-		// Exceeds max limit (e.g., "1GB"): show error and clamp to max allowed value
-		if (parsedBytes > MAX_BYTES) {
-			new Notice(i18n.t('settings.skipLargeFiles.exceedsMaxSize'));
-			value = MAX_FILE_SIZE;
-		}
-		// Update UI with formatted value to ensure consistency
-		component.setValue(value);
-		// Save to disk only if value actually changed
-		if (this.plugin.settings.skipLargeFiles.maxSize !== value) {
-			this.plugin.settings.skipLargeFiles.maxSize = value;
-			await this.plugin.saveSettings();
-		}
 	}
 }
