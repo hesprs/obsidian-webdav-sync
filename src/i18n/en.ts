@@ -61,8 +61,8 @@ export default {
 			skip: 'Skip conflicts',
 		},
 		confirmBeforeSync: {
-			name: 'Confirm before sync',
-			desc: 'Show pending tasks and execute after confirmation',
+			name: 'Confirm before manual sync execution',
+			desc: 'Show pending tasks and execute after confirmation (does not affect auto-sync)',
 		},
 		confirmBeforeDeleteInAutoSync: {
 			name: 'Confirm before deleting files during auto-sync',
@@ -71,6 +71,12 @@ export default {
 		realtimeSync: {
 			name: 'Real-time sync',
 			desc: 'Automatically sync changes as soon as files are modified',
+		},
+		realtimeSyncDelay: {
+			name: 'Real-time sync delay',
+			desc: 'Delay in seconds between changes being detected to triggering realtime sync, higher values mean more lagging but less WebDAV traffic.',
+			placeholder: 'Enter seconds',
+			invalidValue: 'Invalid value, reset to the previous value',
 		},
 		useFastSyncOnLocalChange: {
 			name: 'Fast sync on local changes',
@@ -90,9 +96,9 @@ export default {
 			exceedsMax:
 				'Value exceeds maximum limit of {{max}} seconds (1 day), automatically adjusted',
 		},
-		autoSyncInterval: {
-			name: 'Auto-sync interval',
-			desc: 'Set the interval for automatic background synchronization (in minutes). Set to 0 to disable automatic sync.',
+		scheduledSyncInterval: {
+			name: 'Scheduled sync interval',
+			desc: 'Set the interval for periodic background synchronization (in minutes). Set to 0 to disable scheduled sync.',
 			placeholder: 'Enter minutes (e.g., 5, 0 to disable)',
 			invalidValue: 'Invalid value, reset to 0',
 			exceedsMax:
@@ -100,6 +106,7 @@ export default {
 		},
 		sections: {
 			common: 'General',
+			control: 'Rate & file size control',
 			filters: 'Filter rules',
 		},
 		filters: {
