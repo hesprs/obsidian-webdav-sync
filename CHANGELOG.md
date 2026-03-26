@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Introduce 'Keep Local' and 'Keep Remote' conflict resolution strategies by @quantavil.
 - Added option `Realtime sync delay` to adjust custom debounce time for realtime sync and changed the default value to 5s.
 - Reorganized settings categories.
+- Changing the starting syncing phase in status bar from `Loading records` to `Pre-connecting` for accuracy.
 
 ## Obsidian WebDAV Sync v1.2.4 - 2026-03-23
 
