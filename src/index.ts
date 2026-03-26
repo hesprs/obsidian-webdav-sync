@@ -50,9 +50,10 @@ export default class WebDAVSyncPlugin extends Plugin {
 			maxSize: '30 MB',
 		},
 		realtimeSync: false,
+		realtimeSyncDelay: 5000,
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
-		autoSyncIntervalSeconds: 300,
+		scheduledSyncIntervalSeconds: 300,
 		language: undefined,
 	};
 

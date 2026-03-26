@@ -63,11 +63,18 @@ export default {
 		},
 		sections: {
 			common: '通用设置',
+			control: '速率与大文件设置',
 			filters: '过滤规则',
 		},
 		confirmBeforeSync: {
-			name: '同步前确认',
-			desc: '同步前显示待执行的任务列表，确认后再执行',
+			name: '手动同步前确认',
+			desc: '显示待处理任务，经确认后执行（不影响自动同步）',
+		},
+		realtimeSyncDelay: {
+			name: '实时同步延迟',
+			desc: '检测到变更到触发实时同步之间的延迟时间（秒）。数值越大，同步响应越慢，但能减少 WebDAV 流量。',
+			placeholder: '输入秒数',
+			invalidValue: '无效数值，已恢复至上一次的值',
 		},
 		confirmBeforeDeleteInAutoSync: {
 			name: '自动同步时删除文件前确认',
@@ -94,12 +101,12 @@ export default {
 			invalidValue: '无效的数值，已重置为 0',
 			exceedsMax: '数值超过最大限制 {{max}} 秒（1天），已自动调整',
 		},
-		autoSyncInterval: {
-			name: '定时自动同步',
-			desc: '设置每隔多长时间在后台自动执行一次同步（分钟）。设置为 0 则禁用定时自动同步。',
-			placeholder: '输入分钟数 (例如 5, 0 则禁用)',
-			invalidValue: '无效的数值，已重置为 0',
-			exceedsMax: '数值超过最大限制 {{max}} 分钟（1天），已自动调整',
+		scheduledSyncInterval: {
+			name: '定时同步间隔',
+			desc: '设置后台定期同步的时间间隔（单位：分钟）。设为 0 可禁用定时同步。',
+			placeholder: '输入分钟数（例如：5，或 0 以禁用）',
+			invalidValue: '无效数值，已重置为 0',
+			exceedsMax: '数值超过最大限制 {{max}} 分钟（1 天），已自动调整',
 		},
 		filters: {
 			name: '过滤器',

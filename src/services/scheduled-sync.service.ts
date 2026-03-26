@@ -6,11 +6,11 @@ import type WebDAVSyncPlugin from '..';
 import type SyncSchedulerService from './sync-scheduler.service';
 
 export default class ScheduledSyncService {
-	private autoSyncTimer: number | null = null;
+	private scheduledSyncTimer: number | null = null;
 	private startupSyncTimer: number | null = null;
 
 	constructor(
-		private plugin: WebDAVSyncPlugin,
+		_plugin: WebDAVSyncPlugin,
 		private syncScheduler: SyncSchedulerService,
 	) {}
 
@@ -29,19 +29,17 @@ export default class ScheduledSyncService {
 					this.startTimer(await useSettings());
 				}
 			}, settings.startupSyncDelaySeconds * 1000);
-		} else {
-			this.startTimer(settings);
-		}
+		} else this.startTimer(settings);
 	}
 
 	private startTimer(settings: PluginSettings) {
 		this.stopTimer();
 
-		const intervalMs = settings.autoSyncIntervalSeconds * 1000;
+		const intervalMs = settings.scheduledSyncIntervalSeconds * 1000;
 		const clampedIntervalMs = clamp(intervalMs, 0, 2 ** 31 - 1);
 
 		if (clampedIntervalMs > 0) {
-			this.autoSyncTimer = window.setInterval(async () => {
+			this.scheduledSyncTimer = window.setInterval(async () => {
 				await this.syncScheduler.requestSync({
 					mode: SyncStartMode.AUTO_SYNC,
 					runKind: SyncRunKind.NORMAL,
@@ -52,9 +50,9 @@ export default class ScheduledSyncService {
 	}
 
 	private stopTimer() {
-		if (this.autoSyncTimer !== null) {
-			window.clearInterval(this.autoSyncTimer);
-			this.autoSyncTimer = null;
+		if (this.scheduledSyncTimer !== null) {
+			window.clearInterval(this.scheduledSyncTimer);
+			this.scheduledSyncTimer = null;
 		}
 	}
 
