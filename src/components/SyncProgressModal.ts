@@ -7,7 +7,12 @@ import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.
 import SkippedTask from '~/sync/tasks/skipped.task';
 import getTaskName from '~/utils/get-task-name';
 import WebDAVSyncPlugin from '..';
-import { emitCancelSync, onCancelSync, onSyncUpdateMtimeProgress } from '../events';
+import {
+	emitCancelSync,
+	onCancelSync,
+	onSyncUpdateMtimeProgress,
+	SyncPlanningSubStage,
+} from '../events';
 import i18n from '../i18n';
 import ConflictResolveTask from '../sync/tasks/conflict-resolve.task';
 import MkdirLocalTask from '../sync/tasks/mkdir-local.task';
@@ -193,14 +198,7 @@ export default class SyncProgressModal extends Modal {
 		});
 	}
 
-	private getPlanningStageText(
-		stage:
-			| 'loading_records'
-			| 'walking_local'
-			| 'walking_remote'
-			| 'deciding'
-			| 'pre_connecting',
-	): string {
+	private getPlanningStageText(stage: SyncPlanningSubStage): string {
 		return i18n.t(`sync.planningStage.${stage}`);
 	}
 

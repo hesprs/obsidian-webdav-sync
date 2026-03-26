@@ -102,7 +102,9 @@ export default function deepStringify(
 					} else {
 						try {
 							errorMessage = String(error);
-						} catch {}
+						} catch {
+							errorMessage = 'Unknown error';
+						}
 					}
 					// Use native stringify to quote and escape the error message string
 					stringifiedValue = JSON.stringify(errorMessage);

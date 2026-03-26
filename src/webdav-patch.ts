@@ -40,14 +40,8 @@ const STATUS_TEXTS: Record<number, string> = {
 	503: 'Service Unavailable',
 };
 
-/**
- * https://stackoverflow.com/questions/32850898/how-to-check-if-a-string-has-any-non-iso-8859-1-characters-with-javascript
- * @param str
- * @returns true if all are iso 8859 1 chars
- */
 function onlyAscii(str: string) {
-	// oxlint-disable-next-line no-control-regex
-	return !/[^\u0000-\u00ff]/g.test(str);
+	return !/[^\x20-\x7E]/g.test(str);
 }
 
 function useSlashedDirectoryUrlOnIos(url: string, method: string): string {
@@ -71,9 +65,7 @@ if (VALID_REQURL) {
 		const reqContentType = transformedHeaders['accept'] ?? transformedHeaders['content-type'];
 
 		const retractedHeaders = { ...transformedHeaders };
-		if (retractedHeaders.hasOwnProperty('authorization')) {
-			retractedHeaders['authorization'] = '<retracted>';
-		}
+		if ('authorization' in retractedHeaders) retractedHeaders['authorization'] = '<retracted>';
 
 		const requestUrlValue = useSlashedDirectoryUrlOnIos(
 			requestOptions.url,
@@ -93,7 +85,7 @@ if (VALID_REQURL) {
 
 		const rspHeaders = objKeyToLower({ ...r.headers });
 		for (const key in rspHeaders) {
-			if (rspHeaders.hasOwnProperty(key)) {
+			if (key in rspHeaders) {
 				if (!onlyAscii(rspHeaders[key])) {
 					rspHeaders[key] = encodeURIComponent(rspHeaders[key]);
 				}

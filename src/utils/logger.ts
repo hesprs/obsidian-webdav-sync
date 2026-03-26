@@ -431,10 +431,6 @@ class Logger {
 		this.logs.push(entry);
 		if (this.logs.length > MAX_LOG_ENTRIES)
 			this.logs.splice(0, this.logs.length - MAX_LOG_ENTRIES);
-
-		const consoleMethod = console[level] as (...consoleArgs: unknown[]) => void;
-		if (entry.metadata === undefined) consoleMethod(`[${entry.category}] ${message}`);
-		else consoleMethod(`[${entry.category}] ${message}`, entry.metadata);
 	}
 
 	private getCurrentContext(): LogContext {

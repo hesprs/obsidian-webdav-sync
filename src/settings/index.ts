@@ -102,11 +102,11 @@ export class SyncSettingTab extends PluginSettingTab {
 		);
 	}
 
-	async display() {
-		await this.accountSettings.display();
-		await this.commonSettings.display();
-		await this.controlsSettings.display();
-		await this.filterSettings.display();
-		await this.logSettings.display();
+	display() {
+		this.accountSettings.display();
+		this.commonSettings.display();
+		this.controlsSettings.display();
+		this.filterSettings.display();
+		this.logSettings.display();
 	}
 }

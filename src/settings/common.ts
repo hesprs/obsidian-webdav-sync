@@ -6,7 +6,7 @@ import { SyncMode } from './index';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {
-	async display() {
+	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.common')).setHeading();
 
@@ -245,7 +245,7 @@ export default class CommonSettings extends BaseSettings {
 							this.plugin.settings.language = value || undefined;
 							await this.plugin.saveSettings();
 							await this.plugin.i18nService.update();
-							await this.settings.display();
+							this.settings.display();
 						}
 					}),
 			);

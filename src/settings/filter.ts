@@ -4,7 +4,7 @@ import i18n from '~/i18n';
 import BaseSettings from './settings.base';
 
 export default class FilterSettings extends BaseSettings {
-	async display() {
+	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(i18n.t('settings.sections.filters')).setHeading();
 
@@ -20,7 +20,7 @@ export default class FilterSettings extends BaseSettings {
 						async (filters) => {
 							this.plugin.settings.filterRules.inclusionRules = filters;
 							await this.plugin.saveSettings();
-							void this.display();
+							this.display();
 						},
 						FilterEditorModal.FilterType.Include,
 					).open();
@@ -39,7 +39,7 @@ export default class FilterSettings extends BaseSettings {
 						async (filters) => {
 							this.plugin.settings.filterRules.exclusionRules = filters;
 							await this.plugin.saveSettings();
-							void this.display();
+							this.display();
 						},
 						FilterEditorModal.FilterType.Exclude,
 					).open();

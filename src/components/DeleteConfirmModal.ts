@@ -23,7 +23,7 @@ export default class DeleteConfirmModal extends Modal {
 		const instruction = contentEl.createEl('p', {
 			cls: 'delete-confirm-instruction',
 		});
-		instruction.style.whiteSpace = 'pre-wrap';
+		instruction.className = 'pre-line';
 		instruction.setText(i18n.t('deleteConfirm.instruction'));
 
 		const tableContainer = contentEl.createDiv({
@@ -36,14 +36,14 @@ export default class DeleteConfirmModal extends Modal {
 		const selectHeader = headerRow.createEl('th', {
 			text: i18n.t('deleteConfirm.select'),
 		});
-		selectHeader.style.textAlign = 'center';
+		selectHeader.className = 'text-center';
 		headerRow.createEl('th', { text: i18n.t('deleteConfirm.filePath') });
 
 		const tbody = table.createEl('tbody');
 		this.tasks.forEach((task, index) => {
 			const row = tbody.createEl('tr');
 			const checkboxCell = row.createEl('td');
-			checkboxCell.style.textAlign = 'center';
+			checkboxCell.className = 'text-center';
 			const checkbox = checkboxCell.createEl('input');
 			checkbox.type = 'checkbox';
 			checkbox.checked = this.selectedTasks[index];
@@ -63,7 +63,7 @@ export default class DeleteConfirmModal extends Modal {
 		});
 
 		const settingDiv = contentEl.createDiv();
-		settingDiv.style.marginTop = '1rem';
+		settingDiv.className = 'm-top-1';
 		new Setting(settingDiv)
 			.addButton((button) => {
 				button

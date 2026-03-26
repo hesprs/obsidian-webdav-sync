@@ -1,5 +1,5 @@
 import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
-import { toArrayBuffer, type BinaryLike } from '~/platform/binary';
+import { toArrayBuffer } from '~/platform/binary';
 import { vaultDirname } from '~/platform/path/vault-path';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
@@ -25,7 +25,7 @@ export default class PullTask extends BaseTask {
 			if (!remoteStat || remoteStat.isDir) {
 				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
 			}
-			const remoteContent = this.options.remote?.content as BinaryLike | undefined;
+			const remoteContent = this.options.remote?.content;
 			if (!remoteContent) {
 				throw new Error('missing remote content snapshot for pull: ' + this.remotePath);
 			}
@@ -52,7 +52,7 @@ export default class PullTask extends BaseTask {
 
 			// no race condition since we've just written it
 			const baseText = await this.toText(arrayBuffer);
-			const localStat = await statVaultItem(this.vault, this.localPath);
+			const localStat = statVaultItem(this.vault, this.localPath);
 			if (!localStat || localStat.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
 			await this.syncRecord.upsertSyncedFileFromSnapshots({

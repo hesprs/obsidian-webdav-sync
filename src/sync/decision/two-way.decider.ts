@@ -1,13 +1,11 @@
-import type { SyncPlanningProgress } from '~/events';
 import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
+import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { joinRemotePath } from '~/platform/path/remote-path';
 import type { SyncEngine } from '..';
 import type {
-	CleanRecordTaskOptions,
 	ConflictTaskOptions,
-	FilenameErrorTaskOptions,
 	MkdirLocalTaskOptions,
 	MkdirRemoteTaskOptions,
 	PlannedLocalSnapshot,
@@ -65,7 +63,7 @@ export default class TwoWaySyncDecider {
 		};
 
 		await reportPlanningProgress({
-			subStage: 'loading_records',
+			subStage: SyncPlanningSubStage.loadingRecords,
 			totalWorkUnits: 0,
 			completedWorkUnits: 0,
 			currentItem: this.remoteBaseDir,
@@ -75,14 +73,14 @@ export default class TwoWaySyncDecider {
 		const previousRemoteRecords = await this.syncRecordStorage.getRemoteStats();
 
 		await reportPlanningProgress({
-			subStage: 'walking_local',
+			subStage: SyncPlanningSubStage.walkingLocal,
 			totalWorkUnits: 1,
 			completedWorkUnits: 1,
 			currentItem: this.vault.getRoot().path,
 		});
 		const currentLocalStats = await this.sync.localFS.walk(async (progress) => {
 			await reportPlanningProgress({
-				subStage: 'walking_local',
+				subStage: SyncPlanningSubStage.walkingLocal,
 				totalWorkUnits: progress.totalDirectories,
 				completedWorkUnits: progress.processedDirectories,
 				currentItem: progress.currentDirectory ?? this.remoteBaseDir,
@@ -90,7 +88,7 @@ export default class TwoWaySyncDecider {
 		});
 
 		await reportPlanningProgress({
-			subStage: 'walking_remote',
+			subStage: SyncPlanningSubStage.walkingRemote,
 			totalWorkUnits: this.sync.runKind === SyncRunKind.NUMB ? 1 : 0,
 			completedWorkUnits: 0,
 			currentItem: this.remoteBaseDir,
@@ -102,7 +100,7 @@ export default class TwoWaySyncDecider {
 						freshness: 'fresh',
 						onTraversalProgress: async (progress) => {
 							await reportPlanningProgress({
-								subStage: 'walking_remote',
+								subStage: SyncPlanningSubStage.walkingRemote,
 								totalWorkUnits: progress.totalDirectories,
 								completedWorkUnits: progress.processedDirectories,
 								currentItem: progress.currentDirectory ?? this.remoteBaseDir,
@@ -144,9 +142,9 @@ export default class TwoWaySyncDecider {
 				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
 			createMkdirRemoteTask: (options: MkdirRemoteTaskOptions) =>
 				new MkdirRemoteTask({ ...commonTaskOptions, ...options }),
-			createCleanRecordTask: (options: CleanRecordTaskOptions) =>
+			createCleanRecordTask: (options: TaskOptions) =>
 				new CleanRecordTask({ ...commonTaskOptions, ...options }),
-			createFilenameErrorTask: (options: FilenameErrorTaskOptions) =>
+			createFilenameErrorTask: (options: TaskOptions) =>
 				new FilenameErrorTask({ ...commonTaskOptions, ...options }),
 			createSkippedTask: (options: SkippedTaskOptions) =>
 				new SkippedTask({ ...commonTaskOptions, ...options }),
@@ -221,14 +219,12 @@ export default class TwoWaySyncDecider {
 			return await promise;
 		};
 
-		const createPlannedLocalFolderSnapshot = async (
+		const createPlannedLocalFolderSnapshot = (
 			localPath: string,
 			localStat: PlannedLocalSnapshot['stat'],
-		): Promise<PlannedLocalSnapshot | undefined> => {
+		): PlannedLocalSnapshot | undefined => {
 			const cached = plannedLocalFolderSnapshots.get(localPath);
-			if (cached) {
-				return cached;
-			}
+			if (cached) return cached;
 
 			const abstractFile = this.vault.getAbstractFileByPath(localPath);
 			const snapshot: PlannedLocalSnapshot = {
@@ -239,14 +235,12 @@ export default class TwoWaySyncDecider {
 			return snapshot;
 		};
 
-		const createPlannedRemoteFolderSnapshot = async (
+		const createPlannedRemoteFolderSnapshot = (
 			remotePath: string,
 			remoteStat: PlannedRemoteSnapshot['stat'],
-		): Promise<PlannedRemoteSnapshot | undefined> => {
+		): PlannedRemoteSnapshot | undefined => {
 			const cached = plannedRemoteFolderSnapshots.get(remotePath);
-			if (cached) {
-				return cached;
-			}
+			if (cached) return cached;
 
 			const snapshot: PlannedRemoteSnapshot = {
 				stat: remoteStat,

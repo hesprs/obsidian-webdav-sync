@@ -114,7 +114,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'line1\nline2\nline3',
 			remoteContentText: 'line1\nline2\nline3',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.isIdentical).toBe(true);
 	});
@@ -126,7 +126,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'a\nb\nc',
 			remoteContentText: 'a\nb',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('a\nb\nc');
 	});
@@ -137,7 +137,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'a\nb\nc',
 			remoteContentText: 'a\nc',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('a\nc');
 	});
@@ -148,7 +148,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'hello universe',
 			remoteContentText: 'hello world',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('hello universe');
 	});
@@ -159,7 +159,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'line1-local\nline2\nline3\nline4',
 			remoteContentText: 'line1\nline2\nline3\nline4-remote',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('line1-local\nline2\nline3\nline4-remote');
 	});
@@ -170,7 +170,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'new first line\noriginal line',
 			remoteContentText: 'original line',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('new first line\noriginal line');
 	});
@@ -181,7 +181,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'original line',
 			remoteContentText: 'original line\nnew last line',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('original line\nnew last line');
 	});
@@ -194,7 +194,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'common_prefix\nshared_line_local_version\ncommon_suffix', // Local made a change
 			remoteContentText: 'common_prefix\nshared_line_remote_version\ncommon_suffix', // Remote also made a change
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -204,7 +204,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: '第一行\n本地修改了共同祖先\n第三行\n本地新增行', // 本地修改并添加
 			remoteContentText: '第一行\n共同祖先被修改了\n第三行', // 远程仅修改
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('第一行\n本地修改了共同祖先被修改了\n第三行\n本地新增行');
 	});
@@ -215,7 +215,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'The fluffy cat sat on the mat.', // User A adds "fluffy"
 			remoteContentText: 'The cat sat on the rug.', // User B changes "mat" to "rug"
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('The fluffy cat sat on the rug.');
 	});
@@ -226,7 +226,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'NEW_PREFIX This is a shared line of text.', // User A adds a prefix
 			remoteContentText: 'This is a shared line of text. NEW_SUFFIX', // User B adds a suffix
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe('NEW_PREFIX This is a shared line of text. NEW_SUFFIX');
 	});
@@ -237,7 +237,7 @@ describe('resolveByIntelligentMerge', () => {
 			localContentText: 'Urgent Report for Q1: Sales are significantly up by 10%.',
 			remoteContentText: 'Report for Q1: Revenue is up by 10%, not sales.',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			'Urgent Report for Q1: Revenue is significantly up by 10%, not sales.',
@@ -264,7 +264,7 @@ However, changes will occur at the beginning and at the very end of this paragra
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.
 And a concluding sentence has been added remotely.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`A new introductory sentence has been added locally.
@@ -295,7 +295,7 @@ It has a few lines.
 Paragraph two, with remote changes applied.
 This one also has some content, and this is a remote addition.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`Paragraph one, with local modifications.
@@ -318,7 +318,7 @@ The timeline for this critical phase is two months.`,
 We will achieve this by simplifying the navigation and ensuring stability.
 The deadline for this phase is strictly four months.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -349,7 +349,7 @@ This section is fundamentally important for understanding.
 Paragraph C: Concluding remarks and future work, with an added action item.
 This summarizes the document and suggests next steps.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false); // Conflict in Paragraph B should cause overall failure
 	});
 
@@ -373,7 +373,7 @@ This summarizes the document and suggests next steps.`,
 此设置有助于验证DMP是否能处理较长文本主体中的非重叠更改。
 并且远程添加了一个总结句。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`本地新增了一个引言句。
@@ -404,7 +404,7 @@ This summarizes the document and suggests next steps.`,
 段落二，已应用远程更改。
 这一个也有一些内容，这是远程新增的内容。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`段落一，经过本地修改。
@@ -427,7 +427,7 @@ This summarizes the document and suggests next steps.`,
 我们将通过简化导航和确保稳定性来实现。
 此阶段的截止日期严格限定为四个月。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -458,7 +458,7 @@ This summarizes the document and suggests next steps.`,
 段落丙：结论和未来工作，并增加了一个行动项。
 这总结了文档并建议了后续步骤。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false); // Conflict in 段落乙 should cause overall failure
 	});
 
@@ -478,7 +478,7 @@ This is the original paragraph content. It discusses important concepts.
 
 This is the modified paragraph content by remote. It elaborates on the important concepts with new details.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# Section Title
@@ -502,7 +502,7 @@ This is the modified paragraph content by remote. It elaborates on the important
 - Second item: remotely modified text.
 - Third item: original text.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`- First item: locally modified text.
@@ -517,7 +517,7 @@ This is the modified paragraph content by remote. It elaborates on the important
 			localContentText: `## Locally Updated Subheading`,
 			remoteContentText: `## Remotely Revised Subheading`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -571,7 +571,7 @@ This document provides a comprehensive overview of the system architecture. Key 
 ### Data Flow
 Data flows from Frontend -> API Server -> Database.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# Main Topic: System Architecture
@@ -627,7 +627,7 @@ Data flows from Frontend -> API Server -> Database.`,
 - Use ESLint and Prettier for formatting and linting.
 - Write unit tests for all new features.`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -646,7 +646,7 @@ Data flows from Frontend -> API Server -> Database.`,
 
 这是由远程修改的段落内容。它用新的细节阐述了重要的概念。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 章节标题
@@ -699,7 +699,7 @@ Data flows from Frontend -> API Server -> Database.`,
 - **前端：** 用于交互的用户界面。
   - 使用React和Redux进行状态管理。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 主题：系统架构
@@ -752,7 +752,7 @@ Data flows from Frontend -> API Server -> Database.`,
 - 使用 ESLint 和 Prettier 进行格式化和代码检查。
 - 为所有新功能编写单元测试。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -787,7 +787,7 @@ Data flows from Frontend -> API Server -> Database.`,
 
 这是文档的结束部分。远程在这里添加了一句总结性的话。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 原始标题
@@ -869,7 +869,7 @@ function example() {
 
 这是结论部分。`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 文档标题
@@ -933,7 +933,7 @@ ${longParagraph}
 
 最后一段。 (远程添加了注释)`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 原始文档 (远程修改了标题)
@@ -996,7 +996,7 @@ ${longParagraph}
 
 这是核心论述部分。 (远程在此处可能有一些微小调整)`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.mergedText).toBe(
 			`# 初始文档结构
@@ -1056,7 +1056,7 @@ ${longParagraph}
 
 ## 议题二：后续计划`,
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -1067,7 +1067,7 @@ ${longParagraph}
 			localContentText: 'line1\nconflicting_line_local_change_A\nline3',
 			remoteContentText: 'line1\nconflicting_line_remote_change_B\nline3',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -1078,7 +1078,7 @@ ${longParagraph}
 			localContentText: 'local only content',
 			remoteContentText: 'remote only content',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -1089,7 +1089,7 @@ ${longParagraph}
 			remoteContentText: 'same content',
 		};
 		// local and remote are identical, so it's not a merge conflict, it's just identical.
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.isIdentical).toBe(true);
 	});
@@ -1100,7 +1100,7 @@ ${longParagraph}
 			localContentText: '', // Local deleted everything
 			remoteContentText: 'some base content\nshared line\nremote additions', // Remote kept base and added
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(false);
 	});
 
@@ -1110,7 +1110,7 @@ ${longParagraph}
 			localContentText: '',
 			remoteContentText: '',
 		};
-		const result = await resolveByIntelligentMerge(params);
+		const result = resolveByIntelligentMerge(params);
 		expect(result.success).toBe(true);
 		expect(result.isIdentical).toBe(true);
 	});

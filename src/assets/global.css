@@ -106,3 +106,11 @@ input.success {
 .pre-line {
 	white-space: pre-line;
 }
+
+.text-center {
+	text-align: center;
+}
+
+.m-top-1 {
+	margin-top: 1em;
+}

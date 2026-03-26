@@ -1,9 +1,9 @@
 const en = {
-	newFolder: 'New Folder',
-	goBack: 'Go Back',
+	newFolder: 'New folder',
+	goBack: 'Go back',
 	confirm: 'Confirm',
 	cancel: 'Cancel',
-	currentPath: 'Current Path',
+	currentPath: 'Current path',
 };
 
 export default en;

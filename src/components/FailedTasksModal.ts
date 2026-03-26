@@ -66,7 +66,7 @@ export default class FailedTasksModal extends Modal {
 		});
 
 		const settingDiv = contentEl.createDiv();
-		settingDiv.style.marginTop = '1rem';
+		settingDiv.className = 'm-top-1';
 		new Setting(settingDiv).addButton((button) => {
 			button
 				.setButtonText(i18n.t('failedTasks.close'))

@@ -22,8 +22,6 @@ export interface SyncRecordItem {
 	baseText?: string;
 }
 
-export interface PreviousLocalRecordItem extends LocalRecordModel {}
-
 export interface TaskOptions {
 	remotePath: string;
 	localPath: string;
@@ -84,10 +82,6 @@ export interface MkdirRemoteTaskOptions extends TaskOptions {
 	local?: PlannedLocalSnapshot;
 }
 
-export interface CleanRecordTaskOptions extends TaskOptions {}
-
-export interface FilenameErrorTaskOptions extends TaskOptions {}
-
 export type SkippedTaskOptions = TaskOptions &
 	(
 		| {
@@ -123,8 +117,8 @@ export interface TaskFactory {
 	createRemoveRemoteTask(options: RemoveRemoteTaskOptions): BaseTask;
 	createMkdirLocalTask(options: MkdirLocalTaskOptions): BaseTask;
 	createMkdirRemoteTask(options: MkdirRemoteTaskOptions): BaseTask;
-	createCleanRecordTask(options: CleanRecordTaskOptions): BaseTask;
-	createFilenameErrorTask(options: FilenameErrorTaskOptions): BaseTask;
+	createCleanRecordTask(options: TaskOptions): BaseTask;
+	createFilenameErrorTask(options: TaskOptions): BaseTask;
 	createSkippedTask(options: SkippedTaskOptions): BaseTask;
 }
 
@@ -148,10 +142,10 @@ export interface SyncDecisionInput {
 	createPlannedLocalFolderSnapshot: (
 		localPath: string,
 		localStat: PlannedLocalSnapshot['stat'],
-	) => Promise<PlannedLocalSnapshot | undefined>;
+	) => PlannedLocalSnapshot | undefined;
 	createPlannedRemoteFolderSnapshot: (
 		remotePath: string,
 		remoteStat: PlannedRemoteSnapshot['stat'],
-	) => Promise<PlannedRemoteSnapshot | undefined>;
+	) => PlannedRemoteSnapshot | undefined;
 	taskFactory: TaskFactory;
 }

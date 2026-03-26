@@ -110,7 +110,7 @@ export class IndexedDbSyncStateStore implements SyncStateStore {
 	private async ensureReady(): Promise<void> {
 		if (this.initializationError) throw this.initializationError;
 		await this.initialize();
-		if (this.initializationError) throw this.initializationError;
+		if (this.initializationError) throw this.initializationError as Error;
 	}
 
 	private async run<T>(operation: string, action: () => Promise<T>): Promise<T> {

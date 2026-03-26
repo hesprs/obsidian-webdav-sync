@@ -21,7 +21,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 		const explorer = document.createElement('div');
 		contentEl.appendChild(explorer);
 
-		const webdav = await this.plugin.webDAVService.createWebDAVClient();
+		const webdav = this.plugin.webDAVService.createWebDAVClient();
 
 		mountWebDAVExplorer(explorer, {
 			fs: {

@@ -21,7 +21,7 @@ export default class AccountSettings extends BaseSettings {
 		}
 	}
 
-	async display() {
+	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.backupWarning.name'))

@@ -14,12 +14,13 @@ export type SyncRunStage =
 	| 'cancelled'
 	| 'failed';
 
-type SyncPlanningSubStage =
-	| 'pre_connecting'
-	| 'loading_records'
-	| 'walking_local'
-	| 'walking_remote'
-	| 'deciding';
+export enum SyncPlanningSubStage {
+	preConnecting = 'preConnecting',
+	loadingRecords = 'loadingRecords',
+	walkingLocal = 'walkingLocal',
+	walkingRemote = 'walkingRemote',
+	deciding = 'deciding',
+}
 
 export interface SyncPlanningProgress {
 	subStage: SyncPlanningSubStage;
