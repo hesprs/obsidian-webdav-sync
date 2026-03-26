@@ -5,6 +5,6 @@
 	"minAppVersion": "0.15.0",
 	"authorUrl": "https://hesprs.github.io",
 	"description": "General-purpose bidirectional WebDAV syncing with robust local-remote resolution and conflict merging.",
-	"author": "Hēsperus",
+	"author": "Hēsperus",
 	"isDesktopOnly": false
 }
