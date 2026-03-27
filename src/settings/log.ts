@@ -12,7 +12,7 @@ export default class LogSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.log.desc'))
 			.addButton((button) => {
 				button.setButtonText(i18n.t('settings.log.saveToNote')).onClick(() => {
-					this.runAsyncTask(() => this.saveLogsToNote(), 'Failed to export logs to note');
+					void this.saveLogsToNote();
 				});
 			});
 		new Setting(this.containerEl)

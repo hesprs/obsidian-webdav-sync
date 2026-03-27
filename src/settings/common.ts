@@ -34,9 +34,8 @@ export default class CommonSettings extends BaseSettings {
 					.addOption(ConflictStrategy.Skip, i18n.t('settings.conflictStrategy.skip'))
 					.setValue(this.plugin.settings.conflictStrategy)
 					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.conflictStrategy = value as ConflictStrategy;
-						}, 'Failed to save conflict strategy setting');
+						this.plugin.settings.conflictStrategy = value as ConflictStrategy;
+						void this.plugin.saveSettings();
 					}),
 			);
 
@@ -45,9 +44,8 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.useGitStyle.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.useGitStyle).onChange((value) => {
-					this.saveSettingsTask(() => {
-						this.plugin.settings.useGitStyle = value;
-					}, 'Failed to save git-style setting');
+					this.plugin.settings.useGitStyle = value;
+					void this.plugin.saveSettings();
 				}),
 			);
 
@@ -58,15 +56,9 @@ export default class CommonSettings extends BaseSettings {
 				toggle
 					.setValue(this.plugin.settings.showSyncStatusInNotificationOnMobile)
 					.onChange((value) => {
-						this.saveSettingsTask(
-							() => {
-								this.plugin.settings.showSyncStatusInNotificationOnMobile = value;
-							},
-							'Failed to save mobile notification setting',
-							() => {
-								this.plugin.observabilityService.syncMobileNoticeWithSettings();
-							},
-						);
+						this.plugin.settings.showSyncStatusInNotificationOnMobile = value;
+						this.plugin.observabilityService.syncMobileNoticeWithSettings();
+						void this.plugin.saveSettings();
 					}),
 			);
 
@@ -75,9 +67,8 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.confirmBeforeSync.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.confirmBeforeSync).onChange((value) => {
-					this.saveSettingsTask(() => {
-						this.plugin.settings.confirmBeforeSync = value;
-					}, 'Failed to save manual confirmation setting');
+					this.plugin.settings.confirmBeforeSync = value;
+					void this.plugin.saveSettings();
 				}),
 			);
 
@@ -88,9 +79,8 @@ export default class CommonSettings extends BaseSettings {
 				toggle
 					.setValue(this.plugin.settings.confirmBeforeDeleteInAutoSync)
 					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.confirmBeforeDeleteInAutoSync = value;
-						}, 'Failed to save auto-delete confirmation setting');
+						this.plugin.settings.confirmBeforeDeleteInAutoSync = value;
+						void this.plugin.saveSettings();
 					}),
 			);
 
@@ -99,9 +89,8 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.realtimeSync.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.realtimeSync).onChange((value) => {
-					this.saveSettingsTask(() => {
-						this.plugin.settings.realtimeSync = value;
-					}, 'Failed to save realtime sync setting');
+					this.plugin.settings.realtimeSync = value;
+					void this.plugin.saveSettings();
 				}),
 			);
 
@@ -110,9 +99,8 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.useFastSyncOnLocalChange.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.useFastSyncOnLocalChange).onChange((value) => {
-					this.saveSettingsTask(() => {
-						this.plugin.settings.useFastSyncOnLocalChange = value;
-					}, 'Failed to save fast-sync setting');
+					this.plugin.settings.useFastSyncOnLocalChange = value;
+					void this.plugin.saveSettings();
 				}),
 			);
 
@@ -121,16 +109,11 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.startupSyncDelay.desc'))
 			.addText((text) => {
 				const maxSeconds = 86400;
-				text.setPlaceholder(i18n.t('settings.startupSyncDelay.placeholder'))
-					.setValue(this.plugin.settings.startupSyncDelaySeconds.toString())
-					.onChange((value) => {
-						this.handleStartupSyncDelayChange(value, text, maxSeconds);
-					});
+				text.setPlaceholder(i18n.t('settings.startupSyncDelay.placeholder')).setValue(
+					this.plugin.settings.startupSyncDelaySeconds.toString(),
+				);
 				text.inputEl.addEventListener('blur', () => {
-					this.runAsyncTask(
-						() => this.handleStartupSyncDelayBlur(text, maxSeconds),
-						'Failed to save startup sync delay setting',
-					);
+					this.handleStartupSyncDelayBlur(text, maxSeconds);
 				});
 				text.inputEl.type = 'number';
 				text.inputEl.min = '0';
@@ -142,21 +125,13 @@ export default class CommonSettings extends BaseSettings {
 			.setDesc(i18n.t('settings.scheduledSyncInterval.desc'))
 			.addText((text) => {
 				const maxMinutes = 1440;
-				text.setPlaceholder(i18n.t('settings.scheduledSyncInterval.placeholder'))
-					.setValue(
-						Math.round(
-							this.plugin.settings.scheduledSyncIntervalSeconds / 60,
-						).toString(),
-					)
-					.onChange((value) => {
-						this.handleScheduledSyncIntervalChange(value, text, maxMinutes);
-					});
-				text.inputEl.addEventListener('blur', () => {
-					this.runAsyncTask(
-						() => this.handleScheduledSyncIntervalBlur(text, maxMinutes),
-						'Failed to save scheduled sync interval setting',
-					);
-				});
+				text.setPlaceholder(i18n.t('settings.scheduledSyncInterval.placeholder')).setValue(
+					Math.round(this.plugin.settings.scheduledSyncIntervalSeconds / 60).toString(),
+				);
+				text.inputEl.addEventListener(
+					'blur',
+					() => void this.handleScheduledSyncIntervalBlur(text, maxMinutes),
+				);
 				text.inputEl.type = 'number';
 				text.inputEl.min = '0';
 				text.inputEl.max = maxMinutes.toString();
@@ -172,9 +147,8 @@ export default class CommonSettings extends BaseSettings {
 					.addOption(SyncMode.LOOSE, i18n.t('settings.syncMode.loose'))
 					.setValue(this.plugin.settings.syncMode)
 					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.syncMode = value as SyncMode;
-						}, 'Failed to save sync mode setting');
+						this.plugin.settings.syncMode = value as SyncMode;
+						void this.plugin.saveSettings();
 					}),
 			);
 
@@ -182,9 +156,9 @@ export default class CommonSettings extends BaseSettings {
 			.setName(i18n.t('settings.clearRecord.name'))
 			.setDesc(i18n.t('settings.clearRecord.desc'))
 			.addButton((button) =>
-				button.setButtonText(i18n.t('settings.clearRecord.button')).onClick(() => {
-					this.runAsyncTask(() => this.clearRecords(), 'Failed to clear sync records');
-				}),
+				button
+					.setButtonText(i18n.t('settings.clearRecord.button'))
+					.onClick(() => void this.clearRecords()),
 			);
 
 		new Setting(this.containerEl)
@@ -197,32 +171,13 @@ export default class CommonSettings extends BaseSettings {
 					.addOption('en', 'English')
 					.setValue(this.plugin.settings.language || '')
 					.onChange((value) => {
-						if (value === 'zh-Hans' || value === 'en' || value === '' || isNil(value)) {
-							this.runAsyncTask(
-								() => this.updateLanguage(value),
-								'Failed to update language setting',
-							);
-						}
+						if (value === 'zh-Hans' || value === 'en' || value === '' || isNil(value))
+							void this.updateLanguage(value);
 					}),
 			);
 	}
 
-	private handleStartupSyncDelayChange(value: string, text: TextComponent, maxSeconds: number) {
-		const numValue = parseFloat(value);
-		if (isNaN(numValue)) return;
-
-		const clampedValue = clamp(numValue, 0, maxSeconds);
-		this.saveSettingsTask(() => {
-			this.plugin.settings.startupSyncDelaySeconds = clampedValue;
-		}, 'Failed to save startup sync delay setting');
-
-		if (clampedValue !== numValue) {
-			new Notice(i18n.t('settings.startupSyncDelay.exceedsMax', { max: maxSeconds }));
-			text.setValue(clampedValue.toString());
-		}
-	}
-
-	private async handleStartupSyncDelayBlur(text: TextComponent, maxSeconds: number) {
+	private handleStartupSyncDelayBlur(text: TextComponent, maxSeconds: number) {
 		const numValue = parseFloat(text.getValue());
 		const finalValue = isNaN(numValue) ? 0 : clamp(numValue, 0, maxSeconds);
 
@@ -233,30 +188,9 @@ export default class CommonSettings extends BaseSettings {
 		}
 
 		text.setValue(finalValue.toString());
-		this.plugin.settings.startupSyncDelaySeconds = finalValue;
-		await this.plugin.saveSettings();
-	}
-
-	private handleScheduledSyncIntervalChange(
-		value: string,
-		text: TextComponent,
-		maxMinutes: number,
-	) {
-		const numValue = parseFloat(value);
-		if (isNaN(numValue)) return;
-
-		const clampedValue = clamp(numValue, 0, maxMinutes);
-		this.saveSettingsTask(
-			() => {
-				this.plugin.settings.scheduledSyncIntervalSeconds = clampedValue * 60;
-			},
-			'Failed to save scheduled sync interval setting',
-			() => this.plugin.scheduledSyncService.updateInterval(),
-		);
-
-		if (clampedValue !== numValue) {
-			new Notice(i18n.t('settings.scheduledSyncInterval.exceedsMax', { max: maxMinutes }));
-			text.setValue(clampedValue.toString());
+		if (this.plugin.settings.startupSyncDelaySeconds !== finalValue) {
+			this.plugin.settings.startupSyncDelaySeconds = finalValue;
+			void this.plugin.saveSettings();
 		}
 	}
 

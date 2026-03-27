@@ -2,7 +2,6 @@ import { clamp } from 'lodash-es';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings, type PluginSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
-import runAsync from '~/utils/run-async';
 import type WebDAVSyncPlugin from '..';
 import type SyncSchedulerService from './sync-scheduler.service';
 
@@ -20,7 +19,7 @@ export default class ScheduledSyncService {
 
 		if (settings.startupSyncDelaySeconds > 0) {
 			this.startupSyncTimer = window.setTimeout(() => {
-				runAsync(() => this.handleStartupSync(), 'Failed to run startup sync');
+				void this.handleStartupSync();
 			}, settings.startupSyncDelaySeconds * 1000);
 		} else this.startTimer(settings);
 	}
@@ -33,7 +32,7 @@ export default class ScheduledSyncService {
 
 		if (clampedIntervalMs > 0) {
 			this.scheduledSyncTimer = window.setInterval(() => {
-				runAsync(() => this.handleIntervalSync(), 'Failed to run scheduled sync');
+				void this.handleIntervalSync();
 			}, clampedIntervalMs);
 		}
 	}
