@@ -19,10 +19,10 @@ export interface FileListProps {
 export function createFileList() {
 	const [version, setVersion] = createSignal(0);
 	return {
-		refresh() {
+		refresh: () => {
 			setVersion((v) => ++v);
 		},
-		FileList(props: FileListProps) {
+		FileList: (props: FileListProps) => {
 			const [items, setItems] = createSignal<FileStat[]>([]);
 
 			const sortedItems = () =>
