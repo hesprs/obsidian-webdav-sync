@@ -18,13 +18,9 @@ export default class FilterSettings extends BaseSettings {
 						this.plugin,
 						this.plugin.settings.filterRules.inclusionRules,
 						(filters) => {
-							this.saveSettingsTask(
-								() => {
-									this.plugin.settings.filterRules.inclusionRules = filters;
-								},
-								'Failed to save inclusion filters',
-								() => this.display(),
-							);
+							this.plugin.settings.filterRules.inclusionRules = filters;
+							this.display();
+							void this.plugin.saveSettings();
 						},
 						FilterEditorModal.FilterType.Include,
 					).open();
@@ -41,13 +37,9 @@ export default class FilterSettings extends BaseSettings {
 						this.plugin,
 						this.plugin.settings.filterRules.exclusionRules,
 						(filters) => {
-							this.saveSettingsTask(
-								() => {
-									this.plugin.settings.filterRules.exclusionRules = filters;
-								},
-								'Failed to save exclusion filters',
-								() => this.display(),
-							);
+							this.plugin.settings.filterRules.exclusionRules = filters;
+							this.display();
+							void this.plugin.saveSettings();
 						},
 						FilterEditorModal.FilterType.Exclude,
 					).open();

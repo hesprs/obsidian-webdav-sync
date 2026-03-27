@@ -1,6 +1,7 @@
 import { Notice, Setting } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
+import handleInput from '~/utils/handle-input';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
@@ -30,43 +31,38 @@ export default class AccountSettings extends BaseSettings {
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.serverUrl.name'))
 			.setDesc(i18n.t('settings.serverUrl.desc'))
-			.addText((text) =>
-				text
-					.setPlaceholder(i18n.t('settings.serverUrl.placeholder'))
-					.setValue(this.plugin.settings.serverUrl)
-					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.serverUrl = value.trim();
-						}, 'Failed to save server URL setting');
-					}),
-			);
+			.addText((text) => {
+				text.setPlaceholder(i18n.t('settings.serverUrl.placeholder')).setValue(
+					this.plugin.settings.serverUrl,
+				);
+				text.inputEl.addEventListener('blur', () =>
+					handleInput(text, this.plugin, 'serverUrl'),
+				);
+			});
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.account.name'))
 			.setDesc(i18n.t('settings.account.desc'))
-			.addText((text) =>
-				text
-					.setPlaceholder(i18n.t('settings.account.placeholder'))
-					.setValue(this.plugin.settings.account)
-					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.account = value;
-						}, 'Failed to save account setting');
-					}),
-			);
+			.addText((text) => {
+				text.setPlaceholder(i18n.t('settings.account.placeholder')).setValue(
+					this.plugin.settings.account,
+				);
+				text.inputEl.addEventListener('blur', () =>
+					handleInput(text, this.plugin, 'account'),
+				);
+			});
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.credential.name'))
 			.setDesc(i18n.t('settings.credential.desc'))
 			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.credential.placeholder'))
-					.setValue(this.plugin.settings.credential)
-					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.credential = value;
-						}, 'Failed to save credential setting');
-					});
+				text.setPlaceholder(i18n.t('settings.credential.placeholder')).setValue(
+					this.plugin.settings.credential,
+				);
 				text.inputEl.type = 'password';
+				text.inputEl.addEventListener('blur', () => {
+					handleInput(text, this.plugin, 'credential');
+				});
 			});
 
 		this.displayCheckConnection();
@@ -75,16 +71,12 @@ export default class AccountSettings extends BaseSettings {
 			.setName(i18n.t('settings.remoteDir.name'))
 			.setDesc(i18n.t('settings.remoteDir.desc'))
 			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder'))
-					.setValue(this.plugin.remoteBaseDir)
-					.onChange((value) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.remoteDir = value;
-						}, 'Failed to save remote directory setting');
-					});
-				text.inputEl.addEventListener('blur', () => {
-					this.plugin.settings.remoteDir = this.plugin.remoteBaseDir;
-				});
+				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder')).setValue(
+					this.plugin.remoteBaseDir,
+				);
+				text.inputEl.addEventListener('blur', () =>
+					handleInput(text, this.plugin, 'remoteDir'),
+				);
 			})
 			.addButton((button) => {
 				button.setIcon('folder').onClick(() => {
@@ -93,9 +85,8 @@ export default class AccountSettings extends BaseSettings {
 						return;
 					}
 					new SelectRemoteBaseDirModal(this.app, this.plugin, (path) => {
-						this.saveSettingsTask(() => {
-							this.plugin.settings.remoteDir = path;
-						}, 'Failed to save remote directory selection');
+						this.plugin.settings.remoteDir = path;
+						void this.plugin.saveSettings();
 					}).open();
 				});
 			});
@@ -109,10 +100,7 @@ export default class AccountSettings extends BaseSettings {
 				button.setButtonText(i18n.t('settings.checkConnection.name')).onClick((event) => {
 					const buttonEl = event.currentTarget;
 					if (!(buttonEl instanceof HTMLElement)) return;
-					this.runAsyncTask(
-						() => this.checkConnection(buttonEl),
-						'Failed to check WebDAV connection',
-					);
+					void this.checkConnection(buttonEl);
 				});
 			});
 	}

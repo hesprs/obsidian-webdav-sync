@@ -1,7 +1,6 @@
 import { Notice } from 'obsidian';
 import i18n from '~/i18n';
 import logger from '~/utils/logger';
-import runAsync from '~/utils/run-async';
 import type WebDAVSyncPlugin from '..';
 import SyncConfirmModal from '../components/SyncConfirmModal';
 
@@ -38,8 +37,5 @@ export function launchManualSync(
 		return;
 	}
 
-	runAsync(
-		() => plugin.syncSchedulerService.requestManualSync().then(() => undefined),
-		'Failed to start manual sync',
-	);
+	void plugin.syncSchedulerService.requestManualSync();
 }
