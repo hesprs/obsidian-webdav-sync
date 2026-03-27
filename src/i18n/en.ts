@@ -21,7 +21,7 @@ export default {
 			//desc: 'Base URL of your WebDAV service.',
 			placeholder: 'Https://example.com/webdav',
 			//placeholder: 'https://example.com/webdav',
-			invalid: 'Please enter a valid server locator (http:// or https://).',
+			invalid: 'Please enter a valid server locator.',
 			//invalid: 'Please enter a valid WebDAV server URL (http:// or https://).',
 		},
 		credential: {
@@ -159,7 +159,8 @@ export default {
 		},
 		clearRecord: {
 			name: 'Clear record',
-			desc: 'WebDAV sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
+			desc: 'The plugin uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
+			//desc: 'WebDAV sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
 			button: 'Clear',
 			cleared: 'Record cleared',
 		},
@@ -188,8 +189,8 @@ export default {
 			failedToUploadMerged: 'Failed to upload merged content',
 			conflictsMarkedInFile: 'Conflicts found and marked in file',
 			accountNotConfigured:
-				'Webdav account is not configured. Please configure your server universal resource locator, account, and credential in settings first.',
-			//'WebDAV account is not configured. Please configure your server URL, account, and credential in settings first.',
+				'Cloud account is not configured. Please configure your server universal resource locator, account name, and credential in settings first.',
+			//'WebDAV account is not configured. Please configure your server URL, account name, and credential in settings first.',
 		},
 		preparing: 'Preparing sync',
 		//preparing: '📋 Preparing sync',

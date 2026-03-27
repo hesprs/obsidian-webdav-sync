@@ -1,6 +1,5 @@
 import { Notice } from 'obsidian';
 import { createEffect, createSignal, For, Show } from 'solid-js';
-import runAsync from '~/utils/run-async';
 import { type fs } from '../App';
 import File from './File';
 import Folder from './Folder';
@@ -51,7 +50,7 @@ export function createFileList() {
 
 			createEffect(() => {
 				if (version() === 0) {
-					runAsync(() => refresh(), 'Failed to refresh explorer file list');
+					void refresh();
 					return;
 				}
 				setVersion(0);

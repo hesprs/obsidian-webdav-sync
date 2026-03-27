@@ -1,7 +1,6 @@
 import { Notice } from 'obsidian';
 import { createSignal, Show } from 'solid-js';
 import { joinRemotePath } from '~/platform/path/remote-path';
-import runAsync from '~/utils/run-async';
 import { createFileList, type FileStat } from './components/FileList';
 import NewFolder from './components/NewFolder';
 import { t } from './i18n';
@@ -51,12 +50,7 @@ function App(props: AppProps) {
 					<NewFolder
 						class="mt-1"
 						onCancel={() => setShowNewFolder(false)}
-						onConfirm={(name) => {
-							runAsync(
-								() => createFolder(name, list.refresh),
-								'Failed to create remote folder',
-							);
-						}}
+						onConfirm={(name) => void createFolder(name, list.refresh)}
 					/>
 				</Show>
 				<list.FileList fs={props.fs} path={cwd() ?? ''} onClick={(f) => enter(f.path)} />

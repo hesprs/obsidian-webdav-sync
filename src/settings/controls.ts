@@ -22,12 +22,7 @@ export default class ControlsSettings extends BaseSettings {
 					currentValue,
 				);
 
-				text.inputEl.addEventListener('blur', () => {
-					this.runAsyncTask(
-						() => this.handleMaxFileSizeBlur(text),
-						'Failed to save max file size setting',
-					);
-				});
+				text.inputEl.addEventListener('blur', () => void this.handleMaxFileSizeBlur(text));
 			});
 
 		new Setting(this.containerEl)
@@ -38,12 +33,10 @@ export default class ControlsSettings extends BaseSettings {
 				text.setPlaceholder(i18n.t('settings.realtimeSyncDelay.placeholder')).setValue(
 					currentValue,
 				);
-				text.inputEl.addEventListener('blur', () => {
-					this.runAsyncTask(
-						() => this.handleRealtimeSyncDelayBlur(text),
-						'Failed to save realtime sync delay setting',
-					);
-				});
+				text.inputEl.addEventListener(
+					'blur',
+					() => void this.handleRealtimeSyncDelayBlur(text),
+				);
 			});
 	}
 

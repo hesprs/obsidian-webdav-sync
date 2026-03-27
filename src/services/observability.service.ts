@@ -37,9 +37,7 @@ export default class ObservabilityService {
 	}
 
 	syncMobileNoticeWithSettings() {
-		if (!this.shouldUseMobileSyncNotice()) {
-			this.hideMobileSyncNotice();
-		}
+		if (!this.shouldUseMobileSyncNotice()) this.hideMobileSyncNotice();
 	}
 
 	private setCurrentStatus(text: string): void {
