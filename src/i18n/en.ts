@@ -19,13 +19,15 @@ export default {
 			//name: 'WebDAV server URL',
 			desc: 'Base url of your webdav service.',
 			//desc: 'Base URL of your WebDAV service.',
-			placeholder: 'https://example.com/webdav',
+			placeholder: 'Https://example.com/webdav',
+			//placeholder: 'https://example.com/webdav',
 			invalid: 'Please enter a valid webdav server url (http:// or https://).',
 			//invalid: 'Please enter a valid WebDAV server URL (http:// or https://).',
 		},
 		credential: {
 			name: 'Credential',
-			desc: 'Enter your WebDAV credential',
+			desc: 'Enter your webdav credential',
+			//desc: 'Enter your WebDAV credential',
 			placeholder: 'Enter your credential',
 		},
 		checkConnection: {
@@ -58,11 +60,13 @@ export default {
 		},
 		backupWarning: {
 			name: 'Backup warning',
-			desc: '⚠️ Note: Sync process will modify or delete local files. Please backup important files before syncing.',
+			desc: 'Note: sync process will modify or delete local files. please backup important files before syncing.',
+			//desc: '⚠️ Note: sync process will modify or delete local files. Please backup important files before syncing.',
 		},
 		conflictStrategy: {
 			name: 'Conflict resolution strategy',
-			desc: 'Choose how to resolve file conflicts. \nNote: we recommend backing up important files before using auto-merge to prevent data loss.',
+			desc: 'Choose how to resolve file conflicts. \nnote: we recommend backing up important files before using auto-merge to prevent data loss.',
+			//desc: 'Choose how to resolve file conflicts. \nNote: we recommend backing up important files before using auto-merge to prevent data loss.',
 			diffMatchPatch: 'Smart merge (recommended)',
 			latestTimestamp: 'Use latest version',
 			keepLocal: 'Keep local version',
@@ -75,11 +79,11 @@ export default {
 		},
 		confirmBeforeDeleteInAutoSync: {
 			name: 'Confirm before deleting files during auto-sync',
-			desc: 'Show a confirmation dialog when local files are about to be deleted during auto-sync, allowing you to choose to delete or re-upload them',
+			desc: 'Show a confirmation dialog when local files are about to be deleted during auto-sync, allowing you to choose to delete or re-upload them.',
 		},
 		realtimeSync: {
 			name: 'Real-time sync',
-			desc: 'Automatically sync changes as soon as files are modified',
+			desc: 'Automatically sync changes as soon as files are modified.',
 		},
 		realtimeSyncDelay: {
 			name: 'Real-time sync delay',
@@ -90,11 +94,13 @@ export default {
 		},
 		useFastSyncOnLocalChange: {
 			name: 'Fast sync on local changes',
-			desc: 'Use fast sync for real-time local file changes. This is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
+			desc: 'Use fast sync for real-time local file changes. this is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
+			//desc: 'Use fast sync for real-time local file changes. This is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
 		},
 		syncMode: {
 			name: 'Sync mode',
-			desc: 'Choose between strict or loose sync mode. Loose mode is recommended for users with many files for faster syncing. In loose mode, files with the same name and equal size that have no sync record will be ignored.',
+			desc: 'Choose between strict or loose sync mode. loose mode is recommended for users with many files for faster syncing. in loose mode, files with the same name and equal size that have no sync record will be ignored.',
+			//desc: 'Choose between strict or loose sync mode. Loose mode is recommended for users with many files for faster syncing. In loose mode, files with the same name and equal size that have no sync record will be ignored.',
 			strict: 'Strict',
 			loose: 'Loose',
 		},
@@ -108,7 +114,8 @@ export default {
 		},
 		scheduledSyncInterval: {
 			name: 'Scheduled sync interval',
-			desc: 'Set the interval for periodic background synchronization (in minutes). Set to 0 to disable scheduled sync.',
+			desc: 'Set the interval for periodic background synchronization (in minutes). set to 0 to disable scheduled sync.',
+			//desc: 'Set the interval for periodic background synchronization (in minutes). Set to 0 to disable scheduled sync.',
 			placeholder: 'Enter minutes (e.g., 5, 0 to disable)',
 			invalidValue: 'Invalid value, reset to 0',
 			exceedsMax:
@@ -131,7 +138,8 @@ export default {
 			placeholder: 'E.g.: .ds_store, *.pdf',
 			//placeholder: 'E.g.: .DS_Store, *.pdf',
 			description:
-				'Files or folders matching these patterns will be ignored during sync. Use * for wildcard matching.',
+				'Files or folders matching these patterns will be ignored during sync. use * for wildcard matching.',
+			//'Files or folders matching these patterns will be ignored during sync. Use * for wildcard matching.',
 			exclude: {
 				name: 'Exclusion rules',
 				desc: 'Files/folders matching these patterns will not be synced.',
@@ -143,7 +151,8 @@ export default {
 		},
 		skipLargeFiles: {
 			name: 'Skip large files',
-			desc: 'Files exceeding this size will be skipped during synchronization. If sync issues occur, try lowering this value.',
+			desc: 'Files exceeding this size will be skipped during synchronization. if sync issues occur, try lowering this value.',
+			//desc: 'Files exceeding this size will be skipped during synchronization. If sync issues occur, try lowering this value.',
 			placeholder: 'e.g., 10 mib or 500 kib',
 			//placeholder: 'e.g., 10 MiB or 500 KiB',
 			invalidFormat: 'Invalid file size format. please use formats like "10mb" or "500kb"',
@@ -153,7 +162,7 @@ export default {
 		},
 		clearRecord: {
 			name: 'Clear record',
-			desc: 'Webdav sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
+			desc: 'Webdav sync uses a record to resolve sync operations between local and remote files. this option allows you to clear the record when encountering sync issues.',
 			//desc: 'WebDAV sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
 			button: 'Clear',
 			cleared: 'Record cleared',
@@ -243,7 +252,7 @@ export default {
 		},
 		runKind: {
 			normal: 'Normal',
-			numb: 'Fast',
+			fast: 'Fast',
 		},
 		fileOp: {
 			createLocalDir: 'Create local directory',
@@ -269,7 +278,7 @@ export default {
 		confirmModal: {
 			title: 'Sync confirmation',
 			message:
-				'⚠️ please note:\n\n1. Sync operation may modify or delete local files\n2. We recommend backing up important files before syncing\n3. In case of file conflicts, manual resolution may be required\n4. Initial sync will process all files and may take longer, please be patient\n\nAre you sure you want to start syncing?',
+				'Please note:\n\n1. sync operation may modify or delete local files\n2. we recommend backing up important files before syncing\n3. in case of file conflicts, manual resolution may be required\n4. initial sync will process all files and may take longer, please be patient\n\nAre you sure you want to start syncing?',
 			//'⚠️ Please note:\n\n1. Sync operation may modify or delete local files\n2. We recommend backing up important files before syncing\n3. In case of file conflicts, manual resolution may be required\n4. Initial sync will process all files and may take longer, please be patient\n\nAre you sure you want to start syncing?',
 			confirm: 'Confirm sync',
 			cancel: 'Cancel',
@@ -280,7 +289,7 @@ export default {
 	taskList: {
 		title: 'Sync task list',
 		instruction:
-			'Please review the tasks below. Click "continue" to execute the selected tasks, or "Cancel" to skip this sync.',
+			'Please review the tasks below. click "continue" to execute the selected tasks, or "cancel" to skip this sync.',
 		//'Please review the tasks below. Click "Continue" to execute the selected tasks, or "Cancel" to skip this sync.',
 		execute: 'Execute',
 		action: 'Action',

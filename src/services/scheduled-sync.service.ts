@@ -22,7 +22,7 @@ export default class ScheduledSyncService {
 				try {
 					await this.syncScheduler.requestSync({
 						mode: SyncStartMode.AUTO_SYNC,
-						runKind: SyncRunKind.NORMAL,
+						runKind: SyncRunKind.normal,
 						source: 'startup',
 					});
 				} finally {
@@ -42,7 +42,7 @@ export default class ScheduledSyncService {
 			this.scheduledSyncTimer = window.setInterval(async () => {
 				await this.syncScheduler.requestSync({
 					mode: SyncStartMode.AUTO_SYNC,
-					runKind: SyncRunKind.NORMAL,
+					runKind: SyncRunKind.normal,
 					source: 'interval',
 				});
 			}, clampedIntervalMs);

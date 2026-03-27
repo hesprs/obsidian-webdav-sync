@@ -43,7 +43,7 @@ export default class SyncSchedulerService {
 	requestManualSync() {
 		return this.requestSync({
 			mode: SyncStartMode.MANUAL_SYNC,
-			runKind: SyncRunKind.NORMAL,
+			runKind: SyncRunKind.normal,
 			source: 'manual',
 		});
 	}
@@ -91,9 +91,9 @@ export default class SyncSchedulerService {
 			? SyncStartMode.MANUAL_SYNC
 			: SyncStartMode.AUTO_SYNC;
 
-		const runKind = batch.some((request) => request.runKind === SyncRunKind.NORMAL)
-			? SyncRunKind.NORMAL
-			: SyncRunKind.NUMB;
+		const runKind = batch.some((request) => request.runKind === SyncRunKind.normal)
+			? SyncRunKind.normal
+			: SyncRunKind.fast;
 
 		return {
 			runId: crypto.randomUUID(),

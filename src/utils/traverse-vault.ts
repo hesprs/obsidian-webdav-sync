@@ -18,8 +18,8 @@ interface TraverseVaultOptions {
 }
 
 export async function traverseVault({ vault, from, onProgress }: TraverseVaultOptions) {
-	const res: StatModel[] = [];
 	const queue = [from];
+	const res: StatModel[] = [];
 	const ignores = [
 		new GlobMatch(`${vault.configDir}/plugins/*/node_modules`, {
 			caseSensitive: true,
@@ -40,10 +40,11 @@ export async function traverseVault({ vault, from, onProgress }: TraverseVaultOp
 		let folders = folder.children.filter((f) => f instanceof TFolder).map((f) => f.path);
 		folders = folders.filter(folderFilter);
 		queue.push(...folders);
-		const contents = await Promise.all(
-			[...files, ...folders].map(partial(statVaultItem, vault)),
-		).then((arr) => arr.filter((content) => !isNil(content)));
-		res.push(...contents);
+		res.push(
+			...[...files, ...folders]
+				.map(partial(statVaultItem, vault))
+				.filter((content) => !isNil(content)),
+		);
 		await onProgress({
 			processedDirectories: res.length,
 			totalDirectories: res.length + queue.length,
