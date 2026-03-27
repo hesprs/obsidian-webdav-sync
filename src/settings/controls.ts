@@ -23,7 +23,10 @@ export default class ControlsSettings extends BaseSettings {
 				);
 
 				text.inputEl.addEventListener('blur', () => {
-					void this.handleMaxFileSizeBlur(text);
+					this.runAsyncTask(
+						() => this.handleMaxFileSizeBlur(text),
+						'Failed to save max file size setting',
+					);
 				});
 			});
 
@@ -36,20 +39,28 @@ export default class ControlsSettings extends BaseSettings {
 					currentValue,
 				);
 				text.inputEl.addEventListener('blur', () => {
-					const _interval = text.getValue();
-					const interval = parseFloat(_interval) * 1000;
-					const ori = this.plugin.settings.realtimeSyncDelay;
-					if (isNaN(interval) || interval < 0) {
-						new Notice(i18n.t('settings.realtimeSyncDelay.invalidValue'));
-						text.setValue((ori / 1000).toString());
-						return;
-					}
-					if (interval !== ori) {
-						this.plugin.settings.realtimeSyncDelay = interval;
-						void this.plugin.saveSettings();
-					}
+					this.runAsyncTask(
+						() => this.handleRealtimeSyncDelayBlur(text),
+						'Failed to save realtime sync delay setting',
+					);
 				});
 			});
+	}
+
+	private async handleRealtimeSyncDelayBlur(component: TextComponent) {
+		const rawInterval = component.getValue();
+		const interval = parseFloat(rawInterval) * 1000;
+		const original = this.plugin.settings.realtimeSyncDelay;
+		if (isNaN(interval) || interval < 0) {
+			new Notice(i18n.t('settings.realtimeSyncDelay.invalidValue'));
+			component.setValue((original / 1000).toString());
+			return;
+		}
+
+		if (interval !== original) {
+			this.plugin.settings.realtimeSyncDelay = interval;
+			await this.plugin.saveSettings();
+		}
 	}
 
 	private async handleMaxFileSizeBlur(component: TextComponent) {

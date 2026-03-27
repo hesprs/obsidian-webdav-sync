@@ -1,9 +1,7 @@
-import { Notice } from 'obsidian';
-import SyncConfirmModal from '~/components/SyncConfirmModal';
 import { emitCancelSync } from '~/events';
 import i18n from '~/i18n';
-import logger from '~/utils/logger';
 import WebDAVSyncPlugin from '..';
+import { launchManualSync } from './manual-sync.service';
 
 export default class CommandService {
 	constructor(plugin: WebDAVSyncPlugin) {
@@ -14,28 +12,7 @@ export default class CommandService {
 				if (plugin.isSyncing) return false;
 				if (checking) return true;
 
-				// 检查账号配置
-				if (!plugin.isAccountConfigured()) {
-					new Notice(i18n.t('sync.error.accountNotConfigured'));
-					// 打开设置页面，引导用户配置账号
-					try {
-						const setting = plugin.app.setting;
-						if (setting) {
-							setting.open();
-							setting.openTabById(plugin.manifest.id);
-						}
-					} catch (error) {
-						logger.error('Failed to open settings', error);
-					}
-					return;
-				}
-
-				const startSync = async () => {
-					await plugin.syncSchedulerService.requestManualSync();
-				};
-				if (plugin.settings.confirmBeforeSync)
-					new SyncConfirmModal(plugin.app, startSync).open();
-				else void startSync();
+				launchManualSync(plugin);
 			},
 		});
 

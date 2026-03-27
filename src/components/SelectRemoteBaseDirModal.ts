@@ -39,12 +39,10 @@ export default class SelectRemoteBaseDirModal extends Modal {
 				},
 			},
 			onClose: () => {
-				explorer.remove();
 				this.close();
 			},
-			onConfirm: async (path) => {
-				await Promise.resolve(this.onConfirm(normalizeRemoteDir(path)));
-				explorer.remove();
+			onConfirm: (path) => {
+				this.onConfirm(normalizeRemoteDir(path));
 				this.close();
 			},
 		});

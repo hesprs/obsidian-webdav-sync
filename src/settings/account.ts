@@ -34,9 +34,10 @@ export default class AccountSettings extends BaseSettings {
 				text
 					.setPlaceholder(i18n.t('settings.serverUrl.placeholder'))
 					.setValue(this.plugin.settings.serverUrl)
-					.onChange(async (value) => {
-						this.plugin.settings.serverUrl = value.trim();
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.saveSettingsTask(() => {
+							this.plugin.settings.serverUrl = value.trim();
+						}, 'Failed to save server URL setting');
 					}),
 			);
 
@@ -47,9 +48,10 @@ export default class AccountSettings extends BaseSettings {
 				text
 					.setPlaceholder(i18n.t('settings.account.placeholder'))
 					.setValue(this.plugin.settings.account)
-					.onChange(async (value) => {
-						this.plugin.settings.account = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.saveSettingsTask(() => {
+							this.plugin.settings.account = value;
+						}, 'Failed to save account setting');
 					}),
 			);
 
@@ -59,9 +61,10 @@ export default class AccountSettings extends BaseSettings {
 			.addText((text) => {
 				text.setPlaceholder(i18n.t('settings.credential.placeholder'))
 					.setValue(this.plugin.settings.credential)
-					.onChange(async (value) => {
-						this.plugin.settings.credential = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.saveSettingsTask(() => {
+							this.plugin.settings.credential = value;
+						}, 'Failed to save credential setting');
 					});
 				text.inputEl.type = 'password';
 			});
@@ -74,9 +77,10 @@ export default class AccountSettings extends BaseSettings {
 			.addText((text) => {
 				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder'))
 					.setValue(this.plugin.remoteBaseDir)
-					.onChange(async (value) => {
-						this.plugin.settings.remoteDir = value;
-						await this.plugin.saveSettings();
+					.onChange((value) => {
+						this.saveSettingsTask(() => {
+							this.plugin.settings.remoteDir = value;
+						}, 'Failed to save remote directory setting');
 					});
 				text.inputEl.addEventListener('blur', () => {
 					this.plugin.settings.remoteDir = this.plugin.remoteBaseDir;
@@ -84,14 +88,14 @@ export default class AccountSettings extends BaseSettings {
 			})
 			.addButton((button) => {
 				button.setIcon('folder').onClick(() => {
-					// 检查账号配置
 					if (!this.plugin.isAccountConfigured()) {
 						new Notice(i18n.t('sync.error.accountNotConfigured'));
 						return;
 					}
-					new SelectRemoteBaseDirModal(this.app, this.plugin, async (path) => {
-						this.plugin.settings.remoteDir = path;
-						await this.plugin.saveSettings();
+					new SelectRemoteBaseDirModal(this.app, this.plugin, (path) => {
+						this.saveSettingsTask(() => {
+							this.plugin.settings.remoteDir = path;
+						}, 'Failed to save remote directory selection');
 					}).open();
 				});
 			});
@@ -102,46 +106,53 @@ export default class AccountSettings extends BaseSettings {
 			.setName(i18n.t('settings.checkConnection.name'))
 			.setDesc(i18n.t('settings.checkConnection.desc'))
 			.addButton((button) => {
-				button.setButtonText(i18n.t('settings.checkConnection.name')).onClick(async (e) => {
-					const normalizedUrl = this.getNormalizedServerUrl();
-					if (!normalizedUrl) {
-						new Notice(i18n.t('settings.serverUrl.invalid'));
-						return;
-					}
-					this.plugin.settings.serverUrl = normalizedUrl;
-					await this.plugin.saveSettings();
-
-					const buttonEl = e.target as HTMLElement;
-					buttonEl.classList.add('connection-button', 'loading');
-					buttonEl.classList.remove('success', 'error');
-					buttonEl.textContent = i18n.t('settings.checkConnection.name');
-					try {
-						const { success, error } =
-							await this.plugin.webDAVService.checkWebDAVConnection();
-						buttonEl.classList.remove('loading');
-						if (success) {
-							buttonEl.classList.add('success');
-							buttonEl.textContent = i18n.t('settings.checkConnection.successButton');
-							new Notice(i18n.t('settings.checkConnection.success'));
-						} else {
-							buttonEl.classList.add('error');
-							buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
-							const reason = error?.message?.trim();
-							new Notice(
-								reason
-									? i18n.t('settings.checkConnection.failureWithReason', {
-											reason,
-										})
-									: i18n.t('settings.checkConnection.failure'),
-							);
-						}
-					} catch {
-						buttonEl.classList.remove('loading');
-						buttonEl.classList.add('error');
-						buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
-						new Notice(i18n.t('settings.checkConnection.failure'));
-					}
+				button.setButtonText(i18n.t('settings.checkConnection.name')).onClick((event) => {
+					const buttonEl = event.currentTarget;
+					if (!(buttonEl instanceof HTMLElement)) return;
+					this.runAsyncTask(
+						() => this.checkConnection(buttonEl),
+						'Failed to check WebDAV connection',
+					);
 				});
 			});
+	}
+
+	private async checkConnection(buttonEl: HTMLElement) {
+		const normalizedUrl = this.getNormalizedServerUrl();
+		if (!normalizedUrl) {
+			new Notice(i18n.t('settings.serverUrl.invalid'));
+			return;
+		}
+
+		this.plugin.settings.serverUrl = normalizedUrl;
+		await this.plugin.saveSettings();
+
+		buttonEl.classList.add('connection-button', 'loading');
+		buttonEl.classList.remove('success', 'error');
+		buttonEl.textContent = i18n.t('settings.checkConnection.name');
+		try {
+			const { success, error } = await this.plugin.webDAVService.checkWebDAVConnection();
+			buttonEl.classList.remove('loading');
+			if (success) {
+				buttonEl.classList.add('success');
+				buttonEl.textContent = i18n.t('settings.checkConnection.successButton');
+				new Notice(i18n.t('settings.checkConnection.success'));
+				return;
+			}
+
+			buttonEl.classList.add('error');
+			buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
+			const reason = error?.message?.trim();
+			new Notice(
+				reason
+					? i18n.t('settings.checkConnection.failureWithReason', { reason })
+					: i18n.t('settings.checkConnection.failure'),
+			);
+		} catch {
+			buttonEl.classList.remove('loading');
+			buttonEl.classList.add('error');
+			buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
+			new Notice(i18n.t('settings.checkConnection.failure'));
+		}
 	}
 }

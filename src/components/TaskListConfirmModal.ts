@@ -6,6 +6,7 @@ import { BaseTask } from '../sync/tasks/task.interface';
 export default class TaskListConfirmModal extends Modal {
 	private result: boolean = false;
 	private selectedTasks: boolean[] = [];
+	private resolver: ((value: { confirm: boolean; tasks: BaseTask[] }) => void) | null = null;
 
 	constructor(
 		app: App,
@@ -80,16 +81,24 @@ export default class TaskListConfirmModal extends Modal {
 			});
 	}
 
-	async open(): Promise<{ confirm: boolean; tasks: BaseTask[] }> {
-		super.open();
+	openAndWait(): Promise<{ confirm: boolean; tasks: BaseTask[] }> {
 		return new Promise((resolve) => {
-			this.onClose = () => {
-				const selectedTasks = this.tasks.filter((_, index) => this.selectedTasks[index]);
-				resolve({
-					confirm: this.result,
-					tasks: selectedTasks,
-				});
-			};
+			this.result = false;
+			this.resolver = resolve;
+			this.open();
+		});
+	}
+
+	onClose() {
+		this.contentEl.empty();
+
+		const resolver = this.resolver;
+		this.resolver = null;
+		if (!resolver) return;
+
+		resolver({
+			confirm: this.result,
+			tasks: this.tasks.filter((_, index) => this.selectedTasks[index]),
 		});
 	}
 }

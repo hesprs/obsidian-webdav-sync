@@ -1,15 +1,14 @@
 import { Notice } from 'obsidian';
 import { createSignal, Show } from 'solid-js';
 import { joinRemotePath } from '~/platform/path/remote-path';
+import runAsync from '~/utils/run-async';
 import { createFileList, type FileStat } from './components/FileList';
 import NewFolder from './components/NewFolder';
 import { t } from './i18n';
 
-type MaybePromise<T> = Promise<T> | T;
-
 export interface fs {
-	ls: (path: string) => MaybePromise<FileStat[]>;
-	mkdirs: (path: string) => MaybePromise<void>;
+	ls: (path: string) => Promise<FileStat[]> | FileStat[];
+	mkdirs: (path: string) => Promise<void> | void;
 }
 
 export interface AppProps {
@@ -31,6 +30,19 @@ function App(props: AppProps) {
 		setStack((stack) => (stack.length > 1 ? stack.slice(0, stack.length - 1) : stack));
 	}
 
+	async function createFolder(name: string, refresh: () => void) {
+		const target = joinRemotePath(cwd() ?? '/', name);
+		try {
+			await Promise.resolve(props.fs.mkdirs(target));
+			setShowNewFolder(false);
+			refresh();
+		} catch (error) {
+			if (error instanceof Error) {
+				new Notice(error.message);
+			}
+		}
+	}
+
 	const SingleCol = () => {
 		const list = createFileList();
 		return (
@@ -39,18 +51,11 @@ function App(props: AppProps) {
 					<NewFolder
 						class="mt-1"
 						onCancel={() => setShowNewFolder(false)}
-						onConfirm={async (name) => {
-							const target = joinRemotePath(cwd() ?? '/', name);
-							await Promise.resolve(props.fs.mkdirs(target))
-								.then(() => {
-									setShowNewFolder(false);
-									list.refresh();
-								})
-								.catch((e) => {
-									if (e instanceof Error) {
-										new Notice(e.message);
-									}
-								});
+						onConfirm={(name) => {
+							runAsync(
+								() => createFolder(name, list.refresh),
+								'Failed to create remote folder',
+							);
 						}}
 					/>
 				</Show>

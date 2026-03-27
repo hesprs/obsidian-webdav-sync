@@ -1,18 +1,17 @@
-import { App, Modal, Setting } from 'obsidian';
+import { Modal, Setting } from 'obsidian';
+import type WebDAVSyncPlugin from '../index';
 import i18n from '../i18n';
-import { useSettings } from '../settings';
+import { launchManualSync } from '../services/manual-sync.service';
 
 export default class SyncConfirmModal extends Modal {
-	private onConfirm: () => void;
-
-	constructor(app: App, onConfirm: () => void) {
-		super(app);
-		this.onConfirm = onConfirm;
+	constructor(private plugin: WebDAVSyncPlugin) {
+		super(plugin.app);
 	}
 
-	async onOpen() {
+	onOpen() {
 		const { contentEl } = this;
-		const settings = await useSettings();
+		const settings = this.plugin.settings;
+		contentEl.empty();
 
 		contentEl.createEl('h2', { text: i18n.t('sync.confirmModal.title') });
 		const infoDiv = contentEl.createDiv({ cls: 'sync-info' });
@@ -40,13 +39,12 @@ export default class SyncConfirmModal extends Modal {
 					.setCta()
 					.onClick(() => {
 						this.close();
-						this.onConfirm();
+						launchManualSync(this.plugin, { skipConfirmation: true });
 					}),
 			);
 	}
 
 	onClose() {
-		const { contentEl } = this;
-		contentEl.empty();
+		this.contentEl.empty();
 	}
 }

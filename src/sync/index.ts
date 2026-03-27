@@ -217,7 +217,10 @@ export class SyncEngine {
 					},
 				});
 				emitSyncRun(currentRun);
-				const confirmExec = await new TaskListConfirmModal(this.app, confirmedTasks).open();
+				const confirmExec = await new TaskListConfirmModal(
+					this.app,
+					confirmedTasks,
+				).openAndWait();
 				if (confirmExec.confirm) confirmedTasks = confirmExec.tasks;
 				else {
 					currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
@@ -253,7 +256,7 @@ export class SyncEngine {
 					const { tasksToDelete, tasksToReupload } = await new DeleteConfirmModal(
 						this.app,
 						removeLocalTasks,
-					).open();
+					).openAndWait();
 
 					confirmedTasks = this.rebuildConfirmedTasksAfterDeleteConfirmation({
 						confirmedTasks,

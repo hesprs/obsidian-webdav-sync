@@ -17,10 +17,14 @@ export default class FilterSettings extends BaseSettings {
 					new FilterEditorModal(
 						this.plugin,
 						this.plugin.settings.filterRules.inclusionRules,
-						async (filters) => {
-							this.plugin.settings.filterRules.inclusionRules = filters;
-							await this.plugin.saveSettings();
-							this.display();
+						(filters) => {
+							this.saveSettingsTask(
+								() => {
+									this.plugin.settings.filterRules.inclusionRules = filters;
+								},
+								'Failed to save inclusion filters',
+								() => this.display(),
+							);
 						},
 						FilterEditorModal.FilterType.Include,
 					).open();
@@ -36,10 +40,14 @@ export default class FilterSettings extends BaseSettings {
 					new FilterEditorModal(
 						this.plugin,
 						this.plugin.settings.filterRules.exclusionRules,
-						async (filters) => {
-							this.plugin.settings.filterRules.exclusionRules = filters;
-							await this.plugin.saveSettings();
-							this.display();
+						(filters) => {
+							this.saveSettingsTask(
+								() => {
+									this.plugin.settings.filterRules.exclusionRules = filters;
+								},
+								'Failed to save exclusion filters',
+								() => this.display(),
+							);
 						},
 						FilterEditorModal.FilterType.Exclude,
 					).open();
