@@ -1,5 +1,4 @@
 import { IN_DEV } from '~/consts';
-import { SyncRunKind } from '~/model/sync-record.model';
 import { formatDateTime } from '~/utils/format-date';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -104,11 +103,6 @@ function sanitizeLogValue(value: unknown, depth: number = 0): LogValue | undefin
 function formatMode(mode?: string): string | undefined {
 	if (mode === undefined) return undefined;
 	return mode === 'manual' ? 'manual' : 'auto';
-}
-
-function formatRunKind(runKind?: string): string | undefined {
-	if (runKind === undefined) return undefined;
-	return runKind === SyncRunKind.NUMB ? 'fast' : 'normal';
 }
 
 function formatDuration(durationMs?: number): string | undefined {
@@ -231,7 +225,7 @@ class Logger {
 
 		lines.push(`- Trigger: ${summary.trigger ?? 'unknown'}`);
 		lines.push(`- Mode: ${formatMode(summary.mode) ?? 'unknown'}`);
-		lines.push(`- Run kind: ${formatRunKind(summary.runKind) ?? 'unknown'}`);
+		lines.push(`- Run kind: ${summary.runKind ?? 'unknown'}`);
 		lines.push(`- Outcome: ${summary.stage ?? 'unknown'}`);
 		if (summary.sources && summary.sources.length > 0) {
 			lines.push(`- Sources: ${summary.sources.join(', ')}`);

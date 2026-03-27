@@ -89,12 +89,12 @@ export default class TwoWaySyncDecider {
 
 		await reportPlanningProgress({
 			subStage: SyncPlanningSubStage.walkingRemote,
-			totalWorkUnits: this.sync.runKind === SyncRunKind.NUMB ? 1 : 0,
+			totalWorkUnits: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
 			completedWorkUnits: 0,
 			currentItem: this.remoteBaseDir,
 		});
 		const currentRemoteStats =
-			this.sync.runKind === SyncRunKind.NUMB
+			this.sync.runKind === SyncRunKind.fast
 				? await this.sync.remoteFs.toWalkResults(previousRemoteRecords)
 				: await this.sync.remoteFs.walk({
 						freshness: 'fresh',

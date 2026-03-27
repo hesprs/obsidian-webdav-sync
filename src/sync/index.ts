@@ -102,10 +102,10 @@ export class SyncEngine {
 		);
 	}
 
-	runKind: SyncRunKind = SyncRunKind.NORMAL;
+	runKind: SyncRunKind = SyncRunKind.normal;
 
 	async preparePlan(
-		runKind: SyncRunKind = SyncRunKind.NORMAL,
+		runKind: SyncRunKind = SyncRunKind.normal,
 		options?: {
 			onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
 		},
@@ -120,7 +120,7 @@ export class SyncEngine {
 		});
 		this.throwIfCancelled();
 
-		if (runKind === SyncRunKind.NORMAL) {
+		if (runKind === SyncRunKind.normal) {
 			const remoteRecord = await syncRecord.getRemoteRecord();
 			await syncRecord.setRemoteRecord({
 				...remoteRecord,
@@ -255,7 +255,7 @@ export class SyncEngine {
 						removeLocalTasks,
 					).open();
 
-					confirmedTasks = await this.rebuildConfirmedTasksAfterDeleteConfirmation({
+					confirmedTasks = this.rebuildConfirmedTasksAfterDeleteConfirmation({
 						confirmedTasks,
 						originalTasks: tasks,
 						tasksToDelete,
@@ -384,7 +384,7 @@ export class SyncEngine {
 		});
 	}
 
-	private async rebuildConfirmedTasksAfterDeleteConfirmation({
+	private rebuildConfirmedTasksAfterDeleteConfirmation({
 		confirmedTasks,
 		originalTasks,
 		tasksToDelete,
@@ -396,7 +396,7 @@ export class SyncEngine {
 		tasksToDelete: RemoveLocalTask[];
 		tasksToReupload: RemoveLocalTask[];
 		syncRecord: SyncRecord;
-	}): Promise<BaseTask[]> {
+	}): BaseTask[] {
 		const { mkdirTasks, pushTasks } = this.buildReuploadTasks({
 			confirmedTasks,
 			originalTasks,
