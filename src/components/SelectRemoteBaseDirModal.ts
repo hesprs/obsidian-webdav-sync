@@ -15,7 +15,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 		super(app);
 	}
 
-	async onOpen() {
+	onOpen() {
 		const { contentEl } = this;
 
 		const explorer = document.createElement('div');

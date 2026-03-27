@@ -209,7 +209,7 @@ export default {
 		},
 		runKind: {
 			normal: '普通',
-			numb: '快速',
+			fast: '快速',
 		},
 		fileOp: {
 			createLocalDir: '创建本地目录',

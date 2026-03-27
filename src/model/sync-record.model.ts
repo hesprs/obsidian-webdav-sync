@@ -1,8 +1,8 @@
 import type { StatModel } from './stat.model';
 
 export enum SyncRunKind {
-	NORMAL = 'normal',
-	NUMB = 'numb',
+	normal = 'normal',
+	fast = 'fast',
 }
 
 export interface LocalRecordModel {

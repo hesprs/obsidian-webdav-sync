@@ -35,7 +35,7 @@ export default class ControlsSettings extends BaseSettings {
 				text.setPlaceholder(i18n.t('settings.realtimeSyncDelay.placeholder')).setValue(
 					currentValue,
 				);
-				text.inputEl.addEventListener('blur', async () => {
+				text.inputEl.addEventListener('blur', () => {
 					const _interval = text.getValue();
 					const interval = parseFloat(_interval) * 1000;
 					const ori = this.plugin.settings.realtimeSyncDelay;

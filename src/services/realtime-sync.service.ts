@@ -15,7 +15,7 @@ export default class RealtimeSyncService {
 
 		await this.syncScheduler.requestSync({
 			mode: SyncStartMode.AUTO_SYNC,
-			runKind: settings.useFastSyncOnLocalChange ? SyncRunKind.NUMB : SyncRunKind.NORMAL,
+			runKind: settings.useFastSyncOnLocalChange ? SyncRunKind.fast : SyncRunKind.normal,
 			source: 'realtime',
 		});
 	};
