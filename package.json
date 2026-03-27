@@ -9,8 +9,8 @@
 		"build": "tsdown",
 		"ver": "node scripts/version-bump.ts",
 		"test": "vitest run",
-		"lint": "oxlint --fix && oxfmt",
-		"check": "tsc && oxlint && oxfmt --check",
+		"lint": "oxlint --type-aware --fix && oxfmt",
+		"check": "tsc && oxlint --type-aware && oxfmt --check",
 		"notes": "node scripts/release-notes.ts"
 	},
 	"devDependencies": {
