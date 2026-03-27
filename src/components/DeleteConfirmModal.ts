@@ -5,6 +5,12 @@ import RemoveLocalTask from '../sync/tasks/remove-local.task';
 export default class DeleteConfirmModal extends Modal {
 	private confirmed: boolean = false;
 	private selectedTasks: boolean[] = [];
+	private resolver:
+		| ((value: {
+				tasksToDelete: RemoveLocalTask[];
+				tasksToReupload: RemoveLocalTask[];
+		  }) => void)
+		| null = null;
 
 	constructor(
 		app: App,
@@ -82,28 +88,35 @@ export default class DeleteConfirmModal extends Modal {
 			});
 	}
 
-	async open(): Promise<{
+	openAndWait(): Promise<{
 		tasksToDelete: RemoveLocalTask[];
 		tasksToReupload: RemoveLocalTask[];
 	}> {
-		super.open();
 		return new Promise((resolve) => {
-			this.onClose = () => {
-				if (!this.confirmed) {
-					// User cancelled, no changes
-					resolve({
-						tasksToDelete: [],
-						tasksToReupload: [],
-					});
-					return;
-				}
-				const tasksToDelete = this.tasks.filter((_, index) => this.selectedTasks[index]);
-				const tasksToReupload = this.tasks.filter((_, index) => !this.selectedTasks[index]);
-				resolve({
-					tasksToDelete,
-					tasksToReupload,
-				});
-			};
+			this.confirmed = false;
+			this.resolver = resolve;
+			this.open();
+		});
+	}
+
+	onClose() {
+		this.contentEl.empty();
+
+		const resolver = this.resolver;
+		this.resolver = null;
+		if (!resolver) return;
+
+		if (!this.confirmed) {
+			resolver({
+				tasksToDelete: [],
+				tasksToReupload: [],
+			});
+			return;
+		}
+
+		resolver({
+			tasksToDelete: this.tasks.filter((_, index) => this.selectedTasks[index]),
+			tasksToReupload: this.tasks.filter((_, index) => !this.selectedTasks[index]),
 		});
 	}
 }

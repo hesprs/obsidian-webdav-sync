@@ -2,6 +2,7 @@ import { clamp } from 'lodash-es';
 import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings, type PluginSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
+import runAsync from '~/utils/run-async';
 import type WebDAVSyncPlugin from '..';
 import type SyncSchedulerService from './sync-scheduler.service';
 
@@ -18,16 +19,8 @@ export default class ScheduledSyncService {
 		const settings = await useSettings();
 
 		if (settings.startupSyncDelaySeconds > 0) {
-			this.startupSyncTimer = window.setTimeout(async () => {
-				try {
-					await this.syncScheduler.requestSync({
-						mode: SyncStartMode.AUTO_SYNC,
-						runKind: SyncRunKind.normal,
-						source: 'startup',
-					});
-				} finally {
-					this.startTimer(await useSettings());
-				}
+			this.startupSyncTimer = window.setTimeout(() => {
+				runAsync(() => this.handleStartupSync(), 'Failed to run startup sync');
 			}, settings.startupSyncDelaySeconds * 1000);
 		} else this.startTimer(settings);
 	}
@@ -39,14 +32,30 @@ export default class ScheduledSyncService {
 		const clampedIntervalMs = clamp(intervalMs, 0, 2 ** 31 - 1);
 
 		if (clampedIntervalMs > 0) {
-			this.scheduledSyncTimer = window.setInterval(async () => {
-				await this.syncScheduler.requestSync({
-					mode: SyncStartMode.AUTO_SYNC,
-					runKind: SyncRunKind.normal,
-					source: 'interval',
-				});
+			this.scheduledSyncTimer = window.setInterval(() => {
+				runAsync(() => this.handleIntervalSync(), 'Failed to run scheduled sync');
 			}, clampedIntervalMs);
 		}
+	}
+
+	private async handleStartupSync() {
+		try {
+			await this.syncScheduler.requestSync({
+				mode: SyncStartMode.AUTO_SYNC,
+				runKind: SyncRunKind.normal,
+				source: 'startup',
+			});
+		} finally {
+			this.startTimer(await useSettings());
+		}
+	}
+
+	private async handleIntervalSync() {
+		await this.syncScheduler.requestSync({
+			mode: SyncStartMode.AUTO_SYNC,
+			runKind: SyncRunKind.normal,
+			source: 'interval',
+		});
 	}
 
 	private stopTimer() {

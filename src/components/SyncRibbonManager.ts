@@ -1,9 +1,7 @@
-import { Notice } from 'obsidian';
-import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '../index';
 import { emitCancelSync } from '../events';
 import i18n from '../i18n';
-import SyncConfirmModal from './SyncConfirmModal';
+import { launchManualSync } from '../services/manual-sync.service';
 
 export class SyncRibbonManager {
 	private startRibbonEl: HTMLElement;
@@ -13,30 +11,7 @@ export class SyncRibbonManager {
 		this.startRibbonEl = this.plugin.addRibbonIcon(
 			'refresh-ccw',
 			i18n.t('sync.startButton'),
-			() => {
-				if (this.plugin.isSyncing) return;
-
-				if (!this.plugin.isAccountConfigured()) {
-					new Notice(i18n.t('sync.error.accountNotConfigured'));
-					try {
-						const setting = this.plugin.app.setting;
-						if (setting) {
-							setting.open();
-							setting.openTabById(this.plugin.manifest.id);
-						}
-					} catch (error) {
-						logger.error('Failed to open settings', error);
-					}
-					return;
-				}
-
-				const startSync = async () => {
-					await this.plugin.syncSchedulerService.requestManualSync();
-				};
-				if (this.plugin.settings.confirmBeforeSync)
-					new SyncConfirmModal(this.plugin.app, startSync).open();
-				else void startSync();
-			},
+			() => launchManualSync(this.plugin),
 		);
 		this.stopRibbonEl = this.plugin.addRibbonIcon('square', i18n.t('sync.stopButton'), () =>
 			emitCancelSync(),
