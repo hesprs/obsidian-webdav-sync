@@ -5,7 +5,7 @@
     <br />
 </h1>
 
-<h4 align="center">将您的 Obsidian 笔记与任何 WebDAV 服务进行同步。</h4>
+<h4 align="center">为您的 Vault 提供通用且双向的 WebDAV 同步功能。</h4>
 
 <p align="center">
     <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
