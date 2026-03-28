@@ -1,9 +1,11 @@
 <h1 align="center">
+    <img src="assets/logo.svg" alt="Obsidian WebDAV Sync logo" width="160px">
+    <br />
     Obsidian WebDAV Sync
     <br />
 </h1>
 
-<h4 align="center">Sync your Obsidian notes with any WebDAV service.</h4>
+<h4 align="center">General-purpose & bidirectional WebDAV syncing for your vault.</h4>
 
 <p align="center">
     <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
