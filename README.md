@@ -43,12 +43,14 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 - ⚡ **Fast syncing mode** with cached acceleration for fast, sync-on-change syncing
 - 📁 **WebDAV explorer** for exploring remote directories
 - 🔀 **Conflict handling**:
-  - Smart merge (diff/merge-based)
-  - Latest-version strategy
-  - Skip strategy
+  - Smart merge
+  - Latest survive
+  - Use remote
+  - Use local
+  - Skip
 - 🚀 **Strict / loose sync modes** for different vault sizes
 - 📦 **Large file skipping** via configurable size threshold
-- 🔁 **Robust file presence handling** that doesn't mess up your notes
+- 🔁 **Robust file handling** that doesn't mess up your notes
 - 📜 **Lightweight local database** empowers scalability and ensures performance
 
 ## Install & Setup
