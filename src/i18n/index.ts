@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import en from './en';
+import en from './enold';
 import zhHans from './zh-Hans';
 
 const defaultNS = 'translation';
