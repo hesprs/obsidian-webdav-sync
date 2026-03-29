@@ -1,31 +1,19 @@
-import type { RemoveLocalTaskOptions } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask {
-	constructor(public readonly options: BaseTaskOptions & RemoveLocalTaskOptions) {
+	constructor(public readonly options: BaseTaskOptions) {
 		super(options);
 	}
 
 	async exec() {
 		try {
-			const localSnapshot = this.options.local;
-			const localStat = localSnapshot?.stat;
-			const localFile = localSnapshot?.abstractFile;
+			const file = this.vault.getAbstractFileByPath(this.localPath);
+			if (!file) return { success: true } as const;
 
-			if (!localStat || !localFile) {
-				throw new Error('missing local snapshot for remove: ' + this.localPath);
-			}
-
-			await this.vault.trash(localFile, false);
-
-			if (localStat.isDir || this.options.recursive) {
-				await this.syncRecord.removeLocalRecordSubtree(this.localPath);
-			} else {
-				await this.syncRecord.removeLocalRecordPath(this.localPath);
-			}
-
-			return { success: true, skipRecord: true } as const;
+			await this.vault.trash(file, false);
+			await this.syncRecord.removeLocalRecordPath(this.localPath);
+			return { success: true } as const;
 		} catch (e) {
 			logger.error(`Failed to remove local file: ${this.localPath}`, e);
 			return { success: false, error: toTaskError(e, this) };

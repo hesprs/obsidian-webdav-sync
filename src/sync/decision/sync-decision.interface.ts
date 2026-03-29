@@ -5,8 +5,8 @@ import type { StatModel } from '~/model/stat.model';
 import type { LocalRecordModel } from '~/model/sync-record.model';
 import type { BinaryLike } from '~/platform/binary';
 import { SyncMode } from '~/settings';
+import type { SkipReason } from '../tasks/skipped.task';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
-import { SkipReason } from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
 
 export interface SyncDecisionSettings {
@@ -25,9 +25,6 @@ export interface SyncRecordItem {
 export interface TaskOptions {
 	remotePath: string;
 	localPath: string;
-	remoteBaseDir: string;
-	local?: PlannedLocalSnapshot;
-	remote?: PlannedRemoteSnapshot;
 }
 
 export interface PlannedLocalSnapshot {
@@ -65,21 +62,17 @@ export interface PushTaskOptions extends TaskOptions {
 	local?: PlannedLocalSnapshot;
 }
 
-export interface RemoveLocalTaskOptions extends TaskOptions {
-	local?: PlannedLocalSnapshot;
-	recursive?: boolean;
-}
-
-export interface RemoveRemoteTaskOptions extends TaskOptions {
-	remote?: PlannedRemoteSnapshot;
-}
-
 export interface MkdirLocalTaskOptions extends TaskOptions {
 	remote?: PlannedRemoteSnapshot;
 }
 
 export interface MkdirRemoteTaskOptions extends TaskOptions {
 	local?: PlannedLocalSnapshot;
+}
+
+export interface AddRecordTaskOptions extends TaskOptions {
+	local?: PlannedLocalSnapshot;
+	remote?: StatModel;
 }
 
 export type SkippedTaskOptions = TaskOptions &
@@ -112,12 +105,13 @@ export interface TaskFactory {
 	createPullTask(options: PullTaskOptions): BaseTask;
 	createPushTask(options: PushTaskOptions): BaseTask;
 	createConflictResolveTask(options: ConflictTaskOptions): BaseTask;
-	createNoopTask(options: TaskOptions): BaseTask;
-	createRemoveLocalTask(options: RemoveLocalTaskOptions): BaseTask;
-	createRemoveRemoteTask(options: RemoveRemoteTaskOptions): BaseTask;
+	createRemoveLocalTask(options: TaskOptions): BaseTask;
+	createRemoveLocalRecursivelyTask(options: TaskOptions): BaseTask;
+	createRemoveRemoteTask(options: TaskOptions): BaseTask;
 	createMkdirLocalTask(options: MkdirLocalTaskOptions): BaseTask;
 	createMkdirRemoteTask(options: MkdirRemoteTaskOptions): BaseTask;
 	createCleanRecordTask(options: TaskOptions): BaseTask;
+	createAddRecordTask(options: AddRecordTaskOptions): BaseTask;
 	createFilenameErrorTask(options: TaskOptions): BaseTask;
 	createSkippedTask(options: SkippedTaskOptions): BaseTask;
 }

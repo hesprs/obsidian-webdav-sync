@@ -34,7 +34,6 @@ interface RunReportSummary {
 	planSummary?: {
 		totalTasks: number;
 		actionableTasks: number;
-		noopTasks: number;
 		skippedTasks: number;
 		warnings?: Array<{ code?: string; messageKey?: string }>;
 	};
@@ -247,7 +246,6 @@ class Logger {
 			lines.push('#### Plan', '');
 			lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
 			lines.push(`- Actionable tasks: ${summary.planSummary.actionableTasks}`);
-			lines.push(`- No-op tasks: ${summary.planSummary.noopTasks}`);
 			lines.push(`- Skipped tasks: ${summary.planSummary.skippedTasks}`, '');
 		}
 
@@ -346,7 +344,6 @@ class Logger {
 		return {
 			totalTasks: this.readNumber(value.totalTasks) ?? 0,
 			actionableTasks: this.readNumber(value.actionableTasks) ?? 0,
-			noopTasks: this.readNumber(value.noopTasks) ?? 0,
 			skippedTasks: this.readNumber(value.skippedTasks) ?? 0,
 			warnings,
 		};

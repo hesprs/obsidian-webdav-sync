@@ -41,7 +41,6 @@ import {
 } from './errors';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
-import NoopTask from './tasks/noop.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
 import SkippedTask from './tasks/skipped.task';
@@ -188,7 +187,6 @@ export class SyncEngine {
 				return currentRun;
 			}
 
-			const noopTasks = tasks.filter((task) => task instanceof NoopTask);
 			const skippedTasks = tasks.filter((task) => task instanceof SkippedTask);
 			let confirmedTasks = tasks.filter((task) => this.isActionableTask(task));
 
@@ -268,9 +266,7 @@ export class SyncEngine {
 				}
 			}
 
-			const confirmedTasksUniq = Array.from(
-				new Set([...confirmedTasks, ...noopTasks, ...skippedTasks]),
-			);
+			const confirmedTasksUniq = Array.from(new Set([...confirmedTasks, ...skippedTasks]));
 			const optimizedTasks = optimizeTasks(confirmedTasksUniq);
 
 			const chunkSize = 200;
@@ -340,16 +336,14 @@ export class SyncEngine {
 	}
 
 	summarizePlan(tasks: BaseTask[], executableTasks: BaseTask[] = tasks): SyncPlanSummary {
-		const noopTasks = tasks.filter((task) => task instanceof NoopTask).length;
 		const skippedTasks = tasks.filter((task) => task instanceof SkippedTask).length;
 		const actionableTasks = executableTasks.filter(
-			(task) => !(task instanceof NoopTask || task instanceof SkippedTask),
+			(task) => !(task instanceof SkippedTask),
 		).length;
 
 		return {
 			totalTasks: tasks.length,
 			actionableTasks,
-			noopTasks,
 			skippedTasks,
 			hasActionableTasks: actionableTasks > 0,
 			requiresConfirmation: false,
@@ -359,11 +353,11 @@ export class SyncEngine {
 	}
 
 	private isActionableTask(task: BaseTask): boolean {
-		return !(task instanceof NoopTask || task instanceof SkippedTask);
+		return !(task instanceof SkippedTask);
 	}
 
 	private isDisplayableTask(task: BaseTask): boolean {
-		return !(task instanceof NoopTask || task instanceof CleanRecordTask);
+		return !(task instanceof CleanRecordTask);
 	}
 
 	private createSyncRecord() {

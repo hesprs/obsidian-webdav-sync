@@ -23,8 +23,6 @@ export default function getTaskName(task: BaseTask) {
 			return i18n.t('sync.fileOp.createRemoteDir');
 		case 'MkdirsRemoteTask':
 			return i18n.t('sync.fileOp.createRemoteDirs');
-		case 'NoopTask':
-			return i18n.t('sync.fileOp.noop');
 		case 'PullTask':
 			return i18n.t('sync.fileOp.download');
 		case 'PushTask':

@@ -153,33 +153,26 @@ export default class SyncProgressModal extends Modal {
 
 			const icon = item.createSpan({ cls: 'text-[var(--text-muted)]' });
 
-			if (file instanceof CleanRecordTask) {
-				setIcon(icon, 'archive-x');
-			} else if (file instanceof ConflictResolveTask) {
-				setIcon(icon, 'git-merge');
-			} else if (file instanceof FilenameErrorTask) {
-				setIcon(icon, 'refresh-cw-off');
-			} else if (
+			if (file instanceof CleanRecordTask) setIcon(icon, 'archive-x');
+			else if (file instanceof ConflictResolveTask) setIcon(icon, 'git-merge');
+			else if (file instanceof FilenameErrorTask) setIcon(icon, 'refresh-cw-off');
+			else if (
 				file instanceof MkdirLocalTask ||
 				file instanceof MkdirRemoteTask ||
 				file instanceof MkdirsRemoteTask
-			) {
+			)
 				setIcon(icon, 'folder-plus');
-			} else if (file instanceof PullTask) {
-				setIcon(icon, 'arrow-down-narrow-wide');
-			} else if (file instanceof PushTask) {
-				setIcon(icon, 'arrow-up-narrow-wide');
-			} else if (
+			else if (file instanceof PullTask) setIcon(icon, 'arrow-down-narrow-wide');
+			else if (file instanceof PushTask) setIcon(icon, 'arrow-up-narrow-wide');
+			else if (
 				file instanceof RemoveLocalTask ||
 				file instanceof RemoveRemoteTask ||
 				file instanceof RemoveRemoteRecursivelyTask
-			) {
+			)
 				setIcon(icon, 'trash');
-			} else if (file instanceof SkippedTask) {
+			else if (file instanceof SkippedTask) {
 				setIcon(icon, 'chevron-last');
-			} else {
-				setIcon(icon, 'arrow-left-right');
-			}
+			} else setIcon(icon, 'arrow-left-right');
 
 			const typeLabel = item.createSpan({
 				cls: 'flex-none w-17 md:w-24 text-[var(--text-normal)] font-500',
