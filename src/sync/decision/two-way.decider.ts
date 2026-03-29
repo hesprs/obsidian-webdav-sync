@@ -1,3 +1,4 @@
+import type { StatModel } from '~/model/stat.model';
 import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
@@ -5,6 +6,7 @@ import { SyncRunKind } from '~/model/sync-record.model';
 import { joinRemotePath } from '~/platform/path/remote-path';
 import type { SyncEngine } from '..';
 import type {
+	AddRecordTaskOptions,
 	ConflictTaskOptions,
 	MkdirLocalTaskOptions,
 	MkdirRemoteTaskOptions,
@@ -12,21 +14,20 @@ import type {
 	PlannedRemoteSnapshot,
 	PullTaskOptions,
 	PushTaskOptions,
-	RemoveLocalTaskOptions,
-	RemoveRemoteTaskOptions,
 	SkippedTaskOptions,
 	SyncDecisionInput,
 	TaskFactory,
 	TaskOptions,
 } from './sync-decision.interface';
+import AddRecordTask from '../tasks/add-record.task';
 import CleanRecordTask from '../tasks/clean-record.task';
 import ConflictResolveTask from '../tasks/conflict-resolve.task';
 import FilenameErrorTask from '../tasks/filename-error.task';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
-import NoopTask from '../tasks/noop.task';
 import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
+import RemoveLocalRecursivelyTask from '../tasks/remove-local-recursively.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
 import SkippedTask from '../tasks/skipped.task';
@@ -132,11 +133,11 @@ export default class TwoWaySyncDecider {
 				new PushTask({ ...commonTaskOptions, ...options }),
 			createConflictResolveTask: (options: ConflictTaskOptions) =>
 				new ConflictResolveTask({ ...commonTaskOptions, ...options }),
-			createNoopTask: (options: TaskOptions) =>
-				new NoopTask({ ...commonTaskOptions, ...options }),
-			createRemoveLocalTask: (options: RemoveLocalTaskOptions) =>
+			createRemoveLocalTask: (options: TaskOptions) =>
 				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
-			createRemoveRemoteTask: (options: RemoveRemoteTaskOptions) =>
+			createRemoveLocalRecursivelyTask: (options: TaskOptions) =>
+				new RemoveLocalRecursivelyTask({ ...commonTaskOptions, ...options }),
+			createRemoveRemoteTask: (options: TaskOptions) =>
 				new RemoveRemoteTask({ ...commonTaskOptions, ...options }),
 			createMkdirLocalTask: (options: MkdirLocalTaskOptions) =>
 				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
@@ -144,6 +145,8 @@ export default class TwoWaySyncDecider {
 				new MkdirRemoteTask({ ...commonTaskOptions, ...options }),
 			createCleanRecordTask: (options: TaskOptions) =>
 				new CleanRecordTask({ ...commonTaskOptions, ...options }),
+			createAddRecordTask: (options: AddRecordTaskOptions) =>
+				new AddRecordTask({ ...commonTaskOptions, ...options }),
 			createFilenameErrorTask: (options: TaskOptions) =>
 				new FilenameErrorTask({ ...commonTaskOptions, ...options }),
 			createSkippedTask: (options: SkippedTaskOptions) =>
@@ -170,7 +173,7 @@ export default class TwoWaySyncDecider {
 
 		const createPlannedLocalFileSnapshot = async (
 			localPath: string,
-			localStat: PlannedLocalSnapshot['stat'],
+			localStat: StatModel,
 		): Promise<PlannedLocalSnapshot | undefined> => {
 			const cached = plannedLocalFileSnapshots.get(localPath);
 			if (cached) return await cached;
@@ -194,12 +197,10 @@ export default class TwoWaySyncDecider {
 
 		const createPlannedRemoteFileSnapshot = async (
 			remotePath: string,
-			remoteStat: PlannedRemoteSnapshot['stat'],
+			remoteStat: StatModel,
 		): Promise<PlannedRemoteSnapshot | undefined> => {
 			const cached = plannedRemoteFileSnapshots.get(remotePath);
-			if (cached) {
-				return await cached;
-			}
+			if (cached) return await cached;
 
 			const promise = (async (): Promise<PlannedRemoteSnapshot | undefined> => {
 				if (remoteStat.isDir) return undefined;
@@ -221,7 +222,7 @@ export default class TwoWaySyncDecider {
 
 		const createPlannedLocalFolderSnapshot = (
 			localPath: string,
-			localStat: PlannedLocalSnapshot['stat'],
+			localStat: StatModel,
 		): PlannedLocalSnapshot | undefined => {
 			const cached = plannedLocalFolderSnapshots.get(localPath);
 			if (cached) return cached;
@@ -237,7 +238,7 @@ export default class TwoWaySyncDecider {
 
 		const createPlannedRemoteFolderSnapshot = (
 			remotePath: string,
-			remoteStat: PlannedRemoteSnapshot['stat'],
+			remoteStat: StatModel,
 		): PlannedRemoteSnapshot | undefined => {
 			const cached = plannedRemoteFolderSnapshots.get(remotePath);
 			if (cached) return cached;

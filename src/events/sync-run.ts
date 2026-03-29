@@ -37,7 +37,6 @@ export interface SyncRunWarning {
 export interface SyncPlanSummary {
 	totalTasks: number;
 	actionableTasks: number;
-	noopTasks: number;
 	skippedTasks: number;
 	hasActionableTasks: boolean;
 	requiresConfirmation: boolean;

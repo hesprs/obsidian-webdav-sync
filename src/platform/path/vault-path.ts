@@ -8,9 +8,7 @@ function splitVaultSegments(path: string): string[] {
 	const resolved: string[] = [];
 
 	for (const segment of segments) {
-		if (segment === '' || segment === '.') {
-			continue;
-		}
+		if (segment === '' || segment === '.') continue;
 		if (segment === '..') {
 			resolved.pop();
 			continue;

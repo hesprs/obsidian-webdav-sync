@@ -228,7 +228,8 @@ export default class ObservabilityService {
 		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
 		const stageText = i18n.t(`sync.planningStage.${subStage}`);
 		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
-		return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
+		const percent = Math.round((completedWorkUnits / totalWorkUnits) * 10000) / 100;
+		return `${syncType} · ${stageText} ${percent}%`;
 	}
 
 	private getNoticeText(

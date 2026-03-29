@@ -120,7 +120,7 @@ export default class ConflictResolveTask extends BaseTask {
 				case ConflictStrategy.KeepRemote:
 					return await this.execKeepRemote(snapshots);
 				case ConflictStrategy.Skip:
-					return { success: true, skipRecord: true } as const;
+					return { success: true } as const;
 			}
 		} catch (e) {
 			logger.error(`Failed to resolve conflict: ${this.localPath}`, e);

@@ -2,32 +2,22 @@ import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
-import {
-	isAbsoluteRemotePath,
-	joinRemotePath,
-	normalizeRemotePath,
-} from '~/platform/path/remote-path';
-import { normalizeVaultPath } from '~/platform/path/vault-path';
 import getTaskName from '~/utils/get-task-name';
+import type { TaskOptions } from '../decision/sync-decision.interface';
 
-export interface BaseTaskOptions {
+export interface BaseTaskOptions extends TaskOptions {
 	vault: Vault;
 	webdav: WebDAVClient;
-	remoteBaseDir: string;
-	remotePath: string;
-	localPath: string;
 	syncRecord: SyncRecord;
 }
 
 interface TaskSuccessResult {
 	success: true;
-	skipRecord?: boolean;
 }
 
 interface TaskFailureResult {
 	success: false;
 	error: TaskError;
-	skipRecord?: boolean;
 }
 
 export type TaskResult = TaskSuccessResult | TaskFailureResult;
@@ -47,29 +37,22 @@ export abstract class BaseTask {
 		return this.options.webdav;
 	}
 
-	get remoteBaseDir() {
-		return this.options.remoteBaseDir;
-	}
-
 	get remotePath() {
-		return isAbsoluteRemotePath(this.options.remotePath)
-			? normalizeRemotePath(this.options.remotePath)
-			: joinRemotePath(this.remoteBaseDir, this.options.remotePath);
+		return this.options.remotePath;
 	}
 
 	get localPath() {
-		return normalizeVaultPath(this.options.localPath);
+		return this.options.localPath;
 	}
 
 	abstract exec(): MaybePromise<TaskResult>;
 
 	toJSON() {
-		const { localPath, remoteBaseDir, remotePath } = this;
+		const { localPath, remotePath } = this;
 		const taskName = getTaskName(this);
 		return {
 			taskName,
 			localPath,
-			remoteBaseDir,
 			remotePath,
 		};
 	}

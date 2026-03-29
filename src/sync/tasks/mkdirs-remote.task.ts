@@ -65,13 +65,4 @@ export default class MkdirsRemoteTask extends BaseTask {
 			...this.additionalPaths,
 		];
 	}
-
-	toJSON() {
-		const base = super.toJSON();
-		return {
-			...base,
-			additionalPaths: this.additionalPaths,
-			totalDirs: this.getAllPaths().length,
-		};
-	}
 }
