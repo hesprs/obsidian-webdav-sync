@@ -21,15 +21,15 @@ export default class MkdirLocalTask extends BaseTask {
 				}
 			}
 			const localStat = statVaultItem(this.vault, this.localPath);
-			if (!localStat || !localStat.isDir)
+			const remoteStat = this.options.remote?.stat;
+			if (!localStat || !localStat.isDir || !remoteStat)
 				throw new Error(
 					`failed to read local directory stat after creation: ${this.localPath}`,
 				);
 
-			await this.syncRecord.upsertSyncedDirectoryFromSnapshots({
-				localPath: this.localPath,
-				remotePath: this.remotePath,
-				remoteStat: this.options.remote?.stat,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
+				remoteStat,
 				localStat,
 			});
 

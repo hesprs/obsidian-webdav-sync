@@ -1,6 +1,6 @@
-import { isNil, partial } from 'lodash-es';
+import { isNil } from 'lodash-es';
 import { normalizePath, TFolder, Vault } from 'obsidian';
-import type { StatModel } from '~/model/stat.model';
+import type { StatsMap } from '~/types';
 import type { MaybePromise } from '~/types';
 import GlobMatch from './glob-match';
 import { statVaultItem } from './stat-vault-item';
@@ -19,7 +19,7 @@ interface TraverseVaultOptions {
 
 export async function traverseVault({ vault, from, onProgress }: TraverseVaultOptions) {
 	const queue = [from];
-	const res: StatModel[] = [];
+	const res: StatsMap = new Map();
 	const ignores = [
 		new GlobMatch(`${vault.configDir}/plugins/*/node_modules`, {
 			caseSensitive: true,
@@ -40,14 +40,15 @@ export async function traverseVault({ vault, from, onProgress }: TraverseVaultOp
 		let folders = folder.children.filter((f) => f instanceof TFolder).map((f) => f.path);
 		folders = folders.filter(folderFilter);
 		queue.push(...folders);
-		res.push(
-			...[...files, ...folders]
-				.map(partial(statVaultItem, vault))
-				.filter((content) => !isNil(content)),
-		);
+		[...files, ...folders]
+			.map((path) => {
+				return statVaultItem(vault, path);
+			})
+			.filter((content) => !isNil(content))
+			.forEach((content) => res.set(content.path, content));
 		await onProgress({
-			processedDirectories: res.length,
-			totalDirectories: res.length + queue.length,
+			processedDirectories: res.size,
+			totalDirectories: res.size + queue.length,
 			currentDirectory: from,
 		});
 	}

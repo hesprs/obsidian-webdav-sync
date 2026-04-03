@@ -19,17 +19,16 @@ import { finalizeSyncRun } from '~/events/sync-terminate';
 import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
-import { SyncRunKind } from '~/model/sync-record.model';
-import { normalizeRemoteDir, remoteDirname } from '~/platform/path/remote-path';
-import { vaultDirname } from '~/platform/path/vault-path';
+import { remoteDirname, vaultDirname } from '~/platform/path';
 import { useSettings } from '~/settings';
 import { SyncRecord } from '~/storage';
+import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import { ResumableWebDAVTraversal } from '~/utils/traverse-webdav';
+import { WebDAVTraversal } from '~/utils/traverse-webdav';
 import type { PlannedPathSnapshot } from './decision/sync-decision.interface';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
@@ -39,22 +38,17 @@ import {
 	SyncRetryExhaustedError,
 	toError,
 } from './errors';
+import AddRecordTask from './tasks/add-record.task';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
-import SkippedTask from './tasks/skipped.task';
 import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
 import { optimizeTasks } from './utils/optimize-tasks';
 
 export enum SyncStartMode {
 	MANUAL_SYNC = 'manual_sync',
 	AUTO_SYNC = 'auto_sync',
-}
-
-export interface PreparedSyncPlan {
-	readonly tasks: BaseTask[];
-	readonly hasActionableTasks: boolean;
 }
 
 interface SyncResultSummary {
@@ -108,7 +102,7 @@ export class SyncEngine {
 		options?: {
 			onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
 		},
-	): Promise<PreparedSyncPlan> {
+	): Promise<BaseTask[]> {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
@@ -119,31 +113,16 @@ export class SyncEngine {
 		});
 		this.throwIfCancelled();
 
-		if (runKind === SyncRunKind.normal) {
-			const remoteRecord = await syncRecord.getRemoteRecord();
-			await syncRecord.setRemoteRecord({
-				...remoteRecord,
-				lastNormalSyncAt: Date.now(),
-				source: 'normal-sync',
-			});
-			this.throwIfCancelled();
-		}
-
-		const hasActionableTasks = tasks.some((task) => this.isActionableTask(task));
-
-		return Object.freeze({
-			tasks,
-			hasActionableTasks,
-		});
+		return tasks;
 	}
 
 	async start({
 		request,
-		plan,
+		tasks: passedTasks,
 		run,
 	}: {
 		request: SyncExecutionRequest;
-		plan?: PreparedSyncPlan;
+		tasks?: BaseTask[];
 		run: SyncRunSnapshot;
 	}): Promise<SyncRunSnapshot> {
 		try {
@@ -151,8 +130,7 @@ export class SyncEngine {
 
 			const settings = this.settings;
 			const syncRecord = this.createSyncRecord();
-			const preparedPlan = plan ?? (await this.preparePlan(request.runKind));
-			const tasks = preparedPlan.tasks;
+			let tasks = passedTasks ?? (await this.preparePlan(request.runKind));
 			let currentRun = updateSyncRunSnapshot(run, {
 				planSummary: this.summarizePlan(tasks),
 			});
@@ -187,11 +165,8 @@ export class SyncEngine {
 				return currentRun;
 			}
 
-			const skippedTasks = tasks.filter((task) => task instanceof SkippedTask);
-			let confirmedTasks = tasks.filter((task) => this.isActionableTask(task));
-
-			const firstTaskIdxNeedingConfirmation = confirmedTasks.findIndex(
-				(t) => !(t instanceof CleanRecordTask),
+			const firstTaskIdxNeedingConfirmation = tasks.findIndex((t) =>
+				this.isDisplayableTask(t),
 			);
 
 			if (this.isCancelled) {
@@ -215,11 +190,8 @@ export class SyncEngine {
 					},
 				});
 				emitSyncRun(currentRun);
-				const confirmExec = await new TaskListConfirmModal(
-					this.app,
-					confirmedTasks,
-				).openAndWait();
-				if (confirmExec.confirm) confirmedTasks = confirmExec.tasks;
+				const confirmExec = await new TaskListConfirmModal(this.app, tasks).openAndWait();
+				if (confirmExec.confirm) tasks = confirmExec.tasks;
 				else {
 					currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
 					return currentRun;
@@ -231,7 +203,7 @@ export class SyncEngine {
 				request.mode === SyncStartMode.AUTO_SYNC &&
 				settings.confirmBeforeDeleteInAutoSync
 			) {
-				const removeLocalTasks = confirmedTasks.filter((t) => t instanceof RemoveLocalTask);
+				const removeLocalTasks = tasks.filter((t) => t instanceof RemoveLocalTask);
 				if (removeLocalTasks.length > 0) {
 					currentRun = updateSyncRunSnapshot(currentRun, {
 						stage: 'awaiting_confirmation',
@@ -256,9 +228,8 @@ export class SyncEngine {
 						removeLocalTasks,
 					).openAndWait();
 
-					confirmedTasks = this.rebuildConfirmedTasksAfterDeleteConfirmation({
-						confirmedTasks,
-						originalTasks: tasks,
+					tasks = this.rebuildConfirmedTasksAfterDeleteConfirmation({
+						tasks,
 						tasksToDelete,
 						tasksToReupload,
 						syncRecord,
@@ -266,8 +237,7 @@ export class SyncEngine {
 				}
 			}
 
-			const confirmedTasksUniq = Array.from(new Set([...confirmedTasks, ...skippedTasks]));
-			const optimizedTasks = optimizeTasks(confirmedTasksUniq);
+			const optimizedTasks = optimizeTasks(tasks);
 
 			const chunkSize = 200;
 			const taskChunks = chunk(optimizedTasks, chunkSize);
@@ -281,7 +251,7 @@ export class SyncEngine {
 			const allCompletedTasks: BaseTask[] = [];
 			currentRun = updateSyncRunSnapshot(currentRun, {
 				stage: 'executing',
-				planSummary: this.summarizePlan(tasks, optimizedTasks),
+				planSummary: this.summarizePlan(optimizedTasks),
 				progressSummary: this.createProgressSummary(
 					totalDisplayableTasks,
 					allCompletedTasks,
@@ -335,38 +305,30 @@ export class SyncEngine {
 		}
 	}
 
-	summarizePlan(tasks: BaseTask[], executableTasks: BaseTask[] = tasks): SyncPlanSummary {
-		const skippedTasks = tasks.filter((task) => task instanceof SkippedTask).length;
-		const actionableTasks = executableTasks.filter(
-			(task) => !(task instanceof SkippedTask),
-		).length;
-
+	summarizePlan(tasks: BaseTask[]): SyncPlanSummary {
 		return {
 			totalTasks: tasks.length,
-			actionableTasks,
-			skippedTasks,
-			hasActionableTasks: actionableTasks > 0,
 			requiresConfirmation: false,
 			requiresDeleteConfirmation: false,
 			warnings: [],
 		};
 	}
 
-	private isActionableTask(task: BaseTask): boolean {
-		return !(task instanceof SkippedTask);
-	}
-
 	private isDisplayableTask(task: BaseTask): boolean {
-		return !(task instanceof CleanRecordTask);
+		return !(task instanceof CleanRecordTask) && !(task instanceof AddRecordTask);
 	}
 
 	private createSyncRecord() {
-		return new SyncRecord(this.getStateKey(), this.remoteBaseDir, this.plugin.syncStateStore);
+		return new SyncRecord(
+			this.getStateKey(),
+			this.plugin.syncStateStore,
+			this.plugin.baseTextStore,
+		);
 	}
 
 	private async createTraversal() {
 		const settings = await useSettings();
-		return new ResumableWebDAVTraversal({
+		return new WebDAVTraversal({
 			remoteServerUrl: this.options.remoteServerUrl || this.settings.serverUrl,
 			token: this.options.token,
 			remoteBaseDir: this.options.remoteBaseDir,
@@ -376,27 +338,22 @@ export class SyncEngine {
 				serverUrl: this.options.remoteServerUrl || settings.serverUrl,
 				account: settings.account,
 			}),
-			syncStateStore: this.plugin.syncStateStore,
-			saveInterval: 1,
 		});
 	}
 
 	private rebuildConfirmedTasksAfterDeleteConfirmation({
-		confirmedTasks,
-		originalTasks,
+		tasks,
 		tasksToDelete,
 		tasksToReupload,
 		syncRecord,
 	}: {
-		confirmedTasks: BaseTask[];
-		originalTasks: BaseTask[];
+		tasks: BaseTask[];
 		tasksToDelete: RemoveLocalTask[];
 		tasksToReupload: RemoveLocalTask[];
 		syncRecord: SyncRecord;
 	}): BaseTask[] {
 		const { mkdirTasks, pushTasks } = this.buildReuploadTasks({
-			confirmedTasks,
-			originalTasks,
+			tasks,
 			tasksToReupload,
 			syncRecord,
 		});
@@ -404,7 +361,7 @@ export class SyncEngine {
 		const otherTasks: BaseTask[] = [];
 		const deleteTasks: RemoveLocalTask[] = [];
 
-		for (const task of confirmedTasks) {
+		for (const task of tasks) {
 			if (!(task instanceof RemoveLocalTask)) {
 				otherTasks.push(task);
 				continue;
@@ -417,24 +374,18 @@ export class SyncEngine {
 	}
 
 	private buildReuploadTasks({
-		confirmedTasks,
-		originalTasks,
+		tasks,
 		tasksToReupload,
 		syncRecord,
 	}: {
-		confirmedTasks: BaseTask[];
-		originalTasks: BaseTask[];
+		tasks: BaseTask[];
 		tasksToReupload: RemoveLocalTask[];
 		syncRecord: SyncRecord;
 	}): {
 		mkdirTasks: MkdirRemoteTask[];
 		pushTasks: PushTask[];
 	} {
-		const snapshotIndex = this.buildReuploadSnapshotIndex([
-			...originalTasks,
-			...confirmedTasks,
-			...tasksToReupload,
-		]);
+		const snapshotIndex = this.buildReuploadSnapshotIndex([...tasks, ...tasksToReupload]);
 		const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
 		const pushTasks: PushTask[] = [];
 		const knownRemotePaths = new Set<string>(snapshotIndex.knownRemoteDirPaths);
@@ -447,11 +398,10 @@ export class SyncEngine {
 			);
 
 			this.ensureReuploadParentDir({
-				confirmedTasks,
+				tasks,
 				knownRemotePaths,
 				localPath: task.localPath,
 				mkdirTasksMap,
-				originalTasks,
 				remotePath: task.remotePath,
 				snapshotIndex,
 				syncRecord,
@@ -498,39 +448,34 @@ export class SyncEngine {
 	}
 
 	private ensureReuploadParentDir({
-		confirmedTasks,
+		tasks,
 		knownRemotePaths,
 		localPath,
 		mkdirTasksMap,
-		originalTasks,
 		remotePath,
 		snapshotIndex,
 		syncRecord,
 	}: {
-		confirmedTasks: BaseTask[];
+		tasks: BaseTask[];
 		knownRemotePaths: Set<string>;
 		localPath: string;
 		mkdirTasksMap: Map<string, MkdirRemoteTask>;
-		originalTasks: BaseTask[];
 		remotePath: string;
 		snapshotIndex: ReuploadSnapshotIndex;
 		syncRecord: SyncRecord;
 	}): void {
 		const parentLocalPath = vaultDirname(localPath);
-		const parentRemotePath = normalizeRemoteDir(remoteDirname(remotePath));
+		const parentRemotePath = remoteDirname(remotePath);
 
 		if (parentLocalPath === '.' || parentLocalPath === '') return;
 
 		const parentAlreadyHandled =
 			mkdirTasksMap.has(parentRemotePath) ||
 			knownRemotePaths.has(parentRemotePath) ||
-			this.hasMkdirTaskForPath(originalTasks, parentRemotePath) ||
-			this.hasMkdirTaskForPath(confirmedTasks, parentRemotePath) ||
+			this.hasMkdirTaskForPath(tasks, parentRemotePath) ||
 			snapshotIndex.knownRemoteDirPaths.has(parentRemotePath);
 
-		if (parentAlreadyHandled) {
-			return;
-		}
+		if (parentAlreadyHandled) return;
 
 		const parentSnapshot = this.findPlannedSnapshot(
 			snapshotIndex,
@@ -585,9 +530,7 @@ export class SyncEngine {
 							snapshot.remotePath,
 						);
 					} else if (snapshot.remote?.stat) {
-						const parentRemotePath = normalizeRemoteDir(
-							remoteDirname(snapshot.remotePath),
-						);
+						const parentRemotePath = remoteDirname(snapshot.remotePath);
 						this.markRemotePathAndParentsAsExisting(
 							knownRemoteDirPaths,
 							parentRemotePath,
@@ -678,7 +621,7 @@ export class SyncEngine {
 		while (currentPath && currentPath !== '.' && currentPath !== '' && currentPath !== '/') {
 			if (knownRemotePaths.has(currentPath)) return;
 			knownRemotePaths.add(currentPath);
-			currentPath = normalizeRemoteDir(remoteDirname(currentPath));
+			currentPath = remoteDirname(currentPath);
 		}
 	}
 
@@ -709,7 +652,7 @@ export class SyncEngine {
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
 		const webdav = this.webdav;
-		const remoteBaseDir = normalizeRemoteDir(this.remoteBaseDir);
+		const remoteBaseDir = this.remoteBaseDir;
 
 		let remoteBaseDirExists = await this.retryWebDAVCall(() => webdav.exists(remoteBaseDir));
 
@@ -918,7 +861,7 @@ export class SyncEngine {
 	}
 
 	get remoteBaseDir() {
-		return normalizeRemoteDir(this.options.remoteBaseDir);
+		return this.options.remoteBaseDir;
 	}
 
 	get settings() {

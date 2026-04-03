@@ -1,8 +1,6 @@
-import { parse as bytesParse } from 'bytes-iec';
-import type { StatModel } from '~/model/stat.model';
+import type { StatModel } from '~/types';
 import { SyncPlanningSubStage } from '~/events';
-import { remotePathToAbsolute } from '~/platform/path/remote-path';
-import { normalizeVaultPath } from '~/platform/path/vault-path';
+import { inferRemotePathFromVault } from '~/platform/path';
 import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import logger from '~/utils/logger';
@@ -12,11 +10,8 @@ import type {
 	SyncDecisionInput,
 } from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
-import { SkipReason } from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
-import { getIgnoredPathsInFolder, hasIgnoredInFolder } from '../utils/has-ignored-in-folder';
 import { isSameTime } from '../utils/is-same-time';
-import { hasFolderContentChanged } from './has-folder-content-changed';
 
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {
@@ -25,52 +20,29 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		currentRemoteStats: remoteStats,
 		previousRemoteRecords,
 		previousLocalRecords,
-		remoteBaseDir,
 		compareFileContent,
 		onProgress,
 		taskFactory,
+		remoteBaseDir,
 		createPlannedLocalFileSnapshot,
 		createPlannedRemoteFileSnapshot,
 		createPlannedLocalFolderSnapshot,
 		createPlannedRemoteFolderSnapshot,
+		getBaseText,
 	} = input;
-
-	let maxFileSize = Infinity;
-	const maxFileSizeStr = settings.skipLargeFiles.maxSize.trim();
-	if (maxFileSizeStr !== '') {
-		maxFileSize = bytesParse(maxFileSizeStr, { mode: 'jedec' }) ?? Infinity;
+	const syncRecords = new Map<string, { local: StatModel; remote: StatModel }>();
+	for (const record of previousLocalRecords) {
+		const [key, local] = record;
+		const remote = previousRemoteRecords.get(key);
+		if (!remote) throw new Error(`Asymmetric records found for ${key} (remote missing)`);
+		syncRecords.set(key, { local, remote });
 	}
 
-	// Filter out ignored files and extract StatModel from FsWalkResult
-	const localStatsFiltered = localStats.filter((item) => !item.ignored).map((item) => item.stat);
-	const remoteStatsFiltered = remoteStats
-		.filter((item) => !item.ignored)
-		.map((item) => item.stat);
-
-	const localStatsMap = new Map(localStatsFiltered.map((item) => [item.path, item]));
-	const remoteStatsMap = new Map(remoteStatsFiltered.map((item) => [item.path, item]));
-	const previousRemoteStatsMap = new Map(previousRemoteRecords.map((item) => [item.path, item]));
-	const syncRecords = new Map(
-		Array.from(previousLocalRecords.entries()).flatMap(([path, record]) => {
-			const remote = previousRemoteStatsMap.get(path);
-			if (!remote) return [];
-			return [
-				[
-					path,
-					{
-						local: record.local,
-						remote,
-						baseText: record.baseText,
-					},
-				],
-			] as const;
-		}),
-	);
-	const mixedPath = new Set([...localStatsMap.keys(), ...remoteStatsMap.keys()]);
+	const mixedPath = new Set([...localStats.keys(), ...remoteStats.keys()]);
 
 	logger.debug(
 		'local state',
-		localStatsFiltered.map((d) => ({
+		Array.from(localStats.values()).map((d) => ({
 			path: d.path,
 			size: d.isDir ? undefined : d.size,
 			isDir: d.isDir,
@@ -78,7 +50,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	);
 	logger.debug(
 		'remote state',
-		remoteStatsFiltered.map((d) => ({
+		Array.from(remoteStats.values()).map((d) => ({
 			path: d.path,
 			size: d.isDir ? undefined : d.size,
 			isDir: d.isDir,
@@ -230,11 +202,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	// * sync files
 	for (const p of mixedPath) {
 		await updateProgress();
-		const remote = remoteStatsMap.get(p);
-		const local = localStatsMap.get(p);
+		const remote = remoteStats.get(p);
+		const local = localStats.get(p);
 		const record = syncRecords.get(p);
-		const localPath = normalizeVaultPath(p);
-		const remotePath = remotePathToAbsolute(remoteBaseDir, p);
+		const localPath = local?.path ?? p;
+		const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
 
 		const options = {
 			remotePath,
@@ -252,8 +224,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
 				if (local) {
 					localChanged = !isSameTime(local.mtime, record.local.mtime);
-					if (localChanged && record.baseText)
-						localChanged = !(await compareFileContent(local.path, record.baseText));
+					if (localChanged) {
+						const baseText = await getBaseText(p);
+						if (baseText)
+							localChanged = !(await compareFileContent(local.path, baseText));
+					}
 					if (remoteChanged && localChanged) caseName = 'RECORD_REMOTE_LOCAL_CONFLICT';
 					else if (remoteChanged) caseName = 'RECORD_REMOTE_LOCAL_PULL';
 					else if (localChanged) caseName = 'RECORD_REMOTE_LOCAL_PUSH';
@@ -271,7 +246,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 				if (local) {
 					if (
 						settings.syncMode === SyncMode.LOOSE &&
-						!remote.isDeleted &&
 						!remote.isDir &&
 						remote.size === local.size
 					)
@@ -338,19 +312,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-				if (remote.size > maxFileSize || local.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							maxSize: maxFileSize,
-							remoteSize: remote.size,
-							localSize: local.size,
-						}),
-					);
-					return;
-				}
-
 				if (hasInvalidChar(local.path)) {
 					tasks.push(taskFactory.createFilenameErrorTask(options));
 				} else {
@@ -379,18 +340,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-				if (remote.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							maxSize: maxFileSize,
-							remoteSize: remote.size,
-							localSize: local.size,
-						}),
-					);
-					return;
-				}
 				await createPullTaskWithSnapshot(options, remote);
 			},
 			RECORD_REMOTE_LOCAL_PUSH: async () => {
@@ -406,18 +355,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-				if (local.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							maxSize: maxFileSize,
-							remoteSize: remote.size,
-							localSize: local.size,
-						}),
-					);
-					return;
-				}
 				if (hasInvalidChar(local.path))
 					tasks.push(taskFactory.createFilenameErrorTask(options));
 				else await createPushTaskWithSnapshot(options, local);
@@ -435,17 +372,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-				if (remote.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							maxSize: maxFileSize,
-							remoteSize: remote.size,
-						}),
-					);
-					return;
-				}
 				await createPullTaskWithSnapshot(options, remote);
 			},
 			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
@@ -475,17 +401,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-				if (local.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							localSize: local.size,
-							maxSize: maxFileSize,
-						}),
-					);
-					return;
-				}
 				if (hasInvalidChar(local.path)) {
 					tasks.push(taskFactory.createFilenameErrorTask(options));
 				} else await createPushTaskWithSnapshot(options, local);
@@ -520,20 +435,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						},
 					},
 				);
-
-				if (remote.size > maxFileSize || local.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							remoteSize: remote.size,
-							localSize: local.size,
-							maxSize: maxFileSize,
-						}),
-					);
-					return;
-				}
-
 				if (hasInvalidChar(local.path)) {
 					tasks.push(taskFactory.createFilenameErrorTask(options));
 				} else {
@@ -560,18 +461,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-
-				if (remote.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							remoteSize: remote.size,
-							maxSize: maxFileSize,
-						}),
-					);
-					return;
-				}
 				await createPullTaskWithSnapshot(options, remote);
 			},
 			NORECORD_NOREMOTE_LOCAL_PUSH: async () => {
@@ -586,18 +475,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						localExists: !!local,
 					},
 				});
-
-				if (local.size > maxFileSize) {
-					tasks.push(
-						taskFactory.createSkippedTask({
-							...options,
-							reason: SkipReason.FileTooLarge,
-							localSize: local.size,
-							maxSize: maxFileSize,
-						}),
-					);
-					return;
-				}
 				if (hasInvalidChar(local.path))
 					tasks.push(taskFactory.createFilenameErrorTask(options));
 				else await createPushTaskWithSnapshot(options, local);
@@ -609,11 +486,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 	// * sync folders
 	for (const p of mixedPath) {
-		const remote = remoteStatsMap.get(p);
-		const local = localStatsMap.get(p);
+		const remote = remoteStats.get(p);
+		const local = localStats.get(p);
 		const record = syncRecords.get(p);
-		const localPath = normalizeVaultPath(p);
-		const remotePath = remotePathToAbsolute(remoteBaseDir, p);
+		const localPath = local?.path ?? p;
+		const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
 		if (!(remote?.isDir || local?.isDir)) continue;
 
 		let caseName: keyof typeof operations = 'NONE';
@@ -624,27 +501,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			if (local) {
 				if (remote) caseName = 'LOCAL_REMOTE_RECORD_NOOP';
 				else {
-					localChanged = hasFolderContentChanged(
-						local.path,
-						localStatsFiltered,
-						syncRecords,
-						'local',
-					);
+					localChanged = local.mtime !== record.local.mtime;
 					if (localChanged) caseName = 'LOCAL_NOREMOTE_RECORD_PUSH';
-					else if (hasIgnoredInFolder(local.path, localStats))
-						caseName = 'LOCAL_NOREMOTE_RECORD_SKIP';
 					else caseName = 'LOCAL_NOREMOTE_RECORD_REMOVE';
 				}
 			} else if (remote) {
-				remoteChanged = hasFolderContentChanged(
-					remotePath,
-					remoteStatsFiltered,
-					syncRecords,
-					'remote',
-				);
+				remoteChanged = remote.mtime !== record.remote.mtime;
 				if (remoteChanged) caseName = 'REMOTE_NOLOCAL_RECORD_PULL';
-				else if (hasIgnoredInFolder(remotePath, remoteStats))
-					caseName = 'REMOTE_NOLOCAL_RECORD_SKIP';
 				else caseName = 'REMOTE_NOLOCAL_RECORD_REMOVE';
 			} else caseName = 'NOLOCAL_NOREMOTE_RECORD_UNRECORD';
 		} else {
@@ -729,28 +592,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					remote,
 				);
 			},
-			REMOTE_NOLOCAL_RECORD_SKIP: () => {
-				const ignoredPaths = getIgnoredPathsInFolder(remotePath, remoteStats);
-				logger.debug(`Skip removing remote folder \`${remotePath}\``, {
-					reason: 'remote folder contains ignored items',
-					remotePath,
-					localPath,
-					conditions: {
-						hasIgnoredItems: true,
-						localExists: !!local,
-						recordExists: !!record,
-					},
-					ignoredPaths,
-				});
-				tasks.push(
-					taskFactory.createSkippedTask({
-						localPath,
-						remotePath,
-						reason: SkipReason.FolderContainsIgnoredItems,
-						ignoredPaths,
-					}),
-				);
-			},
 			REMOTE_NOLOCAL_RECORD_REMOVE: () => {
 				logger.debug(`Remove remote folder \`${remotePath}\``, {
 					reason: 'remote folder is removable (no content changes)',
@@ -818,28 +659,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					);
 				}
 			},
-			LOCAL_NOREMOTE_RECORD_SKIP: () => {
-				const ignoredPaths = getIgnoredPathsInFolder(localPath, localStats);
-				logger.debug(`Skip removing local folder \`${localPath}\``, {
-					reason: '(contains ignored items)',
-					remotePath,
-					localPath,
-					conditions: {
-						hasIgnoredItems: true,
-						remoteExists: !!remote,
-						recordExists: !!record,
-					},
-					ignoredPaths,
-				});
-				tasks.push(
-					taskFactory.createSkippedTask({
-						localPath,
-						remotePath,
-						reason: SkipReason.FolderContainsIgnoredItems,
-						ignoredPaths,
-					}),
-				);
-			},
 			LOCAL_NOREMOTE_RECORD_REMOVE: () => {
 				logger.debug(`Remove local folder \`${localPath}\``, {
 					reason: 'local folder is removable (no content changes)',
@@ -870,7 +689,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					},
 				});
 				if (hasInvalidChar(localPath)) {
-					tasks.push(
+					mkdirRemoteTasks.push(
 						taskFactory.createFilenameErrorTask({
 							localPath,
 							remotePath,

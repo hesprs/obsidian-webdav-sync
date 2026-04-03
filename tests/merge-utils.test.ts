@@ -248,18 +248,18 @@ describe('resolveByIntelligentMerge', () => {
 		const params: IntelligentMergeParams = {
 			baseContentText: `This is the first sentence of a long paragraph that serves as a base for testing.
 It contains multiple lines and ideas to simulate a real-world text block.
-The middle section of this paragraph will remain untouched by direct edits from either local or remote.
+The middle section of this paragraph will remain intact by direct edits from either local or remote.
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.`,
 			localContentText: `A new introductory sentence has been added locally.
 This is the first sentence of a long paragraph that serves as a base for testing.
 It contains multiple lines and ideas to simulate a real-world text block.
-The middle section of this paragraph will remain untouched by direct edits from either local or remote.
+The middle section of this paragraph will remain intact by direct edits from either local or remote.
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.`,
 			remoteContentText: `This is the first sentence of a long paragraph that serves as a base for testing.
 It contains multiple lines and ideas to simulate a real-world text block.
-The middle section of this paragraph will remain untouched by direct edits from either local or remote.
+The middle section of this paragraph will remain intact by direct edits from either local or remote.
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.
 And a concluding sentence has been added remotely.`,
@@ -270,7 +270,7 @@ And a concluding sentence has been added remotely.`,
 			`A new introductory sentence has been added locally.
 This is the first sentence of a long paragraph that serves as a base for testing.
 It contains multiple lines and ideas to simulate a real-world text block.
-The middle section of this paragraph will remain untouched by direct edits from either local or remote.
+The middle section of this paragraph will remain intact by direct edits from either local or remote.
 However, changes will occur at the beginning and at the very end of this paragraph.
 This setup helps verify if DMP can handle non-overlapping changes in a larger text body.
 And a concluding sentence has been added remotely.`,

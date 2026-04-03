@@ -12,7 +12,7 @@ export default class RemoveLocalTask extends BaseTask {
 			if (!file) return { success: true } as const;
 
 			await this.vault.trash(file, false);
-			await this.syncRecord.removeLocalRecordPath(this.localPath);
+			await this.syncRecord.removeRecords(this.localPath);
 			return { success: true } as const;
 		} catch (e) {
 			logger.error(`Failed to remove local file: ${this.localPath}`, e);

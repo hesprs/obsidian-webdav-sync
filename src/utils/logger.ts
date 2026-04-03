@@ -33,8 +33,6 @@ interface RunReportSummary {
 	durationMs?: number;
 	planSummary?: {
 		totalTasks: number;
-		actionableTasks: number;
-		skippedTasks: number;
 		warnings?: Array<{ code?: string; messageKey?: string }>;
 	};
 	resultSummary?: {
@@ -245,8 +243,6 @@ class Logger {
 		if (summary.planSummary) {
 			lines.push('#### Plan', '');
 			lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
-			lines.push(`- Actionable tasks: ${summary.planSummary.actionableTasks}`);
-			lines.push(`- Skipped tasks: ${summary.planSummary.skippedTasks}`, '');
 		}
 
 		const warnings = summary.planSummary?.warnings ?? [];
@@ -343,8 +339,6 @@ class Logger {
 
 		return {
 			totalTasks: this.readNumber(value.totalTasks) ?? 0,
-			actionableTasks: this.readNumber(value.actionableTasks) ?? 0,
-			skippedTasks: this.readNumber(value.skippedTasks) ?? 0,
 			warnings,
 		};
 	}

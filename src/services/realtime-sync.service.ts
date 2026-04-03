@@ -1,7 +1,7 @@
 import { getCurrentSyncRun } from '~/events';
-import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
+import { SyncRunKind } from '~/types';
 import type SyncSchedulerService from './sync-scheduler.service';
 import WebDAVSyncPlugin from '..';
 

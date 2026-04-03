@@ -36,9 +36,8 @@ export default class PushTask extends BaseTask {
 			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
 			if (!remoteStat || remoteStat.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat,
 				remoteStat,
 				baseText,
@@ -46,7 +45,10 @@ export default class PushTask extends BaseTask {
 
 			return { success: true } as const;
 		} catch (e) {
-			logger.error(`Failed to push file ${this.localPath}`, e);
+			logger.error(
+				`Failed to push local file ${this.localPath} to remote path ${this.remotePath}`,
+				e,
+			);
 			return { success: false, error: toTaskError(e, this) };
 		}
 	}

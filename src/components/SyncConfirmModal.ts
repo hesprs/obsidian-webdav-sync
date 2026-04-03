@@ -17,7 +17,7 @@ export default class SyncConfirmModal extends Modal {
 		const infoDiv = contentEl.createDiv({ cls: 'sync-info' });
 		infoDiv.createEl('p', {
 			text: i18n.t('sync.confirmModal.remoteDir', {
-				dir: settings.remoteDir || `/${this.app.vault.getName()}/`,
+				dir: this.plugin.remoteBaseDir,
 			}),
 		});
 		infoDiv.createEl('p', {

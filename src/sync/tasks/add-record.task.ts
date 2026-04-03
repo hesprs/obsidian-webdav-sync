@@ -13,9 +13,8 @@ export default class AddRecordTask extends BaseTask {
 			const remoteStat = this.options.remote;
 			if (!localStat || !remoteStat)
 				throw new Error(`Missing local file snapshot for push: ${this.localPath}`);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				localPath: this.localPath,
-				remotePath: this.remotePath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat,
 				remoteStat,
 			});

@@ -1,6 +1,7 @@
-import { Notice, Setting } from 'obsidian';
+import { Notice, Setting, TextComponent } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import i18n from '~/i18n';
+import { normalizeBaseDir } from '~/platform/path';
 import handleInput from '~/utils/handle-input';
 import BaseSettings from './settings.base';
 
@@ -23,6 +24,7 @@ export default class AccountSettings extends BaseSettings {
 	}
 
 	display() {
+		let remoteBaseDirText: TextComponent | undefined;
 		this.containerEl.empty();
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.backupWarning.name'))
@@ -71,12 +73,16 @@ export default class AccountSettings extends BaseSettings {
 			.setName(i18n.t('settings.remoteDir.name'))
 			.setDesc(i18n.t('settings.remoteDir.desc'))
 			.addText((text) => {
+				remoteBaseDirText = text;
 				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder')).setValue(
 					this.plugin.remoteBaseDir,
 				);
-				text.inputEl.addEventListener('blur', () =>
-					handleInput(text, this.plugin, 'remoteDir'),
-				);
+				text.inputEl.addEventListener('blur', () => {
+					handleInput(text, this.plugin, 'remoteDir', (original) =>
+						normalizeBaseDir(original),
+					);
+					text.setValue(this.plugin.settings.remoteDir);
+				});
 			})
 			.addButton((button) => {
 				button.setIcon('folder').onClick(() => {
@@ -85,7 +91,9 @@ export default class AccountSettings extends BaseSettings {
 						return;
 					}
 					new SelectRemoteBaseDirModal(this.app, this.plugin, (path) => {
+						if (path === this.plugin.settings.remoteDir) return;
 						this.plugin.settings.remoteDir = path;
+						remoteBaseDirText?.setValue(path);
 						void this.plugin.saveSettings();
 					}).open();
 				});

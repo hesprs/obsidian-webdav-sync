@@ -171,3 +171,9 @@ export function needIncludeFromGlobRules(
 	}
 	return true;
 }
+
+export function buildRules(rules: GlobMatchOptions[] = []): GlobMatch[] {
+	return rules
+		.filter((opt) => !isVoidGlobMatchOptions(opt))
+		.map(({ expr, options }) => new GlobMatch(expr, options));
+}

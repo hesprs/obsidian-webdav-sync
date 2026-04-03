@@ -1,11 +1,9 @@
 import type { TAbstractFile } from 'obsidian';
 import type { SyncPlanningProgress } from '~/events';
-import type { FsWalkResult } from '~/fs/fs.interface';
-import type { StatModel } from '~/model/stat.model';
-import type { LocalRecordModel } from '~/model/sync-record.model';
 import type { BinaryLike } from '~/platform/binary';
+import type { StatsMap } from '~/types';
+import type { StatModel } from '~/types';
 import { SyncMode } from '~/settings';
-import type { SkipReason } from '../tasks/skipped.task';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { BaseTask } from '../tasks/task.interface';
 
@@ -75,32 +73,6 @@ export interface AddRecordTaskOptions extends TaskOptions {
 	remote?: StatModel;
 }
 
-export type SkippedTaskOptions = TaskOptions &
-	(
-		| {
-				reason: SkipReason.FileTooLarge;
-				maxSize: number;
-				remoteSize: number;
-				localSize?: number;
-		  }
-		| {
-				reason: SkipReason.FileTooLarge;
-				maxSize: number;
-				remoteSize?: number;
-				localSize: number;
-		  }
-		| {
-				reason: SkipReason.FileTooLarge;
-				maxSize: number;
-				remoteSize: number;
-				localSize: number;
-		  }
-		| {
-				reason: SkipReason.FolderContainsIgnoredItems;
-				ignoredPaths: string[];
-		  }
-	);
-
 export interface TaskFactory {
 	createPullTask(options: PullTaskOptions): BaseTask;
 	createPushTask(options: PushTaskOptions): BaseTask;
@@ -113,33 +85,33 @@ export interface TaskFactory {
 	createCleanRecordTask(options: TaskOptions): BaseTask;
 	createAddRecordTask(options: AddRecordTaskOptions): BaseTask;
 	createFilenameErrorTask(options: TaskOptions): BaseTask;
-	createSkippedTask(options: SkippedTaskOptions): BaseTask;
 }
 
 export interface SyncDecisionInput {
 	settings: SyncDecisionSettings;
-	currentLocalStats: FsWalkResult[];
-	currentRemoteStats: FsWalkResult[];
-	previousRemoteRecords: StatModel[];
-	previousLocalRecords: Map<string, LocalRecordModel>;
+	currentLocalStats: StatsMap;
+	currentRemoteStats: StatsMap;
+	previousRemoteRecords: StatsMap;
+	previousLocalRecords: StatsMap;
 	remoteBaseDir: string;
 	compareFileContent: (filePath: string, baseText: string) => Promise<boolean>;
 	onProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
 	createPlannedLocalFileSnapshot: (
 		localPath: string,
-		localStat: PlannedLocalSnapshot['stat'],
+		localStat: StatModel,
 	) => Promise<PlannedLocalSnapshot | undefined>;
 	createPlannedRemoteFileSnapshot: (
 		remotePath: string,
-		remoteStat: PlannedRemoteSnapshot['stat'],
+		remoteStat: StatModel,
 	) => Promise<PlannedRemoteSnapshot | undefined>;
 	createPlannedLocalFolderSnapshot: (
 		localPath: string,
-		localStat: PlannedLocalSnapshot['stat'],
+		localStat: StatModel,
 	) => PlannedLocalSnapshot | undefined;
 	createPlannedRemoteFolderSnapshot: (
 		remotePath: string,
-		remoteStat: PlannedRemoteSnapshot['stat'],
+		remoteStat: StatModel,
 	) => PlannedRemoteSnapshot | undefined;
 	taskFactory: TaskFactory;
+	getBaseText: (path: string) => Promise<string | undefined>;
 }

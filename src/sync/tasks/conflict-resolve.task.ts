@@ -1,5 +1,5 @@
-import type { StatModel } from '~/model/stat.model';
 import type { ConflictTaskOptions } from '~/sync/decision/sync-decision.interface';
+import type { StatModel } from '~/types';
 import i18n from '~/i18n';
 import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
@@ -82,9 +82,8 @@ export default class ConflictResolveTask extends BaseTask {
 				throw new Error(
 					`failed to read remote file stat after timestamp merge: ${this.localPath}`,
 				);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat,
 				remoteStat: newRemoteStat,
 				baseText,
@@ -96,9 +95,8 @@ export default class ConflictResolveTask extends BaseTask {
 				throw new Error(
 					`failed to read remote file stat after timestamp merge: ${this.localPath}`,
 				);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat: newLocalStat,
 				remoteStat,
 				baseText,
@@ -202,9 +200,8 @@ export default class ConflictResolveTask extends BaseTask {
 				);
 
 			const baseText = await this.toText(localBuffer);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat,
 				remoteStat: newRemoteStat,
 				baseText,
@@ -232,9 +229,8 @@ export default class ConflictResolveTask extends BaseTask {
 				);
 
 			const baseText = await this.toText(remoteBuffer);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat: newLocalStat,
 				remoteStat,
 				baseText,
@@ -257,12 +253,11 @@ export default class ConflictResolveTask extends BaseTask {
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
-				await this.syncRecord.upsertSyncedFileFromSnapshots({
+				await this.syncRecord.upsertRecords({
 					baseText: await this.toText(localBuffer),
 					localStat,
 					remoteStat,
-					remotePath: this.remotePath,
-					localPath: this.localPath,
+					key: this.localPath,
 				});
 				return { success: true } as const;
 			}
@@ -282,12 +277,11 @@ export default class ConflictResolveTask extends BaseTask {
 			});
 
 			if (mergeResult.isIdentical) {
-				await this.syncRecord.upsertSyncedFileFromSnapshots({
+				await this.syncRecord.upsertRecords({
 					baseText: localText,
 					localStat,
 					remoteStat,
-					remotePath: this.remotePath,
-					localPath: this.localPath,
+					key: this.localPath,
 				});
 				return { success: true } as const;
 			}
@@ -325,12 +319,11 @@ export default class ConflictResolveTask extends BaseTask {
 				newLocalStat = fetchedLocalStat;
 			}
 
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
+			await this.syncRecord.upsertRecords({
 				baseText: mergedText,
 				localStat: newLocalStat ?? localStat,
 				remoteStat: newRemoteStat ?? remoteStat,
-				remotePath: this.remotePath,
-				localPath: this.localPath,
+				key: this.localPath,
 			});
 			return { success: true } as const;
 		} catch (e) {

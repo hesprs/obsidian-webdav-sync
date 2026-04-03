@@ -27,14 +27,9 @@ export function createFileList() {
 
 			const sortedItems = () =>
 				items().sort((a, b) => {
-					if (a.isDir === b.isDir) {
-						return a.basename.localeCompare(b.basename, ['zh']);
-					}
-					if (a.isDir && !b.isDir) {
-						return -1;
-					} else {
-						return 1;
-					}
+					if (a.isDir === b.isDir) return a.basename.localeCompare(b.basename, ['zh']);
+					if (a.isDir && !b.isDir) return -1;
+					else return 1;
 				});
 
 			async function refresh() {

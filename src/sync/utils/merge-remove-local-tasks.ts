@@ -1,16 +1,15 @@
-import { normalizeVaultPath } from '~/platform/path/vault-path';
 import { isSub } from '~/utils/is-sub';
 import RemoveLocalTask from '../tasks/remove-local.task';
 
 export function mergeRemoveLocalTasks(tasks: RemoveLocalTask[]): RemoveLocalTask[] {
 	if (tasks.length === 0) return [];
 
-	const validTasks = tasks.filter((task) => normalizeVaultPath(task.localPath) !== '');
+	const validTasks = tasks.filter((task) => task.localPath !== '');
 	if (validTasks.length === 0) return [];
 
 	const sortedTasks = [...validTasks].sort((a, b) => {
-		const pathA = normalizeVaultPath(a.localPath);
-		const pathB = normalizeVaultPath(b.localPath);
+		const pathA = a.localPath;
+		const pathB = b.localPath;
 		if (pathA.length !== pathB.length) {
 			return pathA.length - pathB.length;
 		}
@@ -21,7 +20,7 @@ export function mergeRemoveLocalTasks(tasks: RemoveLocalTask[]): RemoveLocalTask
 	const selectedPaths: string[] = [];
 
 	for (const task of sortedTasks) {
-		const path = normalizeVaultPath(task.localPath);
+		const path = task.localPath;
 
 		const shouldSkip = selectedPaths.some((parentPath) => {
 			if (path === parentPath) return true;

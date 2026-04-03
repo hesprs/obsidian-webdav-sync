@@ -1,9 +1,8 @@
-import type { StatModel } from '~/model/stat.model';
 import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
+import type { StatModel } from '~/types';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
-import { SyncRunKind } from '~/model/sync-record.model';
-import { joinRemotePath } from '~/platform/path/remote-path';
+import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
 	AddRecordTaskOptions,
@@ -14,7 +13,6 @@ import type {
 	PlannedRemoteSnapshot,
 	PullTaskOptions,
 	PushTaskOptions,
-	SkippedTaskOptions,
 	SyncDecisionInput,
 	TaskFactory,
 	TaskOptions,
@@ -30,7 +28,6 @@ import PushTask from '../tasks/push.task';
 import RemoveLocalRecursivelyTask from '../tasks/remove-local-recursively.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
-import SkippedTask from '../tasks/skipped.task';
 import { BaseTask } from '../tasks/task.interface';
 import { twoWayDecider } from './two-way.decider.function';
 
@@ -70,8 +67,8 @@ export default class TwoWaySyncDecider {
 			currentItem: this.remoteBaseDir,
 		});
 
-		const previousLocalRecords = await this.syncRecordStorage.getLocalRecords();
-		const previousRemoteRecords = await this.syncRecordStorage.getRemoteStats();
+		const { localRecords: previousLocalRecords, remoteRecords: previousRemoteRecords } =
+			await this.syncRecordStorage.loadState();
 
 		await reportPlanningProgress({
 			subStage: SyncPlanningSubStage.walkingLocal,
@@ -96,9 +93,8 @@ export default class TwoWaySyncDecider {
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
-				? await this.sync.remoteFs.toWalkResults(previousRemoteRecords)
+				? previousRemoteRecords
 				: await this.sync.remoteFs.walk({
-						freshness: 'fresh',
 						onTraversalProgress: async (progress) => {
 							await reportPlanningProgress({
 								subStage: SyncPlanningSubStage.walkingRemote,
@@ -149,8 +145,6 @@ export default class TwoWaySyncDecider {
 				new AddRecordTask({ ...commonTaskOptions, ...options }),
 			createFilenameErrorTask: (options: TaskOptions) =>
 				new FilenameErrorTask({ ...commonTaskOptions, ...options }),
-			createSkippedTask: (options: SkippedTaskOptions) =>
-				new SkippedTask({ ...commonTaskOptions, ...options }),
 		};
 
 		const compareFileContent = async (filePath: string, baseText: string): Promise<boolean> => {
@@ -204,8 +198,7 @@ export default class TwoWaySyncDecider {
 
 			const promise = (async (): Promise<PlannedRemoteSnapshot | undefined> => {
 				if (remoteStat.isDir) return undefined;
-				const absoluteRemotePath = joinRemotePath(this.remoteBaseDir, remotePath);
-				const content = (await this.webdav.getFileContents(absoluteRemotePath, {
+				const content = (await this.webdav.getFileContents(remotePath, {
 					format: 'binary',
 					details: false,
 				})) as BinaryLike;
@@ -269,6 +262,7 @@ export default class TwoWaySyncDecider {
 			createPlannedRemoteFileSnapshot,
 			createPlannedLocalFolderSnapshot,
 			createPlannedRemoteFolderSnapshot,
+			getBaseText: async (path) => this.syncRecordStorage.getBaseText(path),
 		};
 
 		return await twoWayDecider(decisionInput);

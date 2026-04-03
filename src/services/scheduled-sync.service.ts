@@ -1,7 +1,7 @@
 import { clamp } from 'lodash-es';
-import { SyncRunKind } from '~/model/sync-record.model';
 import { useSettings, type PluginSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
+import { SyncRunKind } from '~/types';
 import type WebDAVSyncPlugin from '..';
 import type SyncSchedulerService from './sync-scheduler.service';
 

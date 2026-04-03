@@ -1,23 +1,10 @@
 import { Notice } from 'obsidian';
 import i18n from '~/i18n';
-import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
 import SyncConfirmModal from '../components/SyncConfirmModal';
 
 interface LaunchManualSyncOptions {
 	skipConfirmation?: boolean;
-}
-
-function openPluginSettings(plugin: WebDAVSyncPlugin): void {
-	try {
-		const setting = plugin.app.setting;
-		if (setting) {
-			setting.open();
-			setting.openTabById(plugin.manifest.id);
-		}
-	} catch (error) {
-		logger.error('Failed to open settings', error);
-	}
 }
 
 export function launchManualSync(
@@ -28,7 +15,6 @@ export function launchManualSync(
 
 	if (!plugin.isAccountConfigured()) {
 		new Notice(i18n.t('sync.error.accountNotConfigured'));
-		openPluginSettings(plugin);
 		return;
 	}
 

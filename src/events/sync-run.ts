@@ -1,6 +1,6 @@
 import { BehaviorSubject } from 'rxjs';
 import type { BaseTask } from '~/sync/tasks/task.interface';
-import { SyncRunKind } from '~/model/sync-record.model';
+import { SyncRunKind } from '~/types';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
 export type SyncRunMode = 'manual' | 'auto';
@@ -36,9 +36,6 @@ export interface SyncRunWarning {
 
 export interface SyncPlanSummary {
 	totalTasks: number;
-	actionableTasks: number;
-	skippedTasks: number;
-	hasActionableTasks: boolean;
 	requiresConfirmation: boolean;
 	requiresDeleteConfirmation: boolean;
 	warnings: SyncRunWarning[];
