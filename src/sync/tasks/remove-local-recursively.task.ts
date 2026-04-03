@@ -8,7 +8,7 @@ export default class RemoveLocalRecursivelyTask extends BaseTask {
 			if (!file) return { success: true } as const;
 
 			await this.vault.trash(file, false);
-			await this.syncRecord.removeLocalRecordSubtree(this.localPath);
+			await this.syncRecord.removeRecordSubtree(this.localPath);
 			return { success: true } as const;
 		} catch (e) {
 			logger.error(`Failed to remove local directory ${this.remotePath} recursively`, e);

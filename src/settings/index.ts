@@ -31,6 +31,7 @@ export interface PluginSettings {
 	};
 	skipLargeFiles: {
 		maxSize: string;
+		bytes: number;
 	};
 	realtimeSync: boolean;
 	realtimeSyncDelay: number;

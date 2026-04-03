@@ -93,7 +93,7 @@ if (VALID_REQURL) {
 		}
 
 		let r2: Response | undefined = undefined;
-		const statusText = STATUS_TEXTS[r.status];
+		const statusText = STATUS_TEXTS[r.status] ?? 'Unknown';
 		if ([101, 103, 204, 205, 304].includes(r.status)) {
 			r2 = new Response(null, {
 				status: r.status,

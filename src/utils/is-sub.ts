@@ -1,5 +1,4 @@
-import { normalizeRemotePath } from '~/platform/path/remote-path';
-import { normalizeVaultPath } from '~/platform/path/vault-path';
+import { normalizeRemotePath, normalizeVaultPath } from '~/platform/path';
 
 function normalizeComparablePath(path: string): string {
 	return path.startsWith('/') ? normalizeRemotePath(path) : normalizeVaultPath(path);

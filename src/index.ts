@@ -1,10 +1,10 @@
 import './webdav-patch';
 import './assets/global.css';
-import { normalizePath, Plugin } from 'obsidian';
+import { Plugin } from 'obsidian';
 import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { emitCancelSync } from './events';
-import { normalizeRemoteDir } from './platform/path/remote-path';
+import { normalizeBaseDir } from './platform/path';
 import CommandService from './services/command.service';
 import I18nService from './services/i18n.service';
 import ObservabilityService from './services/observability.service';
@@ -15,7 +15,7 @@ import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
-import { IndexedDbSyncStateStore } from './storage';
+import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
 
 function createGlobMathOptions(expr: string) {
@@ -48,6 +48,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		},
 		skipLargeFiles: {
 			maxSize: '30 MB',
+			bytes: 31457280,
 		},
 		realtimeSync: false,
 		realtimeSyncDelay: 5000,
@@ -58,6 +59,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
+	public baseTextStore = new IndexedDbBaseTextStore();
 	public i18nService = new I18nService(this);
 	public progressService = new ProgressService(this);
 	public observabilityService = new ObservabilityService(this);
@@ -72,6 +74,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 		await this.syncStateStore.initialize().catch(() => undefined);
+		await this.baseTextStore.initialize().catch(() => undefined);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		await this.scheduledSyncService.start();
@@ -120,8 +123,8 @@ export default class WebDAVSyncPlugin extends Plugin {
 	}
 
 	get remoteBaseDir() {
-		let remoteDir = normalizePath(this.settings.remoteDir.trim());
+		let remoteDir = this.settings.remoteDir;
 		if (remoteDir === '' || remoteDir === '/') remoteDir = this.app.vault.getName();
-		return normalizeRemoteDir(remoteDir);
+		return `${normalizeBaseDir(remoteDir)}`;
 	}
 }
