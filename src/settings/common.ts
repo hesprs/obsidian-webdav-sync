@@ -211,7 +211,7 @@ export default class CommonSettings extends BaseSettings {
 	}
 
 	private async clearRecords() {
-		await this.plugin.syncStateStore.clear();
+		await Promise.all([this.plugin.syncStateStore.clear(), this.plugin.baseTextStore.clear()]);
 		new Notice(i18n.t('settings.clearRecord.cleared'));
 	}
 

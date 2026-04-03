@@ -264,13 +264,7 @@ export default {
 			rename: 'Rename',
 			sync: 'Sync',
 			upload: 'Upload',
-			noop: 'Skip',
 			cleanRecord: 'Clean record',
-			skip: 'Skip',
-		},
-		skipReason: {
-			'file-too-large': 'File too large',
-			'folder-contains-ignored-items': 'Folder contains ignored items',
 		},
 		confirmModal: {
 			title: 'Sync confirmation',

@@ -2,11 +2,7 @@ import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
 import { Platform } from 'obsidian';
-import {
-	normalizeRemoteDir,
-	normalizeRemotePath,
-	remoteBasename,
-} from '~/platform/path/remote-path';
+import { normalizeRemotePath, remoteBasename } from './platform/path';
 import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
 import requestUrl from './utils/request-url';
@@ -83,8 +79,9 @@ function buildStripPrefixes(serverUrl: string): string[] {
 	return [endpointPath];
 }
 
-function buildDirectoryUrl(serverUrl: string, path: string): string {
-	const normalizedPath = Platform.isIosApp ? normalizeRemoteDir(path) : normalizeRemotePath(path);
+function buildDirectoryUrl(serverUrl: string, _path: string): string {
+	const path = normalizeRemotePath(_path);
+	const normalizedPath = Platform.isIosApp ? `${path}/` : path;
 	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
 	return `${serverUrl}${encodedPath}`;
 }
@@ -104,9 +101,8 @@ function convertToFileStat(stripPrefixes: string[], item: WebDAVResponseItem): F
 		}
 	}
 
-	const filename = isDir
-		? normalizeRemoteDir(relativePath || '/')
-		: normalizeRemotePath(relativePath || '/');
+	const path = normalizeRemotePath(relativePath);
+	const filename = isDir ? `${path}/` : path;
 
 	return {
 		filename,
@@ -182,9 +178,9 @@ export async function getDirectoryContents(
 			const nextLink = extractNextLink(linkHeader);
 			if (!nextLink) break;
 			const nextUrl = new URL(nextLink);
-			nextUrl.pathname = Platform.isIosApp
-				? normalizeRemoteDir(hrefToPathname(nextUrl.pathname))
-				: normalizeRemotePath(hrefToPathname(nextUrl.pathname));
+
+			const pathName = normalizeRemotePath(hrefToPathname(nextUrl.pathname));
+			nextUrl.pathname = Platform.isIosApp ? `${pathName}/` : pathName;
 			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (isRetryableError(e)) {

@@ -1,9 +1,13 @@
 import { Notice } from 'obsidian';
 import { createSignal, Show } from 'solid-js';
-import { joinRemotePath } from '~/platform/path/remote-path';
+import { normalizeRemotePath } from '~/platform/path';
 import { createFileList, type FileStat } from './components/FileList';
 import NewFolder from './components/NewFolder';
 import { t } from './i18n';
+
+function joinRemotePath(...parts: string[]): `/${string}` {
+	return normalizeRemotePath(parts.join('/')) as `/${string}`;
+}
 
 export interface fs {
 	ls: (path: string) => Promise<FileStat[]> | FileStat[];

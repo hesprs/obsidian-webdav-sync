@@ -4,7 +4,6 @@ import CleanRecordTask from '~/sync/tasks/clean-record.task';
 import FilenameErrorTask from '~/sync/tasks/filename-error.task';
 import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
-import SkippedTask from '~/sync/tasks/skipped.task';
 import getTaskName from '~/utils/get-task-name';
 import WebDAVSyncPlugin from '..';
 import {
@@ -170,9 +169,7 @@ export default class SyncProgressModal extends Modal {
 				file instanceof RemoveRemoteRecursivelyTask
 			)
 				setIcon(icon, 'trash');
-			else if (file instanceof SkippedTask) {
-				setIcon(icon, 'chevron-last');
-			} else setIcon(icon, 'arrow-left-right');
+			else setIcon(icon, 'arrow-left-right');
 
 			const typeLabel = item.createSpan({
 				cls: 'flex-none w-17 md:w-24 text-[var(--text-normal)] font-500',

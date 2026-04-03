@@ -1,3 +1,4 @@
+import type { BaseTask } from '~/sync/tasks/task.interface';
 import {
 	createQueuedSyncRunSnapshot,
 	emitSyncRun,
@@ -8,9 +9,9 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
-import { SyncRunKind } from '~/model/sync-record.model';
-import { type PreparedSyncPlan, SyncEngine, SyncStartMode } from '~/sync';
+import { SyncEngine, SyncStartMode } from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
+import { SyncRunKind } from '~/types';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 import type WebDAVSyncPlugin from '..';
@@ -107,9 +108,9 @@ export default class SyncExecutorService {
 				{ category: 'sync.lifecycle' },
 			);
 
-			let plan: PreparedSyncPlan;
+			let tasks: BaseTask[] | null = null;
 			try {
-				plan = await sync.preparePlan(request.runKind, {
+				tasks = await sync.preparePlan(request.runKind, {
 					onPlanningProgress: (planningProgress) => {
 						run = updateSyncRunSnapshot(run, {
 							planningProgress,
@@ -126,7 +127,7 @@ export default class SyncExecutorService {
 			}
 
 			run = updateSyncRunSnapshot(run, {
-				planSummary: sync.summarizePlan(plan.tasks),
+				planSummary: sync.summarizePlan(tasks),
 			});
 			emitSyncRun(run);
 			logger.info(
@@ -142,24 +143,9 @@ export default class SyncExecutorService {
 				{ category: 'sync.lifecycle' },
 			);
 
-			if (!plan.hasActionableTasks) {
-				run = finalizeSyncRun(run, {
-					stage: 'completed_noop',
-					patch: {
-						resultSummary: {
-							totalTasks: run.planSummary?.totalTasks ?? 0,
-							succeededTasks: 0,
-							failedTasks: 0,
-							failed: [],
-						},
-					},
-				});
-				return { executed: true, run };
-			}
-
 			run = await sync.start({
 				request,
-				plan,
+				tasks,
 				run,
 			});
 

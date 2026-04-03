@@ -1,4 +1,3 @@
-import { normalizeRemotePath } from '~/platform/path/remote-path';
 import { isSub } from '~/utils/is-sub';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
@@ -8,21 +7,16 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): BaseTask[] {
 	if (tasks.length === 0) return [];
 
 	// 过滤掉空路径或无效任务
-	const validTasks = tasks.filter((task) => {
-		const path = normalizeRemotePath(task.remotePath);
-		return path !== '/';
-	});
+	const validTasks = tasks.filter((task) => task.remotePath !== '/');
 
 	if (validTasks.length === 0) return [];
 
 	// 按路径长度排序，短的在前（父路径优先）
 	// 如果长度相同，按字典序排序，保证结果稳定
 	const sortedTasks = [...validTasks].sort((a, b) => {
-		const pathA = normalizeRemotePath(a.remotePath);
-		const pathB = normalizeRemotePath(b.remotePath);
-		if (pathA.length !== pathB.length) {
-			return pathA.length - pathB.length;
-		}
+		const pathA = a.remotePath;
+		const pathB = b.remotePath;
+		if (pathA.length !== pathB.length) return pathA.length - pathB.length;
 		return pathA.localeCompare(pathB);
 	});
 
@@ -30,7 +24,7 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): BaseTask[] {
 	const selectedPaths: string[] = [];
 
 	for (const task of sortedTasks) {
-		const path = normalizeRemotePath(task.remotePath);
+		const path = task.remotePath;
 
 		// 检查当前路径是否是已选路径的子路径或重复路径
 		const shouldSkip = selectedPaths.some((parentPath) => {
@@ -41,7 +35,7 @@ export function mergeRemoveRemoteTasks(tasks: RemoveRemoteTask[]): BaseTask[] {
 		if (!shouldSkip) {
 			const hasDescendants = sortedTasks.some((candidate) => {
 				if (candidate === task) return false;
-				return isSub(path, normalizeRemotePath(candidate.remotePath));
+				return isSub(path, candidate.remotePath);
 			});
 
 			selectedPaths.push(path);

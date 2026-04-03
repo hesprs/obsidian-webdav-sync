@@ -73,7 +73,10 @@ export default class ControlsSettings extends BaseSettings {
 		}
 		component.setValue(value);
 		if (this.plugin.settings.skipLargeFiles.maxSize !== value) {
-			this.plugin.settings.skipLargeFiles.maxSize = value;
+			this.plugin.settings.skipLargeFiles = {
+				maxSize: value,
+				bytes: parsedBytes,
+			};
 			await this.plugin.saveSettings();
 		}
 	}

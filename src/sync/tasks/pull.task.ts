@@ -1,6 +1,6 @@
 import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { toArrayBuffer } from '~/platform/binary';
-import { vaultDirname } from '~/platform/path/vault-path';
+import { vaultDirname } from '~/platform/path';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-vault-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
@@ -55,9 +55,8 @@ export default class PullTask extends BaseTask {
 			const localStat = statVaultItem(this.vault, this.localPath);
 			if (!localStat || localStat.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
-			await this.syncRecord.upsertSyncedFileFromSnapshots({
-				localPath: this.localPath,
-				remotePath: this.remotePath,
+			await this.syncRecord.upsertRecords({
+				key: this.localPath,
 				localStat,
 				remoteStat,
 				baseText,
