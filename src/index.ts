@@ -17,6 +17,7 @@ import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
+import { apiLimiter } from './utils/api-limiter';
 
 function createGlobMathOptions(expr: string) {
 	return {
@@ -52,6 +53,8 @@ export default class WebDAVSyncPlugin extends Plugin {
 		},
 		realtimeSync: false,
 		realtimeSyncDelay: 5000,
+		maxConcurrentWebDAVCalls: 0,
+		minTimeBetweenWebDAVCalls: 0,
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
 		scheduledSyncIntervalSeconds: 300,
@@ -73,6 +76,9 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		apiLimiter
+			.set('maxConcurrentWebDAVCalls', this.settings.maxConcurrentWebDAVCalls)
+			.set('minTimeBetweenWebDAVCalls', this.settings.minTimeBetweenWebDAVCalls);
 		await this.syncStateStore.initialize().catch(() => undefined);
 		await this.baseTextStore.initialize().catch(() => undefined);
 		this.addSettingTab(new SyncSettingTab(this.app, this));

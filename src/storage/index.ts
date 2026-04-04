@@ -1,2 +1,3 @@
 export * from './sync-record';
-export * from './store';
+export * from './sync-record.store';
+export * from './base-text.store';

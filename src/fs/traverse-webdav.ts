@@ -1,12 +1,11 @@
 import type { MaybePromise, StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
 import { remotePathToAbsolute, remotePathToVault } from '~/platform/path';
-import { Mutex } from '~/utils/mutex';
-import { apiLimiter } from './api-limiter';
-import { fileStatToStatModel } from './file-stat-to-stat-model';
-import { isRetryableError } from './is-retryable-error';
-import logger from './logger';
-import sleep from './sleep';
+import { apiLimiter } from '~/utils/api-limiter';
+import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
+import { isRetryableError } from '~/utils/is-retryable-error';
+import logger from '~/utils/logger';
+import sleep from '~/utils/sleep';
 
 const getContents = apiLimiter.wrap(getDirectoryContents);
 
@@ -14,14 +13,6 @@ export interface TraversalProgress {
 	processedDirectories: number;
 	totalDirectories: number;
 	currentDirectory?: string;
-}
-
-// Global mutex map: one lock per kvKey
-const traversalLocks = new Map<string, Mutex>();
-
-function getTraversalLock(kvKey: string): Mutex {
-	if (!traversalLocks.has(kvKey)) traversalLocks.set(kvKey, new Mutex());
-	return traversalLocks.get(kvKey) as Mutex;
 }
 
 async function executeWithRetry<T>(func: () => MaybePromise<T>): Promise<T> {
@@ -64,26 +55,20 @@ export class WebDAVTraversal {
 		this.stateKey = options.stateKey;
 	}
 
-	get lock() {
-		return getTraversalLock(this.stateKey);
-	}
-
 	async traverse(options?: {
 		onProgress?: (progress: TraversalProgress) => MaybePromise<void>;
 	}): Promise<StatsMap> {
-		return await this.lock.runExclusive(async () => {
-			if (this.queue.length > 0) await this.clearLoadedState();
+		if (this.queue.length > 0) this.clearLoadedState();
 
-			if (this.queue.length === 0) {
-				this.queue = [this.remoteBaseDir];
-				this.processedCount = 0;
-			}
+		if (this.queue.length === 0) {
+			this.queue = [this.remoteBaseDir];
+			this.processedCount = 0;
+		}
 
-			await this.reportProgress(options?.onProgress);
+		await this.reportProgress(options?.onProgress);
 
-			await this.bfsTraverse(options?.onProgress);
-			return this.nodes;
-		});
+		await this.bfsTraverse(options?.onProgress);
+		return this.nodes;
 	}
 
 	/**
@@ -93,37 +78,40 @@ export class WebDAVTraversal {
 		onProgress?: (progress: TraversalProgress) => MaybePromise<void>,
 	): Promise<void> {
 		while (this.queue.length > 0) {
-			const currentPath = this.queue[0];
+			// Extract all paths at the current BFS level
+			const currentLevelPaths = this.queue.splice(0);
+			const nextLevelPaths: string[] = [];
 
-			try {
-				const resultItems = (
-					await executeWithRetry(() =>
-						getContents(this.remoteServerUrl, this.token, currentPath),
-					)
-				).map(fileStatToStatModel);
+			await Promise.all(
+				currentLevelPaths.map(async (currentPath) => {
+					try {
+						const resultItems = (
+							await executeWithRetry(() =>
+								getContents(this.remoteServerUrl, this.token, currentPath),
+							)
+						).map(fileStatToStatModel);
+						for (const item of resultItems) {
+							const path = remotePathToVault(this.remoteBaseDir, item.path);
+							const absolutePath = remotePathToAbsolute(this.remoteBaseDir, item);
+							this.nodes.set(path, { ...item, path: absolutePath });
+							if (item.isDir) nextLevelPaths.push(absolutePath);
+						}
+						this.processedCount++;
+						await this.reportProgress(onProgress, currentPath);
+					} catch (err) {
+						logger.error(`Error processing ${currentPath}`, err);
+						if (isNotFoundError(err)) {
+							this.processedCount++;
+							await this.reportProgress(onProgress, currentPath);
+							return;
+						}
+						throw err;
+					}
+				}),
+			);
 
-				for (const item of resultItems) {
-					const path = remotePathToVault(this.remoteBaseDir, item.path);
-					const absolutePath = remotePathToAbsolute(this.remoteBaseDir, item);
-					this.nodes.set(path, { ...item, path: absolutePath });
-					if (item.isDir) this.queue.push(absolutePath);
-				}
-
-				this.queue.shift();
-				this.processedCount++;
-				await this.reportProgress(onProgress, currentPath);
-			} catch (err) {
-				logger.error(`Error processing ${currentPath}`, err);
-
-				if (isNotFoundError(err)) {
-					this.queue.shift();
-					this.processedCount++;
-					await this.reportProgress(onProgress, currentPath);
-					continue;
-				}
-
-				throw err;
-			}
+			// Populate queue for the next iteration/level
+			this.queue.push(...nextLevelPaths);
 		}
 	}
 
@@ -142,7 +130,7 @@ export class WebDAVTraversal {
 		});
 	}
 
-	private async clearLoadedState(): Promise<void> {
+	private clearLoadedState() {
 		this.queue = [];
 		this.nodes.clear();
 		this.processedCount = 0;
