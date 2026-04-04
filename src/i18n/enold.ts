@@ -78,6 +78,18 @@ export default {
 			placeholder: 'Enter seconds',
 			invalidValue: 'Invalid value, reset to the previous value',
 		},
+		maxConcurrentWebDAVCalls: {
+			name: 'Max concurrent WebDAV requests',
+			desc: 'Maximum number of concurrent WebDAV requests, higher values mean faster syncing but may reach rate limits. Set to 0 to disable limiting.',
+			invalidValue: 'Invalid value, reset to the previous value',
+			placeholder: 'Enter number',
+		},
+		minTimeBetweenWebDAVCalls: {
+			name: 'Min time between WebDAV requests',
+			desc: 'Minimum time in milliseconds between WebDAV requests, smaller values mean faster syncing but may reach rate limits. Set to 0 to disable limiting.',
+			invalidValue: 'Invalid value, reset to the previous value',
+			placeholder: 'Enter milliseconds',
+		},
 		useFastSyncOnLocalChange: {
 			name: 'Fast sync on local changes',
 			desc: 'Use fast sync for real-time local file changes. This is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
@@ -221,6 +233,7 @@ export default {
 			filenameError: 'Invalid path characters',
 			merge: 'Merge',
 			removeLocal: 'Remove local',
+			removeLocalRecursively: 'Remove local recursively',
 			removeRemote: 'Remove remote',
 			removeRemoteRecursively: 'Remove remote recursively',
 			rename: 'Rename',

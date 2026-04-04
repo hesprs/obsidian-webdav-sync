@@ -6,8 +6,7 @@ import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task
 import RemoveRemoteTask from '../tasks/remove-remote.task';
 import { BaseTask } from '../tasks/task.interface';
 import { mergeMkdirTasks } from './merge-mkdir-tasks';
-import { mergeRemoveLocalTasks } from './merge-remove-local-tasks';
-import { mergeRemoveRemoteTasks } from './merge-remove-remote-tasks';
+import { mergeRemoveTasks } from './merge-remove-tasks';
 
 function sortTasksByPathDepth<T extends BaseTask>(tasks: T[], getPath: (task: T) => string): T[] {
 	return [...tasks].sort((a, b) => {
@@ -46,7 +45,7 @@ export function optimizeTasks(tasks: BaseTask[]): BaseTask[] {
 		...mergeMkdirTasks(mkdirRemoteTasks),
 		...otherTasks,
 		...optimizedRemoveRemoteTasks,
-		...mergeRemoveRemoteTasks(removeRemoteTasks),
-		...mergeRemoveLocalTasks(removeLocalTasks),
+		...mergeRemoveTasks(removeRemoteTasks, 'remote'),
+		...mergeRemoveTasks(removeLocalTasks, 'local'),
 	];
 }

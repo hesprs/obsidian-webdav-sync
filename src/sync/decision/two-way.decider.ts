@@ -1,6 +1,6 @@
 import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
-import type { StatModel } from '~/types';
+import type { RecordStatsMap, StatModel, StatsMap } from '~/types';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
 import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
@@ -67,8 +67,7 @@ export default class TwoWaySyncDecider {
 			currentItem: this.remoteBaseDir,
 		});
 
-		const { localRecords: previousLocalRecords, remoteRecords: previousRemoteRecords } =
-			await this.syncRecordStorage.loadState();
+		const records = await this.syncRecordStorage.getRecords();
 
 		await reportPlanningProgress({
 			subStage: SyncPlanningSubStage.walkingLocal,
@@ -93,7 +92,7 @@ export default class TwoWaySyncDecider {
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
-				? previousRemoteRecords
+				? extractRemoteRecords(records)
 				: await this.sync.remoteFs.walk({
 						onTraversalProgress: async (progress) => {
 							await reportPlanningProgress({
@@ -252,8 +251,7 @@ export default class TwoWaySyncDecider {
 			},
 			currentLocalStats,
 			currentRemoteStats,
-			previousRemoteRecords,
-			previousLocalRecords,
+			records,
 			remoteBaseDir: this.remoteBaseDir,
 			compareFileContent,
 			onProgress: reportPlanningProgress,
@@ -267,4 +265,10 @@ export default class TwoWaySyncDecider {
 
 		return await twoWayDecider(decisionInput);
 	}
+}
+
+function extractRemoteRecords(records: RecordStatsMap): StatsMap {
+	const res: StatsMap = new Map();
+	for (const [path, record] of records) res.set(path, record.remote);
+	return res;
 }

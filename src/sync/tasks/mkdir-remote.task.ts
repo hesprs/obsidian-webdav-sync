@@ -14,17 +14,17 @@ export default class MkdirRemoteTask extends BaseTask {
 				recursive: true,
 			});
 
-			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
-			const localStat = this.options.local?.stat;
-			if (!remoteStat || !remoteStat.isDir || !localStat)
+			const remote = await statWebDAVItem(this.webdav, this.remotePath);
+			const local = this.options.local?.stat;
+			if (!remote || !remote.isDir || !local)
 				throw new Error(
 					`failed to read remote directory stat after creation: ${this.remotePath}`,
 				);
 
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat,
+				local,
+				remote,
 			});
 
 			return { success: true } as const;

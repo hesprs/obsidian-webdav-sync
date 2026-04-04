@@ -86,7 +86,7 @@ export default {
 		},
 		useFastSyncOnLocalChange: {
 			name: '本地变更快速同步',
-			desc: '对本地实时变更使用 numb 同步。这样更快，但在下一次普通同步前无法发现远程编辑、删除或重命名。',
+			desc: '对本地实时变更使用 fast 同步。这样更快，但在下一次普通同步前无法发现远程编辑、删除或重命名。',
 		},
 		syncMode: {
 			name: '同步模式',
@@ -107,6 +107,18 @@ export default {
 			placeholder: '输入分钟数（例如：5，或 0 以禁用）',
 			invalidValue: '无效数值，已重置为 0',
 			exceedsMax: '数值超过最大限制 {{max}} 分钟（1 天），已自动调整',
+		},
+		maxConcurrentWebDAVCalls: {
+			name: '最大并发 WebDAV 请求数',
+			desc: '允许的最大并发 WebDAV 请求数量。数值越高，同步速度越快，但可能触发服务商的速率限制。设置为 0 可取消此限制。',
+			invalidValue: '无效数值，已恢复至上一次设置',
+			placeholder: '请输入数字',
+		},
+		minTimeBetweenWebDAVCalls: {
+			name: 'WebDAV 请求最小间隔时间',
+			desc: '两次 WebDAV 请求之间的最小间隔（毫秒）。数值越小，同步速度越快，但可能触发速率限制。设置为 0 可取消此限制。',
+			invalidValue: '无效数值，已恢复至上一次设置',
+			placeholder: '请输入毫秒数',
 		},
 		filters: {
 			name: '过滤器',
@@ -219,6 +231,7 @@ export default {
 			filenameError: '路径含无效字符',
 			merge: '合并',
 			removeLocal: '删除本地',
+			removeLocalRecursively: '递归删除本地',
 			removeRemote: '删除远程',
 			removeRemoteRecursively: '递归删除远程',
 			rename: '重命名',

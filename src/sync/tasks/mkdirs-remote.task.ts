@@ -30,16 +30,16 @@ export default class MkdirsRemoteTask extends BaseTask {
 			});
 
 			for (const pathSnapshot of this.getAllPaths()) {
-				const remoteStat = await statWebDAVItem(this.webdav, pathSnapshot.remotePath);
-				const localStat = pathSnapshot.local?.stat;
-				if (!remoteStat || !remoteStat.isDir || !localStat)
+				const remote = await statWebDAVItem(this.webdav, pathSnapshot.remotePath);
+				const local = pathSnapshot.local?.stat;
+				if (!remote || !remote.isDir || !local)
 					throw new Error(
 						`failed to read remote directory stat after creation: ${pathSnapshot.remotePath}`,
 					);
 				await this.syncRecord.upsertRecords({
 					key: pathSnapshot.localPath,
-					localStat,
-					remoteStat,
+					local,
+					remote,
 				});
 			}
 

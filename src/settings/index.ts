@@ -35,6 +35,8 @@ export interface PluginSettings {
 	};
 	realtimeSync: boolean;
 	realtimeSyncDelay: number;
+	maxConcurrentWebDAVCalls: number;
+	minTimeBetweenWebDAVCalls: number;
 	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
 	scheduledSyncIntervalSeconds: number;

@@ -1,8 +1,7 @@
 import type { TAbstractFile } from 'obsidian';
 import type { SyncPlanningProgress } from '~/events';
 import type { BinaryLike } from '~/platform/binary';
-import type { StatsMap } from '~/types';
-import type { StatModel } from '~/types';
+import type { RecordStatsMap, StatsMap, StatModel } from '~/types';
 import { SyncMode } from '~/settings';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { BaseTask } from '../tasks/task.interface';
@@ -91,8 +90,7 @@ export interface SyncDecisionInput {
 	settings: SyncDecisionSettings;
 	currentLocalStats: StatsMap;
 	currentRemoteStats: StatsMap;
-	previousRemoteRecords: StatsMap;
-	previousLocalRecords: StatsMap;
+	records: RecordStatsMap;
 	remoteBaseDir: string;
 	compareFileContent: (filePath: string, baseText: string) => Promise<boolean>;
 	onProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;

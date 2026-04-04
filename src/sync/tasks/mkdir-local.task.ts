@@ -20,17 +20,17 @@ export default class MkdirLocalTask extends BaseTask {
 					// Ignore existing-dir and parent creation races.
 				}
 			}
-			const localStat = statVaultItem(this.vault, this.localPath);
-			const remoteStat = this.options.remote?.stat;
-			if (!localStat || !localStat.isDir || !remoteStat)
+			const local = statVaultItem(this.vault, this.localPath);
+			const remote = this.options.remote?.stat;
+			if (!local || !local.isDir || !remote)
 				throw new Error(
 					`failed to read local directory stat after creation: ${this.localPath}`,
 				);
 
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				remoteStat,
-				localStat,
+				remote,
+				local,
 			});
 
 			return { success: true } as const;

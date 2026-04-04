@@ -2,8 +2,8 @@ import { isNil } from 'lodash-es';
 import { normalizePath, TFolder, Vault } from 'obsidian';
 import type { StatsMap } from '~/types';
 import type { MaybePromise } from '~/types';
-import GlobMatch from './glob-match';
-import { statVaultItem } from './stat-vault-item';
+import GlobMatch from '~/utils/glob-match';
+import { statVaultItem } from '~/utils/stat-vault-item';
 
 export interface TraversalProgress {
 	processedDirectories: number;

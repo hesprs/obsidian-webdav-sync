@@ -9,14 +9,14 @@ export default class AddRecordTask extends BaseTask {
 
 	async exec() {
 		try {
-			const localStat = this.options.local?.stat;
-			const remoteStat = this.options.remote;
-			if (!localStat || !remoteStat)
+			const local = this.options.local?.stat;
+			const remote = this.options.remote;
+			if (!local || !remote)
 				throw new Error(`Missing local file snapshot for push: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat,
+				local,
+				remote,
 			});
 			return { success: true } as const;
 		} catch (e) {

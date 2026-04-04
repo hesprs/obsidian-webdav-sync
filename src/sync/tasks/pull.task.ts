@@ -21,10 +21,6 @@ export default class PullTask extends BaseTask {
 
 	async exec() {
 		try {
-			const remoteStat = this.options.remote?.stat;
-			if (!remoteStat || remoteStat.isDir) {
-				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
-			}
 			const remoteContent = this.options.remote?.content;
 			if (!remoteContent) {
 				throw new Error('missing remote content snapshot for pull: ' + this.remotePath);
@@ -50,15 +46,19 @@ export default class PullTask extends BaseTask {
 
 			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
 
+			const remote = this.options.remote?.stat;
+			if (!remote || remote.isDir) {
+				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
+			}
 			// no race condition since we've just written it
 			const baseText = await this.toText(arrayBuffer);
-			const localStat = statVaultItem(this.vault, this.localPath);
-			if (!localStat || localStat.isDir)
+			const local = statVaultItem(this.vault, this.localPath);
+			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat,
+				local,
+				remote,
 				baseText,
 			});
 

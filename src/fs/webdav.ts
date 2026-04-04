@@ -2,9 +2,9 @@ import { Vault } from 'obsidian';
 import type { IndexedDbSyncStateStore } from '~/storage';
 import { useSettings } from '~/settings';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
-import postTraversal from '~/utils/post-traversal';
-import { WebDAVTraversal } from '~/utils/traverse-webdav';
 import { type FsWalkOptions } from './fs.interface';
+import postTraversal from './post-traversal';
+import { WebDAVTraversal } from './traverse-webdav';
 
 export class RemoteWebDAVFileSystem {
 	constructor(

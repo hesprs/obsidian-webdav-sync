@@ -15,11 +15,6 @@ export default class PushTask extends BaseTask {
 
 	async exec() {
 		try {
-			const localStat = this.options.local?.stat;
-			if (!localStat || localStat.isDir) {
-				throw new Error('missing local file snapshot for push: ' + this.localPath);
-			}
-
 			const localContent = this.options.local?.content;
 			if (!localContent) {
 				throw new Error('missing local content snapshot for push: ' + this.localPath);
@@ -33,13 +28,17 @@ export default class PushTask extends BaseTask {
 
 			// no race condition since we've just uploaded it
 			const baseText = await this.toText(arrayBuffer);
-			const remoteStat = await statWebDAVItem(this.webdav, this.remotePath);
-			if (!remoteStat || remoteStat.isDir)
+			const local = this.options.local?.stat;
+			if (!local || local.isDir) {
+				throw new Error('missing local file snapshot for push: ' + this.localPath);
+			}
+			const remote = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!remote || remote.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat,
+				local,
+				remote,
 				baseText,
 			});
 

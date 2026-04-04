@@ -20,7 +20,6 @@ import { LocalVaultFileSystem } from '~/fs/local-vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
 import { remoteDirname, vaultDirname } from '~/platform/path';
-import { useSettings } from '~/settings';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
@@ -28,7 +27,6 @@ import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import { WebDAVTraversal } from '~/utils/traverse-webdav';
 import type { PlannedPathSnapshot } from './decision/sync-decision.interface';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
@@ -324,21 +322,6 @@ export class SyncEngine {
 			this.plugin.syncStateStore,
 			this.plugin.baseTextStore,
 		);
-	}
-
-	private async createTraversal() {
-		const settings = await useSettings();
-		return new WebDAVTraversal({
-			remoteServerUrl: this.options.remoteServerUrl || this.settings.serverUrl,
-			token: this.options.token,
-			remoteBaseDir: this.options.remoteBaseDir,
-			stateKey: getSyncStateKey({
-				vaultName: this.vault.getName(),
-				remoteBaseDir: this.remoteBaseDir,
-				serverUrl: this.options.remoteServerUrl || settings.serverUrl,
-				account: settings.account,
-			}),
-		});
 	}
 
 	private rebuildConfirmedTasksAfterDeleteConfirmation({

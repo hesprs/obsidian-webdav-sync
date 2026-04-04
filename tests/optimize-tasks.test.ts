@@ -4,6 +4,7 @@ import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
 import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import PullTask from '~/sync/tasks/pull.task';
 import PushTask from '~/sync/tasks/push.task';
+import RemoveLocalRecursivelyTask from '~/sync/tasks/remove-local-recursively.task';
 import RemoveLocalTask from '~/sync/tasks/remove-local.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import RemoveRemoteTask from '~/sync/tasks/remove-remote.task';
@@ -58,9 +59,9 @@ describe('optimizeSync', () => {
 		expect(tasks[2]).toBeInstanceOf(PushTask);
 		expect(tasks[3]).toBeInstanceOf(PullTask);
 		expect(tasks[4]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
-		expect(tasks[5]).toBeInstanceOf(RemoveLocalTask);
+		expect(tasks[5]).toBeInstanceOf(RemoveLocalRecursivelyTask);
 		expect(tasks).toHaveLength(6);
-		expect((tasks[5] as RemoveLocalTask).localPath).toBe('old');
+		expect(tasks[5].localPath).toBe('old');
 	});
 
 	it('keeps remote reupload dependencies ahead of local deletion', () => {
