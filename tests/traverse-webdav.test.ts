@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
+import { WebDAVTraversal } from '~/fs/traverse-webdav';
 
 const remoteRecordState: StatsMap = new Map();
 
@@ -11,16 +12,6 @@ vi.mock('~/api', () => ({
 vi.mock('~/utils/api-limiter', () => ({
 	apiLimiter: {
 		wrap: <T>(fn: T) => fn,
-	},
-}));
-
-vi.mock('~/storage/sync-record', () => ({
-	SyncRecord: class {
-		constructor(private namespace: string) {}
-
-		async clearRemoteRecord(): Promise<void> {
-			remoteRecordState.delete(this.namespace);
-		}
 	},
 }));
 
@@ -39,8 +30,6 @@ describe('WebDAVTraversal', () => {
 	});
 
 	it('uses remote-base-aware path when enqueuing child directories', async () => {
-		const { WebDAVTraversal } = await import('../src/utils/traverse-webdav');
-
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{
@@ -79,8 +68,6 @@ describe('WebDAVTraversal', () => {
 	});
 
 	it('skips not-found traversal nodes instead of failing and persisting retry loop', async () => {
-		const { WebDAVTraversal } = await import('../src/utils/traverse-webdav');
-
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{

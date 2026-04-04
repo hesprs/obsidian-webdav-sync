@@ -2,7 +2,6 @@ export type StatModel =
 	| {
 			path: string;
 			isDir: true;
-			mtime: number;
 	  }
 	| {
 			path: string;
@@ -16,17 +15,12 @@ export enum SyncRunKind {
 	fast = 'fast',
 }
 
-export interface PreviousSyncRecordModel {
+export interface RecordStatModel {
 	local: StatModel;
 	remote: StatModel;
 }
 
 export type StatsMap = Map<string, StatModel>;
-
-export interface SyncStateModel {
-	version: 1;
-	remoteRecords: StatsMap;
-	localRecords: StatsMap;
-}
+export type RecordStatsMap = Map<string, RecordStatModel>;
 
 export type MaybePromise<T> = Promise<T> | T;

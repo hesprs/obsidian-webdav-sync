@@ -1,8 +1,8 @@
 import { Vault } from 'obsidian';
 import type { MaybePromise } from '~/types';
 import { useSettings } from '~/settings';
-import postTraversal from '~/utils/post-traversal';
-import { traverseVault, type TraversalProgress } from '~/utils/traverse-vault';
+import postTraversal from './post-traversal';
+import { traverseVault, type TraversalProgress } from './traverse-vault';
 
 export class LocalVaultFileSystem {
 	constructor(private readonly options: { vault: Vault }) {}

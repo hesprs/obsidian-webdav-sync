@@ -1,10 +1,6 @@
-import type { StatModel } from '~/types';
-import { type SyncStateModel } from '~/types';
-import {
-	createSyncState,
-	type IndexedDbBaseTextStore,
-	type IndexedDbSyncStateStore,
-} from './store';
+import type { RecordStatsMap, StatModel } from '~/types';
+import type { IndexedDbBaseTextStore } from './base-text.store';
+import { type IndexedDbSyncStateStore } from './sync-record.store';
 
 export class SyncRecord {
 	constructor(
@@ -13,100 +9,36 @@ export class SyncRecord {
 		private textStore: IndexedDbBaseTextStore,
 	) {}
 
-	private upsertSyncedFileInState(
-		state: SyncStateModel,
-		params: {
-			key: string;
-			localStat: StatModel;
-			remoteStat: StatModel;
-		},
-	): void {
-		const { key, localStat, remoteStat } = params;
-		this.upsertLocalRecordInState(state, key, localStat);
-		this.upsertRemoteRecordInState(state, key, remoteStat);
-	}
-
-	async loadState(): Promise<SyncStateModel> {
-		const [remote, local] = await Promise.all([
-			this.stateStore.getRemote(this.namespace),
-			this.stateStore.getLocal(this.namespace),
-		]);
-
-		return createSyncState(remote, local);
-	}
-
-	private async saveState(state: SyncStateModel): Promise<void> {
-		await Promise.all([
-			this.stateStore.setRemote(this.namespace, state.remoteRecords),
-			this.stateStore.setLocal(this.namespace, state.localRecords),
-		]);
-	}
-
-	private async mutateState(
-		mutator: (state: SyncStateModel) => void | Promise<void>,
-	): Promise<void> {
-		const state = await this.loadState();
-		await mutator(state);
-		await this.saveState(state);
-	}
-
-	private upsertLocalRecordInState(state: SyncStateModel, path: string, record: StatModel): void {
-		state.localRecords.set(path, record);
-	}
-
-	private upsertRemoteRecordInState(
-		state: SyncStateModel,
-		path: string,
-		record: StatModel,
-	): void {
-		state.remoteRecords.set(path, record);
-	}
-
 	async removeRecords(path: string): Promise<void> {
 		await Promise.all([
-			this.mutateState((state) => {
-				state.localRecords.delete(path);
-				state.remoteRecords.delete(path);
-			}),
-			this.removeBaseText(path),
+			this.stateStore.removeEntry(this.namespace, path),
+			this.textStore.removeEntry(this.namespace, path),
 		]);
 	}
 
 	async removeRecordSubtree(path: string): Promise<void> {
-		const keys = await this.textStore.getKeys();
-		const toDelete = keys
-			.filter((key) => {
-				const { namespace, path } = this.textStore.parseKey(key);
-				return namespace === this.namespace && path.startsWith(path);
-			})
-			.map((key) => this.removeBaseText(key));
 		await Promise.all([
-			this.mutateState((state) => {
-				const normalizedDir = `${path}/`;
-
-				for (const key of Array.from(state.localRecords.keys())) {
-					if (key.startsWith(normalizedDir)) state.localRecords.delete(key);
-				}
-
-				for (const key of Array.from(state.remoteRecords.keys())) {
-					if (key.startsWith(normalizedDir)) state.remoteRecords.delete(key);
-				}
-			}),
-			...toDelete,
+			this.stateStore.removeSubDir(this.namespace, path),
+			this.textStore.removeSubDir(this.namespace, path),
 		]);
 	}
 
-	async upsertRecords(params: {
+	async upsertRecords({
+		key,
+		local,
+		remote,
+		baseText,
+	}: {
 		key: string;
-		localStat: StatModel;
-		remoteStat: StatModel;
+		local: StatModel;
+		remote: StatModel;
 		baseText?: string;
 	}): Promise<void> {
 		await Promise.all([
-			this.mutateState((state) => {
-				this.upsertSyncedFileInState(state, params);
-			}),
-			params.baseText ? this.upsertBaseText(params.key, params.baseText) : () => {},
+			this.stateStore.set(this.namespace, key, { local, remote }),
+			(async () => {
+				if (baseText) await this.textStore.set(this.namespace, key, baseText);
+			})(),
 		]);
 	}
 
@@ -114,16 +46,12 @@ export class SyncRecord {
 		return await this.textStore.get(this.namespace, path);
 	}
 
-	private async upsertBaseText(path: string, baseText: string): Promise<void> {
-		await this.textStore.set(this.namespace, path, baseText);
-	}
-
-	private async removeBaseText(path: string): Promise<void> {
-		await this.textStore.remove(this.namespace, path);
+	async getRecords(): Promise<RecordStatsMap> {
+		return await this.stateStore.getAll(this.namespace);
 	}
 
 	async drop() {
-		await this.stateStore.delete(this.namespace);
-		await this.textStore.delete(this.namespace);
+		await this.stateStore.removeNamespace(this.namespace);
+		await this.textStore.removeNamespace(this.namespace);
 	}
 }

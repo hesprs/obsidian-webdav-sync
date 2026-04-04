@@ -28,12 +28,12 @@ export default class ConflictResolveTask extends BaseTask {
 	}
 
 	private async getConflictSnapshots() {
-		const localStat = this.options.local?.stat;
-		const remoteStat = this.options.remote?.stat;
-		if (!localStat || localStat.isDir) {
+		const local = this.options.local?.stat;
+		const remote = this.options.remote?.stat;
+		if (!local || local.isDir) {
 			throw new Error('missing local file snapshot for conflict: ' + this.localPath);
 		}
-		if (!remoteStat || remoteStat.isDir) {
+		if (!remote || remote.isDir) {
 			throw new Error('missing remote file snapshot for conflict: ' + this.remotePath);
 		}
 
@@ -47,8 +47,8 @@ export default class ConflictResolveTask extends BaseTask {
 		}
 
 		return {
-			localStat,
-			remoteStat,
+			local,
+			remote,
 			localBuffer: await toArrayBuffer(localContent),
 			remoteBuffer: await toArrayBuffer(remoteContent),
 		};
@@ -68,37 +68,37 @@ export default class ConflictResolveTask extends BaseTask {
 
 	private async updateLatestTimestampRecord(params: {
 		winner: 'local' | 'remote';
-		localStat: ConflictTaskOptions['local']['stat'];
-		remoteStat: ConflictTaskOptions['remote']['stat'];
+		local: StatModel;
+		remote: StatModel;
 		winnerContent: ArrayBuffer;
 	}) {
-		const { winner, localStat, remoteStat, winnerContent } = params;
+		const { winner, local, remote, winnerContent } = params;
 		const baseText = this.isMergeableConflict() ? await this.toText(winnerContent) : undefined;
 
 		if (winner === 'local') {
 			// no race condition since we've just uploaded it
-			const newRemoteStat = await statWebDAVItem(this.webdav, this.remotePath);
-			if (!newRemoteStat || newRemoteStat.isDir)
+			const newRemote = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!newRemote || newRemote.isDir)
 				throw new Error(
 					`failed to read remote file stat after timestamp merge: ${this.localPath}`,
 				);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat: newRemoteStat,
+				local,
+				remote: newRemote,
 				baseText,
 			});
 		} else {
 			// no race condition since we've just written it
-			const newLocalStat = statVaultItem(this.vault, this.localPath);
-			if (!newLocalStat || newLocalStat.isDir)
+			const newLocal = statVaultItem(this.vault, this.localPath);
+			if (!newLocal || newLocal.isDir)
 				throw new Error(
 					`failed to read remote file stat after timestamp merge: ${this.localPath}`,
 				);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat: newLocalStat,
-				remoteStat,
+				local: newLocal,
+				remote,
 				baseText,
 			});
 		}
@@ -130,15 +130,15 @@ export default class ConflictResolveTask extends BaseTask {
 	}
 
 	async execLatestTimeStamp({
-		localStat,
-		remoteStat,
+		local,
+		remote,
 		localBuffer,
 		remoteBuffer,
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
 			const result = resolveByLatestTimestamp({
-				localMtime: localStat.mtime,
-				remoteMtime: remoteStat.mtime,
+				localMtime: local.mtime,
+				remoteMtime: remote.mtime,
 				localContent: localBuffer,
 				remoteContent: remoteBuffer,
 			});
@@ -148,8 +148,8 @@ export default class ConflictResolveTask extends BaseTask {
 					await this.writeLocalBuffer(result.content);
 					await this.updateLatestTimestampRecord({
 						winner: 'remote',
-						localStat,
-						remoteStat,
+						local,
+						remote,
 						winnerContent: remoteBuffer,
 					});
 					break;
@@ -159,18 +159,17 @@ export default class ConflictResolveTask extends BaseTask {
 					});
 					await this.updateLatestTimestampRecord({
 						winner: 'local',
-						localStat,
-						remoteStat,
+						local,
+						remote,
 						winnerContent: localBuffer,
 					});
 					break;
 				case LatestTimestampResolution.NoChange:
 					await this.updateLatestTimestampRecord({
-						winner: remoteStat.mtime > localStat.mtime ? 'remote' : 'local',
-						localStat,
-						remoteStat,
-						winnerContent:
-							remoteStat.mtime > localStat.mtime ? remoteBuffer : localBuffer,
+						winner: remote.mtime > local.mtime ? 'remote' : 'local',
+						local,
+						remote,
+						winnerContent: remote.mtime > local.mtime ? remoteBuffer : localBuffer,
 					});
 					break;
 			}
@@ -186,15 +185,15 @@ export default class ConflictResolveTask extends BaseTask {
 	}
 
 	async execKeepLocal({
-		localStat,
+		local,
 		localBuffer,
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
 			await this.webdav.putFileContents(this.remotePath, localBuffer, {
 				overwrite: true,
 			});
-			const newRemoteStat = await statWebDAVItem(this.webdav, this.remotePath);
-			if (!newRemoteStat || newRemoteStat.isDir)
+			const newRemote = await statWebDAVItem(this.webdav, this.remotePath);
+			if (!newRemote || newRemote.isDir)
 				throw new Error(
 					`failed to read remote file stat after keep-local merge: ${this.localPath}`,
 				);
@@ -202,8 +201,8 @@ export default class ConflictResolveTask extends BaseTask {
 			const baseText = await this.toText(localBuffer);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat,
-				remoteStat: newRemoteStat,
+				local,
+				remote: newRemote,
 				baseText,
 			});
 			return { success: true } as const;
@@ -217,13 +216,13 @@ export default class ConflictResolveTask extends BaseTask {
 	}
 
 	async execKeepRemote({
-		remoteStat,
+		remote,
 		remoteBuffer,
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
 		try {
 			await this.writeLocalBuffer(remoteBuffer);
-			const newLocalStat = statVaultItem(this.vault, this.localPath);
-			if (!newLocalStat || newLocalStat.isDir)
+			const newLocal = statVaultItem(this.vault, this.localPath);
+			if (!newLocal || newLocal.isDir)
 				throw new Error(
 					`failed to read local file stat after keep-remote merge: ${this.localPath}`,
 				);
@@ -231,8 +230,8 @@ export default class ConflictResolveTask extends BaseTask {
 			const baseText = await this.toText(remoteBuffer);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				localStat: newLocalStat,
-				remoteStat,
+				local: newLocal,
+				remote,
 				baseText,
 			});
 			return { success: true } as const;
@@ -246,8 +245,8 @@ export default class ConflictResolveTask extends BaseTask {
 	}
 
 	async execIntelligentMerge({
-		localStat,
-		remoteStat,
+		local,
+		remote,
 		localBuffer,
 		remoteBuffer,
 	}: Awaited<ReturnType<ConflictResolveTask['getConflictSnapshots']>>) {
@@ -255,8 +254,8 @@ export default class ConflictResolveTask extends BaseTask {
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
 					baseText: await this.toText(localBuffer),
-					localStat,
-					remoteStat,
+					local,
+					remote,
 					key: this.localPath,
 				});
 				return { success: true } as const;
@@ -279,8 +278,8 @@ export default class ConflictResolveTask extends BaseTask {
 			if (mergeResult.isIdentical) {
 				await this.syncRecord.upsertRecords({
 					baseText: localText,
-					localStat,
-					remoteStat,
+					local,
+					remote,
 					key: this.localPath,
 				});
 				return { success: true } as const;
@@ -294,8 +293,8 @@ export default class ConflictResolveTask extends BaseTask {
 				mergedText = mergeDigInResult.result.join('\n');
 			} else mergedText = mergeResult.mergedText as string;
 
-			let newRemoteStat: StatModel | undefined;
-			let newLocalStat: StatModel | undefined;
+			let newRemote: StatModel | undefined;
+			let newLocal: StatModel | undefined;
 			if (mergedText !== remoteText) {
 				const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
 					overwrite: true,
@@ -307,7 +306,7 @@ export default class ConflictResolveTask extends BaseTask {
 					throw new Error(
 						`failed to read remote file stat after intelligent merge: ${this.localPath}`,
 					);
-				newRemoteStat = fetchedRemoteStat;
+				newRemote = fetchedRemoteStat;
 			}
 			if (localText !== mergedText) {
 				await this.writeLocalBuffer(new TextEncoder().encode(mergedText).buffer);
@@ -316,13 +315,13 @@ export default class ConflictResolveTask extends BaseTask {
 					throw new Error(
 						`failed to read local file stat after intelligent merge: ${this.localPath}`,
 					);
-				newLocalStat = fetchedLocalStat;
+				newLocal = fetchedLocalStat;
 			}
 
 			await this.syncRecord.upsertRecords({
 				baseText: mergedText,
-				localStat: newLocalStat ?? localStat,
-				remoteStat: newRemoteStat ?? remoteStat,
+				local: newLocal ?? local,
+				remote: newRemote ?? remote,
 				key: this.localPath,
 			});
 			return { success: true } as const;

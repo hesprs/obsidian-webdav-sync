@@ -1,8 +1,8 @@
 import { isNil } from 'lodash-es';
 import type { StatsMap } from '~/types';
 import { vaultDirname } from '~/platform/path';
-import { buildRules, needIncludeFromGlobRules, type GlobMatchOptions } from './glob-match';
-import logger from './logger';
+import { buildRules, needIncludeFromGlobRules, type GlobMatchOptions } from '~/utils/glob-match';
+import logger from '~/utils/logger';
 
 // Apply inclusion / exclusion / file size rules and filter out invalid entries
 export default function postTraversal(

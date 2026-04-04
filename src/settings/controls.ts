@@ -2,6 +2,7 @@ import { parse as bytesParse } from 'bytes-iec';
 import { isNil } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import i18n from '~/i18n';
+import { apiLimiter } from '~/utils/api-limiter';
 import { isNumeric } from '~/utils/is-numeric';
 import BaseSettings from './settings.base';
 
@@ -38,6 +39,34 @@ export default class ControlsSettings extends BaseSettings {
 					() => void this.handleRealtimeSyncDelayBlur(text),
 				);
 			});
+
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.maxConcurrentWebDAVCalls.name'))
+			.setDesc(i18n.t('settings.maxConcurrentWebDAVCalls.desc'))
+			.addText((text) => {
+				const currentValue = this.plugin.settings.maxConcurrentWebDAVCalls.toString();
+				text.setPlaceholder(
+					i18n.t('settings.maxConcurrentWebDAVCalls.placeholder'),
+				).setValue(currentValue);
+				text.inputEl.addEventListener(
+					'blur',
+					() => void this.handleNumericBlur(text, 'maxConcurrentWebDAVCalls'),
+				);
+			});
+
+		new Setting(this.containerEl)
+			.setName(i18n.t('settings.minTimeBetweenWebDAVCalls.name'))
+			.setDesc(i18n.t('settings.minTimeBetweenWebDAVCalls.desc'))
+			.addText((text) => {
+				const currentValue = this.plugin.settings.minTimeBetweenWebDAVCalls.toString();
+				text.setPlaceholder(
+					i18n.t('settings.minTimeBetweenWebDAVCalls.placeholder'),
+				).setValue(currentValue);
+				text.inputEl.addEventListener(
+					'blur',
+					() => void this.handleNumericBlur(text, 'minTimeBetweenWebDAVCalls'),
+				);
+			});
 	}
 
 	private async handleRealtimeSyncDelayBlur(component: TextComponent) {
@@ -52,6 +81,26 @@ export default class ControlsSettings extends BaseSettings {
 
 		if (interval !== original) {
 			this.plugin.settings.realtimeSyncDelay = interval;
+			await this.plugin.saveSettings();
+		}
+	}
+
+	private async handleNumericBlur(
+		component: TextComponent,
+		field: 'maxConcurrentWebDAVCalls' | 'minTimeBetweenWebDAVCalls',
+	) {
+		const rawInterval = component.getValue();
+		const interval = parseInt(rawInterval);
+		const original = this.plugin.settings[field];
+		if (isNaN(interval) || interval < 0) {
+			new Notice(i18n.t(`settings.${field}.invalidValue`));
+			component.setValue(original.toString());
+			return;
+		}
+
+		if (interval !== original) {
+			this.plugin.settings[field] = interval;
+			apiLimiter.set(field, interval);
 			await this.plugin.saveSettings();
 		}
 	}

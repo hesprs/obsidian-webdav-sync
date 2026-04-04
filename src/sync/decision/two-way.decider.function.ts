@@ -1,4 +1,4 @@
-import type { StatModel } from '~/types';
+import type { RecordStatModel, StatModel } from '~/types';
 import { SyncPlanningSubStage } from '~/events';
 import { inferRemotePathFromVault } from '~/platform/path';
 import { SyncMode } from '~/settings';
@@ -11,15 +11,14 @@ import type {
 } from './sync-decision.interface';
 import { ConflictStrategy } from '../tasks/conflict-resolve.task';
 import { BaseTask } from '../tasks/task.interface';
-import { isSameTime } from '../utils/is-same-time';
+import isChanged from '../utils/is-changed';
 
 export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[]> {
 	const {
 		settings,
 		currentLocalStats: localStats,
 		currentRemoteStats: remoteStats,
-		previousRemoteRecords,
-		previousLocalRecords,
+		records,
 		compareFileContent,
 		onProgress,
 		taskFactory,
@@ -30,15 +29,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		createPlannedRemoteFolderSnapshot,
 		getBaseText,
 	} = input;
-	const syncRecords = new Map<string, { local: StatModel; remote: StatModel }>();
-	for (const record of previousLocalRecords) {
-		const [key, local] = record;
-		const remote = previousRemoteRecords.get(key);
-		if (!remote) throw new Error(`Asymmetric records found for ${key} (remote missing)`);
-		syncRecords.set(key, { local, remote });
-	}
-
-	const mixedPath = new Set([...localStats.keys(), ...remoteStats.keys()]);
+	const mixedPath = Array.from(new Set([...localStats.keys(), ...remoteStats.keys()]));
 
 	logger.debug(
 		'local state',
@@ -68,7 +59,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		completedUnits++;
 		await onProgress?.({
 			subStage: SyncPlanningSubStage.deciding,
-			totalWorkUnits: mixedPath.size,
+			totalWorkUnits: mixedPath.length,
 			completedWorkUnits: completedUnits,
 		});
 	};
@@ -116,7 +107,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		options: {
 			remotePath: string;
 			localPath: string;
-			record?: typeof syncRecords extends Map<string, infer T> ? T : never;
+			record?: RecordStatModel;
 			strategy: ConflictStrategy;
 			useGitStyle: boolean;
 		},
@@ -200,232 +191,207 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	};
 
 	// * sync files
-	for (const p of mixedPath) {
-		await updateProgress();
-		const remote = remoteStats.get(p);
-		const local = localStats.get(p);
-		const record = syncRecords.get(p);
-		const localPath = local?.path ?? p;
-		const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
+	await Promise.all(
+		mixedPath.map(async (p) => {
+			const remote = remoteStats.get(p);
+			const local = localStats.get(p);
+			const record = records.get(p);
+			const localPath = local?.path ?? p;
+			const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
 
-		const options = {
-			remotePath,
-			localPath,
-		};
+			const options = {
+				remotePath,
+				localPath,
+			};
 
-		let caseName: keyof typeof operations = 'NONE';
-		let remoteChanged = false;
-		let localChanged = false;
+			let caseName: keyof typeof operations = 'NONE';
+			let remoteChanged = false;
+			let localChanged = false;
 
-		if (local?.isDir || remote?.isDir) continue;
+			if (local?.isDir || remote?.isDir) {
+				await updateProgress();
+				return;
+			}
 
-		if (record) {
-			if (remote) {
-				remoteChanged = !isSameTime(remote.mtime, record.remote.mtime);
-				if (local) {
-					localChanged = !isSameTime(local.mtime, record.local.mtime);
-					if (localChanged) {
-						const baseText = await getBaseText(p);
-						if (baseText)
-							localChanged = !(await compareFileContent(local.path, baseText));
+			if (record) {
+				if (remote) {
+					remoteChanged = await isChanged({
+						path: p,
+						source: 'remote',
+						records,
+						currentStats: remoteStats,
+					});
+					if (local) {
+						localChanged = await isChanged({
+							path: p,
+							source: 'local',
+							records,
+							currentStats: localStats,
+							getBaseText,
+							compareFileContent,
+							syncMode: settings.syncMode,
+						});
+						if (remoteChanged && localChanged)
+							caseName = 'RECORD_REMOTE_LOCAL_CONFLICT';
+						else if (remoteChanged) caseName = 'RECORD_REMOTE_LOCAL_PULL';
+						else if (localChanged) caseName = 'RECORD_REMOTE_LOCAL_PUSH';
+					} else {
+						if (remoteChanged) caseName = 'RECORD_REMOTE_NOLOCAL_PULL';
+						else caseName = 'RECORD_REMOTE_NOLOCAL_REMOVE';
 					}
-					if (remoteChanged && localChanged) caseName = 'RECORD_REMOTE_LOCAL_CONFLICT';
-					else if (remoteChanged) caseName = 'RECORD_REMOTE_LOCAL_PULL';
-					else if (localChanged) caseName = 'RECORD_REMOTE_LOCAL_PUSH';
-				} else {
-					if (remoteChanged) caseName = 'RECORD_REMOTE_NOLOCAL_PULL';
-					else caseName = 'RECORD_REMOTE_NOLOCAL_REMOVE';
-				}
-			} else if (local) {
-				localChanged = !isSameTime(local.mtime, record.local.mtime);
-				if (localChanged) caseName = 'RECORD_NOREMOTE_LOCAL_PUSH';
-				else caseName = 'RECORD_NOREMOTE_LOCAL_REMOVE';
-			} else caseName = 'RECORD_NOREMOTE_NOLOCAL_UNRECORD';
-		} else {
-			if (remote) {
-				if (local) {
-					if (
-						settings.syncMode === SyncMode.LOOSE &&
-						!remote.isDir &&
-						remote.size === local.size
-					)
-						caseName = 'NORECORD_REMOTE_LOCAL_RECORD';
-					else caseName = 'NORECORD_REMOTE_LOCAL_CONFLICT';
-				} else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
-			} else if (local) caseName = 'NORECORD_NOREMOTE_LOCAL_PUSH';
-		}
+				} else if (local) {
+					localChanged = await isChanged({
+						path: p,
+						source: 'local',
+						records,
+						currentStats: localStats,
+						getBaseText,
+						compareFileContent,
+						syncMode: settings.syncMode,
+					});
+					if (localChanged) caseName = 'RECORD_NOREMOTE_LOCAL_PUSH';
+					else caseName = 'RECORD_NOREMOTE_LOCAL_REMOVE';
+				} else caseName = 'RECORD_NOREMOTE_NOLOCAL_UNRECORD';
+			} else {
+				if (remote) {
+					if (local) {
+						if (
+							settings.syncMode === SyncMode.LOOSE &&
+							!remote.isDir &&
+							remote.size === local.size
+						)
+							caseName = 'NORECORD_REMOTE_LOCAL_RECORD';
+						else caseName = 'NORECORD_REMOTE_LOCAL_CONFLICT';
+					} else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
+				} else if (local) caseName = 'NORECORD_NOREMOTE_LOCAL_PUSH';
+			}
 
-		const operations = {
-			NONE: () => {},
-			RECORD_NOREMOTE_NOLOCAL_UNRECORD: () => {
-				logger.debug(`cleaning orphaned sync record`, {
-					reason: 'both local and remote deleted',
-					remotePath,
-					localPath,
-					conditions: {
-						localExists: !!local,
-						remoteExists: !!remote,
-						recordExists: !!record,
-					},
-				});
-
-				tasks.push(
-					taskFactory.createCleanRecordTask({
+			const operations = {
+				NONE: () => {},
+				RECORD_NOREMOTE_NOLOCAL_UNRECORD: () => {
+					logger.debug(`cleaning orphaned sync record`, {
+						reason: 'both local and remote deleted',
 						remotePath,
 						localPath,
-					}),
-				);
-			},
-			NORECORD_REMOTE_LOCAL_RECORD: async () => {
-				if (!local || !remote) return;
-				logger.debug(`creating new record`, {
-					reason: 'both local and remote exist but no record',
-					remotePath,
-					localPath,
-					conditions: {
-						localExists: !!local,
-						remoteExists: !!remote,
-						recordExists: !!record,
-					},
-				});
+						conditions: {
+							localExists: !!local,
+							remoteExists: !!remote,
+							recordExists: !!record,
+						},
+					});
 
-				await createAddFileRecordTaskWithSnapshot(
-					{
-						localPath,
+					tasks.push(
+						taskFactory.createCleanRecordTask({
+							remotePath,
+							localPath,
+						}),
+					);
+				},
+				NORECORD_REMOTE_LOCAL_RECORD: async () => {
+					if (!local || !remote) return;
+					logger.debug(`creating new record`, {
+						reason: 'both local and remote exist but no record',
 						remotePath,
-					},
-					local,
-					remote,
-				);
-			},
-			RECORD_REMOTE_LOCAL_CONFLICT: async () => {
-				if (!remote || !local) return;
-				logger.debug(`Detected conflict between \`${localPath}\` and \`${remotePath}\``, {
-					reason: 'both local and remote files changed',
-					remotePath,
-					localPath,
-					conditions: {
-						remoteChanged,
-						localChanged,
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				if (hasInvalidChar(local.path)) {
-					tasks.push(taskFactory.createFilenameErrorTask(options));
-				} else {
-					await createConflictResolveTaskWithSnapshot(
+						localPath,
+						conditions: {
+							localExists: !!local,
+							remoteExists: !!remote,
+							recordExists: !!record,
+						},
+					});
+
+					await createAddFileRecordTaskWithSnapshot(
 						{
-							...options,
-							record,
-							strategy: settings.conflictStrategy,
-							useGitStyle: settings.useGitStyle,
+							localPath,
+							remotePath,
 						},
 						local,
 						remote,
 					);
-				}
-			},
-			RECORD_REMOTE_LOCAL_PULL: async () => {
-				if (!remote || !local) return;
-				logger.debug(`Pull remote file \`${remotePath}\` changes to local`, {
-					reason: 'remote file changed',
-					remotePath,
-					localPath,
-					conditions: {
-						remoteChanged,
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				await createPullTaskWithSnapshot(options, remote);
-			},
-			RECORD_REMOTE_LOCAL_PUSH: async () => {
-				if (!remote || !local) return;
-				logger.debug(`Push local file \`${localPath}\` changes to remote`, {
-					reason: 'local file changed',
-					remotePath,
-					localPath,
-					conditions: {
-						localChanged,
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				if (hasInvalidChar(local.path))
-					tasks.push(taskFactory.createFilenameErrorTask(options));
-				else await createPushTaskWithSnapshot(options, local);
-			},
-			RECORD_REMOTE_NOLOCAL_PULL: async () => {
-				if (!remote) return;
-				logger.debug(`Pull remote file \`${remotePath}\` to local`, {
-					reason: 'remote file changed and local file does not exist',
-					remotePath,
-					localPath,
-					conditions: {
-						remoteChanged,
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				await createPullTaskWithSnapshot(options, remote);
-			},
-			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
-				if (!remote) return;
-				logger.debug(`Remove remote file \`${remote.path}\``, {
-					reason: 'remote file is removable',
-					remotePath,
-					localPath,
-					conditions: {
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				tasks.push(taskFactory.createRemoveRemoteTask(options));
-			},
-			RECORD_NOREMOTE_LOCAL_PUSH: async () => {
-				if (!local) return;
-				logger.debug(`Push local file \`${localPath}\` to remote`, {
-					reason: 'local file changed and remote file does not exist',
-					remotePath,
-					localPath,
-					conditions: {
-						localChanged,
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				if (hasInvalidChar(local.path)) {
-					tasks.push(taskFactory.createFilenameErrorTask(options));
-				} else await createPushTaskWithSnapshot(options, local);
-			},
-			RECORD_NOREMOTE_LOCAL_REMOVE: () => {
-				if (!local) return;
-				logger.debug(`Remove local file \`${localPath}\``, {
-					reason: 'local file is removable',
-					remotePath,
-					localPath,
-					conditions: {
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				tasks.push(taskFactory.createRemoveLocalTask(options));
-				return;
-			},
-			NORECORD_REMOTE_LOCAL_CONFLICT: async () => {
-				if (!remote || !local) return;
-				logger.debug(
-					`Detected conflict between local file \`${localPath}\` and remote file ${remotePath}`,
-					{
-						reason: 'both local and remote files exist without a record',
+				},
+				RECORD_REMOTE_LOCAL_CONFLICT: async () => {
+					if (!remote || !local) return;
+					logger.debug(
+						`Detected conflict between \`${localPath}\` and \`${remotePath}\``,
+						{
+							reason: 'both local and remote files changed',
+							remotePath,
+							localPath,
+							conditions: {
+								remoteChanged,
+								localChanged,
+								recordExists: !!record,
+								remoteExists: !!remote,
+								localExists: !!local,
+							},
+						},
+					);
+					if (hasInvalidChar(local.path)) {
+						tasks.push(taskFactory.createFilenameErrorTask(options));
+					} else {
+						await createConflictResolveTaskWithSnapshot(
+							{
+								...options,
+								record,
+								strategy: settings.conflictStrategy,
+								useGitStyle: settings.useGitStyle,
+							},
+							local,
+							remote,
+						);
+					}
+				},
+				RECORD_REMOTE_LOCAL_PULL: async () => {
+					if (!remote || !local) return;
+					logger.debug(`Pull remote file \`${remotePath}\` changes to local`, {
+						reason: 'remote file changed',
+						remotePath,
+						localPath,
+						conditions: {
+							remoteChanged,
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					await createPullTaskWithSnapshot(options, remote);
+				},
+				RECORD_REMOTE_LOCAL_PUSH: async () => {
+					if (!remote || !local) return;
+					logger.debug(`Push local file \`${localPath}\` changes to remote`, {
+						reason: 'local file changed',
+						remotePath,
+						localPath,
+						conditions: {
+							localChanged,
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					if (hasInvalidChar(local.path))
+						tasks.push(taskFactory.createFilenameErrorTask(options));
+					else await createPushTaskWithSnapshot(options, local);
+				},
+				RECORD_REMOTE_NOLOCAL_PULL: async () => {
+					if (!remote) return;
+					logger.debug(`Pull remote file \`${remotePath}\` to local`, {
+						reason: 'remote file changed and local file does not exist',
+						remotePath,
+						localPath,
+						conditions: {
+							remoteChanged,
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					await createPullTaskWithSnapshot(options, remote);
+				},
+				RECORD_REMOTE_NOLOCAL_REMOVE: () => {
+					if (!remote) return;
+					logger.debug(`Remove remote file \`${remote.path}\``, {
+						reason: 'remote file is removable',
 						remotePath,
 						localPath,
 						conditions: {
@@ -433,62 +399,112 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							remoteExists: !!remote,
 							localExists: !!local,
 						},
-					},
-				);
-				if (hasInvalidChar(local.path)) {
-					tasks.push(taskFactory.createFilenameErrorTask(options));
-				} else {
-					await createConflictResolveTaskWithSnapshot(
-						{
-							...options,
-							strategy: settings.conflictStrategy,
-							useGitStyle: settings.useGitStyle,
+					});
+					tasks.push(taskFactory.createRemoveRemoteTask(options));
+				},
+				RECORD_NOREMOTE_LOCAL_PUSH: async () => {
+					if (!local) return;
+					logger.debug(`Push local file \`${localPath}\` to remote`, {
+						reason: 'local file changed and remote file does not exist',
+						remotePath,
+						localPath,
+						conditions: {
+							localChanged,
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
 						},
-						local,
-						remote,
+					});
+					if (hasInvalidChar(local.path)) {
+						tasks.push(taskFactory.createFilenameErrorTask(options));
+					} else await createPushTaskWithSnapshot(options, local);
+				},
+				RECORD_NOREMOTE_LOCAL_REMOVE: () => {
+					if (!local) return;
+					logger.debug(`Remove local file \`${localPath}\``, {
+						reason: 'local file is removable',
+						remotePath,
+						localPath,
+						conditions: {
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					tasks.push(taskFactory.createRemoveLocalTask(options));
+					return;
+				},
+				NORECORD_REMOTE_LOCAL_CONFLICT: async () => {
+					if (!remote || !local) return;
+					logger.debug(
+						`Detected conflict between local file \`${localPath}\` and remote file ${remotePath}`,
+						{
+							reason: 'both local and remote files exist without a record',
+							remotePath,
+							localPath,
+							conditions: {
+								recordExists: !!record,
+								remoteExists: !!remote,
+								localExists: !!local,
+							},
+						},
 					);
-				}
-			},
-			NORECORD_REMOTE_NOLOCAL_PULL: async () => {
-				if (!remote) return;
-				logger.debug(`Pull remote file \`${remotePath}\` to local`, {
-					reason: 'remote file exists without a local file',
-					remotePath,
-					localPath,
-					conditions: {
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				await createPullTaskWithSnapshot(options, remote);
-			},
-			NORECORD_NOREMOTE_LOCAL_PUSH: async () => {
-				if (!local) return;
-				logger.debug(`Push local file \`${localPath}\` to remote`, {
-					reason: 'local file exists without a remote file',
-					remotePath,
-					localPath,
-					conditions: {
-						recordExists: !!record,
-						remoteExists: !!remote,
-						localExists: !!local,
-					},
-				});
-				if (hasInvalidChar(local.path))
-					tasks.push(taskFactory.createFilenameErrorTask(options));
-				else await createPushTaskWithSnapshot(options, local);
-			},
-		};
+					if (hasInvalidChar(local.path)) {
+						tasks.push(taskFactory.createFilenameErrorTask(options));
+					} else {
+						await createConflictResolveTaskWithSnapshot(
+							{
+								...options,
+								strategy: settings.conflictStrategy,
+								useGitStyle: settings.useGitStyle,
+							},
+							local,
+							remote,
+						);
+					}
+				},
+				NORECORD_REMOTE_NOLOCAL_PULL: async () => {
+					if (!remote) return;
+					logger.debug(`Pull remote file \`${remotePath}\` to local`, {
+						reason: 'remote file exists without a local file',
+						remotePath,
+						localPath,
+						conditions: {
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					await createPullTaskWithSnapshot(options, remote);
+				},
+				NORECORD_NOREMOTE_LOCAL_PUSH: async () => {
+					if (!local) return;
+					logger.debug(`Push local file \`${localPath}\` to remote`, {
+						reason: 'local file exists without a remote file',
+						remotePath,
+						localPath,
+						conditions: {
+							recordExists: !!record,
+							remoteExists: !!remote,
+							localExists: !!local,
+						},
+					});
+					if (hasInvalidChar(local.path))
+						tasks.push(taskFactory.createFilenameErrorTask(options));
+					else await createPushTaskWithSnapshot(options, local);
+				},
+			};
 
-		await operations[caseName]();
-	}
+			await operations[caseName]();
+			await updateProgress();
+		}),
+	);
 
 	// * sync folders
 	for (const p of mixedPath) {
 		const remote = remoteStats.get(p);
 		const local = localStats.get(p);
-		const record = syncRecords.get(p);
+		const record = records.get(p);
 		const localPath = local?.path ?? p;
 		const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
 		if (!(remote?.isDir || local?.isDir)) continue;
@@ -501,12 +517,24 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			if (local) {
 				if (remote) caseName = 'LOCAL_REMOTE_RECORD_NOOP';
 				else {
-					localChanged = local.mtime !== record.local.mtime;
+					localChanged = await isChanged({
+						path: p,
+						source: 'local',
+						records,
+						tasks,
+						currentStats: localStats,
+					});
 					if (localChanged) caseName = 'LOCAL_NOREMOTE_RECORD_PUSH';
 					else caseName = 'LOCAL_NOREMOTE_RECORD_REMOVE';
 				}
 			} else if (remote) {
-				remoteChanged = remote.mtime !== record.remote.mtime;
+				remoteChanged = await isChanged({
+					path: p,
+					source: 'remote',
+					records,
+					tasks,
+					currentStats: remoteStats,
+				});
 				if (remoteChanged) caseName = 'REMOTE_NOLOCAL_RECORD_PULL';
 				else caseName = 'REMOTE_NOLOCAL_RECORD_REMOVE';
 			} else caseName = 'NOLOCAL_NOREMOTE_RECORD_UNRECORD';

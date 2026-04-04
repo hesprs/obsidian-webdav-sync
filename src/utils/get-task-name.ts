@@ -21,6 +21,8 @@ export default function getTaskName(task: BaseTask) {
 			return i18n.t('sync.fileOp.upload');
 		case 'RemoveLocalTask':
 			return i18n.t('sync.fileOp.removeLocal');
+		case 'RemoveLocalRecursivelyTask':
+			return i18n.t('sync.fileOp.removeLocalRecursively');
 		case 'RemoveRemoteTask':
 			return i18n.t('sync.fileOp.removeRemote');
 		case 'RemoveRemoteRecursivelyTask':
