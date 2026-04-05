@@ -63,10 +63,11 @@ export function remotePathToVault(remoteBaseDir: string, remotePath: string): st
 
 // should only be used during WebDAV traversal (single source of inflow)
 export function remotePathToAbsolute(remoteBaseDir: string, stat: StatModel): string {
+	const base = normalizeRemotePath(remoteBaseDir);
 	let result = normalizeRemotePath(stat.path);
-	if (!result.startsWith(remoteBaseDir)) result = `/${remoteBaseDir}${result}`;
+	if (!result.startsWith(base)) result = `${base}${result}`;
 	if (stat.isDir) result = `${result}/`;
-	return result.replaceAll('//', '/');
+	return result;
 }
 
 export function inferRemotePathFromVault(remoteBaseDir: string, vaultStat?: StatModel): string {

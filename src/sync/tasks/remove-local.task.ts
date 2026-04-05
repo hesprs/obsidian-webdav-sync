@@ -6,6 +6,8 @@ export default class RemoveLocalTask extends BaseTask {
 		super(options);
 	}
 
+	readonly name = 'removeLocal';
+
 	async exec() {
 		try {
 			const file = this.vault.getAbstractFileByPath(this.localPath);

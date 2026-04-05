@@ -31,22 +31,9 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	} = input;
 	const mixedPath = Array.from(new Set([...localStats.keys(), ...remoteStats.keys()]));
 
-	logger.debug(
-		'local state',
-		Array.from(localStats.values()).map((d) => ({
-			path: d.path,
-			size: d.isDir ? undefined : d.size,
-			isDir: d.isDir,
-		})),
-	);
-	logger.debug(
-		'remote state',
-		Array.from(remoteStats.values()).map((d) => ({
-			path: d.path,
-			size: d.isDir ? undefined : d.size,
-			isDir: d.isDir,
-		})),
-	);
+	logger.debug('local state', Array.from(localStats.keys()));
+	logger.debug('remote state', Array.from(remoteStats.keys()));
+	logger.debug('records', Array.from(records.keys()));
 
 	const tasks: BaseTask[] = [];
 	const removeRemoteFolderTasks: BaseTask[] = [];

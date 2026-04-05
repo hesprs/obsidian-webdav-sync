@@ -1,17 +1,19 @@
 import localspace from 'localspace';
 import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
-import { createStorageUnavailableError, parseKey, STORAGE_NAME } from './store.interface';
-
-const BASE_TEXT_STORE_NAME = 'base-text';
+import {
+	BASE_TEXT_STORE_NAME,
+	createStorageUnavailableError,
+	parseKey,
+	STORAGE_NAME,
+} from './store.interface';
 
 export class IndexedDbBaseTextStore {
 	private readonly store = localspace.createInstance({
 		name: STORAGE_NAME,
 		storeName: BASE_TEXT_STORE_NAME,
 		driver: [localspace.INDEXEDDB],
-		coalesceWrites: true,
-		coalesceWindowMs: 500,
+		coalesceWrites: false,
 	});
 
 	private initPromise: Promise<void> | undefined;
@@ -50,17 +52,16 @@ export class IndexedDbBaseTextStore {
 				const { namespace, path } = parseKey(key);
 				return namespace === _namespace && isSub(_path, path, true);
 			});
-			await Promise.all(keys.map((key) => this.store.removeItem(key)));
+			await this.store.removeItems(keys);
 		});
 	}
 
 	async removeNamespace(_namespace: string): Promise<void> {
 		await this.run('clear base text in a namespace', async () => {
-			const keys = (await this.store.keys()).filter((key) => {
-				const { namespace } = parseKey(key);
-				return namespace === _namespace;
-			});
-			await Promise.all(keys.map((key) => this.store.removeItem(key)));
+			const keys = (await this.store.keys()).filter(
+				(key) => parseKey(key).namespace === _namespace,
+			);
+			await this.store.removeItems(keys);
 		});
 	}
 
@@ -82,9 +83,5 @@ export class IndexedDbBaseTextStore {
 
 	private getKey(namespace: string, path: string): string {
 		return `base-text:${namespace}:${path}`;
-	}
-
-	private getMetaKey(namespace: string): string {
-		return `base-text:${namespace}:meta`;
 	}
 }

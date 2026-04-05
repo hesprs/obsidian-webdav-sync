@@ -16,7 +16,7 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
-import { LocalVaultFileSystem } from '~/fs/local-vault';
+import { LocalVaultFileSystem } from '~/fs/vault';
 import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
 import { remoteDirname, vaultDirname } from '~/platform/path';
@@ -76,16 +76,13 @@ export class SyncEngine {
 		private plugin: WebDAVSyncPlugin,
 		private options: {
 			vault: Vault;
-			token: string;
-			remoteServerUrl?: string;
-			remoteBaseDir: string;
 			webdav: WebDAVClient;
-			syncStateStore: WebDAVSyncPlugin['syncStateStore'];
+			token: string;
 		},
 	) {
 		this.options = Object.freeze(this.options);
-		this.remoteFs = new RemoteWebDAVFileSystem(this.options);
-		this.localFS = new LocalVaultFileSystem(this.options);
+		this.remoteFs = new RemoteWebDAVFileSystem(options.token);
+		this.localFS = new LocalVaultFileSystem(options.vault);
 		this.subscriptions.push(
 			onCancelSync().subscribe(() => {
 				this.isCancelled = true;
@@ -163,9 +160,8 @@ export class SyncEngine {
 				return currentRun;
 			}
 
-			const firstTaskIdxNeedingConfirmation = tasks.findIndex((t) =>
-				this.isDisplayableTask(t),
-			);
+			const displayableTasks = tasks.filter((t) => this.isDisplayableTask(t));
+			const notDisplayableTasks = tasks.filter((t) => !this.isDisplayableTask(t));
 
 			if (this.isCancelled) {
 				currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
@@ -175,7 +171,7 @@ export class SyncEngine {
 			if (
 				request.mode === SyncStartMode.MANUAL_SYNC &&
 				settings.confirmBeforeSync &&
-				firstTaskIdxNeedingConfirmation > -1
+				displayableTasks.length > 0
 			) {
 				currentRun = updateSyncRunSnapshot(currentRun, {
 					stage: 'awaiting_confirmation',
@@ -188,8 +184,11 @@ export class SyncEngine {
 					},
 				});
 				emitSyncRun(currentRun);
-				const confirmExec = await new TaskListConfirmModal(this.app, tasks).openAndWait();
-				if (confirmExec.confirm) tasks = confirmExec.tasks;
+				const confirmExec = await new TaskListConfirmModal(
+					this.app,
+					displayableTasks,
+				).openAndWait();
+				if (confirmExec.confirm) tasks = [...notDisplayableTasks, ...confirmExec.tasks];
 				else {
 					currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
 					return currentRun;
@@ -844,7 +843,7 @@ export class SyncEngine {
 	}
 
 	get remoteBaseDir() {
-		return this.options.remoteBaseDir;
+		return this.settings.remoteDir;
 	}
 
 	get settings() {
@@ -855,7 +854,7 @@ export class SyncEngine {
 		return getSyncStateKey({
 			vaultName: this.vault.getName(),
 			remoteBaseDir: this.remoteBaseDir,
-			serverUrl: this.options.remoteServerUrl || this.settings.serverUrl,
+			serverUrl: this.settings.serverUrl,
 			account: this.settings.account,
 		});
 	}

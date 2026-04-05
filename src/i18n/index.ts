@@ -1,5 +1,6 @@
 import i18n from 'i18next';
 import en from './enold';
+import ru from './ru';
 import zhHans from './zh-Hans';
 
 const defaultNS = 'translation';
@@ -9,6 +10,9 @@ const resources = {
 	},
 	en: {
 		translation: en,
+	},
+	ru: {
+		translation: ru,
 	},
 } as const;
 

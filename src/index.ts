@@ -15,7 +15,8 @@ import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
-import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
+import { migrateSettings } from './settings/migration';
+import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
 import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
 import { apiLimiter } from './utils/api-limiter';
 
@@ -34,7 +35,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		serverUrl: '',
 		account: '',
 		credential: '',
-		remoteDir: '',
+		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
@@ -57,7 +58,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		minTimeBetweenWebDAVCalls: 0,
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
-		scheduledSyncIntervalSeconds: 300,
+		scheduledSyncIntervalSeconds: 0,
 		language: undefined,
 	};
 
@@ -76,11 +77,13 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
+		migrateSettings(this);
 		apiLimiter
 			.set('maxConcurrentWebDAVCalls', this.settings.maxConcurrentWebDAVCalls)
 			.set('minTimeBetweenWebDAVCalls', this.settings.minTimeBetweenWebDAVCalls);
 		await this.syncStateStore.initialize().catch(() => undefined);
 		await this.baseTextStore.initialize().catch(() => undefined);
+		await migrateStorage(this);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		await this.scheduledSyncService.start();
@@ -126,11 +129,5 @@ export default class WebDAVSyncPlugin extends Plugin {
 			!!this.settings.credential &&
 			this.settings.credential.trim() !== ''
 		);
-	}
-
-	get remoteBaseDir() {
-		let remoteDir = this.settings.remoteDir;
-		if (remoteDir === '' || remoteDir === '/') remoteDir = this.app.vault.getName();
-		return `${normalizeBaseDir(remoteDir)}`;
 	}
 }

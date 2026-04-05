@@ -1,4 +1,5 @@
 import localspace from 'localspace';
+import { isNil } from 'lodash-es';
 import type { RecordStatModel, RecordStatsMap } from '~/types';
 import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
@@ -14,8 +15,7 @@ export class IndexedDbSyncStateStore {
 		name: STORAGE_NAME,
 		storeName: SYNC_STATE_STORE_NAME,
 		driver: [localspace.INDEXEDDB],
-		coalesceWrites: true,
-		coalesceWindowMs: 500,
+		coalesceWrites: false, // https://github.com/unadlib/localspace/issues/3
 	});
 
 	private initPromise: Promise<void> | undefined;
@@ -42,15 +42,12 @@ export class IndexedDbSyncStateStore {
 	async getAll(_namespace: string): Promise<RecordStatsMap> {
 		return await this.run('read all records', async () => {
 			const result: RecordStatsMap = new Map();
-			const keys = await this.store.keys();
-			await Promise.all(
-				keys.map(async (key) => {
-					const { namespace, path } = parseKey(key);
-					if (namespace !== _namespace) return;
-					const record = await this.store.getItem<RecordStatModel>(key);
-					if (record) result.set(path, record);
-				}),
+			const keys = (await this.store.keys()).filter(
+				(key) => parseKey(key).namespace === _namespace,
 			);
+			(await this.store.getItems<RecordStatModel>(keys))
+				.filter(({ value }) => !isNil(value))
+				.map(({ key, value }) => result.set(parseKey(key).path, value as RecordStatModel));
 			return result;
 		});
 	}
@@ -73,17 +70,16 @@ export class IndexedDbSyncStateStore {
 				const { namespace, path } = parseKey(key);
 				return namespace === _namespace && isSub(_path, path, true);
 			});
-			await Promise.all(keys.map((key) => this.store.removeItem(key)));
+			await this.store.removeItems(keys);
 		});
 	}
 
 	async removeNamespace(_namespace: string): Promise<void> {
 		await this.run('clear record in a namespace', async () => {
-			const keys = (await this.store.keys()).filter((key) => {
-				const { namespace } = parseKey(key);
-				return namespace === _namespace;
-			});
-			await Promise.all(keys.map((key) => this.store.removeItem(key)));
+			const keys = (await this.store.keys()).filter(
+				(key) => parseKey(key).namespace === _namespace,
+			);
+			await this.store.removeItems(keys);
 		});
 	}
 
@@ -101,10 +97,6 @@ export class IndexedDbSyncStateStore {
 			logger.error(`Failed to ${operation}`, error);
 			throw error;
 		}
-	}
-
-	private getMetaKey(namespace: string): string {
-		return `sync-state:${namespace}:meta`;
 	}
 
 	private getKey(namespace: string, path: string): string {

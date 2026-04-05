@@ -7,6 +7,7 @@ export default class MkdirLocalTask extends BaseTask {
 	constructor(readonly options: BaseTaskOptions & MkdirLocalTaskOptions) {
 		super(options);
 	}
+	readonly name = 'createLocalDir';
 
 	async exec() {
 		try {

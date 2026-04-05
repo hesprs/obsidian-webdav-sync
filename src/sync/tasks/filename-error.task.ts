@@ -8,13 +8,13 @@ export class FilenameError extends Error {
 		public readonly filePath: string,
 	) {
 		super();
-		this.name = 'FilenameError';
 		Object.setPrototypeOf?.(this, new.target.prototype);
 		Object.defineProperty(this, 'message', {
 			configurable: true,
 			get: () => FilenameError.format(this.invalidChars, this.filePath),
 		});
 	}
+	readonly name = 'filenameError';
 
 	private static format(invalidChars: string[], filePath: string) {
 		const unique = Array.from(new Set(invalidChars));

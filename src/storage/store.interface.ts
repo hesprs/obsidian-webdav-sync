@@ -4,18 +4,9 @@ export function createStorageUnavailableError(cause: unknown): Error {
 	return new Error('Sync state storage unavailable');
 }
 
-type SyncStateMetaRecord = {
-	version: 2;
-};
-type BaseTextMetaRecord = {
-	version: 1;
-};
-
 export const STORAGE_NAME = 'obsidian-webdav-sync';
 export const SYNC_STATE_STORE_NAME = 'sync-state';
-
-export const SYNC_STATE_STORAGE_VERSION: SyncStateMetaRecord['version'] = 2;
-export const BASE_TEXT_STORAGE_VERSION: BaseTextMetaRecord['version'] = 1;
+export const BASE_TEXT_STORE_NAME = 'base-text';
 
 export function parseKey(key: string) {
 	const i = key.indexOf(':');

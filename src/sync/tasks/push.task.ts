@@ -8,6 +8,7 @@ export default class PushTask extends BaseTask {
 	constructor(readonly options: BaseTaskOptions & PushTaskOptions) {
 		super(options);
 	}
+	readonly name = 'upload';
 
 	private async toText(content: ArrayBuffer) {
 		return await new Blob([new Uint8Array(content)]).text();

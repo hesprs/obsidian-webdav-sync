@@ -93,15 +93,13 @@ export default class TwoWaySyncDecider {
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
 				? extractRemoteRecords(records)
-				: await this.sync.remoteFs.walk({
-						onTraversalProgress: async (progress) => {
-							await reportPlanningProgress({
-								subStage: SyncPlanningSubStage.walkingRemote,
-								totalWorkUnits: progress.totalDirectories,
-								completedWorkUnits: progress.processedDirectories,
-								currentItem: progress.currentDirectory ?? this.remoteBaseDir,
-							});
-						},
+				: await this.sync.remoteFs.walk(async (progress) => {
+						await reportPlanningProgress({
+							subStage: SyncPlanningSubStage.walkingRemote,
+							totalWorkUnits: progress.totalDirectories,
+							completedWorkUnits: progress.processedDirectories,
+							currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+						});
 					});
 
 		// 创建共用的task选项

@@ -153,15 +153,6 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.clearRecord.name'))
-			.setDesc(i18n.t('settings.clearRecord.desc'))
-			.addButton((button) =>
-				button
-					.setButtonText(i18n.t('settings.clearRecord.button'))
-					.onClick(() => void this.clearRecords()),
-			);
-
-		new Setting(this.containerEl)
 			.setName(i18n.t('settings.language.name'))
 			.setDesc(i18n.t('settings.language.desc'))
 			.addDropdown((dropdown) =>
@@ -169,9 +160,16 @@ export default class CommonSettings extends BaseSettings {
 					.addOption('', i18n.t('settings.language.auto'))
 					.addOption('zh-Hans', '简体中文')
 					.addOption('en', 'English')
+					.addOption('ru', 'Русский')
 					.setValue(this.plugin.settings.language || '')
 					.onChange((value) => {
-						if (value === 'zh-Hans' || value === 'en' || value === '' || isNil(value))
+						if (
+							value === 'zh-Hans' ||
+							value === 'en' ||
+							value === 'ru' ||
+							value === '' ||
+							isNil(value)
+						)
 							void this.updateLanguage(value);
 					}),
 			);
@@ -208,14 +206,6 @@ export default class CommonSettings extends BaseSettings {
 		this.plugin.settings.scheduledSyncIntervalSeconds = finalValue * 60;
 		await this.plugin.saveSettings();
 		await this.plugin.scheduledSyncService.updateInterval();
-	}
-
-	private async clearRecords() {
-		await Promise.all([
-			this.plugin.syncStateStore.removeAll(),
-			this.plugin.baseTextStore.removeAll(),
-		]);
-		new Notice(i18n.t('settings.clearRecord.cleared'));
 	}
 
 	private async updateLanguage(value: string) {

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
-import { WebDAVTraversal } from '~/fs/traverse-webdav';
+import { traverseWebDAV } from '~/fs/traverse-webdav';
 
 const remoteRecordState: StatsMap = new Map();
 
@@ -44,14 +44,11 @@ describe('WebDAVTraversal', () => {
 			])
 			.mockResolvedValueOnce([]);
 
-		const traversal = new WebDAVTraversal({
-			remoteServerUrl: 'https://dav.example.com/dav',
+		await traverseWebDAV({
+			serverUrl: 'https://dav.example.com/dav',
 			token: 'token',
 			remoteBaseDir: '/test/',
-			stateKey: 'traverse-path-fix',
 		});
-
-		await traversal.traverse();
 
 		expect(vi.mocked(getDirectoryContents)).toHaveBeenNthCalledWith(
 			1,
@@ -85,14 +82,13 @@ describe('WebDAVTraversal', () => {
 				message: '404: Not Found',
 			});
 
-		const traversal = new WebDAVTraversal({
-			remoteServerUrl: 'https://dav.example.com/dav',
+		const traversal = traverseWebDAV({
+			serverUrl: 'https://dav.example.com/dav',
 			token: 'token',
 			remoteBaseDir: '/test/',
-			stateKey: 'traverse-404-skip',
 		});
 
-		await expect(traversal.traverse()).resolves.toBeDefined();
+		await expect(traversal).resolves.toBeDefined();
 
 		expect(vi.mocked(getDirectoryContents)).toHaveBeenNthCalledWith(
 			2,

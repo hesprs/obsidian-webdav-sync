@@ -22,6 +22,7 @@ export default class MkdirsRemoteTask extends BaseTask {
 		super(options);
 		this.additionalPaths = options.additionalPaths;
 	}
+	readonly name = 'createRemoteDirs';
 
 	async exec() {
 		try {
