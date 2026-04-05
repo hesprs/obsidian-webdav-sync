@@ -86,6 +86,11 @@ vi.mock('localspace', () => ({
 	},
 }));
 
+vi.stubGlobal('window', {
+	setTimeout: vi.fn((cb: Function, delay: number) => setTimeout(cb, delay)),
+	clearTimeout: vi.fn((id) => clearTimeout(id)),
+});
+
 function stateStoreBucket() {
 	return getBucket(STORAGE_NAME, SYNC_STATE_STORE_NAME);
 }

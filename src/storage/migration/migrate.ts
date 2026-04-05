@@ -62,7 +62,7 @@ function inferRemoteStat(remoteBaseDir: string, localStat: StatModel): StatModel
 
 function yieldEventLoop(): Promise<void> {
 	return new Promise((resolve) => {
-		setTimeout(resolve, 0);
+		window.setTimeout(resolve, 0);
 	});
 }
 

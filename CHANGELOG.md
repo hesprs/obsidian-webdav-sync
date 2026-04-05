@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.0.0 - 2026-04-05
+
+### Huge Internal Refactor
+
+**Many breaking changes are present although auto migration is provided. Strongly recommended to backup before upgrade.**
+
+- Complete rewrite and simplification of storage layer to separated IndexedDB-backed stores for base text and sync records. Drastically reduced storage read / write overhead.
+- Added safer key parsing and bulk `getItems/removeItems` helpers in storage to reduce round-trips.
+- Traversal refactor: class-based traversal replaced by functional traversal utilities. Greatly improved implementation simplicity.
+- Centralized path utilities under `src/platform/path.ts` and simplified path handling across the plugin.
+- Parallelized traversal, storage and decision with conceivable 10-20x performance boost.
+- Standardized previous IOS-specific strict directory path normalization to all platforms.
+- Reworked sync task implementations to the new `record/StatsMap` model.
+- Removed useless `noop` and `skip` tasks.
+- Refurbished and renamed merge/remove task utilities.
+- Added WebDAV runtime-configurable rate-liming settings.
+- Organized settings UI.
+- Added Russian locale (`src/i18n/ru.ts`) and related wiring.
+- New and updated services:
+- Two migration systems (v1.3.0 - v2.0.0) added and executed on plugin load:
+  - Settings migration: `src/settings/migration.ts`
+  - Storage migration: `src/storage/migration/migrate.ts`
+- Numerous bug / glitch fixes.
+
 ## Obsidian WebDAV Sync v1.3.0 - 2026-03-26
 
 - Fixed iOS-specific Unicode normalization inconsistency that causes different file with the same name to be created in the WebDAV.
