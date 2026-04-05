@@ -82,8 +82,9 @@ Below is a list of planned features and improvements, the faster this plugin is 
 
 - [ ] Support syncing files in the Obsidian config folder (`.obsidian/`)
 - [ ] Saving WebDAV credentials in Obsidian Keychain
-- [ ] Allow users to adjust rate and concurrency limits
+- [x] Allow users to adjust rate and concurrency limits
 - [x] Enhance observability of sync progress
+- [ ] Refactor traversal and task execution to eliminate race conditions (#43)
 
 ## License and Copyright
 
