@@ -33,7 +33,7 @@ export function mergeMkdirTasks(mkdirTasks: MkdirRemoteTask[]): MkdirsRemoteTask
 
 		// Check if this task is a child of any existing group
 		for (const [deepestPath, group] of hierarchyGroups.entries()) {
-			if (remotePath.startsWith(deepestPath + '/')) {
+			if (remotePath.startsWith(deepestPath)) {
 				// This is a child, so deepestPath should be replaced with this path
 				hierarchyGroups.delete(deepestPath);
 				group.push({ task, remotePath });
@@ -52,7 +52,7 @@ export function mergeMkdirTasks(mkdirTasks: MkdirRemoteTask[]): MkdirsRemoteTask
 			const groupsToDelete: string[] = [];
 
 			for (const [deepestPath, group] of hierarchyGroups.entries()) {
-				if (deepestPath.startsWith(remotePath + '/')) {
+				if (deepestPath.startsWith(remotePath)) {
 					// Existing group is a child of this task
 					childGroups = childGroups.concat(group);
 					groupsToDelete.push(deepestPath);

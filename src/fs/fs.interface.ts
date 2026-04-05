@@ -1,6 +1,9 @@
 import type { MaybePromise } from '~/types';
-import type { TraversalProgress } from './traverse-webdav';
 
-export interface FsWalkOptions {
-	onTraversalProgress?: (progress: TraversalProgress) => MaybePromise<void>;
+interface TraversalProgress {
+	processedDirectories: number;
+	totalDirectories: number;
+	currentDirectory?: string;
 }
+
+export type OnProgress = (progress: TraversalProgress) => MaybePromise<void>;

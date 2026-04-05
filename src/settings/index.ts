@@ -6,8 +6,8 @@ import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
 import ControlsSettings from './controls';
+import DevelopmentSettings from './development';
 import FilterSettings from './filter';
-import LogSettings from './log';
 
 export enum SyncMode {
 	STRICT = 'strict',
@@ -67,7 +67,7 @@ export class SyncSettingTab extends PluginSettingTab {
 	accountSettings: AccountSettings;
 	commonSettings: CommonSettings;
 	filterSettings: FilterSettings;
-	logSettings: LogSettings;
+	logSettings: DevelopmentSettings;
 	controlsSettings: ControlsSettings;
 
 	constructor(app: App, plugin: WebDAVSyncPlugin) {
@@ -97,7 +97,7 @@ export class SyncSettingTab extends PluginSettingTab {
 			this,
 			this.containerEl.createDiv(),
 		);
-		this.logSettings = new LogSettings(
+		this.logSettings = new DevelopmentSettings(
 			this.app,
 			this.plugin,
 			this,

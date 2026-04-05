@@ -2,6 +2,8 @@ import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class RemoveLocalRecursivelyTask extends BaseTask {
+	readonly name = 'removeLocalRecursively';
+
 	async exec() {
 		try {
 			const file = this.vault.getAbstractFileByPath(this.localPath);

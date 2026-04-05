@@ -65,10 +65,7 @@ export default class SyncExecutorService {
 			const sync = new SyncEngine(this.plugin, {
 				vault: this.plugin.app.vault,
 				token: this.plugin.getToken(),
-				remoteServerUrl: this.plugin.settings.serverUrl,
-				remoteBaseDir: this.plugin.remoteBaseDir,
 				webdav: this.plugin.webDAVService.createWebDAVClient(),
-				syncStateStore: this.plugin.syncStateStore,
 			});
 
 			let run = createQueuedSyncRunSnapshot({
@@ -87,7 +84,7 @@ export default class SyncExecutorService {
 					subStage: SyncPlanningSubStage.preConnecting,
 					totalWorkUnits: 0,
 					completedWorkUnits: 0,
-					currentItem: this.plugin.remoteBaseDir,
+					currentItem: this.plugin.settings.remoteDir,
 				},
 				timestamps: {
 					planningStartedAt: Date.now(),

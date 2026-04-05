@@ -4,7 +4,7 @@
  * reference: https://github.com/remotely-save/remotely-save/blob/34db181af002f8d71ea0a87e7965abc57b294914/src/fsWebdav.ts#L25
  */
 import type { RequestOptionsWithState } from 'webdav';
-import { Platform, type RequestUrlParam } from 'obsidian';
+import { type RequestUrlParam } from 'obsidian';
 import { getPatcher } from 'webdav';
 import { VALID_REQURL } from '~/consts';
 import requestUrl from './utils/request-url';
@@ -44,17 +44,6 @@ function onlyAscii(str: string) {
 	return !/[^\x20-\x7E]/g.test(str);
 }
 
-function useSlashedDirectoryUrlOnIos(url: string, method: string): string {
-	if (!Platform.isIosApp || method.toUpperCase() !== 'PROPFIND') return url;
-	if (url.endsWith('/')) return url;
-
-	const parsedUrl = new URL(url);
-	if (parsedUrl.pathname.endsWith('/') || parsedUrl.pathname.endsWith('.md')) return url;
-
-	parsedUrl.pathname = `${parsedUrl.pathname}/`;
-	return parsedUrl.toString();
-}
-
 if (VALID_REQURL) {
 	getPatcher().patch('request', async (options: unknown): Promise<Response> => {
 		const requestOptions = options as RequestOptionsWithState;
@@ -67,13 +56,8 @@ if (VALID_REQURL) {
 		const retractedHeaders = { ...transformedHeaders };
 		if ('authorization' in retractedHeaders) retractedHeaders['authorization'] = '<retracted>';
 
-		const requestUrlValue = useSlashedDirectoryUrlOnIos(
-			requestOptions.url,
-			requestOptions.method,
-		);
-
 		const p: RequestUrlParam = {
-			url: requestUrlValue,
+			url: requestOptions.url,
 			method: requestOptions.method,
 			body: requestOptions.data as string | ArrayBuffer,
 			headers: transformedHeaders,

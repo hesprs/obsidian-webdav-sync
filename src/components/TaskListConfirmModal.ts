@@ -49,9 +49,7 @@ export default class TaskListConfirmModal extends Modal {
 				e.stopPropagation();
 			});
 			row.addEventListener('click', (e) => {
-				if (e.target === checkbox) {
-					return;
-				}
+				if (e.target === checkbox) return;
 				checkbox.checked = !checkbox.checked;
 				this.selectedTasks[index] = checkbox.checked;
 				e.stopPropagation();

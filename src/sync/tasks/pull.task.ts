@@ -18,6 +18,7 @@ export default class PullTask extends BaseTask {
 	private async toText(content: ArrayBuffer) {
 		return await new Blob([new Uint8Array(content)]).text();
 	}
+	readonly name = 'download';
 
 	async exec() {
 		try {

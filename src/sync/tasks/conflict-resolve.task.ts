@@ -26,6 +26,7 @@ export default class ConflictResolveTask extends BaseTask {
 	constructor(public readonly options: BaseTaskOptions & ConflictTaskOptions) {
 		super(options);
 	}
+	readonly name = 'merge';
 
 	private async getConflictSnapshots() {
 		const local = this.options.local?.stat;
@@ -119,6 +120,8 @@ export default class ConflictResolveTask extends BaseTask {
 					return await this.execKeepRemote(snapshots);
 				case ConflictStrategy.Skip:
 					return { success: true } as const;
+				default:
+					return await this.execIntelligentMerge(snapshots);
 			}
 		} catch (e) {
 			logger.error(`Failed to resolve conflict: ${this.localPath}`, e);

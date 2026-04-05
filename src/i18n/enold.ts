@@ -149,14 +149,16 @@ export default {
 			invalidFormat: 'Invalid file size format. Please use formats like "10MB" or "500KB"',
 			exceedsMaxSize: 'File size exceeds maximum limit of 500MB',
 		},
-		clearRecord: {
-			name: 'Clear record',
-			desc: 'WebDAV sync uses a record to resolve sync operations between local and remote files. This option allows you to clear the record when encountering sync issues.',
-			button: 'Clear',
-			cleared: 'Record cleared',
+		clearRecords: {
+			name: 'Clear records',
+			desc: 'WebDAV sync records sync states to resolve sync operations between local and remote files. This option allows you to selectively clear records. Warning: this action is likely to cause data loss.',
+			vaultButton: 'Clear vault records',
+			allButton: 'Clear all records',
+			vaultCleared: 'Vault records cleared',
+			allCleared: 'All records cleared',
 		},
+		development: 'Development settings',
 		log: {
-			title: 'Support logs',
 			name: 'Support report',
 			desc: 'Export a readable support report grouped by sync run',
 			button: 'View logs',

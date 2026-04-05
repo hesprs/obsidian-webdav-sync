@@ -140,11 +140,13 @@ export default {
 				desc: '符合规则的文件/文件夹会被同步，如果和排除规则有冲突，会优先选择包含规则。',
 			},
 		},
-		clearRecord: {
+		clearRecords: {
 			name: '清除记录',
-			desc: 'WebDAV 同步使用记录文件来解析本地与远程文件之间的同步操作。当遇到同步问题时，此选项允许您清除该记录。',
-			button: '清除',
-			cleared: '记录已清除',
+			desc: 'WebDAV 同步记录用于协调本地与远程文件之间的同步操作。此选项允许您选择性清除记录。警告：此操作极可能导致数据丢失。',
+			vaultButton: '清除仓库记录',
+			allButton: '清除所有记录',
+			vaultCleared: '仓库记录已清除',
+			allCleared: '所有记录已清除',
 		},
 		skipLargeFiles: {
 			name: '跳过大文件',
@@ -153,8 +155,8 @@ export default {
 			invalidFormat: '无效的文件大小格式，请使用如 "10MB" 或 "500KB" 的格式',
 			exceedsMaxSize: '文件大小超过最大限制 500MB',
 		},
+		development: '开发设置',
 		log: {
-			title: '支持日志',
 			name: '支持报告',
 			desc: '按同步运行导出可读的支持报告',
 			button: '查看',

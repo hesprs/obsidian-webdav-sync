@@ -7,6 +7,7 @@ export default class MkdirRemoteTask extends BaseTask {
 	constructor(readonly options: BaseTaskOptions & MkdirRemoteTaskOptions) {
 		super(options);
 	}
+	readonly name = 'createRemoteDir';
 
 	async exec() {
 		try {

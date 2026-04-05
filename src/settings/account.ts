@@ -75,7 +75,7 @@ export default class AccountSettings extends BaseSettings {
 			.addText((text) => {
 				remoteBaseDirText = text;
 				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder')).setValue(
-					this.plugin.remoteBaseDir,
+					this.plugin.settings.remoteDir,
 				);
 				text.inputEl.addEventListener('blur', () => {
 					handleInput(text, this.plugin, 'remoteDir', (original) =>

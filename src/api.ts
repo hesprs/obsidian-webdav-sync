@@ -1,7 +1,6 @@
 import type { FileStat } from 'webdav';
 import { XMLParser } from 'fast-xml-parser';
 import { isNil } from 'lodash-es';
-import { Platform } from 'obsidian';
 import { normalizeRemotePath, remoteBasename } from './platform/path';
 import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
@@ -80,9 +79,8 @@ function buildStripPrefixes(serverUrl: string): string[] {
 }
 
 function buildDirectoryUrl(serverUrl: string, _path: string): string {
-	const path = normalizeRemotePath(_path);
-	const normalizedPath = Platform.isIosApp ? `${path}/` : path;
-	const encodedPath = normalizedPath.split('/').map(encodeURIComponent).join('/');
+	const path = `${normalizeRemotePath(_path)}/`;
+	const encodedPath = path.split('/').map(encodeURIComponent).join('/');
 	return `${serverUrl}${encodedPath}`;
 }
 
@@ -180,7 +178,7 @@ export async function getDirectoryContents(
 			const nextUrl = new URL(nextLink);
 
 			const pathName = normalizeRemotePath(hrefToPathname(nextUrl.pathname));
-			nextUrl.pathname = Platform.isIosApp ? `${pathName}/` : pathName;
+			nextUrl.pathname = `${pathName}/`;
 			currentUrl = nextUrl.toString();
 		} catch (e) {
 			if (isRetryableError(e)) {

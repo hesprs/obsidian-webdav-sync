@@ -1,5 +1,6 @@
 import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
+import type en from '~/i18n/enold';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
 import getTaskName from '~/utils/get-task-name';
@@ -24,6 +25,7 @@ export type TaskResult = TaskSuccessResult | TaskFailureResult;
 
 export abstract class BaseTask {
 	constructor(readonly options: BaseTaskOptions) {}
+	readonly name?: keyof typeof en.sync.fileOp;
 
 	get vault() {
 		return this.options.vault;
