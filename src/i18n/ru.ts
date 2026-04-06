@@ -209,7 +209,6 @@ export default {
 		planningStage: {
 			preConnecting: '📋 Предварительное подключение',
 			loadingRecords: '📋 Загрузка записей',
-			walkingLocal: '📋 Сканирование локальных файлов',
 			walkingRemote: '📋 Сканирование удаленных файлов',
 			deciding: '📋 Составление плана',
 		},

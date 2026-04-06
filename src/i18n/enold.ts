@@ -207,7 +207,6 @@ export default {
 		planningStage: {
 			preConnecting: '📋 Pre-connecting',
 			loadingRecords: '📋 Loading records',
-			walkingLocal: '📋 Walking local',
 			walkingRemote: '📋 Walking remote',
 			deciding: '📋 Building plan',
 		},

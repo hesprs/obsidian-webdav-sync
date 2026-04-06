@@ -1,5 +1,5 @@
 import logger from '~/utils/logger';
-import { statWebDAVItem } from '~/utils/stat-webdav-item';
+import { statWebDAVItem } from '~/utils/stat-item';
 import type { PlannedPathSnapshot } from '../decision/sync-decision.interface';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 

@@ -1,18 +1,18 @@
 import type { StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
-import { remotePathToAbsolute, remotePathToVault } from '~/platform/path';
+import { normalizeRemotePathToRelative } from '~/platform/path';
+import { useSettings } from '~/settings';
 import { apiLimiter } from '~/utils/api-limiter';
-import { fileStatToStatModel } from '~/utils/file-stat-to-stat-model';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
+import { remoteToStatModel } from '~/utils/to-stat-model';
 import type { OnProgress } from './fs.interface';
+import postTraversal from './post-traversal';
 
 interface TraverseWebDAVOptions {
 	onProgress?: OnProgress;
-	serverUrl: string;
 	token: string;
-	remoteBaseDir: string;
 }
 
 function isNotFoundError(err: unknown): boolean {
@@ -22,13 +22,9 @@ function isNotFoundError(err: unknown): boolean {
 	return typeof errWithRes.message === 'string' && /^404\s*:/.test(errWithRes.message);
 }
 
-export async function traverseWebDAV({
-	onProgress,
-	serverUrl,
-	token,
-	remoteBaseDir,
-}: TraverseWebDAVOptions) {
-	const queue = [remoteBaseDir];
+export async function traverseWebDAV({ onProgress, token }: TraverseWebDAVOptions) {
+	const { filterRules, skipLargeFiles, serverUrl, remoteDir } = await useSettings();
+	const queue = [remoteDir];
 	const result: StatsMap = new Map();
 	let processedCount = 0;
 	const getContentFunc = (path: string) =>
@@ -49,6 +45,7 @@ export async function traverseWebDAV({
 	};
 
 	const reportProgress = async (current: string) => {
+		processedCount++;
 		await onProgress?.({
 			processedDirectories: processedCount,
 			totalDirectories: processedCount + queue.length,
@@ -62,22 +59,20 @@ export async function traverseWebDAV({
 		await Promise.all(
 			currentLevelPaths.map(async (currentPath) => {
 				try {
-					const resultItems = (await getContent(currentPath)).map(fileStatToStatModel);
+					const resultItems = (await getContent(currentPath)).map((stat) =>
+						remoteToStatModel(stat, remoteDir),
+					);
 
 					for (const item of resultItems) {
-						const vaultPath = remotePathToVault(remoteBaseDir, item.path);
-						const absolutePath = remotePathToAbsolute(remoteBaseDir, item);
-						result.set(vaultPath, { ...item, path: absolutePath });
-						if (item.isDir) queue.push(absolutePath);
+						const vaultPath = normalizeRemotePathToRelative(remoteDir, item.path);
+						result.set(vaultPath, item);
+						if (item.isDir) queue.push(item.path);
 					}
-
-					processedCount++;
 					void reportProgress(currentPath);
 				} catch (err) {
 					logger.error(`Error processing ${currentPath}`, err);
 					if (isNotFoundError(err)) {
-						processedCount++;
-						await reportProgress(currentPath);
+						void reportProgress(currentPath);
 						return;
 					}
 					throw err;
@@ -85,5 +80,5 @@ export async function traverseWebDAV({
 			}),
 		);
 	}
-	return result;
+	return postTraversal(result, filterRules, skipLargeFiles.bytes);
 }

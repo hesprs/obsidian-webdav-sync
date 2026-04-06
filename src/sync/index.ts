@@ -16,8 +16,6 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
-import { LocalVaultFileSystem } from '~/fs/vault';
-import { RemoteWebDAVFileSystem } from '~/fs/webdav';
 import i18n from '~/i18n';
 import { remoteDirname, vaultDirname } from '~/platform/path';
 import { SyncRecord } from '~/storage';
@@ -66,8 +64,6 @@ interface ReuploadSnapshotIndex {
 
 // TODO: split into multiple modules
 export class SyncEngine {
-	remoteFs: RemoteWebDAVFileSystem;
-	localFS: LocalVaultFileSystem;
 	isCancelled: boolean = false;
 
 	private subscriptions: Subscription[] = [];
@@ -81,8 +77,6 @@ export class SyncEngine {
 		},
 	) {
 		this.options = Object.freeze(this.options);
-		this.remoteFs = new RemoteWebDAVFileSystem(options.token);
-		this.localFS = new LocalVaultFileSystem(options.vault);
 		this.subscriptions.push(
 			onCancelSync().subscribe(() => {
 				this.isCancelled = true;
@@ -103,7 +97,7 @@ export class SyncEngine {
 		await this.ensureRemoteBaseDirReady(syncRecord);
 		this.throwIfCancelled();
 
-		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide({
+		const tasks = await new TwoWaySyncDecider(this, this.options.token, syncRecord).decide({
 			onPlanningProgress: options?.onPlanningProgress,
 		});
 		this.throwIfCancelled();

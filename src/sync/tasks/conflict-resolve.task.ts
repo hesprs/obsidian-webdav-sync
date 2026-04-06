@@ -5,8 +5,8 @@ import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
-import { statVaultItem } from '~/utils/stat-vault-item';
-import { statWebDAVItem } from '~/utils/stat-webdav-item';
+import { statWebDAVItem } from '~/utils/stat-item';
+import { statVaultItem } from '~/utils/stat-item';
 import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,

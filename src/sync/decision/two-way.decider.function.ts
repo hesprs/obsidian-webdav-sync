@@ -1,6 +1,6 @@
 import type { RecordStatModel, StatModel } from '~/types';
 import { SyncPlanningSubStage } from '~/events';
-import { inferRemotePathFromVault } from '~/platform/path';
+import { normalizeRemotePathToAbsolute } from '~/platform/path';
 import { SyncMode } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import logger from '~/utils/logger';
@@ -184,7 +184,11 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			const local = localStats.get(p);
 			const record = records.get(p);
 			const localPath = local?.path ?? p;
-			const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
+			const remotePath =
+				remote?.path ??
+				(local
+					? normalizeRemotePathToAbsolute(remoteBaseDir, p, local.isDir)
+					: remoteBaseDir);
 
 			const options = {
 				remotePath,
@@ -493,7 +497,9 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		const local = localStats.get(p);
 		const record = records.get(p);
 		const localPath = local?.path ?? p;
-		const remotePath = remote?.path ?? inferRemotePathFromVault(remoteBaseDir, local);
+		const remotePath =
+			remote?.path ??
+			(local ? normalizeRemotePathToAbsolute(remoteBaseDir, p, local.isDir) : remoteBaseDir);
 		if (!(remote?.isDir || local?.isDir)) continue;
 
 		let caseName: keyof typeof operations = 'NONE';

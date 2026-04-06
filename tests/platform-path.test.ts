@@ -4,9 +4,9 @@ import {
 	normalizeRemotePath,
 	normalizeVaultPath,
 	remoteBasename,
-	remotePathToVault,
 	vaultBasename,
 	vaultDirname,
+	normalizeRemotePathToRelative,
 } from '~/platform/path';
 
 describe('remote path helpers', () => {
@@ -18,14 +18,16 @@ describe('remote path helpers', () => {
 	});
 
 	it('maps absolute remote paths to vault-relative paths', () => {
-		expect(remotePathToVault('/base/', '/base/Folder/Note.md')).toBe('Folder/Note.md');
-		expect(remotePathToVault('/', '/Folder/Sub.md')).toBe('Folder/Sub.md');
-		expect(remotePathToVault('/base/', '/base/')).toBe('/');
+		expect(normalizeRemotePathToRelative('/base/', '/base/Folder/Note.md')).toBe(
+			'Folder/Note.md',
+		);
+		expect(normalizeRemotePathToRelative('/', '/Folder/Sub.md')).toBe('Folder/Sub.md');
+		expect(normalizeRemotePathToRelative('/base/', '/base/')).toBe('/');
 	});
 
 	it('keeps spaces and non-ascii names stable', () => {
 		expect(remoteBasename('/base/空 格.md')).toBe('空 格.md');
-		expect(remotePathToVault('/base/', '/base/空 格.md')).toBe('空 格.md');
+		expect(normalizeRemotePathToRelative('/base/', '/base/空 格.md')).toBe('空 格.md');
 	});
 });
 
