@@ -1,7 +1,7 @@
 import { App, PluginSettingTab } from 'obsidian';
 import type WebDAVSyncPlugin from '~/index';
 import type { GlobMatchOptions } from '~/utils/glob-match';
-import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
+import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
@@ -40,7 +40,7 @@ export interface PluginSettings {
 	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
 	scheduledSyncIntervalSeconds: number;
-	language?: 'zh-Hans' | 'en';
+	language?: 'zh-Hans' | 'en' | 'ru';
 }
 
 let pluginInstance: WebDAVSyncPlugin | null = null;

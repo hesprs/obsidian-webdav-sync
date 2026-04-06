@@ -1,7 +1,7 @@
 import { clamp, isNil } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import i18n from '~/i18n';
-import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
+import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import { SyncMode } from './index';
 import BaseSettings from './settings.base';
 

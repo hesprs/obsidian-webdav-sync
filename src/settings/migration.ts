@@ -1,6 +1,6 @@
 import { parse as bytesParse } from 'bytes-iec';
 import { normalizeBaseDir } from '~/platform/path';
-import { ConflictStrategy } from '~/sync/tasks/conflict-resolve.task';
+import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
 

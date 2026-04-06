@@ -1,5 +1,4 @@
 import type { WebDAVClient } from 'webdav';
-import { chunk } from 'lodash-es';
 import { Vault } from 'obsidian';
 import { Subscription } from 'rxjs';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
@@ -228,17 +227,15 @@ export class SyncEngine {
 				}
 			}
 
-			const optimizedTasks = optimizeTasks(tasks);
-
-			const chunkSize = 200;
-			const taskChunks = chunk(optimizedTasks, chunkSize);
+			const optimizedTaskGroups = optimizeTasks(tasks);
+			const optimizedTasks = optimizedTaskGroups.flat();
 			const allTasksResult: TaskResult[] = [];
 
 			const totalDisplayableTasks = optimizedTasks.filter((task) =>
 				this.isDisplayableTask(task),
 			);
 
-			// Track all completed tasks across all chunks
+			// Track all completed tasks across all batches
 			const allCompletedTasks: BaseTask[] = [];
 			currentRun = updateSyncRunSnapshot(currentRun, {
 				stage: 'executing',
@@ -253,17 +250,17 @@ export class SyncEngine {
 			});
 			emitSyncRun(currentRun);
 
-			for (const taskChunk of taskChunks) {
-				const chunkExecution = await this.execTasks(
+			for (const taskGroup of optimizedTaskGroups) {
+				if (this.isCancelled) break;
+
+				const groupExecution = await this.execTaskGroup(
 					currentRun,
-					taskChunk,
+					taskGroup,
 					totalDisplayableTasks,
 					allCompletedTasks,
 				);
-				currentRun = chunkExecution.run;
-				allTasksResult.push(...chunkExecution.results);
-
-				if (this.isCancelled) break;
+				currentRun = groupExecution.run;
+				allTasksResult.push(...groupExecution.results);
 			}
 
 			const resultSummary = this.createResultSummary(allTasksResult);
@@ -657,21 +654,33 @@ export class SyncEngine {
 		}
 	}
 
-	private async execTasks(
+	private async execTaskGroup(
 		run: SyncRunSnapshot,
 		tasks: BaseTask[],
 		totalDisplayableTasks: BaseTask[],
 		allCompletedTasks: BaseTask[],
 	) {
 		let currentRun = run;
-		const res: TaskResult[] = [];
 		const tasksToDisplay = tasks.filter((task) => this.isDisplayableTask(task));
+		const settledResults = await Promise.allSettled(
+			tasks.map((task) => this.executeWithRetry(task)),
+		);
+		const results: TaskResult[] = settledResults.map((result, index) => {
+			if (result.status === 'fulfilled') return result.value;
+			const reason = result.reason;
+			return {
+				success: false,
+				error: new TaskError(
+					reason instanceof Error ? reason.message : String(reason),
+					tasks[index],
+					reason instanceof Error ? reason : undefined,
+				),
+			};
+		});
 
 		for (let i = 0; i < tasks.length; ++i) {
 			const task = tasks[i];
-			if (this.isCancelled) break;
-
-			const taskResult = await this.executeWithRetry(task);
+			const taskResult = results[i];
 			const taskName = task.toJSON().taskName;
 
 			if (!taskResult.success) {
@@ -689,7 +698,6 @@ export class SyncEngine {
 				);
 			}
 
-			res[i] = taskResult;
 			// Only add substantial tasks to completed list for progress display
 			if (this.isDisplayableTask(task)) {
 				allCompletedTasks.push(task);
@@ -705,7 +713,7 @@ export class SyncEngine {
 
 		return {
 			run: currentRun,
-			results: res,
+			results,
 		};
 	}
 

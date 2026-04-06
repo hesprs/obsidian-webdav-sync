@@ -9,7 +9,7 @@ import type {
 	PlannedRemoteSnapshot,
 	SyncDecisionInput,
 } from './sync-decision.interface';
-import { ConflictStrategy } from '../tasks/conflict-resolve.task';
+import { ConflictStrategy } from '../tasks/merge.task';
 import { BaseTask } from '../tasks/task.interface';
 import isChanged from '../utils/is-changed';
 
@@ -90,7 +90,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		);
 	};
 
-	const createConflictResolveTaskWithSnapshot = async (
+	const createMergeTaskWithSnapshot = async (
 		options: {
 			remotePath: string;
 			localPath: string;
@@ -112,12 +112,60 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			throw new Error(`Cannot plan remote conflict snapshot: ${options.remotePath}`);
 		}
 		tasks.push(
-			taskFactory.createConflictResolveTask({
+			taskFactory.createMergeTask({
 				...options,
 				record: options.record,
 				local: plannedLocal,
 				remote: plannedRemote,
 			}),
+		);
+	};
+
+	const routeConflict = async (params: {
+		localPath: string;
+		local: StatModel;
+		remote: StatModel;
+		record?: RecordStatModel;
+		options: { localPath: string; remotePath: string };
+		strategy: ConflictStrategy;
+		useGitStyle: boolean;
+	}) => {
+		const { localPath, local, remote, record, options, strategy, useGitStyle } = params;
+		if (strategy === ConflictStrategy.Skip || local.isDir || remote.isDir) return;
+		if (strategy === ConflictStrategy.KeepLocal) {
+			if (hasInvalidChar(localPath)) {
+				tasks.push(taskFactory.createFilenameErrorTask(options));
+				return;
+			}
+			await createPushTaskWithSnapshot(options, local);
+			return;
+		}
+		if (strategy === ConflictStrategy.KeepRemote) {
+			await createPullTaskWithSnapshot(options, remote);
+			return;
+		}
+		if (strategy === ConflictStrategy.LatestTimeStamp) {
+			if (local.mtime >= remote.mtime) {
+				if (hasInvalidChar(localPath)) {
+					tasks.push(taskFactory.createFilenameErrorTask(options));
+					return;
+				}
+				await createPushTaskWithSnapshot(options, local);
+				return;
+			}
+			await createPullTaskWithSnapshot(options, remote);
+			return;
+		}
+
+		await createMergeTaskWithSnapshot(
+			{
+				...options,
+				record,
+				strategy,
+				useGitStyle,
+			},
+			local,
+			remote,
 		);
 	};
 
@@ -317,20 +365,15 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							},
 						},
 					);
-					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options));
-					} else {
-						await createConflictResolveTaskWithSnapshot(
-							{
-								...options,
-								record,
-								strategy: settings.conflictStrategy,
-								useGitStyle: settings.useGitStyle,
-							},
-							local,
-							remote,
-						);
-					}
+					await routeConflict({
+						localPath,
+						local,
+						remote,
+						record,
+						options,
+						strategy: settings.conflictStrategy,
+						useGitStyle: settings.useGitStyle,
+					});
 				},
 				RECORD_REMOTE_LOCAL_PULL: async () => {
 					if (!remote || !local) return;
@@ -440,19 +483,15 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							},
 						},
 					);
-					if (hasInvalidChar(local.path)) {
-						tasks.push(taskFactory.createFilenameErrorTask(options));
-					} else {
-						await createConflictResolveTaskWithSnapshot(
-							{
-								...options,
-								strategy: settings.conflictStrategy,
-								useGitStyle: settings.useGitStyle,
-							},
-							local,
-							remote,
-						);
-					}
+					await routeConflict({
+						localPath,
+						local,
+						remote,
+						record: undefined,
+						options,
+						strategy: settings.conflictStrategy,
+						useGitStyle: settings.useGitStyle,
+					});
 				},
 				NORECORD_REMOTE_NOLOCAL_PULL: async () => {
 					if (!remote) return;

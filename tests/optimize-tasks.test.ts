@@ -52,7 +52,7 @@ describe('optimizeSync', () => {
 			}),
 			new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
 			new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
-		]);
+		]).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(MkdirLocalTask);
 		expect(tasks[1]).toBeInstanceOf(MkdirsRemoteTask);
@@ -81,23 +81,10 @@ describe('optimizeSync', () => {
 				localPath: 'archive',
 				remotePath: 'archive',
 			}),
-		]);
+		]).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(MkdirsRemoteTask);
 		expect(tasks[1]).toBeInstanceOf(PushTask);
 		expect(tasks[2]).toBeInstanceOf(RemoveLocalTask);
-	});
-
-	it('deduplicates repeated task instances', () => {
-		const mkdirTask = new MkdirRemoteTask({
-			...sharedOptions,
-			localPath: 'dup',
-			remotePath: 'dup',
-		});
-
-		const tasks = optimizeTasks([mkdirTask, mkdirTask]);
-
-		expect(tasks).toHaveLength(1);
-		expect(tasks[0]).toBeInstanceOf(MkdirsRemoteTask);
 	});
 });

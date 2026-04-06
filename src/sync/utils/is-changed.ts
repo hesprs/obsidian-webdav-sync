@@ -2,7 +2,7 @@ import type { StatModel, StatsMap } from '~/types';
 import { SyncMode } from '~/settings';
 import { isSub } from '~/utils/is-sub';
 import type { BaseTask } from '../tasks/task.interface';
-import ConflictResolveTask from '../tasks/conflict-resolve.task';
+import MergeTask from '../tasks/merge.task';
 import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 import { isSameTime } from './is-same-time';
@@ -49,7 +49,7 @@ export default async function isChanged({
 			// reuse tracked file changes
 			for (const task of tasks)
 				if (
-					(task instanceof ConflictResolveTask ||
+					(task instanceof MergeTask ||
 						task instanceof PullTask ||
 						task instanceof PushTask) &&
 					isSub(path, task.localPath)

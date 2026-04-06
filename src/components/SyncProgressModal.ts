@@ -13,7 +13,7 @@ import {
 	SyncPlanningSubStage,
 } from '../events';
 import i18n from '../i18n';
-import ConflictResolveTask from '../sync/tasks/conflict-resolve.task';
+import MergeTask from '../sync/tasks/merge.task';
 import MkdirLocalTask from '../sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '../sync/tasks/mkdir-remote.task';
 import PullTask from '../sync/tasks/pull.task';
@@ -153,7 +153,7 @@ export default class SyncProgressModal extends Modal {
 			const icon = item.createSpan({ cls: 'text-[var(--text-muted)]' });
 
 			if (file instanceof CleanRecordTask) setIcon(icon, 'archive-x');
-			else if (file instanceof ConflictResolveTask) setIcon(icon, 'git-merge');
+			else if (file instanceof MergeTask) setIcon(icon, 'git-merge');
 			else if (file instanceof FilenameErrorTask) setIcon(icon, 'refresh-cw-off');
 			else if (
 				file instanceof MkdirLocalTask ||
