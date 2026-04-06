@@ -602,7 +602,8 @@ export class SyncEngine {
 		tasksToDelete: RemoveLocalTask[],
 		tasksToReupload: RemoveLocalTask[],
 	): Set<RemoveLocalTask> {
-		const deleteTaskSet = new Set(tasksToDelete);
+		// FIXED: Replaced O(N^2) Set array scan with an O(1) Map lookup to optimize large delete/reupload batches (Audit Report)
+		const deleteTaskMap = new Map(tasksToDelete.map((task) => [task.localPath, task]));
 
 		for (const reuploadTask of tasksToReupload) {
 			let currentPath = reuploadTask.localPath;
@@ -611,16 +612,14 @@ export class SyncEngine {
 				currentPath = vaultDirname(currentPath);
 				if (currentPath === '.' || currentPath === '') break;
 
-				for (const deleteTask of deleteTaskSet) {
-					if (deleteTask.localPath === currentPath) {
-						deleteTaskSet.delete(deleteTask);
-						break;
-					}
+				const deleteTask = deleteTaskMap.get(currentPath);
+				if (deleteTask) {
+					deleteTaskMap.delete(currentPath);
 				}
 			}
 		}
 
-		return deleteTaskSet;
+		return new Set(deleteTaskMap.values());
 	}
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {

@@ -1,7 +1,7 @@
 import type { MergeTaskOptions } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
 import i18n from '~/i18n';
-import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
+import { arrayBufferEquals, arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
@@ -54,10 +54,6 @@ export default class MergeTask extends BaseTask {
 		return isMergeablePath(this.localPath) && isMergeablePath(this.remotePath);
 	}
 
-	private async toText(content: ArrayBuffer) {
-		return await new Blob([new Uint8Array(content)]).text();
-	}
-
 	async exec() {
 		try {
 			return await this.execIntelligentMerge(await this.getConflictSnapshots());
@@ -70,7 +66,8 @@ export default class MergeTask extends BaseTask {
 		}
 	}
 
-	async execIntelligentMerge({
+	// FIXED: Restricted visibility to private to encapsulate internal staging logic (Audit Report)
+	private async execIntelligentMerge({
 		local,
 		remote,
 		localBuffer,
@@ -79,7 +76,7 @@ export default class MergeTask extends BaseTask {
 		try {
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
-					baseText: await this.toText(localBuffer),
+					baseText: await arrayBufferToText(localBuffer),
 					local,
 					remote,
 					key: this.localPath,
@@ -91,8 +88,8 @@ export default class MergeTask extends BaseTask {
 				throw new Error(i18n.t('sync.error.mergeNotSupported'));
 			}
 
-			const localText = await this.toText(localBuffer);
-			const remoteText = await this.toText(remoteBuffer);
+			const localText = await arrayBufferToText(localBuffer);
+			const remoteText = await arrayBufferToText(remoteBuffer);
 			const baseText = this.options.record?.baseText ?? localText;
 			let mergedText: string;
 			const mergeResult = resolveByIntelligentMerge({

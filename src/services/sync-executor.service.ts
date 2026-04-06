@@ -50,18 +50,6 @@ export default class SyncExecutorService {
 		});
 
 		try {
-			const configDir = this.plugin.app.vault.configDir;
-			const hasConfigDirRule = this.plugin.settings.filterRules.exclusionRules.some(
-				(rule) => rule.expr === configDir,
-			);
-			if (!hasConfigDirRule) {
-				this.plugin.settings.filterRules.exclusionRules.push({
-					expr: configDir,
-					options: { caseSensitive: false },
-				});
-				await this.plugin.saveSettings();
-			}
-
 			const sync = new SyncEngine(this.plugin, {
 				vault: this.plugin.app.vault,
 				token: this.plugin.getToken(),

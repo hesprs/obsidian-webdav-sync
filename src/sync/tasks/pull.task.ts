@@ -1,5 +1,5 @@
 import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
-import { toArrayBuffer } from '~/platform/binary';
+import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import { vaultDirname } from '~/platform/path';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-item';
@@ -15,9 +15,6 @@ export default class PullTask extends BaseTask {
 		return remoteStat && !remoteStat.isDir ? remoteStat.size : 0;
 	}
 
-	private async toText(content: ArrayBuffer) {
-		return await new Blob([new Uint8Array(content)]).text();
-	}
 	readonly name = 'download';
 
 	async exec() {
@@ -52,7 +49,7 @@ export default class PullTask extends BaseTask {
 				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
 			}
 			// no race condition since we've just written it
-			const baseText = await this.toText(arrayBuffer);
+			const baseText = await arrayBufferToText(arrayBuffer);
 			const local = statVaultItem(this.vault, this.localPath);
 			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);

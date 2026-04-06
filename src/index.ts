@@ -100,6 +100,19 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async loadSettings() {
 		Object.assign(this.settings, await this.loadData());
+
+		// FIXED: Moved config-dir exclusion settings injection from SyncExecutor to here so the executor remains pure (Audit Report)
+		const configDir = this.app.vault.configDir;
+		const hasConfigDirRule = this.settings.filterRules.exclusionRules.some(
+			(rule) => rule.expr === configDir,
+		);
+		if (!hasConfigDirRule) {
+			this.settings.filterRules.exclusionRules.push({
+				expr: configDir,
+				options: { caseSensitive: false },
+			});
+			await this.saveSettings();
+		}
 	}
 
 	async saveSettings() {
