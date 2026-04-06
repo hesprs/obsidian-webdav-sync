@@ -23,6 +23,17 @@ vi.mock('~/utils/logger', () => ({
 	},
 }));
 
+vi.mock('~/settings', () => ({
+	useSettings: vi.fn(() => ({
+		serverUrl: 'https://dav.example.com/dav',
+		remoteDir: '/test/',
+		skipLargeFiles: {
+			maxSize: '10MB',
+			bytes: 10 * 1024 * 1024,
+		},
+	})),
+}));
+
 describe('WebDAVTraversal', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
@@ -44,11 +55,7 @@ describe('WebDAVTraversal', () => {
 			])
 			.mockResolvedValueOnce([]);
 
-		await traverseWebDAV({
-			serverUrl: 'https://dav.example.com/dav',
-			token: 'token',
-			remoteBaseDir: '/test/',
-		});
+		await traverseWebDAV({ token: 'token' });
 
 		expect(vi.mocked(getDirectoryContents)).toHaveBeenNthCalledWith(
 			1,
@@ -82,11 +89,7 @@ describe('WebDAVTraversal', () => {
 				message: '404: Not Found',
 			});
 
-		const traversal = traverseWebDAV({
-			serverUrl: 'https://dav.example.com/dav',
-			token: 'token',
-			remoteBaseDir: '/test/',
-		});
+		const traversal = traverseWebDAV({ token: 'token' });
 
 		await expect(traversal).resolves.toBeDefined();
 

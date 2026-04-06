@@ -2,6 +2,8 @@ import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
 import type { RecordStatsMap, StatModel, StatsMap } from '~/types';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
+import { traverseVault } from '~/fs/traverse-vault';
+import { traverseWebDAV } from '~/fs/traverse-webdav';
 import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
@@ -33,8 +35,9 @@ import { twoWayDecider } from './two-way.decider.function';
 
 export default class TwoWaySyncDecider {
 	constructor(
-		protected sync: SyncEngine,
-		protected syncRecordStorage: SyncRecord,
+		private sync: SyncEngine,
+		private token: string,
+		private syncRecordStorage: SyncRecord,
 	) {}
 
 	get webdav() {
@@ -60,29 +63,9 @@ export default class TwoWaySyncDecider {
 			await options?.onPlanningProgress?.(progress);
 		};
 
-		await reportPlanningProgress({
-			subStage: SyncPlanningSubStage.loadingRecords,
-			totalWorkUnits: 0,
-			completedWorkUnits: 0,
-			currentItem: this.remoteBaseDir,
-		});
-
 		const records = await this.syncRecordStorage.getRecords();
 
-		await reportPlanningProgress({
-			subStage: SyncPlanningSubStage.walkingLocal,
-			totalWorkUnits: 1,
-			completedWorkUnits: 1,
-			currentItem: this.vault.getRoot().path,
-		});
-		const currentLocalStats = await this.sync.localFS.walk(async (progress) => {
-			await reportPlanningProgress({
-				subStage: SyncPlanningSubStage.walkingLocal,
-				totalWorkUnits: progress.totalDirectories,
-				completedWorkUnits: progress.processedDirectories,
-				currentItem: progress.currentDirectory ?? this.remoteBaseDir,
-			});
-		});
+		const currentLocalStats = await traverseVault({ vault: this.vault });
 
 		await reportPlanningProgress({
 			subStage: SyncPlanningSubStage.walkingRemote,
@@ -93,13 +76,16 @@ export default class TwoWaySyncDecider {
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
 				? extractRemoteRecords(records)
-				: await this.sync.remoteFs.walk(async (progress) => {
-						await reportPlanningProgress({
-							subStage: SyncPlanningSubStage.walkingRemote,
-							totalWorkUnits: progress.totalDirectories,
-							completedWorkUnits: progress.processedDirectories,
-							currentItem: progress.currentDirectory ?? this.remoteBaseDir,
-						});
+				: await traverseWebDAV({
+						onProgress: async (progress) => {
+							await reportPlanningProgress({
+								subStage: SyncPlanningSubStage.walkingRemote,
+								totalWorkUnits: progress.totalDirectories,
+								completedWorkUnits: progress.processedDirectories,
+								currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+							});
+						},
+						token: this.token,
 					});
 
 		// 创建共用的task选项

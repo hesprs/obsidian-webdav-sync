@@ -1,50 +1,26 @@
-import { isNil } from 'lodash-es';
-import { normalizePath, TFolder, Vault } from 'obsidian';
-import type { StatsMap } from '~/types';
-import GlobMatch from '~/utils/glob-match';
-import { statVaultItem } from '~/utils/stat-vault-item';
-import type { OnProgress } from './fs.interface';
+import { normalizePath, TAbstractFile, TFolder, Vault } from 'obsidian';
+import type { StatModel, StatsMap } from '~/types';
+import { useSettings } from '~/settings';
+import { localToStatModel } from '~/utils/to-stat-model';
+import postTraversal from './post-traversal';
 
 interface TraverseVaultOptions {
 	vault: Vault;
-	onProgress: OnProgress;
-	from: string;
 }
 
-export async function traverseVault({ vault, from, onProgress }: TraverseVaultOptions) {
-	const queue = [from];
-	const res: StatsMap = new Map();
-	const ignores = [
-		new GlobMatch(`${vault.configDir}/plugins/*/node_modules`, {
-			caseSensitive: true,
-		}),
-	];
-	function folderFilter(path: string) {
-		path = normalizePath(path);
-		if (ignores.some((rule) => rule.test(path))) return false;
-		return true;
-	}
+function recursion(item: TAbstractFile) {
+	if (item instanceof TFolder) {
+		let res: StatModel[] = [];
+		for (const child of item.children) res = [...res, ...recursion(child)];
+		return res;
+	} else return [localToStatModel(item)];
+}
 
-	while (queue.length > 0) {
-		const from = queue.shift();
-		if (isNil(from)) continue;
-		const folder = vault.getAbstractFileByPath(normalizePath(from));
-		if (!folder || !(folder instanceof TFolder)) continue;
-		const files = folder.children.filter((f) => !(f instanceof TFolder)).map((f) => f.path);
-		let folders = folder.children.filter((f) => f instanceof TFolder).map((f) => f.path);
-		folders = folders.filter(folderFilter);
-		queue.push(...folders);
-		[...files, ...folders]
-			.map((path) => {
-				return statVaultItem(vault, path);
-			})
-			.filter((content) => !isNil(content))
-			.forEach((content) => res.set(content.path, content));
-		await onProgress({
-			processedDirectories: res.size,
-			totalDirectories: res.size + queue.length,
-			currentDirectory: from,
-		});
-	}
-	return res;
+export async function traverseVault({ vault }: TraverseVaultOptions) {
+	const { filterRules, skipLargeFiles } = await useSettings();
+	const root = vault.getAbstractFileByPath(normalizePath(vault.getRoot().path));
+	if (!root) throw new Error('Vault root folder not found');
+	const res: StatsMap = new Map();
+	recursion(root).forEach((item) => res.set(item.path, item));
+	return postTraversal(res, filterRules, skipLargeFiles.bytes);
 }

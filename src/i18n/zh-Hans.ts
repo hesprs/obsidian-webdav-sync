@@ -203,10 +203,9 @@ export default {
 		syncingFiles: '⌛️ 正在同步文件...',
 		awaitingConfirmation: '等待确认',
 		planningStage: {
-			pre_connecting: '📋 检查连接',
-			loading_records: '📋 加载记录',
-			walking_local: '📋 本地扫描',
-			walking_remote: '📋 本地扫描',
+			preConnecting: '📋 检查连接',
+			loadingRecords: '📋 加载记录',
+			walkingRemote: '📋 远程扫描',
 			deciding: '📋 构建计划',
 		},
 		updatingSyncState: '正在更新同步状态...',

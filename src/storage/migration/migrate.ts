@@ -3,10 +3,9 @@ import { isNil } from 'lodash-es';
 import type WebDAVSyncPlugin from '~/index';
 import type { RecordStatModel, StatModel } from '~/types';
 import {
-	inferRemotePathFromVault,
+	normalizeRemotePathToAbsolute,
+	normalizeRemotePathToRelative,
 	normalizeVaultPath,
-	remotePathToAbsolute,
-	remotePathToVault,
 } from '~/platform/path';
 import logger from '~/utils/logger';
 import { BASE_TEXT_STORE_NAME, STORAGE_NAME, SYNC_STATE_STORE_NAME } from '../store.interface';
@@ -50,7 +49,11 @@ function cloneStatWithPath(stat: StatModel, path: string): StatModel {
 }
 
 function inferRemoteStat(remoteBaseDir: string, localStat: StatModel): StatModel {
-	const remotePath = inferRemotePathFromVault(remoteBaseDir, localStat);
+	const remotePath = normalizeRemotePathToAbsolute(
+		remoteBaseDir,
+		localStat.path,
+		localStat.isDir,
+	);
 	if (localStat.isDir) return { isDir: true, path: remotePath };
 	return {
 		isDir: false,
@@ -106,8 +109,9 @@ export async function migrate(plugin: WebDAVSyncPlugin, namespace: string): Prom
 			if (!Array.isArray(stats)) continue;
 			for (const stat of stats) {
 				if (!isStatModel(stat)) continue;
-				const vaultPath = normalizeVaultPath(
-					remotePathToVault(plugin.settings.remoteDir, stat.path),
+				const vaultPath = normalizeRemotePathToRelative(
+					plugin.settings.remoteDir,
+					stat.path,
 				);
 				remoteMap.set(vaultPath, stat);
 			}
@@ -135,7 +139,11 @@ export async function migrate(plugin: WebDAVSyncPlugin, namespace: string): Prom
 			const remoteStat = matchedRemote
 				? cloneStatWithPath(
 						matchedRemote,
-						remotePathToAbsolute(plugin.settings.remoteDir, matchedRemote),
+						normalizeRemotePathToAbsolute(
+							plugin.settings.remoteDir,
+							matchedRemote.path,
+							matchedRemote.isDir,
+						),
 					)
 				: inferRemoteStat(plugin.settings.remoteDir, localStat);
 

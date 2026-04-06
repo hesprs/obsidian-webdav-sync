@@ -1,7 +1,7 @@
 import type { PushTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { toArrayBuffer } from '~/platform/binary';
 import logger from '~/utils/logger';
-import { statWebDAVItem } from '~/utils/stat-webdav-item';
+import { statWebDAVItem } from '~/utils/stat-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PushTask extends BaseTask {

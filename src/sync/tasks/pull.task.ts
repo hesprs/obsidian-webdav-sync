@@ -2,7 +2,7 @@ import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { toArrayBuffer } from '~/platform/binary';
 import { vaultDirname } from '~/platform/path';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-vault-item';
+import { statVaultItem } from '~/utils/stat-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PullTask extends BaseTask {

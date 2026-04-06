@@ -1,6 +1,6 @@
 import type { MkdirLocalTaskOptions } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-vault-item';
+import { statVaultItem } from '~/utils/stat-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class MkdirLocalTask extends BaseTask {
