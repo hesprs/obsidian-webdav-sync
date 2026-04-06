@@ -17,7 +17,7 @@ import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
 import { migrateSettings } from './settings/migration';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
-import { ConflictStrategy } from './sync/tasks/conflict-resolve.task';
+import { ConflictStrategy } from './sync/tasks/merge.task';
 import { apiLimiter } from './utils/api-limiter';
 
 function createGlobMathOptions(expr: string) {

@@ -8,9 +8,9 @@ import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
 	AddRecordTaskOptions,
-	ConflictTaskOptions,
 	MkdirLocalTaskOptions,
 	MkdirRemoteTaskOptions,
+	MergeTaskOptions,
 	PlannedLocalSnapshot,
 	PlannedRemoteSnapshot,
 	PullTaskOptions,
@@ -21,8 +21,8 @@ import type {
 } from './sync-decision.interface';
 import AddRecordTask from '../tasks/add-record.task';
 import CleanRecordTask from '../tasks/clean-record.task';
-import ConflictResolveTask from '../tasks/conflict-resolve.task';
 import FilenameErrorTask from '../tasks/filename-error.task';
+import MergeTask from '../tasks/merge.task';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import PullTask from '../tasks/pull.task';
@@ -110,8 +110,8 @@ export default class TwoWaySyncDecider {
 				}),
 			createPushTask: (options: PushTaskOptions) =>
 				new PushTask({ ...commonTaskOptions, ...options }),
-			createConflictResolveTask: (options: ConflictTaskOptions) =>
-				new ConflictResolveTask({ ...commonTaskOptions, ...options }),
+			createMergeTask: (options: MergeTaskOptions) =>
+				new MergeTask({ ...commonTaskOptions, ...options }),
 			createRemoveLocalTask: (options: TaskOptions) =>
 				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
 			createRemoveLocalRecursivelyTask: (options: TaskOptions) =>

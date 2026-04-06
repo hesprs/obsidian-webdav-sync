@@ -3,7 +3,7 @@ import type { SyncPlanningProgress } from '~/events';
 import type { BinaryLike } from '~/platform/binary';
 import type { RecordStatsMap, StatsMap, StatModel } from '~/types';
 import { SyncMode } from '~/settings';
-import { ConflictStrategy } from '../tasks/conflict-resolve.task';
+import { ConflictStrategy } from '../tasks/merge.task';
 import { BaseTask } from '../tasks/task.interface';
 
 export interface SyncDecisionSettings {
@@ -42,7 +42,7 @@ export interface PlannedPathSnapshot {
 	remote?: PlannedRemoteSnapshot;
 }
 
-export interface ConflictTaskOptions extends TaskOptions {
+export interface MergeTaskOptions extends TaskOptions {
 	record?: SyncRecordItem;
 	strategy: ConflictStrategy;
 	local: PlannedLocalSnapshot;
@@ -75,7 +75,7 @@ export interface AddRecordTaskOptions extends TaskOptions {
 export interface TaskFactory {
 	createPullTask(options: PullTaskOptions): BaseTask;
 	createPushTask(options: PushTaskOptions): BaseTask;
-	createConflictResolveTask(options: ConflictTaskOptions): BaseTask;
+	createMergeTask(options: MergeTaskOptions): BaseTask;
 	createRemoveLocalTask(options: TaskOptions): BaseTask;
 	createRemoveLocalRecursivelyTask(options: TaskOptions): BaseTask;
 	createRemoveRemoteTask(options: TaskOptions): BaseTask;
