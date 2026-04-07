@@ -1,6 +1,7 @@
-import { clamp, isNil } from 'lodash-es';
+import { clamp } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import i18n from '~/i18n';
+import { languages } from '~/i18n';
 import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import { SyncMode } from './index';
 import BaseSettings from './settings.base';
@@ -155,24 +156,14 @@ export default class CommonSettings extends BaseSettings {
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.language.name'))
 			.setDesc(i18n.t('settings.language.desc'))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption('', i18n.t('settings.language.auto'))
-					.addOption('zh-Hans', '简体中文')
-					.addOption('en', 'English')
-					.addOption('ru', 'Русский')
-					.setValue(this.plugin.settings.language || '')
-					.onChange((value) => {
-						if (
-							value === 'zh-Hans' ||
-							value === 'en' ||
-							value === 'ru' ||
-							value === '' ||
-							isNil(value)
-						)
-							void this.updateLanguage(value);
-					}),
-			);
+			.addDropdown((dropdown) => {
+				dropdown.addOption('', i18n.t('settings.language.auto'));
+				for (const [code, name] of Object.entries(languages))
+					dropdown.addOption(code, name);
+				dropdown.setValue(this.plugin.settings.language).onChange((value) => {
+					if (value !== this.plugin.settings.language) void this.updateLanguage(value);
+				});
+			});
 	}
 
 	private handleStartupSyncDelayBlur(text: TextComponent, maxSeconds: number) {
@@ -209,7 +200,7 @@ export default class CommonSettings extends BaseSettings {
 	}
 
 	private async updateLanguage(value: string) {
-		this.plugin.settings.language = value ? (value as 'zh-Hans' | 'en') : undefined;
+		this.plugin.settings.language = value;
 		await this.plugin.saveSettings();
 		await this.plugin.i18nService.update();
 		this.settings.display();

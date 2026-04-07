@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import MkdirLocalTask from '~/sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
-import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import PullTask from '~/sync/tasks/pull.task';
 import PushTask from '~/sync/tasks/push.task';
 import RemoveLocalRecursivelyTask from '~/sync/tasks/remove-local-recursively.task';
@@ -57,7 +56,7 @@ describe('optimizeSync', () => {
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
 		expect(tasks[1]).toBeInstanceOf(RemoveLocalRecursivelyTask);
 		expect(tasks[2]).toBeInstanceOf(MkdirLocalTask);
-		expect(tasks[3]).toBeInstanceOf(MkdirsRemoteTask);
+		expect(tasks[3]).toBeInstanceOf(MkdirRemoteTask);
 		expect(tasks[4]).toBeInstanceOf(PushTask);
 		expect(tasks[5]).toBeInstanceOf(PullTask);
 		expect(tasks).toHaveLength(6);
@@ -84,7 +83,7 @@ describe('optimizeSync', () => {
 		]).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);
-		expect(tasks[1]).toBeInstanceOf(MkdirsRemoteTask);
+		expect(tasks[1]).toBeInstanceOf(MkdirRemoteTask);
 		expect(tasks[2]).toBeInstanceOf(PushTask);
 	});
 });

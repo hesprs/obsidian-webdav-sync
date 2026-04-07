@@ -1,7 +1,6 @@
 import { ButtonComponent, Modal, setIcon, Setting } from 'obsidian';
 import { Subscription } from 'rxjs';
 import CleanRecordTask from '~/sync/tasks/clean-record.task';
-import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import getTaskName from '~/utils/get-task-name';
 import WebDAVSyncPlugin from '..';
@@ -143,11 +142,7 @@ export default class SyncProgressModal extends Modal {
 
 			if (file instanceof CleanRecordTask) setIcon(icon, 'archive-x');
 			else if (file instanceof MergeTask) setIcon(icon, 'git-merge');
-			else if (
-				file instanceof MkdirLocalTask ||
-				file instanceof MkdirRemoteTask ||
-				file instanceof MkdirsRemoteTask
-			)
+			else if (file instanceof MkdirLocalTask || file instanceof MkdirRemoteTask)
 				setIcon(icon, 'folder-plus');
 			else if (file instanceof PullTask) setIcon(icon, 'arrow-down-narrow-wide');
 			else if (file instanceof PushTask) setIcon(icon, 'arrow-up-narrow-wide');

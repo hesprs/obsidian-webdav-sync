@@ -224,7 +224,6 @@ export default {
 		fileOp: {
 			createLocalDir: '创建本地目录',
 			createRemoteDir: '创建远程目录',
-			createRemoteDirs: '创建多级目录',
 			download: '下载',
 			filenameError: '路径含无效字符',
 			merge: '合并',

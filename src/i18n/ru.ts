@@ -229,7 +229,6 @@ export default {
 		fileOp: {
 			createLocalDir: 'Создать локальную папку',
 			createRemoteDir: 'Создать удаленную папку',
-			createRemoteDirs: 'Создать вложенные папки',
 			download: 'Скачать',
 			filenameError: 'Недопустимые символы в пути',
 			merge: 'Слияние',

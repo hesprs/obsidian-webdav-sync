@@ -40,7 +40,7 @@ export interface PluginSettings {
 	useFastSyncOnLocalChange: boolean;
 	startupSyncDelaySeconds: number;
 	scheduledSyncIntervalSeconds: number;
-	language?: 'zh-Hans' | 'en' | 'ru';
+	language: string;
 }
 
 let pluginInstance: WebDAVSyncPlugin | null = null;
