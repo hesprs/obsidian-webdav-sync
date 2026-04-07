@@ -8,3 +8,4 @@ export const VALID_REQURL =
 	(Platform.isAndroidApp && requireApiVersion(API_VER_REQURL_ANDROID));
 
 export const IN_DEV = process.env.MODE === 'dev';
+export const VERSION = process.env.VERSION ?? '2.1.0';
