@@ -15,7 +15,7 @@ import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
-import { migrateSettings } from './settings/migration';
+import { processSettings } from './settings/process';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
 import { ConflictStrategy } from './sync/tasks/merge.task';
 import { apiLimiter } from './utils/api-limiter';
@@ -77,7 +77,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		migrateSettings(this);
 		apiLimiter
 			.set('maxConcurrentWebDAVCalls', this.settings.maxConcurrentWebDAVCalls)
 			.set('minTimeBetweenWebDAVCalls', this.settings.minTimeBetweenWebDAVCalls);
@@ -100,19 +99,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async loadSettings() {
 		Object.assign(this.settings, await this.loadData());
-
-		// FIXED: Moved config-dir exclusion settings injection from SyncExecutor to here so the executor remains pure (Audit Report)
-		const configDir = this.app.vault.configDir;
-		const hasConfigDirRule = this.settings.filterRules.exclusionRules.some(
-			(rule) => rule.expr === configDir,
-		);
-		if (!hasConfigDirRule) {
-			this.settings.filterRules.exclusionRules.push({
-				expr: configDir,
-				options: { caseSensitive: false },
-			});
-			await this.saveSettings();
-		}
+		processSettings(this);
 	}
 
 	async saveSettings() {

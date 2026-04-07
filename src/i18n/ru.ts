@@ -198,9 +198,6 @@ export default {
 		closeButton: 'Закрыть',
 		showProgressButton: 'Показать прогресс синхронизации',
 		notSyncing: 'Синхронизация не выполняется',
-		percentComplete: '{{percent}}%',
-		currentFile: '{{path}}',
-		filePath: '{{path}}',
 		progressTitle: 'Прогресс синхронизации',
 		progressStats: 'Выполнено: {{completed}} / {{total}} задач',
 		completedFilesTitle: 'Выполненные задачи',
@@ -219,14 +216,15 @@ export default {
 		alreadyUpToDate: '✅ Актуальная версия',
 		upToDate: '✅ Актуальная версия',
 		noChangesToSync: 'Нет изменений для синхронизации',
-		typeLabel: '{{mode}} · {{runKind}}',
-		mode: {
-			manual: 'Ручная',
-			auto: 'Авто',
-		},
 		runKind: {
 			normal: 'Обычная',
 			fast: 'Быстрая',
+		},
+		fileFolderConflict: {
+			message:
+				'Не удалось синхронизировать: {{path}} — это {{remoteForm}} на удалённом сервере, но {{localForm}} локально',
+			file: 'файл',
+			folder: 'папка',
 		},
 		fileOp: {
 			createLocalDir: 'Создать локальную папку',

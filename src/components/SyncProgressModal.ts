@@ -1,7 +1,6 @@
 import { ButtonComponent, Modal, setIcon, Setting } from 'obsidian';
 import { Subscription } from 'rxjs';
 import CleanRecordTask from '~/sync/tasks/clean-record.task';
-import FilenameErrorTask from '~/sync/tasks/filename-error.task';
 import MkdirsRemoteTask from '~/sync/tasks/mkdirs-remote.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import getTaskName from '~/utils/get-task-name';
@@ -20,7 +19,6 @@ import PullTask from '../sync/tasks/pull.task';
 import PushTask from '../sync/tasks/push.task';
 import RemoveLocalTask from '../sync/tasks/remove-local.task';
 import RemoveRemoteTask from '../sync/tasks/remove-remote.task';
-import { formatSyncRunType } from '../utils/format-sync-run-type';
 
 export default class SyncProgressModal extends Modal {
 	private progressBar!: HTMLDivElement;
@@ -78,14 +76,11 @@ export default class SyncProgressModal extends Modal {
 			: progress.totalTasks;
 
 		const percent = Math.round((completedUnits / totalUnits) * 100) || 0;
-		const syncType = currentRun ? formatSyncRunType(currentRun) : null;
+		const syncType = currentRun ? i18n.t(`sync.runKind.${currentRun.runKind}`) : null;
 
-		this.progressBar.style.width = `${percent}%`;
-		this.progressText.setText(
-			i18n.t('sync.percentComplete', {
-				percent,
-			}),
-		);
+		const percentText = `${percent}%`;
+		this.progressBar.style.width = percentText;
+		this.progressText.setText(percentText);
 
 		this.progressStats.setText(
 			i18n.t('sync.progressStats', {
@@ -103,9 +98,7 @@ export default class SyncProgressModal extends Modal {
 		if (isPlanningStage) {
 			this.currentFile.setText(
 				planningProgress?.currentItem
-					? i18n.t('sync.currentFile', {
-							path: planningProgress.currentItem,
-						})
+					? planningProgress.currentItem
 					: i18n.t('sync.preparing'),
 			);
 		} else if (currentRun?.stage === 'awaiting_confirmation') {
@@ -133,11 +126,7 @@ export default class SyncProgressModal extends Modal {
 		} else if (progress.completed.length > 0) {
 			const lastFile = progress.completed.at(-1);
 			if (lastFile) {
-				this.currentFile.setText(
-					i18n.t('sync.currentFile', {
-						path: lastFile.localPath,
-					}),
-				);
+				this.currentFile.setText(lastFile.localPath);
 			}
 		}
 
@@ -154,7 +143,6 @@ export default class SyncProgressModal extends Modal {
 
 			if (file instanceof CleanRecordTask) setIcon(icon, 'archive-x');
 			else if (file instanceof MergeTask) setIcon(icon, 'git-merge');
-			else if (file instanceof FilenameErrorTask) setIcon(icon, 'refresh-cw-off');
 			else if (
 				file instanceof MkdirLocalTask ||
 				file instanceof MkdirRemoteTask ||
@@ -180,11 +168,7 @@ export default class SyncProgressModal extends Modal {
 			const filePath = item.createSpan({
 				cls: 'flex-1 break-all',
 			});
-			filePath.setText(
-				i18n.t('sync.filePath', {
-					path: file.localPath,
-				}),
-			);
+			filePath.setText(file.localPath);
 		});
 	}
 
@@ -332,12 +316,9 @@ export default class SyncProgressModal extends Modal {
 
 		const percent = Math.round((completed / total) * 100) || 0;
 
-		this.syncStateProgressBar.style.width = `${percent}%`;
-		this.syncStateProgressText.setText(
-			i18n.t('sync.percentComplete', {
-				percent,
-			}),
-		);
+		const percentText = `${percent}%`;
+		this.syncStateProgressBar.style.width = percentText;
+		this.syncStateProgressText.setText(percentText);
 
 		this.syncStateProgressStats.setText(
 			i18n.t('sync.progressStats', {

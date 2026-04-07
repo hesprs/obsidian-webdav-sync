@@ -40,7 +40,6 @@ export function arrayBufferEquals(left: ArrayBuffer, right: ArrayBuffer): boolea
 	return true;
 }
 
-// FIXED: Centralized arrayBufferToText helper to eliminate copying it across PushTask, PullTask, and MergeTask (Audit Report)
 export async function arrayBufferToText(buffer: ArrayBuffer): Promise<string> {
 	return await new Blob([new Uint8Array(buffer)]).text();
 }

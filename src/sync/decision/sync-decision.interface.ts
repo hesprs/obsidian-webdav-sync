@@ -83,7 +83,6 @@ export interface TaskFactory {
 	createMkdirRemoteTask(options: MkdirRemoteTaskOptions): BaseTask;
 	createCleanRecordTask(options: TaskOptions): BaseTask;
 	createAddRecordTask(options: AddRecordTaskOptions): BaseTask;
-	createFilenameErrorTask(options: TaskOptions): BaseTask;
 }
 
 export interface SyncDecisionInput {

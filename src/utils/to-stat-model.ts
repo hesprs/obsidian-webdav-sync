@@ -5,25 +5,33 @@ import { normalizeRemotePathToAbsolute, normalizeVaultPath } from '~/platform/pa
 
 export function remoteToStatModel(from: FileStat, remoteDir: string): StatModel {
 	const isDir = from.type === 'directory';
-	return {
-		path: normalizeRemotePathToAbsolute(remoteDir, from.filename, isDir),
-		isDir,
-		mtime: new Date(from.lastmod).valueOf(),
-		size: from.size,
-	};
+	const path = normalizeRemotePathToAbsolute(remoteDir, from.filename, isDir);
+	if (isDir)
+		return {
+			path,
+			isDir,
+		};
+	else
+		return {
+			path,
+			isDir,
+			mtime: new Date(from.lastmod).valueOf(),
+			size: from.size,
+		};
 }
 
 export function localToStatModel(file: TAbstractFile): StatModel {
+	const path = normalizeVaultPath(file.path);
 	if (file instanceof TFile) {
 		return {
-			path: normalizeVaultPath(file.path),
+			path,
 			isDir: false,
 			mtime: file.stat.mtime,
 			size: file.stat.size,
 		};
 	} else
 		return {
-			path: normalizeVaultPath(file.path),
+			path,
 			isDir: true,
 		};
 }

@@ -4,10 +4,11 @@ import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
 
-// TODO: Remove migration in October 2026
-export function migrateSettings(plugin: WebDAVSyncPlugin): void {
+// TODO: remove migration in October 2026
+export function processSettings(plugin: WebDAVSyncPlugin): void {
 	let changed = false;
 
+	// v2 migration
 	const skip = plugin.settings.skipLargeFiles;
 	if (skip.bytes === undefined) {
 		const bytes = bytesParse(skip.maxSize, { mode: 'jedec' });
@@ -21,6 +22,7 @@ export function migrateSettings(plugin: WebDAVSyncPlugin): void {
 		changed = true;
 	}
 
+	// v2 migration
 	const conflictStrategy = plugin.settings.conflictStrategy;
 	const map = {
 		'diff-match-patch': ConflictStrategy.DiffMatchPatch,
@@ -37,9 +39,23 @@ export function migrateSettings(plugin: WebDAVSyncPlugin): void {
 		changed = true;
 	}
 
+	// v2 migration
 	if (plugin.settings.remoteDir === '') {
 		plugin.settings.remoteDir = normalizeBaseDir(plugin.app.vault.getName());
 		logger.info(`Migrated remoteDir to ${plugin.settings.remoteDir}`);
+		changed = true;
+	} else plugin.settings.remoteDir = normalizeBaseDir(plugin.settings.remoteDir);
+
+	// ensure config dir is excluded
+	const configDir = plugin.app.vault.configDir;
+	const hasConfigDirRule = plugin.settings.filterRules.exclusionRules.some(
+		(rule) => rule.expr === configDir,
+	);
+	if (!hasConfigDirRule) {
+		plugin.settings.filterRules.exclusionRules.push({
+			expr: configDir,
+			options: { caseSensitive: false },
+		});
 		changed = true;
 	}
 

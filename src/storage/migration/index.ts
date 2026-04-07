@@ -1,8 +1,8 @@
 import type WebDAVSyncPlugin from '~/index';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
-import { migrate } from './migrate';
+import { migrate, pruneBaseTextStore } from './migrate';
 
-// TODO: Remove in October 2026 (6 months after release)
+// TODO: Remove in July 2026 (3 months after release)
 export async function migrateStorage(plugin: WebDAVSyncPlugin): Promise<void> {
 	const namespace = getSyncStateKey({
 		vaultName: plugin.app.vault.getName(),
@@ -15,4 +15,7 @@ export async function migrateStorage(plugin: WebDAVSyncPlugin): Promise<void> {
 
 	const meta = await syncStateStore.get(namespace, 'meta');
 	if ((meta as unknown as { version: number })?.version === 1) await migrate(plugin, namespace);
+
+	// TODO: remove 27 April 2026 (20 days after release)
+	await pruneBaseTextStore(namespace);
 }

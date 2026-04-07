@@ -6,18 +6,14 @@ import { BaseTask } from '../tasks/task.interface';
 import { mergeMkdirTasks } from './merge-mkdir-tasks';
 import { mergeRemoveTasks } from './merge-remove-tasks';
 
-function sortTasksByPathDepth<T extends BaseTask>(tasks: T[], getPath: (task: T) => string): T[] {
-	return [...tasks].sort((a, b) => {
-		const pathA = getPath(a);
-		const pathB = getPath(b);
-		// FIXED: Sort by directory depth (segment count) instead of simple path length to ensure correct parent-child directory ordering (Audit Report)
-		const depthA = pathA.split('/').length;
-		const depthB = pathB.split('/').length;
-		if (depthA !== depthB) {
-			return depthA - depthB;
-		}
-		return pathA.localeCompare(pathB);
-	});
+function sortTasksByPathDepth<T extends BaseTask>(tasks: T[]): T[][] {
+	const levels: Record<number, T[]> = {};
+	for (const task of tasks) {
+		const depth = task.localPath.split('/').length;
+		if (!levels[depth]) levels[depth] = [];
+		levels[depth].push(task);
+	}
+	return Object.values(levels);
 }
 
 export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
@@ -37,12 +33,12 @@ export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
 	}
 
 	return [
-		...sortTasksByPathDepth(mkdirLocalTasks, (task) => task.localPath).map((task) => [task]),
-		...mergeMkdirTasks(mkdirRemoteTasks).map((task) => [task]),
 		[
-			...otherTasks,
 			...mergeRemoveTasks(removeRemoteTasks, 'remote'),
 			...mergeRemoveTasks(removeLocalTasks, 'local'),
 		],
+		...sortTasksByPathDepth(mkdirLocalTasks),
+		...mergeMkdirTasks(mkdirRemoteTasks).map((task) => [task]),
+		otherTasks,
 	];
 }

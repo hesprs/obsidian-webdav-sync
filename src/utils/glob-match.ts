@@ -20,9 +20,7 @@ export function isVoidGlobMatchOptions(options: GlobMatchOptions): boolean {
 
 function generateFlags(options: GlobMatchUserOptions) {
 	let flags = '';
-	if (!options.caseSensitive) {
-		flags += 'i';
-	}
+	if (!options.caseSensitive) flags += 'i';
 	return flags;
 }
 
@@ -33,9 +31,7 @@ function normalizePath(rawPath: string) {
 		.split('/')
 		.filter((segment, index) => segment !== '' || index === 0)
 		.reduce<string[]>((segments, segment) => {
-			if (segment === '' || segment === '.') {
-				return segments;
-			}
+			if (segment === '' || segment === '.') return segments;
 			if (segment === '..') {
 				segments.pop();
 				return segments;
@@ -62,8 +58,7 @@ function buildRegExp(expr: string, options: GlobMatchUserOptions) {
 }
 
 export default class GlobMatch {
-	// FIXED: Encapsulated RegExp to prevent bypass of normalization logic (Audit Report)
-	private readonly re: RegExp;
+	private re: RegExp;
 	private readonly isRooted: boolean;
 	private readonly isDirOnly: boolean;
 	private readonly hasSlash: boolean;
@@ -96,12 +91,8 @@ export default class GlobMatch {
 	private matchDirectoryBySegments(segments: string[], isDirPath: boolean) {
 		for (let i = 0; i < segments.length; i += 1) {
 			const isSegmentDir = i < segments.length - 1 || isDirPath;
-			if (!isSegmentDir) {
-				continue;
-			}
-			if (this.segmentRegex?.test(segments[i])) {
-				return true;
-			}
+			if (!isSegmentDir) continue;
+			if (this.segmentRegex?.test(segments[i])) return true;
 		}
 		return false;
 	}
@@ -109,39 +100,28 @@ export default class GlobMatch {
 	private matchDirectoryByPrefix(segments: string[], isDirPath: boolean) {
 		for (let i = 1; i <= segments.length; i += 1) {
 			const isSegmentDir = i < segments.length || isDirPath;
-			if (!isSegmentDir) {
-				continue;
-			}
+			if (!isSegmentDir) continue;
 			const prefix = segments.slice(0, i).join('/');
-			if (this.pathRegex?.test(prefix)) {
-				return true;
-			}
+			if (this.pathRegex?.test(prefix)) return true;
 		}
 		return false;
 	}
 
 	test(path: string) {
-		if (this.patternBody === '') {
-			return false;
-		}
+		if (this.patternBody === '') return false;
 		const { normalized, segments, isDirPath } = normalizePath(path);
 		if (this.isDirOnly) {
-			if (this.isRooted || this.hasSlash) {
+			if (this.isRooted || this.hasSlash)
 				return this.matchDirectoryByPrefix(segments, isDirPath);
-			}
 			return this.matchDirectoryBySegments(segments, isDirPath);
 		}
-		if (this.isRooted || this.hasSlash) {
-			return this.pathRegex?.test(normalized) ?? false;
-		}
+		if (this.isRooted || this.hasSlash) return this.pathRegex?.test(normalized) ?? false;
 		return segments.some((segment) => this.segmentRegex?.test(segment));
 	}
 }
 
 export function getUserOptions(opt: GlobMatchOptions | string): GlobMatchUserOptions {
-	if (typeof opt === 'string') {
-		return cloneDeep(DEFAULT_USER_OPTIONS);
-	}
+	if (typeof opt === 'string') return cloneDeep(DEFAULT_USER_OPTIONS);
 	return opt.options ?? cloneDeep(DEFAULT_USER_OPTIONS);
 }
 
@@ -150,25 +130,13 @@ export function needIncludeFromGlobRules(
 	inclusion: GlobMatch[],
 	exclusion: GlobMatch[],
 ) {
-	for (const rule of inclusion) {
-		if (rule.test(path)) {
-			return true;
-		}
-	}
-	for (const rule of exclusion) {
-		if (rule.test(path)) {
-			return false;
-		}
-	}
+	for (const rule of inclusion) if (rule.test(path)) return true;
+	for (const rule of exclusion) if (rule.test(path)) return false;
 	const { segments } = normalizePath(path);
 	const parentCount = Math.max(segments.length - 1, 0);
 	for (let i = 1; i <= parentCount; i += 1) {
 		const parentPath = `${segments.slice(0, i).join('/')}/`;
-		for (const rule of exclusion) {
-			if (rule.test(parentPath)) {
-				return false;
-			}
-		}
+		for (const rule of exclusion) if (rule.test(parentPath)) return false;
 	}
 	return true;
 }
