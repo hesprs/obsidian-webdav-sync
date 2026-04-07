@@ -1,4 +1,4 @@
-import { IN_DEV } from '~/consts';
+import { IN_DEV, VERSION } from '~/consts';
 import { formatDateTime } from '~/utils/format-date';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -184,8 +184,8 @@ class Logger {
 			'# WebDAV Sync Support Report',
 			'',
 			`Generated at: ${formatDateTime(Date.now())}`,
-			'',
-			`Stored records: ${this.logs.length}`,
+			`Log Length: ${this.logs.length}`,
+			`Plugin version: ${VERSION}`,
 			'',
 		];
 
@@ -224,33 +224,23 @@ class Logger {
 		lines.push(`- Mode: ${formatMode(summary.mode) ?? 'unknown'}`);
 		lines.push(`- Run kind: ${summary.runKind ?? 'unknown'}`);
 		lines.push(`- Outcome: ${summary.stage ?? 'unknown'}`);
-		if (summary.sources && summary.sources.length > 0) {
+		if (summary.sources && summary.sources.length > 0)
 			lines.push(`- Sources: ${summary.sources.join(', ')}`);
-		}
 		lines.push(`- Queued at: ${formatTimestamp(summary.queuedAt) ?? 'unknown'}`);
-		if (summary.planningStartedAt !== undefined) {
+		if (summary.planningStartedAt !== undefined)
 			lines.push(`- Planning started: ${formatTimestamp(summary.planningStartedAt)}`);
-		}
-		if (summary.executionStartedAt !== undefined) {
+		if (summary.executionStartedAt !== undefined)
 			lines.push(`- Execution started: ${formatTimestamp(summary.executionStartedAt)}`);
-		}
 		lines.push(`- Ended at: ${formatTimestamp(summary.endedAt) ?? 'unknown'}`);
-		if (summary.durationMs !== undefined) {
+		if (summary.durationMs !== undefined)
 			lines.push(`- Duration: ${formatDuration(summary.durationMs)}`);
-		}
-		lines.push('');
-
-		if (summary.planSummary) {
-			lines.push('#### Plan', '');
-			lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
-		}
+		if (summary.planSummary) lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
 
 		const warnings = summary.planSummary?.warnings ?? [];
 		if (warnings.length > 0) {
 			lines.push('#### Important warnings', '');
-			for (const warning of warnings) {
+			for (const warning of warnings)
 				lines.push(`- ${warning.code ?? warning.messageKey ?? 'warning'}`);
-			}
 			lines.push('');
 		}
 

@@ -2,6 +2,7 @@ import UnoCSS from '@unocss/postcss';
 import postcssMergeRules from 'postcss-merge-rules';
 import { defineConfig } from 'tsdown';
 import solid from 'unplugin-solid/rolldown';
+import pkg from './package.json' with { type: 'json' };
 
 const dev = process.env.MODE === 'dev';
 
@@ -11,6 +12,7 @@ export default defineConfig({
 	minify: !dev,
 	define: {
 		'process.env.MODE': JSON.stringify(process.env.MODE) ?? '"prod"',
+		'process.env.VERSION': JSON.stringify(pkg.version),
 	},
 	plugins: [solid()],
 	deps: {
