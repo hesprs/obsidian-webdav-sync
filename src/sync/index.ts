@@ -98,6 +98,7 @@ export class SyncEngine {
 
 		const tasks = await new TwoWaySyncDecider(this, this.options.token, syncRecord).decide({
 			onPlanningProgress: options?.onPlanningProgress,
+			throwIfCancelled: this.throwIfCancelled,
 		});
 		this.throwIfCancelled();
 
@@ -244,9 +245,7 @@ export class SyncEngine {
 					totalDisplayableTasks,
 					allCompletedTasks,
 				),
-				timestamps: {
-					executionStartedAt: Date.now(),
-				},
+				timestamps: { executionStartedAt: Date.now() },
 			});
 			emitSyncRun(currentRun);
 
@@ -602,7 +601,6 @@ export class SyncEngine {
 		tasksToDelete: RemoveLocalTask[],
 		tasksToReupload: RemoveLocalTask[],
 	): Set<RemoveLocalTask> {
-		// FIXED: Replaced O(N^2) Set array scan with an O(1) Map lookup to optimize large delete/reupload batches (Audit Report)
 		const deleteTaskMap = new Map(tasksToDelete.map((task) => [task.localPath, task]));
 
 		for (const reuploadTask of tasksToReupload) {
@@ -613,9 +611,7 @@ export class SyncEngine {
 				if (currentPath === '.' || currentPath === '') break;
 
 				const deleteTask = deleteTaskMap.get(currentPath);
-				if (deleteTask) {
-					deleteTaskMap.delete(currentPath);
-				}
+				if (deleteTask) deleteTaskMap.delete(currentPath);
 			}
 		}
 
@@ -710,10 +706,7 @@ export class SyncEngine {
 			}
 		}
 
-		return {
-			run: currentRun,
-			results,
-		};
+		return { run: currentRun, results };
 	}
 
 	private createProgressSummary(

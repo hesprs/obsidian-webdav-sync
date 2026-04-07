@@ -54,14 +54,14 @@ describe('optimizeSync', () => {
 			new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
 		]).flatMap((task) => task);
 
-		expect(tasks[0]).toBeInstanceOf(MkdirLocalTask);
-		expect(tasks[1]).toBeInstanceOf(MkdirsRemoteTask);
-		expect(tasks[2]).toBeInstanceOf(PushTask);
-		expect(tasks[3]).toBeInstanceOf(PullTask);
-		expect(tasks[4]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
-		expect(tasks[5]).toBeInstanceOf(RemoveLocalRecursivelyTask);
+		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
+		expect(tasks[1]).toBeInstanceOf(RemoveLocalRecursivelyTask);
+		expect(tasks[2]).toBeInstanceOf(MkdirLocalTask);
+		expect(tasks[3]).toBeInstanceOf(MkdirsRemoteTask);
+		expect(tasks[4]).toBeInstanceOf(PushTask);
+		expect(tasks[5]).toBeInstanceOf(PullTask);
 		expect(tasks).toHaveLength(6);
-		expect(tasks[5].localPath).toBe('old');
+		expect(tasks[1].localPath).toBe('old');
 	});
 
 	it('keeps remote reupload dependencies ahead of local deletion', () => {
@@ -83,8 +83,8 @@ describe('optimizeSync', () => {
 			}),
 		]).flatMap((task) => task);
 
-		expect(tasks[0]).toBeInstanceOf(MkdirsRemoteTask);
-		expect(tasks[1]).toBeInstanceOf(PushTask);
-		expect(tasks[2]).toBeInstanceOf(RemoveLocalTask);
+		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);
+		expect(tasks[1]).toBeInstanceOf(MkdirsRemoteTask);
+		expect(tasks[2]).toBeInstanceOf(PushTask);
 	});
 });

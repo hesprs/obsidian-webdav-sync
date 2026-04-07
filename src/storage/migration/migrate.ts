@@ -7,8 +7,14 @@ import {
 	normalizeRemotePathToRelative,
 	normalizeVaultPath,
 } from '~/platform/path';
+import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import logger from '~/utils/logger';
-import { BASE_TEXT_STORE_NAME, STORAGE_NAME, SYNC_STATE_STORE_NAME } from '../store.interface';
+import {
+	BASE_TEXT_STORE_NAME,
+	parseKey,
+	STORAGE_NAME,
+	SYNC_STATE_STORE_NAME,
+} from '../store.interface';
 
 type LegacyLocalRecordModel = {
 	local?: StatModel;
@@ -85,8 +91,7 @@ export async function migrate(plugin: WebDAVSyncPlugin, namespace: string): Prom
 		coalesceWrites: false,
 	});
 
-	await syncStateStore.ready();
-	await baseTextStore.ready();
+	await Promise.all([syncStateStore.ready(), baseTextStore.ready()]);
 
 	const legacyLocalKey = `sync-state:${namespace}:local`;
 	const legacyRemoteKey = `sync-state:${namespace}:remote`;
@@ -155,7 +160,7 @@ export async function migrate(plugin: WebDAVSyncPlugin, namespace: string): Prom
 				remote: remoteStat,
 			});
 
-			if (typeof localRecord.baseText === 'string') {
+			if (typeof localRecord.baseText === 'string' && isMergeablePath(localStat.path)) {
 				const baseText = localRecord.baseText;
 				const baseTextKey = `base-text:${namespace}:${normalizedPath}`;
 				queuedBaseTextReads.push(baseTextKey);
@@ -195,5 +200,23 @@ export async function migrate(plugin: WebDAVSyncPlugin, namespace: string): Prom
 		logger.info('Successfully migrated legacy sync state');
 	} catch (error) {
 		logger.error('Failed to migrate legacy sync state', error);
+	}
+}
+
+export async function pruneBaseTextStore(_namespace: string): Promise<void> {
+	const baseTextStore = localspace.createInstance({
+		name: STORAGE_NAME,
+		storeName: BASE_TEXT_STORE_NAME,
+		driver: [localspace.INDEXEDDB],
+		coalesceWrites: false,
+	});
+	await baseTextStore.ready();
+	const keys = (await baseTextStore.keys()).filter((key) => {
+		const { namespace, path } = parseKey(key);
+		return namespace === _namespace && !isMergeablePath(path);
+	});
+	if (keys.length > 0) {
+		await baseTextStore.removeItems(keys);
+		logger.info(`Successfully pruned ${keys.length} entries in base text store.`);
 	}
 }

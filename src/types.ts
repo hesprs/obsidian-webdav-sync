@@ -1,14 +1,16 @@
-export type StatModel =
-	| {
-			path: string;
-			isDir: true;
-	  }
-	| {
-			path: string;
-			isDir: false;
-			mtime: number;
-			size: number;
-	  };
+export type StatModel = FileStatModel | FolderStatModel;
+
+export type FileStatModel = {
+	path: string;
+	isDir: false;
+	mtime: number;
+	size: number;
+};
+
+export type FolderStatModel = {
+	path: string;
+	isDir: true;
+};
 
 export enum SyncRunKind {
 	normal = 'normal',

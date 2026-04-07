@@ -60,9 +60,7 @@ export function mergeMkdirTasks(mkdirTasks: MkdirRemoteTask[]): MkdirsRemoteTask
 			}
 
 			// Delete child groups and create new group with this task
-			for (const key of groupsToDelete) {
-				hierarchyGroups.delete(key);
-			}
+			for (const key of groupsToDelete) hierarchyGroups.delete(key);
 
 			if (childGroups.length > 0) {
 				// This task is a parent of existing groups

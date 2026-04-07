@@ -12,6 +12,7 @@ import postTraversal from './post-traversal';
 
 interface TraverseWebDAVOptions {
 	onProgress?: OnProgress;
+	throwIfCancelled?: () => void;
 	token: string;
 }
 
@@ -22,7 +23,11 @@ function isNotFoundError(err: unknown): boolean {
 	return typeof errWithRes.message === 'string' && /^404\s*:/.test(errWithRes.message);
 }
 
-export async function traverseWebDAV({ onProgress, token }: TraverseWebDAVOptions) {
+export async function traverseWebDAV({
+	onProgress,
+	token,
+	throwIfCancelled,
+}: TraverseWebDAVOptions) {
 	const { filterRules, skipLargeFiles, serverUrl, remoteDir } = await useSettings();
 	const queue = [remoteDir];
 	const result: StatsMap = new Map();
@@ -31,6 +36,7 @@ export async function traverseWebDAV({ onProgress, token }: TraverseWebDAVOption
 		apiLimiter.wrap(getDirectoryContents)(serverUrl, token, path);
 
 	const getContent = async (path: string) => {
+		throwIfCancelled?.();
 		let retryCount = 0;
 		while (true) {
 			if (retryCount > 3) throw new Error('Failed to get WebDAV content after 3 retries');
@@ -44,9 +50,10 @@ export async function traverseWebDAV({ onProgress, token }: TraverseWebDAVOption
 		}
 	};
 
-	const reportProgress = async (current: string) => {
+	const reportProgress = (current: string) => {
+		throwIfCancelled?.();
 		processedCount++;
-		await onProgress?.({
+		void onProgress?.({
 			processedDirectories: processedCount,
 			totalDirectories: processedCount + queue.length,
 			currentDirectory: current,
@@ -68,11 +75,11 @@ export async function traverseWebDAV({ onProgress, token }: TraverseWebDAVOption
 						result.set(vaultPath, item);
 						if (item.isDir) queue.push(item.path);
 					}
-					void reportProgress(currentPath);
+					reportProgress(currentPath);
 				} catch (err) {
 					logger.error(`Error processing ${currentPath}`, err);
 					if (isNotFoundError(err)) {
-						void reportProgress(currentPath);
+						reportProgress(currentPath);
 						return;
 					}
 					throw err;

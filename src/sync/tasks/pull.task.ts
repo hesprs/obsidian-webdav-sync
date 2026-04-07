@@ -1,8 +1,8 @@
 import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
-import { vaultDirname } from '~/platform/path';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-item';
+import { isMergeablePath } from '../utils/is-mergeable-path';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PullTask extends BaseTask {
@@ -25,31 +25,14 @@ export default class PullTask extends BaseTask {
 			}
 
 			const arrayBuffer = await toArrayBuffer(remoteContent);
-			if (arrayBuffer.byteLength !== this.remoteSize)
-				throw new Error('Remote Size Not Match!');
-
-			const localDir = vaultDirname(this.localPath);
-			if (localDir !== '.' && localDir !== '') {
-				const segments = localDir.split('/').filter((segment) => segment !== '');
-				let currentPath = '';
-				for (const segment of segments) {
-					currentPath = currentPath ? `${currentPath}/${segment}` : segment;
-					try {
-						await this.vault.adapter.mkdir(currentPath);
-					} catch {
-						// Ignore existing-dir and parent creation races.
-					}
-				}
-			}
-
 			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
 
 			const remote = this.options.remote?.stat;
 			if (!remote || remote.isDir) {
 				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
 			}
+
 			// no race condition since we've just written it
-			const baseText = await arrayBufferToText(arrayBuffer);
 			const local = statVaultItem(this.vault, this.localPath);
 			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
@@ -57,7 +40,9 @@ export default class PullTask extends BaseTask {
 				key: this.localPath,
 				local,
 				remote,
-				baseText,
+				baseText: isMergeablePath(this.localPath)
+					? await arrayBufferToText(arrayBuffer)
+					: undefined,
 			});
 
 			return { success: true } as const;

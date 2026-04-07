@@ -21,7 +21,6 @@ import type {
 } from './sync-decision.interface';
 import AddRecordTask from '../tasks/add-record.task';
 import CleanRecordTask from '../tasks/clean-record.task';
-import FilenameErrorTask from '../tasks/filename-error.task';
 import MergeTask from '../tasks/merge.task';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
@@ -58,6 +57,7 @@ export default class TwoWaySyncDecider {
 
 	async decide(options?: {
 		onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
+		throwIfCancelled?: () => void;
 	}): Promise<BaseTask[]> {
 		const reportPlanningProgress = async (progress: SyncPlanningProgress) => {
 			await options?.onPlanningProgress?.(progress);
@@ -86,6 +86,7 @@ export default class TwoWaySyncDecider {
 							});
 						},
 						token: this.token,
+						throwIfCancelled: options?.throwIfCancelled,
 					});
 
 		// 创建共用的task选项
@@ -126,8 +127,6 @@ export default class TwoWaySyncDecider {
 				new CleanRecordTask({ ...commonTaskOptions, ...options }),
 			createAddRecordTask: (options: AddRecordTaskOptions) =>
 				new AddRecordTask({ ...commonTaskOptions, ...options }),
-			createFilenameErrorTask: (options: TaskOptions) =>
-				new FilenameErrorTask({ ...commonTaskOptions, ...options }),
 		};
 
 		const compareFileContent = async (filePath: string, baseText: string): Promise<boolean> => {

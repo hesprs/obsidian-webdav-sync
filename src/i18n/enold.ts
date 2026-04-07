@@ -196,9 +196,6 @@ export default {
 		closeButton: 'Close',
 		showProgressButton: 'Show sync progress',
 		notSyncing: 'No sync currently in progress',
-		percentComplete: '{{percent}}%',
-		currentFile: '{{path}}',
-		filePath: '{{path}}',
 		progressTitle: 'Sync progress',
 		progressStats: 'Completed: {{completed}} / {{total}} tasks',
 		completedFilesTitle: 'Completed tasks',
@@ -217,14 +214,15 @@ export default {
 		alreadyUpToDate: '✅ Already up to date',
 		upToDate: '✅ Up to date',
 		noChangesToSync: 'No changes to sync',
-		typeLabel: '{{mode}} · {{runKind}}',
-		mode: {
-			manual: 'Manual',
-			auto: 'Auto',
-		},
 		runKind: {
 			normal: 'Normal',
 			fast: 'Fast',
+		},
+		fileFolderConflict: {
+			message:
+				'Unable to sync: {{path}} is a {{remoteForm}} at remote but a {{localForm}} at local',
+			file: 'file',
+			folder: 'folder',
 		},
 		fileOp: {
 			createLocalDir: 'Create local directory',

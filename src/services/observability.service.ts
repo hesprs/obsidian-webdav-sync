@@ -1,9 +1,14 @@
 import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
-import { onSyncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
+import {
+	onSyncRun,
+	SyncPlanningSubStage,
+	type SyncRunSnapshot,
+	type SyncRunStage,
+	type SyncRunWarning,
+} from '~/events';
 import i18n from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
-import { formatSyncRunType } from '~/utils/format-sync-run-type';
 import type WebDAVSyncPlugin from '..';
 
 const TERMINAL_STAGES: SyncRunStage[] = ['completed', 'completed_noop', 'cancelled', 'failed'];
@@ -184,13 +189,13 @@ export default class ObservabilityService {
 
 		this.shownFailureModalRunIds.add(run.runId);
 		new FailedTasksModal(this.plugin.app, run.resultSummary.failed, {
-			syncType: formatSyncRunType(run),
+			syncType: i18n.t(`sync.runKind.${run.runKind}`),
 			failedCount: run.resultSummary.failedTasks,
 		}).open();
 	}
 
 	private getStatusText(run: SyncRunSnapshot): string {
-		const syncType = formatSyncRunType(run);
+		const syncType = i18n.t(`sync.runKind.${run.runKind}`);
 		switch (run.stage) {
 			case 'queued':
 			case 'planning':
@@ -228,8 +233,10 @@ export default class ObservabilityService {
 		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
 		const stageText = i18n.t(`sync.planningStage.${subStage}`);
 		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
-		const percent = Math.round((completedWorkUnits / totalWorkUnits) * 10000) / 100;
-		return `${syncType} · ${stageText} ${percent}%`;
+		if (subStage === SyncPlanningSubStage.deciding) {
+			const percent = Math.round((completedWorkUnits / totalWorkUnits) * 10000) / 100;
+			return `${syncType} · ${stageText} ${percent}%`;
+		} else return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
 	}
 
 	private getNoticeText(

@@ -194,9 +194,6 @@ export default {
 		closeButton: '关闭',
 		showProgressButton: '显示同步进度',
 		notSyncing: '尚未开始同步',
-		percentComplete: '{{percent}}%',
-		currentFile: '{{path}}',
-		filePath: '{{path}}',
 		progressTitle: '同步进度',
 		progressStats: '已完成: {{completed}} / {{total}} 个任务',
 		completedFilesTitle: '已完成的任务',
@@ -215,14 +212,14 @@ export default {
 		alreadyUpToDate: '✅ 已是最新状态',
 		upToDate: '✅ 已同步到最新',
 		noChangesToSync: '没有需要同步的更改',
-		typeLabel: '{{mode}} · {{runKind}}',
-		mode: {
-			manual: '手动',
-			auto: '自动',
-		},
 		runKind: {
 			normal: '普通',
 			fast: '快速',
+		},
+		fileFolderConflict: {
+			message: '无法同步：{{path}}在远程为{{remoteForm}}，但在本地为{{localForm}}',
+			file: '文件',
+			folder: '文件夹',
 		},
 		fileOp: {
 			createLocalDir: '创建本地目录',

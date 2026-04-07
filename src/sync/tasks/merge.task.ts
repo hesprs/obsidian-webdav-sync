@@ -66,8 +66,7 @@ export default class MergeTask extends BaseTask {
 		}
 	}
 
-	// FIXED: Restricted visibility to private to encapsulate internal staging logic (Audit Report)
-	private async execIntelligentMerge({
+	async execIntelligentMerge({
 		local,
 		remote,
 		localBuffer,

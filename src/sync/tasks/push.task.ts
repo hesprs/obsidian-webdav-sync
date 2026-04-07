@@ -2,6 +2,7 @@ import type { PushTaskOptions } from '~/sync/decision/sync-decision.interface';
 import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import logger from '~/utils/logger';
 import { statWebDAVItem } from '~/utils/stat-item';
+import { isMergeablePath } from '../utils/is-mergeable-path';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
 
 export default class PushTask extends BaseTask {
@@ -24,7 +25,6 @@ export default class PushTask extends BaseTask {
 			if (!res) throw new Error('Upload failed');
 
 			// no race condition since we've just uploaded it
-			const baseText = await arrayBufferToText(arrayBuffer);
 			const local = this.options.local?.stat;
 			if (!local || local.isDir) {
 				throw new Error('missing local file snapshot for push: ' + this.localPath);
@@ -36,7 +36,9 @@ export default class PushTask extends BaseTask {
 				key: this.localPath,
 				local,
 				remote,
-				baseText,
+				baseText: isMergeablePath(this.localPath)
+					? await arrayBufferToText(arrayBuffer)
+					: undefined,
 			});
 
 			return { success: true } as const;
