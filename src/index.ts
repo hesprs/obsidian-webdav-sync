@@ -59,7 +59,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
 		scheduledSyncIntervalSeconds: 0,
-		language: undefined,
+		language: '',
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();

@@ -3,18 +3,8 @@ import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
 import { BaseTask } from '../tasks/task.interface';
-import { mergeMkdirTasks } from './merge-mkdir-tasks';
 import { mergeRemoveTasks } from './merge-remove-tasks';
-
-function sortTasksByPathDepth<T extends BaseTask>(tasks: T[]): T[][] {
-	const levels: Record<number, T[]> = {};
-	for (const task of tasks) {
-		const depth = task.localPath.split('/').length;
-		if (!levels[depth]) levels[depth] = [];
-		levels[depth].push(task);
-	}
-	return Object.values(levels);
-}
+import { sortMkdirTasks } from './sort-mkdir-tasks';
 
 export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
 	const uniqueTasks = Array.from(new Set(tasks));
@@ -37,8 +27,8 @@ export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
 			...mergeRemoveTasks(removeRemoteTasks, 'remote'),
 			...mergeRemoveTasks(removeLocalTasks, 'local'),
 		],
-		...sortTasksByPathDepth(mkdirLocalTasks),
-		...mergeMkdirTasks(mkdirRemoteTasks).map((task) => [task]),
+		...sortMkdirTasks(mkdirLocalTasks),
+		...sortMkdirTasks(mkdirRemoteTasks),
 		otherTasks,
-	];
+	].filter((tasks) => tasks.length > 0);
 }

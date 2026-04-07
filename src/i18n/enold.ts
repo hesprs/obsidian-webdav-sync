@@ -227,7 +227,6 @@ export default {
 		fileOp: {
 			createLocalDir: 'Create local directory',
 			createRemoteDir: 'Create remote directory',
-			createRemoteDirs: 'Create multi-level directories',
 			download: 'Download',
 			filenameError: 'Invalid path characters',
 			merge: 'Merge',

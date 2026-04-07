@@ -816,13 +816,13 @@ export class SyncEngine {
 		}
 	}
 
-	private throwIfCancelled(): void {
+	private throwIfCancelled = () => {
 		if (!this.isCancelled) return;
 		logger.warn('WebDAV operation cancelled', undefined, {
 			category: 'sync.retry',
 		});
 		throw new SyncCancelledError();
-	}
+	};
 
 	get app() {
 		return this.plugin.app;
