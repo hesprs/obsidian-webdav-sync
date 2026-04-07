@@ -41,14 +41,15 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 	const mkdirLocalTasks: BaseTask[] = [];
 	const mkdirRemoteTasks: BaseTask[] = [];
 
-	let completedUnits = -1;
+	// FIXED: Initialized completedUnits to 0 and incremented after progress report for clarity instead of -1 double-negation (Audit Report)
+	let completedUnits = 0;
 	const updateProgress = async () => {
-		completedUnits++;
 		await onProgress?.({
 			subStage: SyncPlanningSubStage.deciding,
 			totalWorkUnits: mixedPath.length,
 			completedWorkUnits: completedUnits,
 		});
+		completedUnits++;
 	};
 
 	const createPushTaskWithSnapshot = async (

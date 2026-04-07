@@ -1,5 +1,5 @@
 import type { PushTaskOptions } from '~/sync/decision/sync-decision.interface';
-import { toArrayBuffer } from '~/platform/binary';
+import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import logger from '~/utils/logger';
 import { statWebDAVItem } from '~/utils/stat-item';
 import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
@@ -9,10 +9,6 @@ export default class PushTask extends BaseTask {
 		super(options);
 	}
 	readonly name = 'upload';
-
-	private async toText(content: ArrayBuffer) {
-		return await new Blob([new Uint8Array(content)]).text();
-	}
 
 	async exec() {
 		try {
@@ -28,7 +24,7 @@ export default class PushTask extends BaseTask {
 			if (!res) throw new Error('Upload failed');
 
 			// no race condition since we've just uploaded it
-			const baseText = await this.toText(arrayBuffer);
+			const baseText = await arrayBufferToText(arrayBuffer);
 			const local = this.options.local?.stat;
 			if (!local || local.isDir) {
 				throw new Error('missing local file snapshot for push: ' + this.localPath);

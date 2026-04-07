@@ -10,8 +10,11 @@ function sortTasksByPathDepth<T extends BaseTask>(tasks: T[], getPath: (task: T)
 	return [...tasks].sort((a, b) => {
 		const pathA = getPath(a);
 		const pathB = getPath(b);
-		if (pathA.length !== pathB.length) {
-			return pathA.length - pathB.length;
+		// FIXED: Sort by directory depth (segment count) instead of simple path length to ensure correct parent-child directory ordering (Audit Report)
+		const depthA = pathA.split('/').length;
+		const depthB = pathB.split('/').length;
+		if (depthA !== depthB) {
+			return depthA - depthB;
 		}
 		return pathA.localeCompare(pathB);
 	});

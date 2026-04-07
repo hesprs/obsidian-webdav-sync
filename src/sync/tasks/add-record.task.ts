@@ -11,8 +11,9 @@ export default class AddRecordTask extends BaseTask {
 		try {
 			const local = this.options.local?.stat;
 			const remote = this.options.remote;
+			// FIXED: Corrected error message to reflect 'add record' context instead of 'push' (Audit Report)
 			if (!local || !remote)
-				throw new Error(`Missing local file snapshot for push: ${this.localPath}`);
+				throw new Error(`Missing snapshot for add record: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
 				local,

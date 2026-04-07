@@ -62,7 +62,8 @@ function buildRegExp(expr: string, options: GlobMatchUserOptions) {
 }
 
 export default class GlobMatch {
-	re: RegExp;
+	// FIXED: Encapsulated RegExp to prevent bypass of normalization logic (Audit Report)
+	private readonly re: RegExp;
 	private readonly isRooted: boolean;
 	private readonly isDirOnly: boolean;
 	private readonly hasSlash: boolean;
