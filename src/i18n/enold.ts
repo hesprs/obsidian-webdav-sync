@@ -96,7 +96,7 @@ export default {
 		},
 		syncMode: {
 			name: 'Sync mode',
-			desc: 'Choose between strict or loose sync mode. Loose mode is recommended for users with many files for faster syncing. In loose mode, files with the same name and equal size that have no sync record will be ignored.',
+			desc: 'Choose between strict or loose sync mode. Loose mode is recommended for users with many files for faster syncing. In loose mode, files with the same name and equal size that have no sync record will be assumed to be synced.',
 			strict: 'Strict',
 			loose: 'Loose',
 		},

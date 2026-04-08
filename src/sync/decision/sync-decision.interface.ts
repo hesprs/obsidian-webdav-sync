@@ -1,7 +1,7 @@
 import type { TAbstractFile } from 'obsidian';
 import type { SyncPlanningProgress } from '~/events';
 import type { BinaryLike } from '~/platform/binary';
-import type { RecordStatsMap, StatsMap, StatModel } from '~/types';
+import type { RecordStatsMap, StatsMap, StatModel, RecordStatModel } from '~/types';
 import { SyncMode } from '~/settings';
 import { ConflictStrategy } from '../tasks/merge.task';
 import { BaseTask } from '../tasks/task.interface';
@@ -11,12 +11,6 @@ export interface SyncDecisionSettings {
 	conflictStrategy: ConflictStrategy;
 	useGitStyle: boolean;
 	syncMode: SyncMode;
-}
-
-export interface SyncRecordItem {
-	remote: StatModel;
-	local: StatModel;
-	baseText?: string;
 }
 
 export interface TaskOptions {
@@ -43,7 +37,7 @@ export interface PlannedPathSnapshot {
 }
 
 export interface MergeTaskOptions extends TaskOptions {
-	record?: SyncRecordItem;
+	record?: RecordStatModel;
 	strategy: ConflictStrategy;
 	local: PlannedLocalSnapshot;
 	remote: PlannedRemoteSnapshot;
@@ -91,7 +85,6 @@ export interface SyncDecisionInput {
 	currentRemoteStats: StatsMap;
 	records: RecordStatsMap;
 	remoteBaseDir: string;
-	compareFileContent: (filePath: string, baseText: string) => Promise<boolean>;
 	onProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
 	createPlannedLocalFileSnapshot: (
 		localPath: string,
@@ -110,5 +103,4 @@ export interface SyncDecisionInput {
 		remoteStat: StatModel,
 	) => PlannedRemoteSnapshot | undefined;
 	taskFactory: TaskFactory;
-	getBaseText: (path: string) => Promise<string | undefined>;
 }

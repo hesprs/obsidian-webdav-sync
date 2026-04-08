@@ -2,6 +2,39 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.1.0 - 2026-04-08
+
+### Sync planning and execution
+
+- Reworked two-way sync planning into explicit file/folder/file-folder collections, simplifying the decision flow and removing redundant per-path branching.
+- Added cancelable traversal/planning by propagating throwIfCancelled through WebDAV traversal and decider loops.
+- Changed task creation and optimization to run grouped mkdir/push/pull/remove/merge work concurrently.
+- Renamed conflict handling from conflict-resolve to merge across planning, settings, UI, and migrations, and centralized merge snapshot handling.
+- Simplified mkdir handling by removing recursive mkdir task chains and tightening path/subpath validation.
+- Optimized delete/reupload syncing by replacing an O(n²) lookup with a Map, and improved task ordering by sorting directories via path segment depth.
+- Consolidated traversal, path normalization, and stat conversion helpers into shared utilities, and removed the local-walk planning report.
+- Simplify change detection and loose-mode handling
+
+### Settings, localization, and UI
+
+- Expanded i18n language handling with a shared language map, normalized auto-detection, and a fix for zh-Hans detection.
+- Made language settings accept arbitrary values and populate the dropdown dynamically.
+- Updated sync progress and observability UI to use i18n-driven run kinds, raw paths, and clearer percent/count display.
+- Replaced the old sync run-type formatter with direct localization lookups and added/adjusted conflict-related translation keys.
+- Replaced settings migration flow with a new processing pipeline and added the prune base text store migration.
+
+### Logging and build output
+
+- Enhanced logger output with plugin version and log-length information.
+- Added a shared VERSION constant and wired version injection into the build config.
+
+### Cleanup, performance, and internal API tightening
+
+- Centralized ArrayBuffer-to-text conversion into a shared utility and removed duplicated serializers from task classes.
+- Simplified task and engine internals by reducing noisy debug payloads, removing unused types/files, and cleaning imports.
+- Corrected a misleading execution error message in AddRecordTask.
+- Refined mergeability checks so base text is only computed when needed.
+
 ## Obsidian WebDAV Sync v2.0.0 - 2026-04-05
 
 ### Huge Internal Refactor
@@ -20,7 +53,6 @@ All notable changes to this project will be documented in this file.
 - Added WebDAV runtime-configurable rate-liming settings.
 - Organized settings UI.
 - Added Russian locale (`src/i18n/ru.ts`) and related wiring.
-- New and updated services:
 - Two migration systems (v1.3.0 - v2.0.0) added and executed on plugin load:
   - Settings migration: `src/settings/migration.ts`
   - Storage migration: `src/storage/migration/migrate.ts`
@@ -29,7 +61,7 @@ All notable changes to this project will be documented in this file.
 ## Obsidian WebDAV Sync v1.3.0 - 2026-03-26
 
 - Fixed iOS-specific Unicode normalization inconsistency that causes different file with the same name to be created in the WebDAV.
-- Introduce 'Keep Local' and 'Keep Remote' conflict resolution strategies by @quantavil.
+- Introduced 'Keep Local' and 'Keep Remote' conflict resolution strategies by @quantavil.
 - Added option `Realtime sync delay` to adjust custom debounce time for realtime sync and changed the default value to 5s.
 - Reorganized settings categories.
 - Changing the starting syncing phase in status bar from `Loading records` to `Pre-connecting` for accuracy.

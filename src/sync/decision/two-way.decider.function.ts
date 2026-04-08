@@ -20,7 +20,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		currentLocalStats: localStats,
 		currentRemoteStats: remoteStats,
 		records,
-		compareFileContent,
 		onProgress,
 		taskFactory,
 		remoteBaseDir,
@@ -28,7 +27,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		createPlannedRemoteFileSnapshot,
 		createPlannedLocalFolderSnapshot,
 		createPlannedRemoteFolderSnapshot,
-		getBaseText,
 	} = input;
 	const mixedPath = Array.from(new Set([...localStats.keys(), ...remoteStats.keys()]));
 
@@ -287,9 +285,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 							source: 'local',
 							records,
 							currentStats: localStats,
-							getBaseText,
-							compareFileContent,
-							syncMode: settings.syncMode,
 						});
 						if (remoteChanged && localChanged)
 							caseName = 'RECORD_REMOTE_LOCAL_CONFLICT';
@@ -305,9 +300,6 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						source: 'local',
 						records,
 						currentStats: localStats,
-						getBaseText,
-						compareFileContent,
-						syncMode: settings.syncMode,
 					});
 					if (localChanged) caseName = 'RECORD_NOREMOTE_LOCAL_PUSH';
 					else caseName = 'RECORD_NOREMOTE_LOCAL_REMOVE';
@@ -315,11 +307,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 			} else {
 				if (remote) {
 					if (local) {
-						if (
-							settings.syncMode === SyncMode.LOOSE &&
-							!remote.isDir &&
-							remote.size === local.size
-						)
+						if (settings.syncMode === SyncMode.LOOSE && remote.size === local.size)
 							caseName = 'NORECORD_REMOTE_LOCAL_RECORD';
 						else caseName = 'NORECORD_REMOTE_LOCAL_CONFLICT';
 					} else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
