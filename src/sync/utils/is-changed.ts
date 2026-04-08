@@ -5,7 +5,7 @@ import MergeTask from '../tasks/merge.task';
 import PushTask from '../tasks/push.task';
 import { isSameTime } from './is-same-time';
 
-export default async function isChanged({
+export default function isChanged({
 	path,
 	source,
 	records,

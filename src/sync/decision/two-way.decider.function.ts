@@ -273,14 +273,14 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 
 			if (record) {
 				if (remote) {
-					remoteChanged = await isChanged({
+					remoteChanged = isChanged({
 						path,
 						source: 'remote',
 						records,
 						currentStats: remoteStats,
 					});
 					if (local) {
-						localChanged = await isChanged({
+						localChanged = isChanged({
 							path,
 							source: 'local',
 							records,
@@ -295,7 +295,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 						else caseName = 'RECORD_REMOTE_NOLOCAL_REMOVE';
 					}
 				} else if (local) {
-					localChanged = await isChanged({
+					localChanged = isChanged({
 						path,
 						source: 'local',
 						records,
@@ -439,7 +439,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		if (record) {
 			if (local) {
 				if (!remote) {
-					localChanged = await isChanged({
+					localChanged = isChanged({
 						path,
 						source: 'local',
 						records,
@@ -450,7 +450,7 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 					else caseName = 'LOCAL_NOREMOTE_RECORD_REMOVE';
 				}
 			} else if (remote) {
-				remoteChanged = await isChanged({
+				remoteChanged = isChanged({
 					path,
 					source: 'remote',
 					records,
@@ -525,13 +525,13 @@ export async function twoWayDecider(input: SyncDecisionInput): Promise<BaseTask[
 		const remotePath = remote.path;
 		const localPath = local.path;
 		let caseName: keyof typeof operations = 'NONE';
-		const localChanged = await isChanged({
+		const localChanged = isChanged({
 			path,
 			source: 'local',
 			records,
 			currentStats: localStats,
 		});
-		const remoteChanged = await isChanged({
+		const remoteChanged = isChanged({
 			path,
 			source: 'remote',
 			records,
