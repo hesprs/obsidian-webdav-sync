@@ -129,13 +129,6 @@ export default class TwoWaySyncDecider {
 				new AddRecordTask({ ...commonTaskOptions, ...options }),
 		};
 
-		const compareFileContent = async (filePath: string, baseText: string): Promise<boolean> => {
-			const file = this.vault.getFileByPath(filePath);
-			if (!file) return false;
-			const currentContent = await this.vault.read(file);
-			return currentContent === baseText;
-		};
-
 		const plannedLocalFileSnapshots = new Map<
 			string,
 			Promise<PlannedLocalSnapshot | undefined>
@@ -236,14 +229,12 @@ export default class TwoWaySyncDecider {
 			currentRemoteStats,
 			records,
 			remoteBaseDir: this.remoteBaseDir,
-			compareFileContent,
 			onProgress: reportPlanningProgress,
 			taskFactory,
 			createPlannedLocalFileSnapshot,
 			createPlannedRemoteFileSnapshot,
 			createPlannedLocalFolderSnapshot,
 			createPlannedRemoteFolderSnapshot,
-			getBaseText: async (path) => this.syncRecordStorage.getBaseText(path),
 		};
 
 		return await twoWayDecider(decisionInput);

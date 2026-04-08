@@ -89,7 +89,7 @@ export default class MergeTask extends BaseTask {
 
 			const localText = await arrayBufferToText(localBuffer);
 			const remoteText = await arrayBufferToText(remoteBuffer);
-			const baseText = this.options.record?.baseText ?? localText;
+			const baseText = (await this.syncRecord.getBaseText(this.localPath)) ?? localText;
 			let mergedText: string;
 			const mergeResult = resolveByIntelligentMerge({
 				localContentText: localText,
