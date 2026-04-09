@@ -54,7 +54,7 @@ describe('optimizeSync', () => {
 				new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
 				new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
 			],
-			100,
+			0,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
@@ -86,7 +86,7 @@ describe('optimizeSync', () => {
 					remotePath: 'archive',
 				}),
 			],
-			100,
+			0,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);
