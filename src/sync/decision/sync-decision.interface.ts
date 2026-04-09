@@ -1,13 +1,9 @@
-import type { TAbstractFile } from 'obsidian';
-import type { SyncPlanningProgress } from '~/events';
-import type { BinaryLike } from '~/platform/binary';
-import type { RecordStatsMap, StatsMap, StatModel, RecordStatModel } from '~/types';
+import type { RecordStatsMap, StatsMap, StatModel } from '~/types';
 import { SyncMode } from '~/settings';
 import { ConflictStrategy } from '../tasks/merge.task';
 import { BaseTask } from '../tasks/task.interface';
 
 export interface SyncDecisionSettings {
-	skipLargeFiles: { maxSize: string };
 	conflictStrategy: ConflictStrategy;
 	useGitStyle: boolean;
 	syncMode: SyncMode;
@@ -16,67 +12,37 @@ export interface SyncDecisionSettings {
 export interface TaskOptions {
 	remotePath: string;
 	localPath: string;
+	remote?: StatModel;
+	local?: StatModel;
 }
 
-export interface PlannedLocalSnapshot {
-	stat: StatModel;
-	content?: BinaryLike;
-	abstractFile?: TAbstractFile;
+export interface OptionsWithRemoteStat extends TaskOptions {
+	remote: StatModel;
 }
 
-export interface PlannedRemoteSnapshot {
-	stat: StatModel;
-	content?: BinaryLike;
+export interface OptionsWithLocalStat extends TaskOptions {
+	local: StatModel;
 }
 
-export interface PlannedPathSnapshot {
-	localPath: string;
-	remotePath: string;
-	local?: PlannedLocalSnapshot;
-	remote?: PlannedRemoteSnapshot;
+export interface OptionsWithBothStats extends TaskOptions {
+	local: StatModel;
+	remote: StatModel;
 }
 
-export interface MergeTaskOptions extends TaskOptions {
-	record?: RecordStatModel;
-	strategy: ConflictStrategy;
-	local: PlannedLocalSnapshot;
-	remote: PlannedRemoteSnapshot;
+export interface MergeTaskOptions extends OptionsWithBothStats {
 	useGitStyle: boolean;
 }
 
-export interface PullTaskOptions extends TaskOptions {
-	remote?: PlannedRemoteSnapshot;
-	remoteSize?: number;
-}
-
-export interface PushTaskOptions extends TaskOptions {
-	local?: PlannedLocalSnapshot;
-}
-
-export interface MkdirLocalTaskOptions extends TaskOptions {
-	remote?: PlannedRemoteSnapshot;
-}
-
-export interface MkdirRemoteTaskOptions extends TaskOptions {
-	local?: PlannedLocalSnapshot;
-}
-
-export interface AddRecordTaskOptions extends TaskOptions {
-	local?: PlannedLocalSnapshot;
-	remote?: StatModel;
-}
-
 export interface TaskFactory {
-	createPullTask(options: PullTaskOptions): BaseTask;
-	createPushTask(options: PushTaskOptions): BaseTask;
-	createMergeTask(options: MergeTaskOptions): BaseTask;
+	createPullTask(options: OptionsWithRemoteStat): BaseTask<OptionsWithRemoteStat>;
+	createPushTask(options: OptionsWithLocalStat): BaseTask<OptionsWithLocalStat>;
+	createMergeTask(options: MergeTaskOptions): BaseTask<OptionsWithBothStats>;
 	createRemoveLocalTask(options: TaskOptions): BaseTask;
-	createRemoveLocalRecursivelyTask(options: TaskOptions): BaseTask;
 	createRemoveRemoteTask(options: TaskOptions): BaseTask;
-	createMkdirLocalTask(options: MkdirLocalTaskOptions): BaseTask;
-	createMkdirRemoteTask(options: MkdirRemoteTaskOptions): BaseTask;
+	createMkdirLocalTask(options: OptionsWithRemoteStat): BaseTask<OptionsWithRemoteStat>;
+	createMkdirRemoteTask(options: OptionsWithLocalStat): BaseTask<OptionsWithLocalStat>;
 	createCleanRecordTask(options: TaskOptions): BaseTask;
-	createAddRecordTask(options: AddRecordTaskOptions): BaseTask;
+	createAddRecordTask(options: OptionsWithBothStats): BaseTask<OptionsWithBothStats>;
 }
 
 export interface SyncDecisionInput {
@@ -85,22 +51,5 @@ export interface SyncDecisionInput {
 	currentRemoteStats: StatsMap;
 	records: RecordStatsMap;
 	remoteBaseDir: string;
-	onProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
-	createPlannedLocalFileSnapshot: (
-		localPath: string,
-		localStat: StatModel,
-	) => Promise<PlannedLocalSnapshot | undefined>;
-	createPlannedRemoteFileSnapshot: (
-		remotePath: string,
-		remoteStat: StatModel,
-	) => Promise<PlannedRemoteSnapshot | undefined>;
-	createPlannedLocalFolderSnapshot: (
-		localPath: string,
-		localStat: StatModel,
-	) => PlannedLocalSnapshot | undefined;
-	createPlannedRemoteFolderSnapshot: (
-		remotePath: string,
-		remoteStat: StatModel,
-	) => PlannedRemoteSnapshot | undefined;
 	taskFactory: TaskFactory;
 }

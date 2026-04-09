@@ -16,7 +16,6 @@ import {
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
 import i18n from '~/i18n';
-import { remoteDirname, vaultDirname } from '~/platform/path';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
@@ -24,7 +23,7 @@ import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import type { PlannedPathSnapshot } from './decision/sync-decision.interface';
+import { statVaultItem } from '~/utils/stat-item';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import {
@@ -35,7 +34,6 @@ import {
 } from './errors';
 import AddRecordTask from './tasks/add-record.task';
 import CleanRecordTask from './tasks/clean-record.task';
-import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
 import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
@@ -51,14 +49,6 @@ interface SyncResultSummary {
 	succeededTasks: number;
 	failedTasks: number;
 	failed: SyncFailedTaskInfo[];
-}
-
-interface ReuploadSnapshotIndex {
-	byLocalPath: Map<string, PlannedPathSnapshot[]>;
-	byRemotePath: Map<string, PlannedPathSnapshot[]>;
-	knownRemoteDirPaths: Set<string>;
-	localPaths: Set<string>;
-	remotePaths: Set<string>;
 }
 
 // TODO: split into multiple modules
@@ -118,7 +108,6 @@ export class SyncEngine {
 			this.runKind = request.runKind;
 
 			const settings = this.settings;
-			const syncRecord = this.createSyncRecord();
 			let tasks = passedTasks ?? (await this.preparePlan(request.runKind));
 			let currentRun = updateSyncRunSnapshot(run, {
 				planSummary: this.summarizePlan(tasks),
@@ -195,6 +184,7 @@ export class SyncEngine {
 				settings.confirmBeforeDeleteInAutoSync
 			) {
 				const removeLocalTasks = tasks.filter((t) => t instanceof RemoveLocalTask);
+				const otherTasks = tasks.filter((t) => !(t instanceof RemoveLocalTask));
 				if (removeLocalTasks.length > 0) {
 					currentRun = updateSyncRunSnapshot(currentRun, {
 						stage: 'awaiting_confirmation',
@@ -219,12 +209,9 @@ export class SyncEngine {
 						removeLocalTasks,
 					).openAndWait();
 
-					tasks = this.rebuildConfirmedTasksAfterDeleteConfirmation({
-						tasks,
-						tasksToDelete,
-						tasksToReupload,
-						syncRecord,
-					});
+					const reuploadTasks = this.convertDeleteToUpload(tasksToReupload);
+
+					tasks = [...tasksToDelete, ...reuploadTasks, ...otherTasks];
 				}
 			}
 
@@ -301,6 +288,23 @@ export class SyncEngine {
 		};
 	}
 
+	private convertDeleteToUpload(tasks: RemoveLocalTask[]) {
+		const final: PushTask[] = [];
+		for (const task of tasks) {
+			const options = task.options;
+			const local = statVaultItem(this.vault, options.localPath);
+			if (!local)
+				throw new Error(`Local item not found during reupload: ${options.localPath}`);
+			final.push(
+				new PushTask({
+					...options,
+					local,
+				}),
+			);
+		}
+		return final;
+	}
+
 	private isDisplayableTask(task: BaseTask): boolean {
 		return !(task instanceof CleanRecordTask) && !(task instanceof AddRecordTask);
 	}
@@ -311,311 +315,6 @@ export class SyncEngine {
 			this.plugin.syncStateStore,
 			this.plugin.baseTextStore,
 		);
-	}
-
-	private rebuildConfirmedTasksAfterDeleteConfirmation({
-		tasks,
-		tasksToDelete,
-		tasksToReupload,
-		syncRecord,
-	}: {
-		tasks: BaseTask[];
-		tasksToDelete: RemoveLocalTask[];
-		tasksToReupload: RemoveLocalTask[];
-		syncRecord: SyncRecord;
-	}): BaseTask[] {
-		const { mkdirTasks, pushTasks } = this.buildReuploadTasks({
-			tasks,
-			tasksToReupload,
-			syncRecord,
-		});
-		const deleteTaskSet = this.filterDeleteTasks(tasksToDelete, tasksToReupload);
-		const otherTasks: BaseTask[] = [];
-		const deleteTasks: RemoveLocalTask[] = [];
-
-		for (const task of tasks) {
-			if (!(task instanceof RemoveLocalTask)) {
-				otherTasks.push(task);
-				continue;
-			}
-
-			if (deleteTaskSet.has(task)) deleteTasks.push(task);
-		}
-
-		return [...mkdirTasks, ...otherTasks, ...pushTasks, ...deleteTasks];
-	}
-
-	private buildReuploadTasks({
-		tasks,
-		tasksToReupload,
-		syncRecord,
-	}: {
-		tasks: BaseTask[];
-		tasksToReupload: RemoveLocalTask[];
-		syncRecord: SyncRecord;
-	}): {
-		mkdirTasks: MkdirRemoteTask[];
-		pushTasks: PushTask[];
-	} {
-		const snapshotIndex = this.buildReuploadSnapshotIndex([...tasks, ...tasksToReupload]);
-		const mkdirTasksMap = new Map<string, MkdirRemoteTask>();
-		const pushTasks: PushTask[] = [];
-		const knownRemotePaths = new Set<string>(snapshotIndex.knownRemoteDirPaths);
-
-		for (const task of tasksToReupload) {
-			const plannedSnapshot = this.findPlannedSnapshot(
-				snapshotIndex,
-				task.localPath,
-				task.remotePath,
-			);
-
-			this.ensureReuploadParentDir({
-				tasks,
-				knownRemotePaths,
-				localPath: task.localPath,
-				mkdirTasksMap,
-				remotePath: task.remotePath,
-				snapshotIndex,
-				syncRecord,
-			});
-
-			const isDirectory = this.isReuploadDirectoryPath(
-				task.localPath,
-				task.remotePath,
-				plannedSnapshot,
-				snapshotIndex,
-			);
-
-			if (isDirectory) {
-				const reuploadMkdirOptions = {
-					...task.options,
-				} as MkdirRemoteTask['options'] & {
-					local?: PlannedPathSnapshot['local'];
-					remote?: PlannedPathSnapshot['remote'];
-				};
-				reuploadMkdirOptions.local = plannedSnapshot?.local;
-				reuploadMkdirOptions.remote = plannedSnapshot?.remote;
-
-				mkdirTasksMap.set(task.remotePath, new MkdirRemoteTask(reuploadMkdirOptions));
-				this.markRemotePathAndParentsAsExisting(knownRemotePaths, task.remotePath);
-				continue;
-			}
-
-			const reuploadPushOptions = {
-				...task.options,
-			} as PushTask['options'] & {
-				local?: PlannedPathSnapshot['local'];
-				remote?: PlannedPathSnapshot['remote'];
-			};
-			reuploadPushOptions.local = plannedSnapshot?.local;
-			reuploadPushOptions.remote = plannedSnapshot?.remote;
-
-			pushTasks.push(new PushTask(reuploadPushOptions));
-		}
-
-		return {
-			mkdirTasks: Array.from(mkdirTasksMap.values()),
-			pushTasks,
-		};
-	}
-
-	private ensureReuploadParentDir({
-		tasks,
-		knownRemotePaths,
-		localPath,
-		mkdirTasksMap,
-		remotePath,
-		snapshotIndex,
-		syncRecord,
-	}: {
-		tasks: BaseTask[];
-		knownRemotePaths: Set<string>;
-		localPath: string;
-		mkdirTasksMap: Map<string, MkdirRemoteTask>;
-		remotePath: string;
-		snapshotIndex: ReuploadSnapshotIndex;
-		syncRecord: SyncRecord;
-	}): void {
-		const parentLocalPath = vaultDirname(localPath);
-		const parentRemotePath = remoteDirname(remotePath);
-
-		if (parentLocalPath === '.' || parentLocalPath === '') return;
-
-		const parentAlreadyHandled =
-			mkdirTasksMap.has(parentRemotePath) ||
-			knownRemotePaths.has(parentRemotePath) ||
-			this.hasMkdirTaskForPath(tasks, parentRemotePath) ||
-			snapshotIndex.knownRemoteDirPaths.has(parentRemotePath);
-
-		if (parentAlreadyHandled) return;
-
-		const parentSnapshot = this.findPlannedSnapshot(
-			snapshotIndex,
-			parentLocalPath,
-			parentRemotePath,
-		);
-
-		const parentMkdirOptions = {
-			vault: this.vault,
-			webdav: this.webdav,
-			remoteBaseDir: this.remoteBaseDir,
-			remotePath: parentRemotePath,
-			localPath: parentLocalPath,
-			syncRecord,
-		} as MkdirRemoteTask['options'] & {
-			local?: PlannedPathSnapshot['local'];
-			remote?: PlannedPathSnapshot['remote'];
-		};
-		parentMkdirOptions.local = parentSnapshot?.local;
-		parentMkdirOptions.remote = parentSnapshot?.remote;
-
-		mkdirTasksMap.set(parentRemotePath, new MkdirRemoteTask(parentMkdirOptions));
-		this.markRemotePathAndParentsAsExisting(knownRemotePaths, parentRemotePath);
-	}
-
-	private buildReuploadSnapshotIndex(tasks: BaseTask[]): ReuploadSnapshotIndex {
-		const byLocalPath = new Map<string, PlannedPathSnapshot[]>();
-		const byRemotePath = new Map<string, PlannedPathSnapshot[]>();
-		const knownRemoteDirPaths = new Set<string>();
-		const localPaths = new Set<string>();
-		const remotePaths = new Set<string>();
-
-		for (const task of tasks) {
-			const plannedSnapshots = this.getTaskPlannedPathSnapshots(task);
-			for (const snapshot of plannedSnapshots) {
-				if (snapshot.localPath) {
-					localPaths.add(snapshot.localPath);
-					const localItems = byLocalPath.get(snapshot.localPath) ?? [];
-					localItems.push(snapshot);
-					byLocalPath.set(snapshot.localPath, localItems);
-				}
-
-				if (snapshot.remotePath) {
-					remotePaths.add(snapshot.remotePath);
-					const remoteItems = byRemotePath.get(snapshot.remotePath) ?? [];
-					remoteItems.push(snapshot);
-					byRemotePath.set(snapshot.remotePath, remoteItems);
-
-					if (snapshot.remote?.stat.isDir) {
-						this.markRemotePathAndParentsAsExisting(
-							knownRemoteDirPaths,
-							snapshot.remotePath,
-						);
-					} else if (snapshot.remote?.stat) {
-						const parentRemotePath = remoteDirname(snapshot.remotePath);
-						this.markRemotePathAndParentsAsExisting(
-							knownRemoteDirPaths,
-							parentRemotePath,
-						);
-					}
-				}
-			}
-		}
-
-		return {
-			byLocalPath,
-			byRemotePath,
-			knownRemoteDirPaths,
-			localPaths,
-			remotePaths,
-		};
-	}
-
-	private getTaskPlannedPathSnapshots(task: BaseTask): PlannedPathSnapshot[] {
-		const options = task.options as BaseTask['options'] & {
-			local?: PlannedPathSnapshot['local'];
-			remote?: PlannedPathSnapshot['remote'];
-			additionalPaths?: PlannedPathSnapshot[];
-		};
-		const plannedPaths: PlannedPathSnapshot[] = [
-			{
-				localPath: task.localPath,
-				remotePath: task.remotePath,
-				local: options.local,
-				remote: options.remote,
-			},
-		];
-
-		if (Array.isArray(options.additionalPaths)) plannedPaths.push(...options.additionalPaths);
-
-		return plannedPaths;
-	}
-
-	private findPlannedSnapshot(
-		snapshotIndex: ReuploadSnapshotIndex,
-		localPath: string,
-		remotePath: string,
-	): PlannedPathSnapshot | undefined {
-		const localMatches = snapshotIndex.byLocalPath.get(localPath) ?? [];
-		const exactLocal = localMatches.find((snapshot) => snapshot.remotePath === remotePath);
-		if (exactLocal) {
-			return exactLocal;
-		}
-
-		const remoteMatches = snapshotIndex.byRemotePath.get(remotePath) ?? [];
-		const exactRemote = remoteMatches.find((snapshot) => snapshot.localPath === localPath);
-		if (exactRemote) return exactRemote;
-
-		return localMatches[0] ?? remoteMatches[0];
-	}
-
-	private isReuploadDirectoryPath(
-		localPath: string,
-		remotePath: string,
-		plannedSnapshot: PlannedPathSnapshot | undefined,
-		snapshotIndex: ReuploadSnapshotIndex,
-	): boolean {
-		if (plannedSnapshot?.local?.stat) return plannedSnapshot.local.stat.isDir;
-		if (plannedSnapshot?.remote?.stat) return plannedSnapshot.remote.stat.isDir;
-
-		for (const candidateLocalPath of snapshotIndex.localPaths) {
-			if (candidateLocalPath.startsWith(localPath + '/')) return true;
-		}
-		for (const candidateRemotePath of snapshotIndex.remotePaths) {
-			if (candidateRemotePath.startsWith(remotePath + '/')) return true;
-		}
-
-		return true;
-	}
-
-	private hasMkdirTaskForPath(tasks: BaseTask[], remotePath: string): boolean {
-		return tasks.some(
-			(task) => task instanceof MkdirRemoteTask && task.remotePath === remotePath,
-		);
-	}
-
-	private markRemotePathAndParentsAsExisting(
-		knownRemotePaths: Set<string>,
-		remotePath: string,
-	): void {
-		let currentPath = remotePath;
-
-		while (currentPath && currentPath !== '.' && currentPath !== '' && currentPath !== '/') {
-			if (knownRemotePaths.has(currentPath)) return;
-			knownRemotePaths.add(currentPath);
-			currentPath = remoteDirname(currentPath);
-		}
-	}
-
-	private filterDeleteTasks(
-		tasksToDelete: RemoveLocalTask[],
-		tasksToReupload: RemoveLocalTask[],
-	): Set<RemoveLocalTask> {
-		const deleteTaskMap = new Map(tasksToDelete.map((task) => [task.localPath, task]));
-
-		for (const reuploadTask of tasksToReupload) {
-			let currentPath = reuploadTask.localPath;
-
-			while (currentPath && currentPath !== '.' && currentPath !== '') {
-				currentPath = vaultDirname(currentPath);
-				if (currentPath === '.' || currentPath === '') break;
-
-				const deleteTask = deleteTaskMap.get(currentPath);
-				if (deleteTask) deleteTaskMap.delete(currentPath);
-			}
-		}
-
-		return new Set(deleteTaskMap.values());
 	}
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {

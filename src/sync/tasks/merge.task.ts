@@ -1,13 +1,14 @@
 import type { MergeTaskOptions } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
 import i18n from '~/i18n';
-import { arrayBufferEquals, arrayBufferToText, toArrayBuffer } from '~/platform/binary';
+import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
+import { getLocalContent, getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
 import { statVaultItem, statWebDAVItem } from '~/utils/stat-item';
 import { resolveByIntelligentMerge } from '../utils/merge';
-import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
+import { BaseTask, toTaskError } from './task.interface';
 
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diffMatchPatch',
@@ -17,38 +18,8 @@ export enum ConflictStrategy {
 	Skip = 'skip',
 }
 
-export default class MergeTask extends BaseTask {
-	constructor(public readonly options: BaseTaskOptions & MergeTaskOptions) {
-		super(options);
-	}
+export default class MergeTask extends BaseTask<MergeTaskOptions> {
 	readonly name = 'merge';
-
-	private async getConflictSnapshots() {
-		const local = this.options.local?.stat;
-		const remote = this.options.remote?.stat;
-		if (!local || local.isDir) {
-			throw new Error('missing local file snapshot for merge: ' + this.localPath);
-		}
-		if (!remote || remote.isDir) {
-			throw new Error('missing remote file snapshot for merge: ' + this.remotePath);
-		}
-
-		const localContent = this.options.local?.content;
-		const remoteContent = this.options.remote?.content;
-		if (!localContent) {
-			throw new Error('missing local content snapshot for merge: ' + this.localPath);
-		}
-		if (!remoteContent) {
-			throw new Error('missing remote content snapshot for merge: ' + this.remotePath);
-		}
-
-		return {
-			local,
-			remote,
-			localBuffer: await toArrayBuffer(localContent),
-			remoteBuffer: await toArrayBuffer(remoteContent),
-		};
-	}
 
 	private isMergeableConflict() {
 		return isMergeablePath(this.localPath) && isMergeablePath(this.remotePath);
@@ -56,35 +27,28 @@ export default class MergeTask extends BaseTask {
 
 	async exec() {
 		try {
-			return await this.execIntelligentMerge(await this.getConflictSnapshots());
-		} catch (e) {
-			logger.error(`Failed to resolve conflict: ${this.localPath}`, e);
-			return {
-				success: false,
-				error: toTaskError(e, this),
-			};
-		}
-	}
+			if (!this.isMergeableConflict())
+				throw new Error(i18n.t('sync.error.mergeNotSupported'));
 
-	async execIntelligentMerge({
-		local,
-		remote,
-		localBuffer,
-		remoteBuffer,
-	}: Awaited<ReturnType<MergeTask['getConflictSnapshots']>>) {
-		try {
-			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
-				await this.syncRecord.upsertRecords({
-					baseText: await arrayBufferToText(localBuffer),
-					local,
-					remote,
-					key: this.localPath,
-				});
+			let localBuffer: ArrayBuffer;
+			try {
+				localBuffer = await getLocalContent(this.vault, this.localPath);
+			} catch {
+				// ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
+				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
 				return { success: true } as const;
 			}
 
-			if (!this.isMergeableConflict()) {
-				throw new Error(i18n.t('sync.error.mergeNotSupported'));
+			const remoteBuffer = await getRemoteContent(this.webdav, this.remotePath);
+
+			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
+				await this.syncRecord.upsertRecords({
+					baseText: await arrayBufferToText(localBuffer),
+					local: this.local,
+					remote: this.remote,
+					key: this.localPath,
+				});
+				return { success: true } as const;
 			}
 
 			const localText = await arrayBufferToText(localBuffer);
@@ -100,8 +64,8 @@ export default class MergeTask extends BaseTask {
 			if (mergeResult.isIdentical) {
 				await this.syncRecord.upsertRecords({
 					baseText: localText,
-					local,
-					remote,
+					local: this.local,
+					remote: this.remote,
 					key: this.localPath,
 				});
 				return { success: true } as const;
@@ -144,8 +108,8 @@ export default class MergeTask extends BaseTask {
 
 			await this.syncRecord.upsertRecords({
 				baseText: mergedText,
-				local: newLocal ?? local,
-				remote: newRemote ?? remote,
+				local: newLocal ?? this.local,
+				remote: newRemote ?? this.remote,
 				key: this.localPath,
 			});
 			return { success: true } as const;

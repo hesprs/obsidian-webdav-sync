@@ -201,9 +201,7 @@ export default {
 		awaitingConfirmation: '等待确认',
 		planningStage: {
 			preConnecting: '📋 检查连接',
-			loadingRecords: '📋 加载记录',
 			walkingRemote: '📋 远程扫描',
-			deciding: '📋 构建计划',
 		},
 		updatingSyncState: '正在更新同步状态...',
 		syncStateUpdated: '同步状态已更新。',
