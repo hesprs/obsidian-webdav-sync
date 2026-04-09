@@ -50,7 +50,24 @@ export default class ControlsSettings extends BaseSettings {
 				).setValue(currentValue);
 				text.inputEl.addEventListener(
 					'blur',
-					() => void this.handleNumericBlur(text, 'maxConcurrentWebDAVCalls'),
+					() =>
+						void this.handleNumericBlur(text, 'maxConcurrentWebDAVCalls', (max) =>
+							apiLimiter.setMaxConcurrent(max),
+						),
+				);
+			});
+
+        new Setting(this.containerEl)
+			.setName(i18n.t('settings.maxConcurrentSyncTasks.name'))
+			.setDesc(i18n.t('settings.maxConcurrentSyncTasks.desc'))
+			.addText((text) => {
+				const currentValue = this.plugin.settings.maxConcurrentSyncTasks.toString();
+				text.setPlaceholder(i18n.t('settings.maxConcurrentSyncTasks.placeholder')).setValue(
+					currentValue,
+				);
+				text.inputEl.addEventListener(
+					'blur',
+					() => void this.handleNumericBlur(text, 'maxConcurrentSyncTasks'),
 				);
 			});
 
@@ -64,7 +81,10 @@ export default class ControlsSettings extends BaseSettings {
 				).setValue(currentValue);
 				text.inputEl.addEventListener(
 					'blur',
-					() => void this.handleNumericBlur(text, 'minTimeBetweenWebDAVCalls'),
+					() =>
+						void this.handleNumericBlur(text, 'minTimeBetweenWebDAVCalls', (interval) =>
+							apiLimiter.setMinTime(interval),
+						),
 				);
 			});
 	}
@@ -87,7 +107,8 @@ export default class ControlsSettings extends BaseSettings {
 
 	private async handleNumericBlur(
 		component: TextComponent,
-		field: 'maxConcurrentWebDAVCalls' | 'minTimeBetweenWebDAVCalls',
+		field: 'maxConcurrentWebDAVCalls' | 'minTimeBetweenWebDAVCalls' | 'maxConcurrentSyncTasks',
+		callback?: (interval: number) => void,
 	) {
 		const rawInterval = component.getValue();
 		const interval = parseInt(rawInterval);
@@ -97,10 +118,11 @@ export default class ControlsSettings extends BaseSettings {
 			component.setValue(original.toString());
 			return;
 		}
+        component.setValue(interval.toString());
 
 		if (interval !== original) {
 			this.plugin.settings[field] = interval;
-			apiLimiter.set(field, interval);
+			callback?.(interval);
 			await this.plugin.saveSettings();
 		}
 	}

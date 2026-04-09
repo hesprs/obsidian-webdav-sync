@@ -84,6 +84,12 @@ export default {
 			invalidValue: 'Invalid value, reset to the previous value',
 			placeholder: 'Enter number',
 		},
+		maxConcurrentSyncTasks: {
+			name: 'Max concurrent sync tasks',
+			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting controls the maximum number of tasks to be executed concurrently. Set to 0 to disable limiting.',
+			invalidValue: 'Invalid value, reset to the previous value',
+			placeholder: 'Enter number',
+		},
 		minTimeBetweenWebDAVCalls: {
 			name: 'Min time between WebDAV requests',
 			desc: 'Minimum time in milliseconds between WebDAV requests, smaller values mean faster syncing but may reach rate limits. Set to 0 to disable limiting.',

@@ -1,3 +1,4 @@
+import { chunk } from 'lodash-es';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
@@ -6,7 +7,7 @@ import { BaseTask } from '../tasks/task.interface';
 import { mergeRemoveTasks } from './merge-remove-tasks';
 import { sortMkdirTasks } from './sort-mkdir-tasks';
 
-export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
+export function optimizeTasks(tasks: BaseTask[], chunkSize: number): BaseTask[][] {
 	const uniqueTasks = Array.from(new Set(tasks));
 	const mkdirLocalTasks: MkdirLocalTask[] = [];
 	const mkdirRemoteTasks: MkdirRemoteTask[] = [];
@@ -22,7 +23,7 @@ export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
 		else otherTasks.push(task);
 	}
 
-	return [
+	const finalTasks = [
 		[
 			...mergeRemoveTasks(removeRemoteTasks, 'remote'),
 			...mergeRemoveTasks(removeLocalTasks, 'local'),
@@ -31,4 +32,5 @@ export function optimizeTasks(tasks: BaseTask[]): BaseTask[][] {
 		...sortMkdirTasks(mkdirRemoteTasks),
 		otherTasks,
 	].filter((tasks) => tasks.length > 0);
+	return chunkSize === 0 ? finalTasks : finalTasks.flatMap((tasks) => chunk(tasks, chunkSize));
 }

@@ -38,10 +38,11 @@ class ApiLimiter {
 		return (...args: TArgs) => this.schedule(() => fn(...args));
 	}
 
-	set(field: 'minTimeBetweenWebDAVCalls' | 'maxConcurrentWebDAVCalls', value: number) {
-		if (field === 'minTimeBetweenWebDAVCalls') this.minTime = value;
-		else if (field === 'maxConcurrentWebDAVCalls') this.maxConcurrent = value;
-		return this;
+	setMinTime(value: number) {
+		this.minTime = value;
+	}
+	setMaxConcurrent(value: number) {
+		this.maxConcurrent = value;
 	}
 
 	private processQueue() {
