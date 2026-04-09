@@ -1,36 +1,18 @@
-import type { PullTaskOptions } from '~/sync/decision/sync-decision.interface';
-import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
+import { arrayBufferToText } from '~/platform/binary';
+import { getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-item';
+import type { OptionsWithRemoteStat } from '../decision/sync-decision.interface';
 import { isMergeablePath } from '../utils/is-mergeable-path';
-import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
+import { BaseTask, toTaskError } from './task.interface';
 
-export default class PullTask extends BaseTask {
-	constructor(readonly options: BaseTaskOptions & PullTaskOptions) {
-		super(options);
-	}
-
-	get remoteSize() {
-		const remoteStat = this.options.remote?.stat;
-		return remoteStat && !remoteStat.isDir ? remoteStat.size : 0;
-	}
-
+export default class PullTask extends BaseTask<OptionsWithRemoteStat> {
 	readonly name = 'download';
 
 	async exec() {
 		try {
-			const remoteContent = this.options.remote?.content;
-			if (!remoteContent) {
-				throw new Error('missing remote content snapshot for pull: ' + this.remotePath);
-			}
-
-			const arrayBuffer = await toArrayBuffer(remoteContent);
-			await this.vault.adapter.writeBinary(this.localPath, arrayBuffer);
-
-			const remote = this.options.remote?.stat;
-			if (!remote || remote.isDir) {
-				throw new Error('missing remote file snapshot for pull: ' + this.remotePath);
-			}
+			const remoteContent = await getRemoteContent(this.webdav, this.remotePath);
+			await this.vault.adapter.writeBinary(this.localPath, remoteContent);
 
 			// no race condition since we've just written it
 			const local = statVaultItem(this.vault, this.localPath);
@@ -39,9 +21,9 @@ export default class PullTask extends BaseTask {
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
 				local,
-				remote,
+				remote: this.remote,
 				baseText: isMergeablePath(this.localPath)
-					? await arrayBufferToText(arrayBuffer)
+					? await arrayBufferToText(remoteContent)
 					: undefined,
 			});
 

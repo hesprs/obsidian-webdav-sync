@@ -1,43 +1,40 @@
-import type { PushTaskOptions } from '~/sync/decision/sync-decision.interface';
-import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
+import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
+import { arrayBufferToText } from '~/platform/binary';
+import { getLocalContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { statWebDAVItem } from '~/utils/stat-item';
 import { isMergeablePath } from '../utils/is-mergeable-path';
-import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
+import { BaseTask, toTaskError } from './task.interface';
 
-export default class PushTask extends BaseTask {
-	constructor(readonly options: BaseTaskOptions & PushTaskOptions) {
-		super(options);
-	}
+export default class PushTask extends BaseTask<OptionsWithLocalStat> {
 	readonly name = 'upload';
 
 	async exec() {
 		try {
-			const localContent = this.options.local?.content;
-			if (!localContent) {
-				throw new Error('missing local content snapshot for push: ' + this.localPath);
+			let localContent: ArrayBuffer;
+			try {
+				localContent = await getLocalContent(this.vault, this.localPath);
+			} catch {
+				// ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
+				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
+				return { success: true } as const;
 			}
-			const arrayBuffer = await toArrayBuffer(localContent);
 
-			const res = await this.webdav.putFileContents(this.remotePath, arrayBuffer, {
+			const res = await this.webdav.putFileContents(this.remotePath, localContent, {
 				overwrite: true,
 			});
 			if (!res) throw new Error('Upload failed');
 
-			// no race condition since we've just uploaded it
-			const local = this.options.local?.stat;
-			if (!local || local.isDir) {
-				throw new Error('missing local file snapshot for push: ' + this.localPath);
-			}
 			const remote = await statWebDAVItem(this.webdav, this.remotePath);
 			if (!remote || remote.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
+
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				local,
+				local: this.local,
 				remote,
 				baseText: isMergeablePath(this.localPath)
-					? await arrayBufferToText(arrayBuffer)
+					? await arrayBufferToText(localContent)
 					: undefined,
 			});
 

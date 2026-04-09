@@ -17,7 +17,6 @@ export type SyncRunStage =
 export enum SyncPlanningSubStage {
 	preConnecting = 'preConnecting',
 	walkingRemote = 'walkingRemote',
-	deciding = 'deciding',
 }
 
 export interface SyncPlanningProgress {

@@ -1,11 +1,7 @@
 import logger from '~/utils/logger';
-import { BaseTask, type BaseTaskOptions, toTaskError } from './task.interface';
+import { BaseTask, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask {
-	constructor(public readonly options: BaseTaskOptions) {
-		super(options);
-	}
-
 	readonly name = 'removeLocal';
 
 	async exec() {

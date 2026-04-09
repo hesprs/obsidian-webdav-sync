@@ -13,7 +13,8 @@ export class IndexedDbBaseTextStore {
 		name: STORAGE_NAME,
 		storeName: BASE_TEXT_STORE_NAME,
 		driver: [localspace.INDEXEDDB],
-		coalesceWrites: false,
+		coalesceWrites: true,
+		coalesceWindowMs: 500,
 	});
 
 	private initPromise: Promise<void> | undefined;

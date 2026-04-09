@@ -205,9 +205,7 @@ export default {
 		awaitingConfirmation: 'Ожидание подтверждения',
 		planningStage: {
 			preConnecting: '📋 Предварительное подключение',
-			loadingRecords: '📋 Загрузка записей',
 			walkingRemote: '📋 Сканирование удаленных файлов',
-			deciding: '📋 Составление плана',
 		},
 		updatingSyncState: 'Обновление состояния синхронизации...',
 		syncStateUpdated: 'Состояние синхронизации обновлено.',

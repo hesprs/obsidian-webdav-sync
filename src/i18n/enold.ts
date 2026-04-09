@@ -203,9 +203,7 @@ export default {
 		awaitingConfirmation: 'Waiting for confirmation',
 		planningStage: {
 			preConnecting: '📋 Pre-connecting',
-			loadingRecords: '📋 Loading records',
 			walkingRemote: '📋 Walking remote',
-			deciding: '📋 Building plan',
 		},
 		updatingSyncState: 'Updating sync state...',
 		syncStateUpdated: 'Sync state updated.',

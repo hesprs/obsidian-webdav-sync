@@ -1,20 +1,15 @@
-import type { BinaryLike } from '~/platform/binary';
 import type { SyncRecord } from '~/storage';
-import type { RecordStatsMap, StatModel, StatsMap } from '~/types';
+import type { RecordStatsMap, StatsMap } from '~/types';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
 import { traverseVault } from '~/fs/traverse-vault';
 import { traverseWebDAV } from '~/fs/traverse-webdav';
 import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
-	AddRecordTaskOptions,
-	MkdirLocalTaskOptions,
-	MkdirRemoteTaskOptions,
 	MergeTaskOptions,
-	PlannedLocalSnapshot,
-	PlannedRemoteSnapshot,
-	PullTaskOptions,
-	PushTaskOptions,
+	OptionsWithBothStats,
+	OptionsWithLocalStat,
+	OptionsWithRemoteStat,
 	SyncDecisionInput,
 	TaskFactory,
 	TaskOptions,
@@ -26,7 +21,6 @@ import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
-import RemoveLocalRecursivelyTask from '../tasks/remove-local-recursively.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
 import { BaseTask } from '../tasks/task.interface';
@@ -89,7 +83,6 @@ export default class TwoWaySyncDecider {
 						throwIfCancelled: options?.throwIfCancelled,
 					});
 
-		// 创建共用的task选项
 		const commonTaskOptions = {
 			webdav: this.webdav,
 			vault: this.vault,
@@ -97,130 +90,29 @@ export default class TwoWaySyncDecider {
 			syncRecord: this.syncRecordStorage,
 		};
 
-		// 创建Task工厂
 		const taskFactory: TaskFactory = {
-			createPullTask: (options: PullTaskOptions) =>
-				new PullTask({
-					...commonTaskOptions,
-					...options,
-					remoteSize:
-						options.remoteSize ??
-						(options.remote?.stat && !options.remote.stat.isDir
-							? options.remote.stat.size
-							: 0),
-				}),
-			createPushTask: (options: PushTaskOptions) =>
+			createPullTask: (options: OptionsWithRemoteStat) =>
+				new PullTask({ ...commonTaskOptions, ...options }),
+			createPushTask: (options: OptionsWithLocalStat) =>
 				new PushTask({ ...commonTaskOptions, ...options }),
 			createMergeTask: (options: MergeTaskOptions) =>
 				new MergeTask({ ...commonTaskOptions, ...options }),
 			createRemoveLocalTask: (options: TaskOptions) =>
 				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
-			createRemoveLocalRecursivelyTask: (options: TaskOptions) =>
-				new RemoveLocalRecursivelyTask({ ...commonTaskOptions, ...options }),
 			createRemoveRemoteTask: (options: TaskOptions) =>
 				new RemoveRemoteTask({ ...commonTaskOptions, ...options }),
-			createMkdirLocalTask: (options: MkdirLocalTaskOptions) =>
+			createMkdirLocalTask: (options: OptionsWithRemoteStat) =>
 				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
-			createMkdirRemoteTask: (options: MkdirRemoteTaskOptions) =>
+			createMkdirRemoteTask: (options: OptionsWithLocalStat) =>
 				new MkdirRemoteTask({ ...commonTaskOptions, ...options }),
 			createCleanRecordTask: (options: TaskOptions) =>
 				new CleanRecordTask({ ...commonTaskOptions, ...options }),
-			createAddRecordTask: (options: AddRecordTaskOptions) =>
+			createAddRecordTask: (options: OptionsWithBothStats) =>
 				new AddRecordTask({ ...commonTaskOptions, ...options }),
-		};
-
-		const plannedLocalFileSnapshots = new Map<
-			string,
-			Promise<PlannedLocalSnapshot | undefined>
-		>();
-		const plannedRemoteFileSnapshots = new Map<
-			string,
-			Promise<PlannedRemoteSnapshot | undefined>
-		>();
-		const plannedLocalFolderSnapshots = new Map<string, PlannedLocalSnapshot | undefined>();
-		const plannedRemoteFolderSnapshots = new Map<string, PlannedRemoteSnapshot | undefined>();
-
-		const createPlannedLocalFileSnapshot = async (
-			localPath: string,
-			localStat: StatModel,
-		): Promise<PlannedLocalSnapshot | undefined> => {
-			const cached = plannedLocalFileSnapshots.get(localPath);
-			if (cached) return await cached;
-
-			const promise = (async (): Promise<PlannedLocalSnapshot | undefined> => {
-				if (localStat.isDir) return undefined;
-				const file = this.vault.getFileByPath(localPath);
-				if (!file) throw new Error(`Cannot plan local file snapshot: ${localPath}`);
-
-				const content = await this.vault.readBinary(file);
-				return {
-					stat: localStat,
-					content,
-					abstractFile: file,
-				};
-			})();
-
-			plannedLocalFileSnapshots.set(localPath, promise);
-			return await promise;
-		};
-
-		const createPlannedRemoteFileSnapshot = async (
-			remotePath: string,
-			remoteStat: StatModel,
-		): Promise<PlannedRemoteSnapshot | undefined> => {
-			const cached = plannedRemoteFileSnapshots.get(remotePath);
-			if (cached) return await cached;
-
-			const promise = (async (): Promise<PlannedRemoteSnapshot | undefined> => {
-				if (remoteStat.isDir) return undefined;
-				const content = (await this.webdav.getFileContents(remotePath, {
-					format: 'binary',
-					details: false,
-				})) as BinaryLike;
-
-				return {
-					stat: remoteStat,
-					content,
-				};
-			})();
-
-			plannedRemoteFileSnapshots.set(remotePath, promise);
-			return await promise;
-		};
-
-		const createPlannedLocalFolderSnapshot = (
-			localPath: string,
-			localStat: StatModel,
-		): PlannedLocalSnapshot | undefined => {
-			const cached = plannedLocalFolderSnapshots.get(localPath);
-			if (cached) return cached;
-
-			const abstractFile = this.vault.getAbstractFileByPath(localPath);
-			const snapshot: PlannedLocalSnapshot = {
-				stat: localStat,
-				abstractFile: abstractFile ?? undefined,
-			};
-			plannedLocalFolderSnapshots.set(localPath, snapshot);
-			return snapshot;
-		};
-
-		const createPlannedRemoteFolderSnapshot = (
-			remotePath: string,
-			remoteStat: StatModel,
-		): PlannedRemoteSnapshot | undefined => {
-			const cached = plannedRemoteFolderSnapshots.get(remotePath);
-			if (cached) return cached;
-
-			const snapshot: PlannedRemoteSnapshot = {
-				stat: remoteStat,
-			};
-			plannedRemoteFolderSnapshots.set(remotePath, snapshot);
-			return snapshot;
 		};
 
 		const decisionInput: SyncDecisionInput = {
 			settings: {
-				skipLargeFiles: this.settings.skipLargeFiles,
 				conflictStrategy: this.settings.conflictStrategy,
 				useGitStyle: this.settings.useGitStyle,
 				syncMode: this.settings.syncMode,
@@ -229,15 +121,10 @@ export default class TwoWaySyncDecider {
 			currentRemoteStats,
 			records,
 			remoteBaseDir: this.remoteBaseDir,
-			onProgress: reportPlanningProgress,
 			taskFactory,
-			createPlannedLocalFileSnapshot,
-			createPlannedRemoteFileSnapshot,
-			createPlannedLocalFolderSnapshot,
-			createPlannedRemoteFolderSnapshot,
 		};
 
-		return await twoWayDecider(decisionInput);
+		return twoWayDecider(decisionInput);
 	}
 }
 

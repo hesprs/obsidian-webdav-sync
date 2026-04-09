@@ -1,12 +1,6 @@
 import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
-import {
-	onSyncRun,
-	SyncPlanningSubStage,
-	type SyncRunSnapshot,
-	type SyncRunStage,
-	type SyncRunWarning,
-} from '~/events';
+import { onSyncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import i18n from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
 import type WebDAVSyncPlugin from '..';
@@ -233,10 +227,7 @@ export default class ObservabilityService {
 		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
 		const stageText = i18n.t(`sync.planningStage.${subStage}`);
 		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
-		if (subStage === SyncPlanningSubStage.deciding) {
-			const percent = Math.round((completedWorkUnits / totalWorkUnits) * 10000) / 100;
-			return `${syncType} · ${stageText} ${percent}%`;
-		} else return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
+		return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
 	}
 
 	private getNoticeText(

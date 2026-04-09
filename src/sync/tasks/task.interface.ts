@@ -6,7 +6,7 @@ import type { MaybePromise } from '~/types';
 import getTaskName from '~/utils/get-task-name';
 import type { TaskOptions } from '../decision/sync-decision.interface';
 
-export interface BaseTaskOptions extends TaskOptions {
+export interface BaseTaskOptions {
 	vault: Vault;
 	webdav: WebDAVClient;
 	syncRecord: SyncRecord;
@@ -23,29 +23,24 @@ interface TaskFailureResult {
 
 export type TaskResult = TaskSuccessResult | TaskFailureResult;
 
-export abstract class BaseTask {
-	constructor(readonly options: BaseTaskOptions) {}
+export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
+	constructor(readonly options: BaseTaskOptions & T) {
+		this.webdav = options.webdav;
+		this.vault = options.vault;
+		this.syncRecord = options.syncRecord;
+		this.localPath = options.localPath;
+		this.remotePath = options.remotePath;
+		this.local = options.local;
+		this.remote = options.remote;
+	}
 	readonly name?: keyof typeof en.sync.fileOp;
-
-	get vault() {
-		return this.options.vault;
-	}
-
-	get syncRecord() {
-		return this.options.syncRecord;
-	}
-
-	get webdav() {
-		return this.options.webdav;
-	}
-
-	get remotePath() {
-		return this.options.remotePath;
-	}
-
-	get localPath() {
-		return this.options.localPath;
-	}
+	readonly localPath: string;
+	readonly remotePath: string;
+	protected readonly webdav: WebDAVClient;
+	protected readonly syncRecord: SyncRecord;
+	protected readonly vault: Vault;
+	protected readonly local: (BaseTaskOptions & T)['local'];
+	protected readonly remote: (BaseTaskOptions & T)['remote'];
 
 	abstract exec(): MaybePromise<TaskResult>;
 

@@ -13,7 +13,8 @@ const sharedOptions = {
 	vault: {} as never,
 	webdav: {} as never,
 	syncRecord: {} as never,
-	remoteBaseDir: '/remote',
+	local: {} as never,
+	remote: {} as never,
 };
 
 describe('optimizeSync', () => {
