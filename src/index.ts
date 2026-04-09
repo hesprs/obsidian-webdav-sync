@@ -55,6 +55,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		realtimeSync: false,
 		realtimeSyncDelay: 5000,
 		maxConcurrentWebDAVCalls: 100,
+		maxConcurrentSyncTasks: 100,
 		minTimeBetweenWebDAVCalls: 0,
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
@@ -77,9 +78,8 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		apiLimiter
-			.set('maxConcurrentWebDAVCalls', this.settings.maxConcurrentWebDAVCalls)
-			.set('minTimeBetweenWebDAVCalls', this.settings.minTimeBetweenWebDAVCalls);
+		apiLimiter.setMaxConcurrent(this.settings.maxConcurrentWebDAVCalls);
+		apiLimiter.setMinTime(this.settings.minTimeBetweenWebDAVCalls);
 		await this.syncStateStore.initialize().catch(() => undefined);
 		await this.baseTextStore.initialize().catch(() => undefined);
 		await migrateStorage(this);

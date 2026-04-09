@@ -215,7 +215,7 @@ export class SyncEngine {
 				}
 			}
 
-			const optimizedTaskGroups = optimizeTasks(tasks);
+			const optimizedTaskGroups = optimizeTasks(tasks, settings.maxConcurrentSyncTasks);
 			const optimizedTasks = optimizedTaskGroups.flat();
 			const allTasksResult: TaskResult[] = [];
 
@@ -357,7 +357,20 @@ export class SyncEngine {
 		let currentRun = run;
 		const tasksToDisplay = tasks.filter((task) => this.isDisplayableTask(task));
 		const settledResults = await Promise.allSettled(
-			tasks.map((task) => this.executeWithRetry(task)),
+			tasks.map(async (task) => {
+				const result = await this.executeWithRetry(task);
+				if (this.isDisplayableTask(task)) {
+					allCompletedTasks.push(task);
+					currentRun = updateSyncRunSnapshot(currentRun, {
+						progressSummary: this.createProgressSummary(
+							totalDisplayableTasks,
+							allCompletedTasks,
+						),
+					});
+					emitSyncRun(currentRun);
+				}
+				return result;
+			}),
 		);
 		const results: TaskResult[] = settledResults.map((result, index) => {
 			if (result.status === 'fulfilled') return result.value;
@@ -376,7 +389,6 @@ export class SyncEngine {
 			const task = tasks[i];
 			const taskResult = results[i];
 			const taskName = task.toJSON().taskName;
-
 			if (!taskResult.success) {
 				logger.warn(
 					'Task execution failed',
@@ -390,18 +402,6 @@ export class SyncEngine {
 					},
 					{ category: 'sync.task' },
 				);
-			}
-
-			// Only add substantial tasks to completed list for progress display
-			if (this.isDisplayableTask(task)) {
-				allCompletedTasks.push(task);
-				currentRun = updateSyncRunSnapshot(currentRun, {
-					progressSummary: this.createProgressSummary(
-						totalDisplayableTasks,
-						allCompletedTasks,
-					),
-				});
-				emitSyncRun(currentRun);
 			}
 		}
 

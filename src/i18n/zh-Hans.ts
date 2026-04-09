@@ -114,6 +114,12 @@ export default {
 			invalidValue: '无效数值，已恢复至上一次设置',
 			placeholder: '请输入数字',
 		},
+		maxConcurrentSyncTasks: {
+			name: '最大并发同步任务数',
+			desc: '同步任务是原子级的同步操作，例如下载文件或删除目录。此设置控制可并发执行的任务最大数量。设置为 0 可取消限制。',
+			invalidValue: '无效数值，已恢复至上一次设置',
+			placeholder: '请输入数字',
+		},
 		minTimeBetweenWebDAVCalls: {
 			name: 'WebDAV 请求最小间隔时间',
 			desc: '两次 WebDAV 请求之间的最小间隔（毫秒）。数值越小，同步速度越快，但可能触发速率限制。设置为 0 可取消此限制。',
