@@ -19,40 +19,43 @@ const sharedOptions = {
 
 describe('optimizeSync', () => {
 	it('creates directories before file writes and merges subtree removals', () => {
-		const tasks = optimizeTasks([
-			new PushTask({
-				...sharedOptions,
-				localPath: 'folder/file.md',
-				remotePath: 'folder/file.md',
-			}),
-			new PullTask({
-				...sharedOptions,
-				localPath: 'notes/file.md',
-				remotePath: 'notes/file.md',
-			}),
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'old/file.md',
-				remotePath: 'old/file.md',
-			}),
-			new RemoveRemoteTask({
-				...sharedOptions,
-				localPath: 'gone/file.md',
-				remotePath: 'gone/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'folder',
-				remotePath: 'folder',
-			}),
-			new MkdirLocalTask({
-				...sharedOptions,
-				localPath: 'notes',
-				remotePath: 'notes',
-			}),
-			new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
-			new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
-		]).flatMap((task) => task);
+		const tasks = optimizeTasks(
+			[
+				new PushTask({
+					...sharedOptions,
+					localPath: 'folder/file.md',
+					remotePath: 'folder/file.md',
+				}),
+				new PullTask({
+					...sharedOptions,
+					localPath: 'notes/file.md',
+					remotePath: 'notes/file.md',
+				}),
+				new RemoveLocalTask({
+					...sharedOptions,
+					localPath: 'old/file.md',
+					remotePath: 'old/file.md',
+				}),
+				new RemoveRemoteTask({
+					...sharedOptions,
+					localPath: 'gone/file.md',
+					remotePath: 'gone/file.md',
+				}),
+				new MkdirRemoteTask({
+					...sharedOptions,
+					localPath: 'folder',
+					remotePath: 'folder',
+				}),
+				new MkdirLocalTask({
+					...sharedOptions,
+					localPath: 'notes',
+					remotePath: 'notes',
+				}),
+				new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
+				new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
+			],
+			100,
+		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
 		expect(tasks[1]).toBeInstanceOf(RemoveLocalRecursivelyTask);
@@ -65,23 +68,26 @@ describe('optimizeSync', () => {
 	});
 
 	it('keeps remote reupload dependencies ahead of local deletion', () => {
-		const tasks = optimizeTasks([
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new PushTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'archive',
-				remotePath: 'archive',
-			}),
-		]).flatMap((task) => task);
+		const tasks = optimizeTasks(
+			[
+				new RemoveLocalTask({
+					...sharedOptions,
+					localPath: 'archive/file.md',
+					remotePath: 'archive/file.md',
+				}),
+				new PushTask({
+					...sharedOptions,
+					localPath: 'archive/file.md',
+					remotePath: 'archive/file.md',
+				}),
+				new MkdirRemoteTask({
+					...sharedOptions,
+					localPath: 'archive',
+					remotePath: 'archive',
+				}),
+			],
+			100,
+		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);
 		expect(tasks[1]).toBeInstanceOf(MkdirRemoteTask);

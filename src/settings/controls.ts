@@ -57,7 +57,7 @@ export default class ControlsSettings extends BaseSettings {
 				);
 			});
 
-        new Setting(this.containerEl)
+		new Setting(this.containerEl)
 			.setName(i18n.t('settings.maxConcurrentSyncTasks.name'))
 			.setDesc(i18n.t('settings.maxConcurrentSyncTasks.desc'))
 			.addText((text) => {
@@ -118,7 +118,7 @@ export default class ControlsSettings extends BaseSettings {
 			component.setValue(original.toString());
 			return;
 		}
-        component.setValue(interval.toString());
+		component.setValue(interval.toString());
 
 		if (interval !== original) {
 			this.plugin.settings[field] = interval;
