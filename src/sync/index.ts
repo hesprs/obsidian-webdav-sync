@@ -51,7 +51,6 @@ interface SyncResultSummary {
 	failed: SyncFailedTaskInfo[];
 }
 
-// TODO: split into multiple modules
 export class SyncEngine {
 	isCancelled: boolean = false;
 

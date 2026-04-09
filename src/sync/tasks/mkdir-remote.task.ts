@@ -8,9 +8,7 @@ export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalStat> {
 
 	async exec() {
 		try {
-			await this.webdav.createDirectory(this.remotePath, {
-				recursive: true,
-			});
+			await this.webdav.createDirectory(this.remotePath);
 			const remote = await statWebDAVItem(this.webdav, this.remotePath);
 
 			if (!remote || !remote.isDir)
