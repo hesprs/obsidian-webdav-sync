@@ -46,6 +46,12 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 		changed = true;
 	} else plugin.settings.remoteDir = normalizeBaseDir(plugin.settings.remoteDir);
 
+	// remove at 19 April 2026
+	if (plugin.settings.maxConcurrentWebDAVCalls === 0) {
+		plugin.settings.maxConcurrentWebDAVCalls = 100;
+		logger.info(`Set max concurrent WebDAV calls to 100.`);
+	}
+
 	// ensure config dir is excluded
 	const configDir = plugin.app.vault.configDir;
 	const hasConfigDirRule = plugin.settings.filterRules.exclusionRules.some(

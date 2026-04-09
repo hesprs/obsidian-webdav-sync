@@ -15,7 +15,8 @@ export class IndexedDbSyncStateStore {
 		name: STORAGE_NAME,
 		storeName: SYNC_STATE_STORE_NAME,
 		driver: [localspace.INDEXEDDB],
-		coalesceWrites: false, // https://github.com/unadlib/localspace/issues/3
+		coalesceWrites: true,
+        coalesceWindowMs: 500,
 	});
 
 	private initPromise: Promise<void> | undefined;

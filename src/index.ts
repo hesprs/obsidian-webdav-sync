@@ -54,7 +54,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		},
 		realtimeSync: false,
 		realtimeSyncDelay: 5000,
-		maxConcurrentWebDAVCalls: 0,
+		maxConcurrentWebDAVCalls: 100,
 		minTimeBetweenWebDAVCalls: 0,
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
