@@ -53,7 +53,7 @@ export async function traverseWebDAV({
 	const reportProgress = (current: string) => {
 		throwIfCancelled?.();
 		processedCount++;
-		void onProgress?.({
+		onProgress?.({
 			processedDirectories: processedCount,
 			totalDirectories: processedCount + queue.length,
 			currentDirectory: current,

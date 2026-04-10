@@ -52,18 +52,16 @@ export default class TwoWaySyncDecider {
 	}
 
 	async decide(options?: {
-		onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
+		onProgress?: (progress: SyncPlanningProgress) => void;
 		throwIfCancelled?: () => void;
 	}): Promise<BaseTask[]> {
-		const reportPlanningProgress = async (progress: SyncPlanningProgress) => {
-			await options?.onPlanningProgress?.(progress);
-		};
+		const onProgress = (progress: SyncPlanningProgress) => options?.onProgress?.(progress);
 
 		const records = await this.syncRecordStorage.getRecords();
 
 		const currentLocalStats = await traverseVault({ vault: this.vault });
 
-		await reportPlanningProgress({
+		onProgress({
 			subStage: SyncPlanningSubStage.walkingRemote,
 			totalWorkUnits: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
 			completedWorkUnits: 0,
@@ -73,14 +71,13 @@ export default class TwoWaySyncDecider {
 			this.sync.runKind === SyncRunKind.fast
 				? extractRemoteRecords(records)
 				: await traverseWebDAV({
-						onProgress: async (progress) => {
-							await reportPlanningProgress({
+						onProgress: (progress) =>
+							onProgress({
 								subStage: SyncPlanningSubStage.walkingRemote,
 								totalWorkUnits: progress.totalDirectories,
 								completedWorkUnits: progress.processedDirectories,
 								currentItem: progress.currentDirectory ?? this.remoteBaseDir,
-							});
-						},
+							}),
 						token: this.token,
 						throwIfCancelled: options?.throwIfCancelled,
 					});

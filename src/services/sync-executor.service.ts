@@ -95,13 +95,9 @@ export default class SyncExecutorService {
 
 			let tasks: BaseTask[] | null = null;
 			try {
-				tasks = await sync.preparePlan(request.runKind, {
-					onPlanningProgress: (planningProgress) => {
-						run = updateSyncRunSnapshot(run, {
-							planningProgress,
-						});
-						syncRun(run);
-					},
+				tasks = await sync.preparePlan(request.runKind, (planningProgress) => {
+					run = updateSyncRunSnapshot(run, { planningProgress });
+					syncRun(run);
 				});
 			} catch (error) {
 				run = finalizeSyncRun(run, {
