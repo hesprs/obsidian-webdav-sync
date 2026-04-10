@@ -1,7 +1,6 @@
 import { ButtonComponent, Modal, setIcon, Setting } from 'obsidian';
 import CleanRecordTask from '~/sync/tasks/clean-record.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
-import getTaskName from '~/utils/get-task-name';
 import WebDAVSyncPlugin from '..';
 import { syncCancel, SyncPlanningSubStage } from '../events';
 import i18n from '../i18n';
@@ -142,7 +141,7 @@ export default class SyncProgressModal extends Modal {
 				cls: 'flex-none w-17 md:w-24 text-[var(--text-normal)] font-500',
 			});
 
-			typeLabel.setText(getTaskName(file));
+			typeLabel.setText(file.taskName);
 
 			const filePath = item.createSpan({
 				cls: 'flex-1 break-all',

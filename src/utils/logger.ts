@@ -66,11 +66,7 @@ function sanitizeLogValue(value: unknown, depth: number = 0): LogValue | undefin
 
 	if (value instanceof Error) {
 		return sanitizeLogValue(
-			{
-				name: value.name,
-				message: value.message,
-				stack: value.stack,
-			},
+			{ name: value.name, message: value.message, stack: value.stack },
 			depth + 1,
 		);
 	}
@@ -143,6 +139,7 @@ class Logger {
 	}
 
 	debug(message: string, metadata?: unknown, context?: LogContext) {
+		if (!IN_DEV) return;
 		this.write('debug', message, metadata, context);
 	}
 
@@ -206,9 +203,7 @@ class Logger {
 		if (generalLogs.length === 0) {
 			lines.push('No general logs recorded.', '');
 		} else {
-			for (const entry of generalLogs) {
-				lines.push(this.formatTimelineLine(entry));
-			}
+			for (const entry of generalLogs) lines.push(this.formatTimelineLine(entry));
 			lines.push('');
 		}
 
@@ -385,7 +380,6 @@ class Logger {
 	}
 
 	private write(level: LogLevel, message: string, metadata?: unknown, context?: LogContext) {
-		if (!IN_DEV && level === 'debug') return;
 		const timestampMs = Date.now();
 		const mergedContext = {
 			category: 'app',

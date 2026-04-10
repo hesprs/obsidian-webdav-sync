@@ -72,9 +72,7 @@ export class SyncEngine {
 
 	async preparePlan(
 		runKind: SyncRunKind = SyncRunKind.normal,
-		options?: {
-			onPlanningProgress?: (progress: SyncPlanningProgress) => Promise<void> | void;
-		},
+		onProgress?: (progress: SyncPlanningProgress) => void,
 	): Promise<BaseTask[]> {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
@@ -82,7 +80,7 @@ export class SyncEngine {
 		this.throwIfCancelled();
 
 		const tasks = await new TwoWaySyncDecider(this, this.options.token, syncRecord).decide({
-			onPlanningProgress: options?.onPlanningProgress,
+			onProgress,
 			throwIfCancelled: this.throwIfCancelled,
 		});
 		this.throwIfCancelled();
@@ -406,7 +404,11 @@ export class SyncEngine {
 		return {
 			totalTasks: totalDisplayableTasks.length,
 			completedTasks: allCompletedTasks.length,
-			completed: [...allCompletedTasks],
+			completed: allCompletedTasks.map((task) => ({
+				taskName: getTaskName(task),
+				localPath: task.localPath,
+				remotePath: task.remotePath,
+			})),
 		};
 	}
 

@@ -163,9 +163,8 @@ export default class ObservabilityService {
 			return;
 		}
 
-		if (run.mode === 'auto' && TERMINAL_STAGES.includes(run.stage)) {
+		if (run.mode === 'auto' && TERMINAL_STAGES.includes(run.stage))
 			this.plugin.progressService.closeProgressModal();
-		}
 	}
 
 	private applyFailureModal(run: SyncRunSnapshot) {

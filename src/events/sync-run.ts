@@ -1,4 +1,3 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
 import { SyncRunKind } from '~/types';
 import { ref } from '.';
 
@@ -41,7 +40,11 @@ export interface SyncPlanSummary {
 export interface SyncProgressSummary {
 	totalTasks: number;
 	completedTasks: number;
-	completed: BaseTask[];
+	completed: Array<{
+		taskName: string;
+		localPath: string;
+		remotePath: string;
+	}>;
 }
 
 export interface SyncFailedTaskInfo {
