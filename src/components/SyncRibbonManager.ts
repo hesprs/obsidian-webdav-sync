@@ -1,5 +1,5 @@
 import type WebDAVSyncPlugin from '../index';
-import { emitCancelSync } from '../events';
+import { syncCancel } from '../events';
 import i18n from '../i18n';
 import { launchManualSync } from '../services/manual-sync.service';
 
@@ -13,8 +13,10 @@ export class SyncRibbonManager {
 			i18n.t('sync.startButton'),
 			() => launchManualSync(this.plugin),
 		);
-		this.stopRibbonEl = this.plugin.addRibbonIcon('square', i18n.t('sync.stopButton'), () =>
-			emitCancelSync(),
+		this.stopRibbonEl = this.plugin.addRibbonIcon(
+			'square',
+			i18n.t('sync.stopButton'),
+			syncCancel,
 		);
 		this.stopRibbonEl.classList.add('hidden');
 	}

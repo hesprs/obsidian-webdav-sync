@@ -1,6 +1,6 @@
 import logger from '~/utils/logger';
 import {
-	emitSyncRun,
+	syncRun,
 	type SyncErrorSummary,
 	type SyncRunSnapshot,
 	type SyncRunStage,
@@ -35,8 +35,7 @@ export function finalizeSyncRun(
 			endedAt: patch?.timestamps?.endedAt ?? Date.now(),
 		},
 	});
-
-	emitSyncRun(nextRun);
+	syncRun(nextRun);
 	logTerminalRun(nextRun, normalizedError);
 	return nextRun;
 }

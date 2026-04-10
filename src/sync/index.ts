@@ -1,12 +1,11 @@
 import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
-import { Subscription } from 'rxjs';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import TaskListConfirmModal from '~/components/TaskListConfirmModal';
 import {
-	emitSyncRun,
-	onCancelSync,
+	syncRun,
+	syncCancel,
 	type SyncFailedTaskInfo,
 	type SyncPlanningProgress,
 	type SyncPlanSummary,
@@ -34,6 +33,7 @@ import {
 } from './errors';
 import AddRecordTask from './tasks/add-record.task';
 import CleanRecordTask from './tasks/clean-record.task';
+import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
 import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
@@ -54,7 +54,7 @@ interface SyncResultSummary {
 export class SyncEngine {
 	isCancelled: boolean = false;
 
-	private subscriptions: Subscription[] = [];
+	private unsubscribeSyncCancel: () => void;
 
 	constructor(
 		private plugin: WebDAVSyncPlugin,
@@ -65,11 +65,7 @@ export class SyncEngine {
 		},
 	) {
 		this.options = Object.freeze(this.options);
-		this.subscriptions.push(
-			onCancelSync().subscribe(() => {
-				this.isCancelled = true;
-			}),
-		);
+		this.unsubscribeSyncCancel = syncCancel.subscribe(() => (this.isCancelled = true));
 	}
 
 	runKind: SyncRunKind = SyncRunKind.normal;
@@ -111,7 +107,7 @@ export class SyncEngine {
 			let currentRun = updateSyncRunSnapshot(run, {
 				planSummary: this.summarizePlan(tasks),
 			});
-			emitSyncRun(currentRun);
+			syncRun(currentRun);
 			logger.info(
 				'Execution started',
 				{
@@ -165,7 +161,7 @@ export class SyncEngine {
 						confirmationStartedAt: Date.now(),
 					},
 				});
-				emitSyncRun(currentRun);
+				syncRun(currentRun);
 				const confirmExec = await new TaskListConfirmModal(
 					this.app,
 					displayableTasks,
@@ -202,7 +198,7 @@ export class SyncEngine {
 								currentRun.timestamps.confirmationStartedAt ?? Date.now(),
 						},
 					});
-					emitSyncRun(currentRun);
+					syncRun(currentRun);
 					const { tasksToDelete, tasksToReupload } = await new DeleteConfirmModal(
 						this.app,
 						removeLocalTasks,
@@ -233,7 +229,7 @@ export class SyncEngine {
 				),
 				timestamps: { executionStartedAt: Date.now() },
 			});
-			emitSyncRun(currentRun);
+			syncRun(currentRun);
 
 			for (const taskGroup of optimizedTaskGroups) {
 				if (this.isCancelled) break;
@@ -274,7 +270,7 @@ export class SyncEngine {
 			});
 			return failedRun;
 		} finally {
-			this.subscriptions.forEach((sub) => sub.unsubscribe());
+			this.unsubscribeSyncCancel();
 		}
 	}
 
@@ -288,18 +284,14 @@ export class SyncEngine {
 	}
 
 	private convertDeleteToUpload(tasks: RemoveLocalTask[]) {
-		const final: PushTask[] = [];
+		const final: (PushTask | MkdirRemoteTask)[] = [];
 		for (const task of tasks) {
 			const options = task.options;
 			const local = statVaultItem(this.vault, options.localPath);
-			if (!local || local.isDir)
+			if (!local)
 				throw new Error(`Local file item not found during reupload: ${options.localPath}`);
-			final.push(
-				new PushTask({
-					...options,
-					local,
-				}),
-			);
+			if (local.isDir) final.push(new MkdirRemoteTask({ ...options, local }));
+			else final.push(new PushTask({ ...options, local }));
 		}
 		return final;
 	}
@@ -335,7 +327,7 @@ export class SyncEngine {
 				continue;
 			} catch (error) {
 				if (isRetryableError(error)) {
-					await breakableSleep(onCancelSync(), 5000);
+					await breakableSleep(syncCancel, 5000);
 					this.throwIfCancelled();
 					remoteBaseDirExists = await this.retryWebDAVCall(() =>
 						webdav.exists(remoteBaseDir),
@@ -366,7 +358,7 @@ export class SyncEngine {
 							allCompletedTasks,
 						),
 					});
-					emitSyncRun(currentRun);
+					syncRun(currentRun);
 				}
 				return result;
 			}),
@@ -466,7 +458,7 @@ export class SyncEngine {
 					},
 					{ category: 'sync.retry' },
 				);
-				await breakableSleep(onCancelSync(), 5000);
+				await breakableSleep(syncCancel, 5000);
 				if (this.isCancelled) {
 					return {
 						success: false,
@@ -508,7 +500,7 @@ export class SyncEngine {
 					{ retryCount, error: retryError },
 					{ category: 'sync.retry' },
 				);
-				await breakableSleep(onCancelSync(), 5000);
+				await breakableSleep(syncCancel, 5000);
 				this.throwIfCancelled();
 			}
 		}

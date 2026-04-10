@@ -71,18 +71,12 @@ importers:
       postcss-merge-rules:
         specifier: ^7.0.8
         version: 7.0.8(postcss@8.5.8)
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
       solid-js:
         specifier: ^1.9.12
         version: 1.9.12
       tsdown:
         specifier: ^0.21.7
         version: 0.21.7(@emnapi/core@1.9.0)(@emnapi/runtime@1.9.0)(@tsdown/css@0.21.7)(typescript@6.0.2)
-      tslib:
-        specifier: 2.8.1
-        version: 2.8.1
       typescript:
         specifier: ^6.0.2
         version: 6.0.2
@@ -4005,6 +3999,7 @@ snapshots:
   rxjs@7.8.2:
     dependencies:
       tslib: 2.8.1
+    optional: true
 
   sass-embedded-android-arm64@1.86.0:
     optional: true
@@ -4212,7 +4207,8 @@ snapshots:
       - synckit
       - vue-tsc
 
-  tslib@2.8.1: {}
+  tslib@2.8.1:
+    optional: true
 
   type-level-regexp@0.1.17: {}
 

@@ -1,6 +1,6 @@
 import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
-import { onSyncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
+import { syncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import i18n from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
 import type WebDAVSyncPlugin from '..';
@@ -11,13 +11,11 @@ const MOBILE_SYNC_NOTICE_HIDE_DELAY = 2000;
 export default class ObservabilityService {
 	private previousRun: SyncRunSnapshot | null = null;
 	private shownFailureModalRunIds = new Set<string>();
-	private subscriptions = [
-		onSyncRun().subscribe((run) => {
-			if (!run) return;
-			this.apply(run);
-			this.previousRun = run;
-		}),
-	];
+	private unsubscribe = syncRun.subscribe((run) => {
+		if (!run) return;
+		this.apply(run);
+		this.previousRun = run;
+	});
 	private syncStatusBar: HTMLElement;
 	private lastSyncTime: number | null = null;
 	private updateInterval: number | null = null;
@@ -30,7 +28,7 @@ export default class ObservabilityService {
 	}
 
 	unload() {
-		this.subscriptions.forEach((subscription) => subscription.unsubscribe());
+		this.unsubscribe();
 		this.stopTimeUpdates();
 		this.hideMobileSyncNotice();
 	}

@@ -1,4 +1,4 @@
-import { emitCancelSync } from '~/events';
+import { syncCancel } from '~/events';
 import i18n from '~/i18n';
 import WebDAVSyncPlugin from '..';
 import { launchManualSync } from './manual-sync.service';
@@ -11,7 +11,6 @@ export default class CommandService {
 			checkCallback: (checking) => {
 				if (plugin.isSyncing) return false;
 				if (checking) return true;
-
 				launchManualSync(plugin);
 			},
 		});
@@ -21,7 +20,7 @@ export default class CommandService {
 			name: i18n.t('sync.stopButton'),
 			checkCallback: (checking) => {
 				if (plugin.isSyncing) {
-					if (!checking) emitCancelSync();
+					if (!checking) syncCancel();
 					return true;
 				}
 				return false;
@@ -31,9 +30,7 @@ export default class CommandService {
 		plugin.addCommand({
 			id: 'show-sync-progress',
 			name: i18n.t('sync.showProgressButton'),
-			callback: () => {
-				plugin.progressService.showProgressModal();
-			},
+			callback: () => plugin.progressService.showProgressModal(),
 		});
 	}
 }
