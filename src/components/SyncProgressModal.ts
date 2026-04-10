@@ -1,15 +1,9 @@
 import { ButtonComponent, Modal, setIcon, Setting } from 'obsidian';
-import { Subscription } from 'rxjs';
 import CleanRecordTask from '~/sync/tasks/clean-record.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import getTaskName from '~/utils/get-task-name';
 import WebDAVSyncPlugin from '..';
-import {
-	emitCancelSync,
-	onCancelSync,
-	onSyncUpdateMtimeProgress,
-	SyncPlanningSubStage,
-} from '../events';
+import { syncCancel, SyncPlanningSubStage } from '../events';
 import i18n from '../i18n';
 import MergeTask from '../sync/tasks/merge.task';
 import MkdirLocalTask from '../sync/tasks/mkdir-local.task';
@@ -27,13 +21,9 @@ export default class SyncProgressModal extends Modal {
 	private currentFile!: HTMLDivElement;
 	private filesList!: HTMLDivElement;
 	private syncCancelled = false;
-	private cancelSubscription: Subscription;
-	private updateMtimeSubscription: Subscription;
+	private cancelSubscription: () => void;
 	private stopButtonComponent!: ButtonComponent;
 	private hideButtonComponent!: ButtonComponent;
-
-	private syncStateProgressBar!: HTMLDivElement;
-	private syncStateProgressText!: HTMLDivElement;
 	private syncStateProgressStats!: HTMLDivElement;
 	private syncStateCurrentOperation!: HTMLDivElement;
 
@@ -42,12 +32,9 @@ export default class SyncProgressModal extends Modal {
 		private closeCallback?: () => void,
 	) {
 		super(plugin.app);
-		this.cancelSubscription = onCancelSync().subscribe(() => {
+		this.cancelSubscription = syncCancel.subscribe(() => {
 			this.syncCancelled = true;
 			this.update();
-		});
-		this.updateMtimeSubscription = onSyncUpdateMtimeProgress().subscribe((progress) => {
-			this.updateSyncStateProgress(progress.total, progress.completed);
 		});
 	}
 
@@ -59,9 +46,8 @@ export default class SyncProgressModal extends Modal {
 			!this.currentStage ||
 			!this.currentFile ||
 			!this.filesList
-		) {
+		)
 			return;
-		}
 
 		const progress = this.plugin.progressService.syncProgress;
 		const planningProgress = this.plugin.progressService.planningProgress;
@@ -124,9 +110,7 @@ export default class SyncProgressModal extends Modal {
 			}
 		} else if (progress.completed.length > 0) {
 			const lastFile = progress.completed.at(-1);
-			if (lastFile) {
-				this.currentFile.setText(lastFile.localPath);
-			}
+			if (lastFile) this.currentFile.setText(lastFile.localPath);
 		}
 
 		this.filesList.empty();
@@ -237,10 +221,10 @@ export default class SyncProgressModal extends Modal {
 		});
 		syncStateProgressBarContainer.hide();
 
-		this.syncStateProgressBar = syncStateProgressBarContainer.createDiv({
+		syncStateProgressBarContainer.createDiv({
 			cls: 'absolute h-full bg-[var(--interactive-accent)] w-0 transition-width',
 		});
-		this.syncStateProgressText = syncStateProgressBarContainer.createDiv({
+		syncStateProgressBarContainer.createDiv({
 			cls: 'absolute w-full text-center text-3 leading-5 text-[var(--text-on-accent)] mix-blend-difference',
 		});
 
@@ -274,12 +258,7 @@ export default class SyncProgressModal extends Modal {
 				this.hideButtonComponent = button;
 			})
 			.addButton((button) => {
-				button
-					.setButtonText(i18n.t('sync.stopButton'))
-					.setWarning()
-					.onClick(() => {
-						emitCancelSync();
-					});
+				button.setButtonText(i18n.t('sync.stopButton')).setWarning().onClick(syncCancel);
 				this.stopButtonComponent = button;
 			});
 
@@ -287,43 +266,9 @@ export default class SyncProgressModal extends Modal {
 	}
 
 	onClose(): void {
-		this.cancelSubscription.unsubscribe();
-		this.updateMtimeSubscription.unsubscribe();
+		this.cancelSubscription();
 		const { contentEl } = this;
 		contentEl.empty();
-		if (this.closeCallback) {
-			this.closeCallback();
-		}
-	}
-
-	private updateSyncStateProgress(total: number, completed: number): void {
-		if (
-			!this.syncStateProgressBar ||
-			!this.syncStateProgressText ||
-			!this.syncStateProgressStats
-		) {
-			return;
-		}
-
-		this.syncStateCurrentOperation.show();
-		this.syncStateProgressStats.show();
-		this.syncStateProgressBar.parentElement?.show();
-
-		const percent = Math.round((completed / total) * 100) || 0;
-
-		const percentText = `${percent}%`;
-		this.syncStateProgressBar.style.width = percentText;
-		this.syncStateProgressText.setText(percentText);
-
-		this.syncStateProgressStats.setText(
-			i18n.t('sync.progressStats', {
-				completed,
-				total,
-			}),
-		);
-
-		if (completed === total) {
-			this.syncStateCurrentOperation.setText(i18n.t('sync.syncStateUpdated'));
-		}
+		if (this.closeCallback) this.closeCallback();
 	}
 }

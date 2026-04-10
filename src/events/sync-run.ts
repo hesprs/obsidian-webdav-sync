@@ -1,6 +1,6 @@
-import { BehaviorSubject } from 'rxjs';
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import { SyncRunKind } from '~/types';
+import { ref } from '.';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
 export type SyncRunMode = 'manual' | 'auto';
@@ -87,11 +87,7 @@ export interface SyncRunSnapshot {
 	errorSummary?: SyncErrorSummary;
 }
 
-const syncRun = new BehaviorSubject<SyncRunSnapshot | null>(null);
-
-export const onSyncRun = () => syncRun.asObservable();
-export const getCurrentSyncRun = () => syncRun.getValue();
-export const emitSyncRun = (snapshot: SyncRunSnapshot) => syncRun.next(snapshot);
+export const syncRun = ref<SyncRunSnapshot | null>(null);
 
 export function createQueuedSyncRunSnapshot(input: {
 	runId: string;

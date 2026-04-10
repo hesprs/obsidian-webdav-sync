@@ -1,4 +1,4 @@
-import { getCurrentSyncRun } from '~/events';
+import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
@@ -10,7 +10,7 @@ export default class RealtimeSyncService {
 		const settings = await useSettings();
 		if (!settings.realtimeSync) return;
 
-		const currentRun = getCurrentSyncRun();
+		const currentRun = syncRun();
 		if (currentRun?.stage === 'executing') return;
 
 		await this.syncScheduler.requestSync({

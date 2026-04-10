@@ -184,7 +184,6 @@ class Logger {
 			'# WebDAV Sync Support Report',
 			'',
 			`Generated at: ${formatDateTime(Date.now())}`,
-			`Log Length: ${this.logs.length}`,
 			`Plugin version: ${VERSION}`,
 			'',
 		];

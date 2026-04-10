@@ -3,7 +3,7 @@ import './assets/global.css';
 import { Plugin } from 'obsidian';
 import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
-import { emitCancelSync } from './events';
+import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
 import CommandService from './services/command.service';
 import I18nService from './services/i18n.service';
@@ -90,7 +90,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	onunload() {
 		setPluginInstance(null);
-		emitCancelSync();
+		syncCancel();
 		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
 		this.progressService.unload();

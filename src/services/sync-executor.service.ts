@@ -1,7 +1,7 @@
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import {
 	createQueuedSyncRunSnapshot,
-	emitSyncRun,
+	syncRun,
 	SyncPlanningSubStage,
 	type SyncRunMode,
 	type SyncRunSnapshot,
@@ -64,7 +64,7 @@ export default class SyncExecutorService {
 				runKind: request.runKind,
 				queuedAt: request.queuedAt,
 			});
-			emitSyncRun(run);
+			syncRun(run);
 
 			run = updateSyncRunSnapshot(run, {
 				stage: 'planning',
@@ -78,7 +78,7 @@ export default class SyncExecutorService {
 					planningStartedAt: Date.now(),
 				},
 			});
-			emitSyncRun(run);
+			syncRun(run);
 			logger.info(
 				'Planning started',
 				{
@@ -100,7 +100,7 @@ export default class SyncExecutorService {
 						run = updateSyncRunSnapshot(run, {
 							planningProgress,
 						});
-						emitSyncRun(run);
+						syncRun(run);
 					},
 				});
 			} catch (error) {
@@ -114,7 +114,7 @@ export default class SyncExecutorService {
 			run = updateSyncRunSnapshot(run, {
 				planSummary: sync.summarizePlan(tasks),
 			});
-			emitSyncRun(run);
+			syncRun(run);
 			logger.info(
 				'Planning finished',
 				{

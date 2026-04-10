@@ -2,7 +2,7 @@ import { throttle } from 'lodash-es';
 import { Notice } from 'obsidian';
 import type { SyncPlanningProgress, SyncProgressSummary, SyncRunSnapshot } from '~/events';
 import SyncProgressModal from '../components/SyncProgressModal';
-import { onSyncRun } from '../events';
+import { syncRun } from '../events';
 import i18n from '../i18n';
 import WebDAVSyncPlugin from '../index';
 
@@ -10,13 +10,11 @@ export class ProgressService {
 	private progressModal: SyncProgressModal | null = null;
 	private currentRunSnapshot: SyncRunSnapshot | null = null;
 
-	private subscriptions = [
-		onSyncRun().subscribe((run) => {
-			if (!run) return;
-			this.currentRunSnapshot = run;
-			this.updateModal();
-		}),
-	];
+	private unsubscribe = syncRun.subscribe((run) => {
+		if (!run) return;
+		this.currentRunSnapshot = run;
+		this.updateModal();
+	});
 
 	constructor(private plugin: WebDAVSyncPlugin) {}
 
@@ -80,7 +78,7 @@ export class ProgressService {
 	}
 
 	public unload() {
-		this.subscriptions.forEach((sub) => sub.unsubscribe());
+		this.unsubscribe();
 		this.closeProgressModal();
 	}
 }
