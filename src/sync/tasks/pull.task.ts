@@ -2,17 +2,19 @@ import { arrayBufferToText } from '~/platform/binary';
 import { getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { statVaultItem } from '~/utils/stat-item';
-import type { OptionsWithRemoteStat } from '../decision/sync-decision.interface';
+import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
 import { isMergeablePath } from '../utils/is-mergeable-path';
 import { BaseTask, toTaskError } from './task.interface';
 
-export default class PullTask extends BaseTask<OptionsWithRemoteStat> {
+export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 	readonly name = 'download';
 
 	async exec() {
 		try {
 			const remoteContent = await getRemoteContent(this.webdav, this.remotePath);
-			await this.vault.adapter.writeBinary(this.localPath, remoteContent);
+			await this.vault.adapter.writeBinary(this.localPath, remoteContent, {
+				ctime: this.remote.mtime - 1000, // #1
+			});
 
 			// no race condition since we've just written it
 			const local = statVaultItem(this.vault, this.localPath);
@@ -34,3 +36,14 @@ export default class PullTask extends BaseTask<OptionsWithRemoteStat> {
 		}
 	}
 }
+
+/* #1 Solves incompatibility between this plugin and obsidian-paste-image-rename
+
+When "Handle all attachments" is enabled, paste-image-rename checks every file write (except .md) in vault and tries to rename them.
+
+During syncing, when files are downloaded, Paste-image-rename tries to rename all of them, causing severe rename chaos. If real-time sync is enabled, the file rename will in return trigger an auto sync, which will cause server chaos as well.
+
+When ctime is more than 1 seconds ago, paste-image-rename will not rename the file: https://github.com/reorx/obsidian-paste-image-rename/blob/3801513c406a86ad90c94a1bd7c95c6b837e063d/src/main.ts#L81
+
+So the only solution is to re-generate a ctime at local file creation. Which is set to server modification time - 1s.
+*/

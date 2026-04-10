@@ -97,6 +97,7 @@ export default class MergeTask extends BaseTask<MergeTaskOptions> {
 				await this.vault.adapter.writeBinary(
 					this.localPath,
 					new TextEncoder().encode(mergedText).buffer,
+					{ ctime: this.remote.mtime - 1000 },
 				);
 				const fetchedLocalStat = statVaultItem(this.vault, this.localPath);
 				if (!fetchedLocalStat || fetchedLocalStat.isDir)
