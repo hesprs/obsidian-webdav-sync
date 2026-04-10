@@ -70,14 +70,14 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 	}
 
 	const routeConflict = (params: {
-		local: StatModel;
-		remote: StatModel;
+		local: FileStatModel;
+		remote: FileStatModel;
 		options: { localPath: string; remotePath: string };
 		strategy: ConflictStrategy;
 		useGitStyle: boolean;
 	}) => {
 		const { local, remote, options, strategy, useGitStyle } = params;
-		if (strategy === ConflictStrategy.Skip || local.isDir || remote.isDir) return;
+		if (strategy === ConflictStrategy.Skip) return;
 		if (strategy === ConflictStrategy.KeepLocal) {
 			tasks.push(taskFactory.createPushTask({ ...options, local }));
 			return;
@@ -403,6 +403,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 				throw new Error(message);
 			},
 			LOCAL_DIR_PUSH: () => {
+				if (!local.isDir) return;
 				logger.debug(`Replace remote file \`${remotePath}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
@@ -410,6 +411,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
 			},
 			REMOTE_FILE_PULL: () => {
+				if (!remote.isDir) return;
 				logger.debug(`Replace local directory \`${localPath}\` with remote file`, {
 					reason: 'remote file changed but not local',
 				});
@@ -417,6 +419,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 				tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
 			},
 			LOCAL_FILE_PUSH: () => {
+				if (local.isDir) return;
 				logger.debug(`Replace remote directory \`${remotePath}\` with local file`, {
 					reason: 'local file changed but not remote',
 				});
@@ -424,6 +427,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 				tasks.push(taskFactory.createPushTask({ ...options, local }));
 			},
 			REMOTE_DIR_PULL: () => {
+				if (!remote.isDir) return;
 				logger.debug(`Replace local file \`${localPath}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});

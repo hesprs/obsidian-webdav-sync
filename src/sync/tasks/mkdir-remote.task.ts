@@ -1,9 +1,9 @@
-import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
+import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { statWebDAVItem } from '~/utils/stat-item';
 import { BaseTask, toTaskError } from './task.interface';
 
-export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalStat> {
+export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat> {
 	readonly name = 'createRemoteDir';
 
 	async exec() {

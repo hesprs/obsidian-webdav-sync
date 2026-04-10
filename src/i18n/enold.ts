@@ -141,11 +141,11 @@ export default {
 				'Files or folders matching these patterns will be ignored during sync. Use * for wildcard matching.',
 			exclude: {
 				name: 'Exclusion rules',
-				desc: 'Files/folders matching these patterns will not be synced.',
+				desc: 'Files/folders matching these glob patterns will not be synced. Please remember to add file extensions (for example, .md) if you want to exclude files.',
 			},
 			include: {
 				name: 'Inclusion rules',
-				desc: 'Files/folders matching these patterns will be synced (if defined).',
+				desc: 'Files/folders matching these glob patterns will be synced (if defined). Please remember to add file extensions (for example, .md) if you want to include files.',
 			},
 		},
 		skipLargeFiles: {

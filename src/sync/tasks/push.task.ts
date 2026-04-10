@@ -1,4 +1,4 @@
-import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
+import type { OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.interface';
 import { arrayBufferToText } from '~/platform/binary';
 import { getLocalContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
@@ -6,7 +6,7 @@ import { statWebDAVItem } from '~/utils/stat-item';
 import { isMergeablePath } from '../utils/is-mergeable-path';
 import { BaseTask, toTaskError } from './task.interface';
 
-export default class PushTask extends BaseTask<OptionsWithLocalStat> {
+export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 	readonly name = 'upload';
 
 	async exec() {

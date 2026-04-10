@@ -8,8 +8,10 @@ import type { SyncEngine } from '..';
 import type {
 	MergeTaskOptions,
 	OptionsWithBothStats,
-	OptionsWithLocalStat,
-	OptionsWithRemoteStat,
+	OptionsWithLocalFileStat,
+	OptionsWithLocalFolderStat,
+	OptionsWithRemoteFileStat,
+	OptionsWithRemoteFolderStat,
 	SyncDecisionInput,
 	TaskFactory,
 	TaskOptions,
@@ -91,9 +93,9 @@ export default class TwoWaySyncDecider {
 		};
 
 		const taskFactory: TaskFactory = {
-			createPullTask: (options: OptionsWithRemoteStat) =>
+			createPullTask: (options: OptionsWithRemoteFileStat) =>
 				new PullTask({ ...commonTaskOptions, ...options }),
-			createPushTask: (options: OptionsWithLocalStat) =>
+			createPushTask: (options: OptionsWithLocalFileStat) =>
 				new PushTask({ ...commonTaskOptions, ...options }),
 			createMergeTask: (options: MergeTaskOptions) =>
 				new MergeTask({ ...commonTaskOptions, ...options }),
@@ -101,9 +103,9 @@ export default class TwoWaySyncDecider {
 				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
 			createRemoveRemoteTask: (options: TaskOptions) =>
 				new RemoveRemoteTask({ ...commonTaskOptions, ...options }),
-			createMkdirLocalTask: (options: OptionsWithRemoteStat) =>
+			createMkdirLocalTask: (options: OptionsWithRemoteFolderStat) =>
 				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
-			createMkdirRemoteTask: (options: OptionsWithLocalStat) =>
+			createMkdirRemoteTask: (options: OptionsWithLocalFolderStat) =>
 				new MkdirRemoteTask({ ...commonTaskOptions, ...options }),
 			createCleanRecordTask: (options: TaskOptions) =>
 				new CleanRecordTask({ ...commonTaskOptions, ...options }),

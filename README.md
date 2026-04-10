@@ -84,7 +84,7 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [ ] Saving WebDAV credentials in Obsidian Keychain
 - [x] Allow users to adjust rate and concurrency limits
 - [x] Enhance observability of sync progress
-- [ ] Refactor traversal and task execution to eliminate race conditions (#43)
+- [ ] Implement E2E encryption like the one in Remotely Save
 
 ## License and Copyright
 
