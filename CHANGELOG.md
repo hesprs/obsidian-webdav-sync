@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.2.0 - 2026-04-11
+
+### Memory and performance optimizations
+
+- Replaced the rxjs-based sync event bus with lightweight hooks/ref helpers, simplifying sync state propagation across the modal, ribbon, commands, unload flow, and related UI/services.
+- Refactored sync task handling and logging to reduce noise, tighten typing, remove unnecessary async/await patterns, and simplify progress summary structures.
+- Changed planning to create tasks directly from current file stats instead of snapshot-based planning, and moved file-content loading into push/pull/merge tasks for lazier, more targeted fetches.
+- Removed the planning “deciding” substage and updated progress/i18n text accordingly.
+- Introduced a maxConcurrentSyncTasks setting and updated task optimization to chunk work by the new concurrency limit.
+- Raised the default maxConcurrentWebDAVCalls to 100 and migrated existing configs from 0.
+
+### Sync correctness and compatibility
+
+- Updated delete-confirmation reupload handling to rebuild uploads from the current vault state.
+- Added compatibility fixes for obsidian-paste-image-rename by preserving ctime on local file creation during pull and separating file vs folder stats in task interfaces.
+- Adjusted conflict resolution logic to handle file-only conflicts more accurately.
+- Added remote mkdir handling when reuploading deleted directories.
+- Removed unnecessary recursive remote directory creation in mkdir handling.
+- Eliminated unnecessary async calls in the two-way decider to improve planning performance.
+
+### Localization, docs, and maintenance
+
+- Added Russian translations for the webdav explorer UI.
+
 ## Obsidian WebDAV Sync v2.1.0 - 2026-04-08
 
 ### Sync planning and execution
