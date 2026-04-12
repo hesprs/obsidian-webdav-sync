@@ -1,5 +1,3 @@
-import { normalizePath } from 'obsidian';
-
 function splitSegments(path: string): string[] {
 	const normalized = path.replaceAll('\\', '/');
 	const segments = normalized.split('/');
@@ -50,7 +48,7 @@ export function normalizePathToAbsolute(
 }
 
 export function normalizeVaultPath(path: string): string {
-	return normalizePath(path);
+	return splitSegments(path).join('/');
 }
 
 export function normalizeBaseDir(path: string): string {
