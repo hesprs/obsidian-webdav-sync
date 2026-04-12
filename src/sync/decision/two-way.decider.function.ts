@@ -1,13 +1,13 @@
 import type { FileStatModel, FolderStatModel, StatModel } from '~/types';
 import i18n from '~/i18n';
-import { normalizeRemotePathToAbsolute } from '~/platform/path';
-import { SyncMode } from '~/settings';
+import { normalizePathToAbsolute } from '~/platform/path';
+import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import logger from '~/utils/logger';
 import type { SyncDecisionInput } from './sync-decision.interface';
-import { ConflictStrategy } from '../tasks/merge.task';
 import { BaseTask } from '../tasks/task.interface';
 import isChanged from '../utils/is-changed';
+import { isMergeablePath } from '../utils/is-mergeable-path';
 
 export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 	const {
@@ -74,28 +74,34 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 		remote: FileStatModel;
 		options: { localPath: string; remotePath: string };
 		strategy: ConflictStrategy;
+		unmergeableStrategy: UnmergeableStrategy;
 		useGitStyle: boolean;
 	}) => {
-		const { local, remote, options, strategy, useGitStyle } = params;
-		if (strategy === ConflictStrategy.Skip) return;
-		if (strategy === ConflictStrategy.KeepLocal) {
-			tasks.push(taskFactory.createPushTask({ ...options, local }));
-			return;
-		}
-		if (strategy === ConflictStrategy.KeepRemote) {
-			tasks.push(taskFactory.createPullTask({ ...options, remote }));
-			return;
-		}
-		if (strategy === ConflictStrategy.LatestTimeStamp) {
-			if (local.mtime >= remote.mtime) {
+		function commonRoutes(strategy: UnmergeableStrategy | ConflictStrategy) {
+			if (strategy === UnmergeableStrategy.Skip) return;
+			if (strategy === UnmergeableStrategy.KeepLocal) {
 				tasks.push(taskFactory.createPushTask({ ...options, local }));
-				return;
+				return true;
 			}
-			tasks.push(taskFactory.createPullTask({ ...options, remote }));
-			return;
+			if (strategy === UnmergeableStrategy.KeepRemote) {
+				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				return true;
+			}
+			if (strategy === UnmergeableStrategy.LatestTimeStamp) {
+				if (local.mtime >= remote.mtime) {
+					tasks.push(taskFactory.createPushTask({ ...options, local }));
+					return true;
+				}
+				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				return true;
+			}
+			return false;
 		}
-
-		tasks.push(taskFactory.createMergeTask({ ...options, remote, local, useGitStyle }));
+		const { local, remote, options, strategy, unmergeableStrategy, useGitStyle } = params;
+		if (strategy === ConflictStrategy.DiffMatchPatch && !isMergeablePath(local.path))
+			commonRoutes(unmergeableStrategy);
+		else if (!commonRoutes(strategy))
+			tasks.push(taskFactory.createMergeTask({ ...options, remote, local, useGitStyle }));
 	};
 
 	// * sync files
@@ -104,9 +110,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 		const localPath = local?.path ?? path;
 		const remotePath =
 			remote?.path ??
-			(local
-				? normalizeRemotePathToAbsolute(remoteBaseDir, path, local.isDir)
-				: remoteBaseDir);
+			(local ? normalizePathToAbsolute(remoteBaseDir, path, local.isDir) : remoteBaseDir);
 
 		const options = {
 			remotePath,
@@ -178,6 +182,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 					options,
 					strategy: settings.conflictStrategy,
 					useGitStyle: settings.useGitStyle,
+					unmergeableStrategy: settings.unmergeableStrategy,
 				});
 			},
 			RECORD_REMOTE_LOCAL_PULL: () => {
@@ -234,6 +239,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 					remote,
 					options,
 					strategy: settings.conflictStrategy,
+					unmergeableStrategy: settings.unmergeableStrategy,
 					useGitStyle: settings.useGitStyle,
 				});
 			},
@@ -262,9 +268,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 		const localPath = local?.path ?? path;
 		const remotePath =
 			remote?.path ??
-			(local
-				? normalizeRemotePathToAbsolute(remoteBaseDir, path, local.isDir)
-				: remoteBaseDir);
+			(local ? normalizePathToAbsolute(remoteBaseDir, path, local.isDir) : remoteBaseDir);
 		const options = {
 			remotePath,
 			localPath,

@@ -1,8 +1,7 @@
 import { App, Modal } from 'obsidian';
 import { getDirectoryContents } from '~/api';
-import { normalizeBaseDir, remoteBasename } from '~/platform/path';
+import { normalizeBaseDir, normalizePathToAbsolute, remoteBasename } from '~/platform/path';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
-import { remoteToStatModel } from '~/utils/to-stat-model';
 import WebDAVSyncPlugin from '..';
 import { mount as mountWebDAVExplorer } from './explorer';
 
@@ -33,8 +32,13 @@ export default class SelectRemoteBaseDirModal extends Modal {
 						target,
 					);
 					return items.map((fileStat) => {
-						const stat = remoteToStatModel(fileStat, this.plugin.settings.remoteDir);
-						return { ...stat, basename: remoteBasename(stat.path) };
+						const isDir = fileStat.type === 'directory';
+						const path = normalizePathToAbsolute(
+							this.plugin.settings.remoteDir,
+							fileStat.filename,
+							isDir,
+						);
+						return { path, isDir, basename: remoteBasename(path) };
 					});
 				},
 				mkdirs: async (path) => {

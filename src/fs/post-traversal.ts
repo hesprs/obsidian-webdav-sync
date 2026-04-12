@@ -1,4 +1,3 @@
-import { isNil } from 'lodash-es';
 import type { StatsMap } from '~/types';
 import { vaultDirname } from '~/platform/path';
 import { buildRules, needIncludeFromGlobRules, type GlobMatchOptions } from '~/utils/glob-match';
@@ -19,8 +18,8 @@ export default function postTraversal(
 	const inclusions = buildRules(filterRules?.inclusionRules);
 
 	for (const [path, stat] of stats) {
-		if (path.length === 0 || isNil(stat)) continue;
-		if (!needIncludeFromGlobRules(stat.path, inclusions, exclusions)) {
+		if (path.length === 0) continue;
+		if (!needIncludeFromGlobRules(path, inclusions, exclusions)) {
 			logger.debug(`Skipping ${stat.path} due to exclusion rules.`);
 			continue;
 		}

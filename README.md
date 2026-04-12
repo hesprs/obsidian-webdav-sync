@@ -78,6 +78,14 @@ Configuration:
 
 ## Common Questions
 
+<details><summary>Does this plugin support syncing Obsidian config folder (.obsidian)?</summary>
+
+Yes, but this folder is excluded from syncing by default. To sync specific files or folders inside, (for example, Obsidian settings), you can go to plugin settings - `Filter Rules` - `Inclusion rules` and add a new rule `.obsidian/app.json`.
+
+To sync the entire folder, which includes all settings, CSS snippets, and plugins, go to plugin settings - `Filter Rules` - `Exclusion rules`, and remove `.obsidian`.
+
+</details>
+
 <details><summary>Why 401 unauthorized error happens?</summary>
 
 The most likely cause of this error is the rate limit of your WebDAV provider. You can adjust the rate control in the plugin settings.
@@ -97,6 +105,8 @@ If the error persists after retrying, please [open an issue](https://github.com/
 <details><summary>How should I manage my WebDAV storage when using this plugin?</summary>
 
 According to this plugin's [file handling strategy](https://hesprs.github.io/projects/obsidian-webdav-sync#technical-breakdown), all remote changes will be propagated to all vaults. So it's generally not recommended to manually manage your WebDAV storage unless you intend to add / remove these files.
+
+The only scenario you may need to manually delete some files happens when you exclude some files that were previously synced, now they will not be detected but remain on your WebDAV. These files are kept on remote to prevent false deletion. If you are sure that you have excluded these files in ALL your devices, you can manually clean up these files on your WebDAV.
 
 </details>
 

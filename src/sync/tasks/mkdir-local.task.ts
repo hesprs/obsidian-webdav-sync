@@ -9,7 +9,7 @@ export default class MkdirLocalTask extends BaseTask<OptionsWithRemoteFolderStat
 	async exec() {
 		try {
 			await this.vault.adapter.mkdir(this.localPath);
-			const local = statVaultItem(this.vault, this.localPath);
+			const local = await statVaultItem(this.vault, this.localPath);
 			if (!local || !local.isDir)
 				throw new Error(
 					`failed to read local directory stat after creation: ${this.localPath}`,

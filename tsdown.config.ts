@@ -34,7 +34,6 @@ export default defineConfig({
 		file: 'dist/main.js',
 		codeSplitting: false,
 	},
-	sourcemap: false,
 	format: 'cjs',
 	copy: [
 		{

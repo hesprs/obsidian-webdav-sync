@@ -1,7 +1,6 @@
 import { App, PluginSettingTab } from 'obsidian';
 import type WebDAVSyncPlugin from '~/index';
 import type { GlobMatchOptions } from '~/utils/glob-match';
-import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
@@ -14,6 +13,21 @@ export enum SyncMode {
 	LOOSE = 'loose',
 }
 
+export enum ConflictStrategy {
+	DiffMatchPatch = 'diffMatchPatch',
+	LatestTimeStamp = 'latestTimestamp',
+	KeepLocal = 'keepLocal',
+	KeepRemote = 'keepRemote',
+	Skip = 'skip',
+}
+
+export enum UnmergeableStrategy {
+	LatestTimeStamp = 'latestTimestamp',
+	KeepLocal = 'keepLocal',
+	KeepRemote = 'keepRemote',
+	Skip = 'skip',
+}
+
 export interface PluginSettings {
 	serverUrl: string;
 	account: string;
@@ -22,6 +36,7 @@ export interface PluginSettings {
 	showSyncStatusInNotificationOnMobile: boolean;
 	useGitStyle: boolean;
 	conflictStrategy: ConflictStrategy;
+	unmergeableStrategy: UnmergeableStrategy;
 	confirmBeforeSync: boolean;
 	confirmBeforeDeleteInAutoSync: boolean;
 	syncMode: SyncMode;

@@ -115,6 +115,7 @@ export default class TwoWaySyncDecider {
 				conflictStrategy: this.settings.conflictStrategy,
 				useGitStyle: this.settings.useGitStyle,
 				syncMode: this.settings.syncMode,
+				unmergeableStrategy: this.settings.unmergeableStrategy,
 			},
 			currentLocalStats,
 			currentRemoteStats,

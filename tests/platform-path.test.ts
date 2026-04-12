@@ -6,7 +6,7 @@ import {
 	remoteBasename,
 	vaultBasename,
 	vaultDirname,
-	normalizeRemotePathToRelative,
+	normalizePathToRelative,
 } from '~/platform/path';
 
 describe('remote path helpers', () => {
@@ -18,16 +18,14 @@ describe('remote path helpers', () => {
 	});
 
 	it('maps absolute remote paths to vault-relative paths', () => {
-		expect(normalizeRemotePathToRelative('/base/', '/base/Folder/Note.md')).toBe(
-			'Folder/Note.md',
-		);
-		expect(normalizeRemotePathToRelative('/', '/Folder/Sub.md')).toBe('Folder/Sub.md');
-		expect(normalizeRemotePathToRelative('/base/', '/base/')).toBe('/');
+		expect(normalizePathToRelative('/base/', '/base/Folder/Note.md')).toBe('Folder/Note.md');
+		expect(normalizePathToRelative('/', '/Folder/Sub.md')).toBe('Folder/Sub.md');
+		expect(normalizePathToRelative('/base/', '/base/')).toBe('/');
 	});
 
 	it('keeps spaces and non-ascii names stable', () => {
 		expect(remoteBasename('/base/空 格.md')).toBe('空 格.md');
-		expect(normalizeRemotePathToRelative('/base/', '/base/空 格.md')).toBe('空 格.md');
+		expect(normalizePathToRelative('/base/', '/base/空 格.md')).toBe('空 格.md');
 	});
 });
 

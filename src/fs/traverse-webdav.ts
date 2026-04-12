@@ -1,6 +1,6 @@
 import type { StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
-import { normalizeRemotePathToRelative } from '~/platform/path';
+import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
 import { apiLimiter } from '~/utils/api-limiter';
 import { isRetryableError } from '~/utils/is-retryable-error';
@@ -66,12 +66,17 @@ export async function traverseWebDAV({
 		await Promise.all(
 			currentLevelPaths.map(async (currentPath) => {
 				try {
-					const resultItems = (await getContent(currentPath)).map((stat) =>
-						remoteToStatModel(stat, remoteDir),
-					);
+					const resultItems = (await getContent(currentPath)).map((stat) => {
+						const path = normalizePathToAbsolute(
+							remoteDir,
+							stat.filename,
+							stat.type === 'directory',
+						);
+						return remoteToStatModel(stat, path);
+					});
 
 					for (const item of resultItems) {
-						const vaultPath = normalizeRemotePathToRelative(remoteDir, item.path);
+						const vaultPath = normalizePathToRelative(remoteDir, item.path);
 						result.set(vaultPath, item);
 						if (item.isDir) queue.push(item.path);
 					}
