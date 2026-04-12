@@ -8,6 +8,9 @@
 <h4 align="center">General-purpose & bidirectional WebDAV syncing for your vault.</h4>
 
 <p align="center">
+    <a href="https://github.com/hesprs/obsidian-webdav-sync/releases/latest">
+        <img src="https://img.shields.io/github/downloads/hesprs/obsidian-webdav-sync/main.js?style=flat&label=⬇ Downloads&labelColor=008811&color=333333&displayAssetName=false" alt="accumulated downloads">
+    </a>
     <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
         <img src="https://img.shields.io/github/actions/workflow/status/hesprs/obsidian-webdav-sync/ci.yml?style=flat&logo=github&logoColor=white&label=CI&labelColor=d4ab00&color=333333" alt="ci">
     </a>
@@ -18,7 +21,10 @@
     <a href="./assets/README.zh-Hans.md">
         <strong>简体中文</strong>
     </a> • 
-    <a href="#license-and-copyright">
+    <a href="#common-questions">
+        <strong>Q & A</strong>
+    </a> • 
+    <a href="#license-copyright-and-originality">
         <strong>License</strong>
     </a>
 </p>
@@ -70,11 +76,29 @@ Configuration:
 4. Select remote directory
 5. Start sync
 
-## Notes
+## Common Questions
 
-- Initial sync may take longer for large vaults
-- Backup important notes before first sync
-- The file presence resolution and note merging are robust, but not perfect
+<details><summary>Why **`401 unauthorized`** error happens?</summary>
+
+The most likely cause of this error is the rate limit of your WebDAV provider. You can adjust the rate control in the plugin settings.
+
+Detailed solution is in [this issue](https://github.com/hesprs/obsidian-webdav-sync/issues/57).
+
+</details>
+
+<details><summary>What should I do if I get an error during syncing?</summary>
+
+You can simply retry the sync. An error does not block later syncs nor corrupt your files.
+
+If the error persists after retrying, please [open an issue](https://github.com/hesprs/obsidian-webdav-sync/issues/new), describing the error, your setup, with the support log attached.
+
+</details>
+
+<details><summary>How should I manage my WebDAV storage when using this plugin?</summary>
+
+According to this plugin's [file handling strategy](https://hesprs.github.io/projects/obsidian-webdav-sync#technical-breakdown), all remote changes will be propagated to all vaults. So it's generally not recommended to manually manage your WebDAV storage unless you intend to add / remove these files.
+
+</details>
 
 ## Development Roadmap
 
@@ -86,8 +110,12 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] Enhance observability of sync progress
 - [ ] Implement E2E encryption like the one in Remotely Save
 
-## License and Copyright
+## License, Copyright, and Originality
 
-Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on no vendor lock-in, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html). This project is not affiliated with Nutstore.
+Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on universality, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
 
-Copyright ©️ 2026 Hesprs (Hēsperus) (modifications), 2025-2026 Nutstore (unchanged parts)
+<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 76018, ratio remained: 39% -->
+
+Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 39% (till April 11 2026) of the effort is contributed by Nutstore.
+
+Copyright ©️ 2026 Hesprs (Hēsperus), 2025-2026 Nutstore
