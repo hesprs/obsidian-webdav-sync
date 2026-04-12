@@ -14,13 +14,19 @@ import ScheduledSyncService from './services/scheduled-sync.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
-import { type PluginSettings, SyncSettingTab, setPluginInstance, SyncMode } from './settings';
+import {
+	type PluginSettings,
+	SyncSettingTab,
+	setPluginInstance,
+	SyncMode,
+	ConflictStrategy,
+	UnmergeableStrategy,
+} from './settings';
 import { processSettings } from './settings/process';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
-import { ConflictStrategy } from './sync/tasks/merge.task';
 import { apiLimiter } from './utils/api-limiter';
 
-function createGlobMathOptions(expr: string) {
+function createGlobMatchOptions(expr: string) {
 	return {
 		expr,
 		options: {
@@ -39,13 +45,30 @@ export default class WebDAVSyncPlugin extends Plugin {
 		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
+		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
 		confirmBeforeSync: true,
 		confirmBeforeDeleteInAutoSync: true,
 		syncMode: SyncMode.LOOSE,
 		filterRules: {
-			exclusionRules: ['**/.git', '**/.DS_Store', '**/.trash', this.app.vault.configDir].map(
-				createGlobMathOptions,
-			),
+			exclusionRules: [
+				'**/.git',
+				'**/.github',
+				'**/.gitlab',
+				'**/.svn',
+				'**/node_modules',
+				'**/.DS_Store',
+				'**/__MACOSX',
+				'**/desktop.ini',
+				'**/Thumbs.db',
+				'**/.trash',
+				'**/~$*.doc',
+				'**/~$*.docx',
+				'**/~$*.ppt',
+				'**/~$*.pptx',
+				'**/~$*.xls',
+				'**/~$*.xlsx',
+				this.app.vault.configDir,
+			].map(createGlobMatchOptions),
 			inclusionRules: [],
 		},
 		skipLargeFiles: {

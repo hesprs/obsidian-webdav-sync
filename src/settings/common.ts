@@ -2,8 +2,7 @@ import { clamp } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import i18n from '~/i18n';
 import { languages } from '~/i18n';
-import { ConflictStrategy } from '~/sync/tasks/merge.task';
-import { SyncMode } from './index';
+import { ConflictStrategy, SyncMode, UnmergeableStrategy } from './index';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {
@@ -35,10 +34,47 @@ export default class CommonSettings extends BaseSettings {
 					.addOption(ConflictStrategy.Skip, i18n.t('settings.conflictStrategy.skip'))
 					.setValue(this.plugin.settings.conflictStrategy)
 					.onChange((value) => {
-						this.plugin.settings.conflictStrategy = value as ConflictStrategy;
-						void this.plugin.saveSettings();
+						const originalValue = this.plugin.settings.conflictStrategy;
+						if (value !== originalValue) {
+							this.plugin.settings.conflictStrategy = value as ConflictStrategy;
+							void this.plugin.saveSettings();
+							if (
+								(originalValue === ConflictStrategy.DiffMatchPatch) !==
+								(value === ConflictStrategy.DiffMatchPatch)
+							)
+								this.display();
+						}
 					}),
 			);
+
+		if (this.plugin.settings.conflictStrategy === ConflictStrategy.DiffMatchPatch)
+			new Setting(this.containerEl)
+				.setName(i18n.t('settings.unmergeableStrategy.name'))
+				.setDesc(i18n.t('settings.unmergeableStrategy.desc'))
+				.addDropdown((dropdown) =>
+					dropdown
+						.addOption(
+							UnmergeableStrategy.LatestTimeStamp,
+							i18n.t('settings.conflictStrategy.latestTimestamp'),
+						)
+						.addOption(
+							UnmergeableStrategy.KeepLocal,
+							i18n.t('settings.conflictStrategy.keepLocal'),
+						)
+						.addOption(
+							UnmergeableStrategy.KeepRemote,
+							i18n.t('settings.conflictStrategy.keepRemote'),
+						)
+						.addOption(
+							UnmergeableStrategy.Skip,
+							i18n.t('settings.conflictStrategy.skip'),
+						)
+						.setValue(this.plugin.settings.unmergeableStrategy)
+						.onChange((value) => {
+							this.plugin.settings.unmergeableStrategy = value as UnmergeableStrategy;
+							void this.plugin.saveSettings();
+						}),
+				);
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.useGitStyle.name'))

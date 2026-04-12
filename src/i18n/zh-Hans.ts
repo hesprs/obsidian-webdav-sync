@@ -61,11 +61,15 @@ export default {
 		conflictStrategy: {
 			name: '冲突解决策略',
 			desc: '选择解决文件冲突的方式。\n注意：建议在使用自动合并功能前，先手动备份重要文件，以防数据丢失。',
-			diffMatchPatch: '智能合并（推荐）',
+			diffMatchPatch: '智能合并',
 			latestTimestamp: '使用最新版本',
 			keepLocal: '保留本地版本',
 			keepRemote: '保留远程版本',
 			skip: '跳过冲突',
+		},
+		unmergeableStrategy: {
+			name: '无法合并的冲突解决策略',
+			desc: '为智能合并无法处理的文件（所有非 Markdown 文件）选择备选策略。',
 		},
 		confirmBeforeSync: {
 			name: '手动同步前确认',
@@ -181,7 +185,6 @@ export default {
 			folderButFile: '期望是文件夹，却发现是文件: {{path}}',
 			notFound: '未找到: {{path}}',
 			localPathNotFound: '本地路径未找到: {{path}}',
-			mergeNotSupported: '该文件类型暂不支持合并',
 			failedToAutoMerge: '自动合并失败',
 			failedToUploadMerged: '上传合并内容失败',
 			conflictsMarkedInFile: '发现冲突，已在文件中标记',

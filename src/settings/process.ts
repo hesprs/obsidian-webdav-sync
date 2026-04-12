@@ -1,8 +1,10 @@
 import { parse as bytesParse } from 'bytes-iec';
+import type { GlobMatchOptions } from '~/utils/glob-match';
+import { hash } from '~/platform/crypto';
 import { normalizeBaseDir } from '~/platform/path';
-import { ConflictStrategy } from '~/sync/tasks/merge.task';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
+import { ConflictStrategy } from '.';
 
 // TODO: remove migration in October 2026
 export function processSettings(plugin: WebDAVSyncPlugin): void {
@@ -52,18 +54,44 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 		logger.info(`Set max concurrent WebDAV calls to 100.`);
 	}
 
-	// ensure config dir is excluded
-	const configDir = plugin.app.vault.configDir;
-	const hasConfigDirRule = plugin.settings.filterRules.exclusionRules.some(
-		(rule) => rule.expr === configDir,
+	// remove at 22 April 2026
+	const originalHash = hash(
+		['**/.git', '**/.DS_Store', '**/.trash', plugin.app.vault.configDir].map(
+			createGlobMatchOptions,
+		),
 	);
-	if (!hasConfigDirRule) {
-		plugin.settings.filterRules.exclusionRules.push({
-			expr: configDir,
-			options: { caseSensitive: false },
-		});
+	if (hash(plugin.settings.filterRules.exclusionRules) === originalHash) {
 		changed = true;
+		plugin.settings.filterRules.exclusionRules = [
+			'**/.git',
+			'**/.github',
+			'**/.gitlab',
+			'**/.svn',
+			'**/node_modules',
+			'**/.DS_Store',
+			'**/__MACOSX',
+			'**/desktop.ini',
+			'**/Thumbs.db',
+			'**/.trash',
+			'**/~$*.doc',
+			'**/~$*.docx',
+			'**/~$*.ppt',
+			'**/~$*.pptx',
+			'**/~$*.xls',
+			'**/~$*.xlsx',
+			plugin.app.vault.configDir,
+		].map(createGlobMatchOptions);
+		logger.info(`Migrated exclusion rules.`);
 	}
 
 	if (changed) void plugin.saveSettings();
+}
+
+function createGlobMatchOptions(expr: string) {
+	return {
+		expr,
+		options: {
+			caseSensitive: false,
+		},
+	} satisfies GlobMatchOptions;
 }

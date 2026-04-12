@@ -2,7 +2,6 @@ import type { MergeTaskOptions } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
 import i18n from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
-import { isMergeablePath } from '~/sync/utils/is-mergeable-path';
 import { getLocalContent, getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
@@ -10,26 +9,11 @@ import { statVaultItem, statWebDAVItem } from '~/utils/stat-item';
 import { resolveByIntelligentMerge } from '../utils/merge';
 import { BaseTask, toTaskError } from './task.interface';
 
-export enum ConflictStrategy {
-	DiffMatchPatch = 'diffMatchPatch',
-	LatestTimeStamp = 'latestTimestamp',
-	KeepLocal = 'keepLocal',
-	KeepRemote = 'keepRemote',
-	Skip = 'skip',
-}
-
 export default class MergeTask extends BaseTask<MergeTaskOptions> {
 	readonly name = 'merge';
 
-	private isMergeableConflict() {
-		return isMergeablePath(this.localPath) && isMergeablePath(this.remotePath);
-	}
-
 	async exec() {
 		try {
-			if (!this.isMergeableConflict())
-				throw new Error(i18n.t('sync.error.mergeNotSupported'));
-
 			let localBuffer: ArrayBuffer;
 			try {
 				localBuffer = await getLocalContent(this.vault, this.localPath);
@@ -99,7 +83,7 @@ export default class MergeTask extends BaseTask<MergeTaskOptions> {
 					new TextEncoder().encode(mergedText).buffer,
 					{ ctime: this.remote.mtime - 1000 },
 				);
-				const fetchedLocalStat = statVaultItem(this.vault, this.localPath);
+				const fetchedLocalStat = await statVaultItem(this.vault, this.localPath);
 				if (!fetchedLocalStat || fetchedLocalStat.isDir)
 					throw new Error(
 						`failed to read local file stat after intelligent merge: ${this.localPath}`,

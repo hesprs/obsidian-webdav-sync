@@ -6,10 +6,10 @@ export default class RemoveLocalTask extends BaseTask {
 
 	async exec() {
 		try {
-			const file = this.vault.getAbstractFileByPath(this.localPath);
-			if (!file) return { success: true } as const;
+			const exists = await this.vault.adapter.exists(this.localPath);
+			if (!exists) return { success: true } as const;
 
-			await this.vault.trash(file, false);
+			await this.vault.adapter.trashLocal(this.localPath);
 			await this.syncRecord.removeRecords(this.localPath);
 			return { success: true } as const;
 		} catch (e) {

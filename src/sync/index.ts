@@ -202,7 +202,7 @@ export class SyncEngine {
 						removeLocalTasks,
 					).openAndWait();
 
-					const reuploadTasks = this.convertDeleteToUpload(tasksToReupload);
+					const reuploadTasks = await this.convertDeleteToUpload(tasksToReupload);
 
 					tasks = [...tasksToDelete, ...reuploadTasks, ...otherTasks];
 				}
@@ -281,11 +281,11 @@ export class SyncEngine {
 		};
 	}
 
-	private convertDeleteToUpload(tasks: RemoveLocalTask[]) {
+	private async convertDeleteToUpload(tasks: RemoveLocalTask[]) {
 		const final: (PushTask | MkdirRemoteTask)[] = [];
 		for (const task of tasks) {
 			const options = task.options;
-			const local = statVaultItem(this.vault, options.localPath);
+			const local = await statVaultItem(this.vault, options.localPath);
 			if (!local)
 				throw new Error(`Local file item not found during reupload: ${options.localPath}`);
 			if (local.isDir) final.push(new MkdirRemoteTask({ ...options, local }));

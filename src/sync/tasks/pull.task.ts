@@ -17,7 +17,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 			});
 
 			// no race condition since we've just written it
-			const local = statVaultItem(this.vault, this.localPath);
+			const local = await statVaultItem(this.vault, this.localPath);
 			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({

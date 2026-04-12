@@ -60,11 +60,15 @@ export default {
 		conflictStrategy: {
 			name: 'Conflict resolution strategy',
 			desc: 'Choose how to resolve file conflicts. \nNote: we recommend backing up important files before using auto-merge to prevent data loss.',
-			diffMatchPatch: 'Smart merge (recommended)',
+			diffMatchPatch: 'Smart merge',
 			latestTimestamp: 'Use latest version',
 			keepLocal: 'Keep local version',
 			keepRemote: 'Keep remote version',
 			skip: 'Skip conflicts',
+		},
+		unmergeableStrategy: {
+			name: 'Unmergeable conflict resolution strategy',
+			desc: 'Choose the alternative strategy for files that are not resolvable by smart merge (all non-markdown files).',
 		},
 		confirmBeforeSync: {
 			name: 'Confirm before manual sync execution',
@@ -183,7 +187,6 @@ export default {
 			folderButFile: 'Expected folder but found file: {{path}}',
 			notFound: 'Not found: {{path}}',
 			localPathNotFound: 'Local path not found: {{path}}',
-			mergeNotSupported: 'This file type is currently not supported for merging',
 			failedToAutoMerge: 'Failed to auto merge',
 			failedToUploadMerged: 'Failed to upload merged content',
 			conflictsMarkedInFile: 'Conflicts found and marked in file',

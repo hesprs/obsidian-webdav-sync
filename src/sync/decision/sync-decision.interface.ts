@@ -1,10 +1,10 @@
 import type { RecordStatsMap, StatsMap, StatModel, FileStatModel, FolderStatModel } from '~/types';
-import { SyncMode } from '~/settings';
-import { ConflictStrategy } from '../tasks/merge.task';
+import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '~/settings';
 import { BaseTask } from '../tasks/task.interface';
 
 export interface SyncDecisionSettings {
 	conflictStrategy: ConflictStrategy;
+	unmergeableStrategy: UnmergeableStrategy;
 	useGitStyle: boolean;
 	syncMode: SyncMode;
 }

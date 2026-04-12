@@ -1,3 +1,5 @@
+import { normalizePath } from 'obsidian';
+
 function splitSegments(path: string): string[] {
 	const normalized = path.replaceAll('\\', '/');
 	const segments = normalized.split('/');
@@ -21,7 +23,7 @@ export function normalizeRemotePath(path: string) {
 	return normalized === '' ? '/' : `/${normalized}`;
 }
 
-export function normalizeRemotePathToRelative(remoteBaseDir: string, remotePath: string): string {
+export function normalizePathToRelative(remoteBaseDir: string, remotePath: string): string {
 	const normalizedBasePath = normalizeRemotePath(remoteBaseDir);
 	const normalizedRemotePath = normalizeRemotePath(remotePath);
 
@@ -35,8 +37,7 @@ export function normalizeRemotePathToRelative(remoteBaseDir: string, remotePath:
 	return normalizedRemotePath.replace(normalizedBasePath, '').slice(1);
 }
 
-// should only be used during WebDAV traversal (single source of inflow)
-export function normalizeRemotePathToAbsolute(
+export function normalizePathToAbsolute(
 	remoteBaseDir: string,
 	path: string,
 	isDir: boolean,
@@ -48,9 +49,8 @@ export function normalizeRemotePathToAbsolute(
 	return result;
 }
 
-// should only be used during stat vault item (single source of inflow)
 export function normalizeVaultPath(path: string): string {
-	return splitSegments(path).join('/');
+	return normalizePath(path);
 }
 
 export function normalizeBaseDir(path: string): string {
