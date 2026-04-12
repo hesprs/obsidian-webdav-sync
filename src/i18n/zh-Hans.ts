@@ -4,6 +4,12 @@ export default {
 	},
 	settings: {
 		title: 'WebDAV 设置',
+		sections: {
+			common: '通用设置',
+			control: '速率与大文件设置',
+			filters: '过滤规则',
+			development: '开发设置',
+		},
 		language: {
 			name: '语言',
 			desc: '选择界面语言',
@@ -60,11 +66,6 @@ export default {
 			keepLocal: '保留本地版本',
 			keepRemote: '保留远程版本',
 			skip: '跳过冲突',
-		},
-		sections: {
-			common: '通用设置',
-			control: '速率与大文件设置',
-			filters: '过滤规则',
 		},
 		confirmBeforeSync: {
 			name: '手动同步前确认',
@@ -161,7 +162,6 @@ export default {
 			invalidFormat: '无效的文件大小格式，请使用如 "10MB" 或 "500KB" 的格式',
 			exceedsMaxSize: '文件大小超过最大限制 500MB',
 		},
-		development: '开发设置',
 		log: {
 			name: '支持报告',
 			desc: '按同步运行导出可读的支持报告',
