@@ -78,7 +78,7 @@ Configuration:
 
 ## Common Questions
 
-<details><summary>Why **`401 unauthorized`** error happens?</summary>
+<details><summary>Why 401 unauthorized error happens?</summary>
 
 The most likely cause of this error is the rate limit of your WebDAV provider. You can adjust the rate control in the plugin settings.
 
