@@ -9,7 +9,7 @@
 
 <p align="center">
     <a href="https://github.com/hesprs/obsidian-webdav-sync/releases/latest">
-        <img src="https://img.shields.io/github/downloads/hesprs/obsidian-webdav-sync/main.js?style=flat&label=⬇ Downloads&labelColor=008811&color=333333&displayAssetName=false" alt="accumulated downloads">
+        <img src="https://img.shields.io/github/downloads/hesprs/obsidian-webdav-sync/main.js?style=flat&label=%E2%AC%87%20Downloads&labelColor=008811&color=333333&displayAssetName=false" alt="accumulated downloads">
     </a>
     <a href="https://github.com/hesprs/obsidian-webdav-sync/actions">
         <img src="https://img.shields.io/github/actions/workflow/status/hesprs/obsidian-webdav-sync/ci.yml?style=flat&logo=github&logoColor=white&label=CI&labelColor=d4ab00&color=333333" alt="ci">
@@ -22,7 +22,7 @@
         <strong>简体中文</strong>
     </a> • 
     <a href="#common-questions">
-        <strong>Q & A</strong>
+        <strong>Q&A</strong>
     </a> • 
     <a href="#license-copyright-and-originality">
         <strong>License</strong>
