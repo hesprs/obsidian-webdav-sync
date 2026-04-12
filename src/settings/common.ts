@@ -1,7 +1,6 @@
 import { clamp } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import i18n from '~/i18n';
-import { languages } from '~/i18n';
 import { ConflictStrategy, SyncMode, UnmergeableStrategy } from './index';
 import BaseSettings from './settings.base';
 
@@ -35,12 +34,13 @@ export default class CommonSettings extends BaseSettings {
 					.setValue(this.plugin.settings.conflictStrategy)
 					.onChange((value) => {
 						const originalValue = this.plugin.settings.conflictStrategy;
-						if (value !== originalValue) {
-							this.plugin.settings.conflictStrategy = value as ConflictStrategy;
+						const newValue = value as ConflictStrategy;
+						if (newValue !== originalValue) {
+							this.plugin.settings.conflictStrategy = newValue;
 							void this.plugin.saveSettings();
 							if (
 								(originalValue === ConflictStrategy.DiffMatchPatch) !==
-								(value === ConflictStrategy.DiffMatchPatch)
+								(newValue === ConflictStrategy.DiffMatchPatch)
 							)
 								this.display();
 						}
@@ -188,18 +188,6 @@ export default class CommonSettings extends BaseSettings {
 						void this.plugin.saveSettings();
 					}),
 			);
-
-		new Setting(this.containerEl)
-			.setName(i18n.t('settings.language.name'))
-			.setDesc(i18n.t('settings.language.desc'))
-			.addDropdown((dropdown) => {
-				dropdown.addOption('', i18n.t('settings.language.auto'));
-				for (const [code, name] of Object.entries(languages))
-					dropdown.addOption(code, name);
-				dropdown.setValue(this.plugin.settings.language).onChange((value) => {
-					if (value !== this.plugin.settings.language) void this.updateLanguage(value);
-				});
-			});
 	}
 
 	private handleStartupSyncDelayBlur(text: TextComponent, maxSeconds: number) {
@@ -233,12 +221,5 @@ export default class CommonSettings extends BaseSettings {
 		this.plugin.settings.scheduledSyncIntervalSeconds = finalValue * 60;
 		await this.plugin.saveSettings();
 		await this.plugin.scheduledSyncService.updateInterval();
-	}
-
-	private async updateLanguage(value: string) {
-		this.plugin.settings.language = value;
-		await this.plugin.saveSettings();
-		await this.plugin.i18nService.update();
-		this.settings.display();
 	}
 }

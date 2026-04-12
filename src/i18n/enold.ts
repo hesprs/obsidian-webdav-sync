@@ -9,11 +9,6 @@ export default {
 			filters: 'Filter rules',
 			development: 'Development settings',
 		},
-		language: {
-			name: 'Language',
-			desc: 'Select interface language',
-			auto: 'Auto detect',
-		},
 		account: {
 			name: 'Account',
 			desc: 'Enter your WebDAV account',

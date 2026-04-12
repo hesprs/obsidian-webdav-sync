@@ -5,8 +5,8 @@ import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
-import CommandService from './services/command.service';
-import I18nService from './services/i18n.service';
+import { setupCommands } from './services/command.setup';
+import { setupI18n } from './services/i18n.setup';
 import ObservabilityService from './services/observability.service';
 import { ProgressService } from './services/progress.service';
 import RealtimeSyncService from './services/realtime-sync.service';
@@ -88,18 +88,17 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	public syncStateStore = new IndexedDbSyncStateStore();
 	public baseTextStore = new IndexedDbBaseTextStore();
-	public i18nService = new I18nService(this);
 	public progressService = new ProgressService(this);
 	public observabilityService = new ObservabilityService(this);
 	public webDAVService = new WebDAVService(this);
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
-	public commandService = new CommandService(this);
 	public ribbonManager = new SyncRibbonManager(this);
 	public realtimeSyncService = new RealtimeSyncService(this, this.syncSchedulerService);
 	public scheduledSyncService = new ScheduledSyncService(this, this.syncSchedulerService);
 
 	async onload() {
+		setupI18n();
 		await this.loadSettings();
 		apiLimiter.setMaxConcurrent(this.settings.maxConcurrentWebDAVCalls);
 		apiLimiter.setMinTime(this.settings.minTimeBetweenWebDAVCalls);
@@ -108,6 +107,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		await migrateStorage(this);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
+		setupCommands(this);
 		await this.scheduledSyncService.start();
 	}
 

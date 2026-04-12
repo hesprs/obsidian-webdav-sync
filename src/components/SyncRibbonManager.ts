@@ -8,7 +8,7 @@ export class SyncRibbonManager {
 	private stopRibbonEl: HTMLElement;
 
 	constructor(private plugin: WebDAVSyncPlugin) {
-		this.startRibbonEl = this.plugin.addRibbonIcon(
+        this.startRibbonEl = this.plugin.addRibbonIcon(
 			'refresh-ccw',
 			i18n.t('sync.startButton'),
 			() => launchManualSync(this.plugin),
@@ -19,9 +19,9 @@ export class SyncRibbonManager {
 			syncCancel,
 		);
 		this.stopRibbonEl.classList.add('hidden');
-	}
+    }
 
-	public update() {
+	update() {
 		if (this.plugin.isSyncing) {
 			this.startRibbonEl.setAttr('aria-disabled', 'true');
 			this.startRibbonEl.addClass('webdav-sync-spinning');

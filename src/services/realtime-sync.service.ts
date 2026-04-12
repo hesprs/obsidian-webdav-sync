@@ -1,21 +1,30 @@
+import type { TAbstractFile } from 'obsidian';
 import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
+import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import type SyncSchedulerService from './sync-scheduler.service';
 import WebDAVSyncPlugin from '..';
 
 export default class RealtimeSyncService {
-	private onChange = async () => {
-		const settings = await useSettings();
-		if (!settings.realtimeSync) return;
+	private onChange = async (file: TAbstractFile, old?: string) => {
+		const { useFastSyncOnLocalChange, realtimeSync, filterRules } = await useSettings();
+		const exclusions = buildRules(filterRules.exclusionRules);
+		const inclusions = buildRules(filterRules.inclusionRules);
+		if (!realtimeSync) return;
+		if (
+			!needIncludeFromGlobRules(file.path, inclusions, exclusions) &&
+			!(old && needIncludeFromGlobRules(old, inclusions, exclusions))
+		)
+			return;
 
 		const currentRun = syncRun();
 		if (currentRun?.stage === 'executing') return;
 
 		await this.syncScheduler.requestSync({
 			mode: SyncStartMode.AUTO_SYNC,
-			runKind: settings.useFastSyncOnLocalChange ? SyncRunKind.fast : SyncRunKind.normal,
+			runKind: useFastSyncOnLocalChange ? SyncRunKind.fast : SyncRunKind.normal,
 			source: 'realtime',
 		});
 	};
