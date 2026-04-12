@@ -12,7 +12,7 @@
         <img src="https://img.shields.io/github/actions/workflow/status/hesprs/obsidian-webdav-sync/ci.yml?style=flat&logo=github&logoColor=white&label=CI&labelColor=d4ab00&color=333333" alt="ci">
     </a>
     <a href="https://github.com/hesprs/obsidian-webdav-sync/releases/latest">
-        <img src="https://img.shields.io/github/downloads/hesprs/obsidian-webdav-sync/main.js?style=flat&label=⬇ 下载量&labelColor=008811&color=333333&displayAssetName=false" alt="累计下载量">
+        <img src="https://img.shields.io/github/downloads/hesprs/obsidian-webdav-sync/main.js?style=flat&label=%E2%AC%87%20%E4%B8%8B%E8%BD%BD%E9%87%8F&labelColor=008811&color=333333&displayAssetName=false" alt="累计下载量">
     </a>
     <img src="https://img.shields.io/badge/Types-Strict-333333?logo=typescript&labelColor=blue&logoColor=white" alt="TypeScript">
 </p>
@@ -22,7 +22,7 @@
         <strong>English</strong>
     </a> • 
     <a href="#common-questions">
-        <strong>Q & A</strong>
+        <strong>Q&A</strong>
     </a> • 
     <a href="#许可版权与原创性">
         <strong>许可证</strong>
