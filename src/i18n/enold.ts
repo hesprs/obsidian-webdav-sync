@@ -3,6 +3,12 @@ export default {
 		filenameUnsupportedChars: 'File {{path}} contains unsupported characters: {{chars}}',
 	},
 	settings: {
+		sections: {
+			common: 'General',
+			control: 'Rate & file size control',
+			filters: 'Filter rules',
+			development: 'Development settings',
+		},
 		language: {
 			name: 'Language',
 			desc: 'Select interface language',
@@ -122,11 +128,6 @@ export default {
 			exceedsMax:
 				'Value exceeds maximum limit of {{max}} minutes (1 day), automatically adjusted',
 		},
-		sections: {
-			common: 'General',
-			control: 'Rate & file size control',
-			filters: 'Filter rules',
-		},
 		filters: {
 			name: 'Sync filters',
 			desc: 'Add paths to filter files or folders',
@@ -163,7 +164,6 @@ export default {
 			vaultCleared: 'Vault records cleared',
 			allCleared: 'All records cleared',
 		},
-		development: 'Development settings',
 		log: {
 			name: 'Support report',
 			desc: 'Export a readable support report grouped by sync run',

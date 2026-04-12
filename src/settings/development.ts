@@ -7,7 +7,7 @@ import BaseSettings from './settings.base';
 export default class DevelopmentSettings extends BaseSettings {
 	display() {
 		this.containerEl.empty();
-		new Setting(this.containerEl).setName(i18n.t('settings.development')).setHeading();
+		new Setting(this.containerEl).setName(i18n.t('settings.sections.development')).setHeading();
 
 		new Setting(this.containerEl)
 			.setName(i18n.t('settings.clearRecords.name'))
