@@ -1,5 +1,5 @@
 import { App, Modal, Notice, Setting } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 
 export default class TextAreaModal extends Modal {
 	constructor(
@@ -22,15 +22,15 @@ export default class TextAreaModal extends Modal {
 			.addButton((button) => {
 				button
 					.setCta()
-					.setButtonText(i18n.t('textAreaModal.copy'))
+					.setButtonText(t('textAreaModal.copy'))
 					.onClick(() => {
 						void navigator.clipboard.writeText(this.text).then(() => {
-							new Notice(i18n.t('textAreaModal.copied'));
+							new Notice(t('textAreaModal.copied'));
 						});
 					});
 			})
 			.addButton((button) => {
-				button.setButtonText(i18n.t('textAreaModal.close')).onClick(() => {
+				button.setButtonText(t('textAreaModal.close')).onClick(() => {
 					this.close();
 				});
 			});

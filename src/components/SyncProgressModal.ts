@@ -3,7 +3,7 @@ import CleanRecordTask from '~/sync/tasks/clean-record.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import WebDAVSyncPlugin from '..';
 import { syncCancel, SyncPlanningSubStage } from '../events';
-import i18n from '../i18n';
+import t from '../i18n';
 import MergeTask from '../sync/tasks/merge.task';
 import MkdirLocalTask from '../sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '../sync/tasks/mkdir-remote.task';
@@ -60,14 +60,14 @@ export default class SyncProgressModal extends Modal {
 			: progress.totalTasks;
 
 		const percent = Math.round((completedUnits / totalUnits) * 100) || 0;
-		const syncType = currentRun ? i18n.t(`sync.runKind.${currentRun.runKind}`) : null;
+		const syncType = currentRun ? t(`sync.runKind.${currentRun.runKind}`) : null;
 
 		const percentText = `${percent}%`;
 		this.progressBar.style.width = percentText;
 		this.progressText.setText(percentText);
 
 		this.progressStats.setText(
-			i18n.t('sync.progressStats', {
+			t('sync.progressStats', {
 				completed: completedUnits,
 				total: totalUnits,
 			}),
@@ -75,37 +75,35 @@ export default class SyncProgressModal extends Modal {
 
 		this.currentStage.setText(
 			isPlanningStage && planningProgress
-				? `${syncType ?? i18n.t('sync.progressTitle')} · ${this.getPlanningStageText(planningProgress.subStage)}`
-				: (syncType ?? i18n.t('sync.progressTitle')),
+				? `${syncType ?? t('sync.progressTitle')} · ${this.getPlanningStageText(planningProgress.subStage)}`
+				: (syncType ?? t('sync.progressTitle')),
 		);
 
 		if (isPlanningStage) {
 			this.currentFile.setText(
-				planningProgress?.currentItem
-					? planningProgress.currentItem
-					: i18n.t('sync.preparing'),
+				planningProgress?.currentItem ? planningProgress.currentItem : t('sync.preparing'),
 			);
 		} else if (currentRun?.stage === 'awaiting_confirmation') {
-			this.currentFile.setText(i18n.t('sync.awaitingConfirmation'));
+			this.currentFile.setText(t('sync.awaitingConfirmation'));
 		} else if (currentRun?.stage === 'executing' && progress.completed.length === 0) {
-			this.currentFile.setText(i18n.t('sync.start'));
+			this.currentFile.setText(t('sync.start'));
 		} else if (this.plugin.progressService.syncEnd) {
 			if (currentRun?.stage === 'cancelled' || this.syncCancelled) {
 				this.stopButtonComponent.buttonEl.addClass('hidden');
-				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
-				this.currentFile.setText(i18n.t('sync.cancelled'));
+				this.hideButtonComponent.setButtonText(t('sync.closeButton'));
+				this.currentFile.setText(t('sync.cancelled'));
 			} else if (currentRun?.stage === 'failed') {
 				this.stopButtonComponent.buttonEl.addClass('hidden');
-				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
-				this.currentFile.setText(i18n.t('sync.failedStatus'));
+				this.hideButtonComponent.setButtonText(t('sync.closeButton'));
+				this.currentFile.setText(t('sync.failedStatus'));
 			} else if (currentRun?.stage === 'completed_noop') {
 				this.stopButtonComponent.buttonEl.addClass('hidden');
-				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
-				this.currentFile.setText(i18n.t('sync.alreadyUpToDate'));
+				this.hideButtonComponent.setButtonText(t('sync.closeButton'));
+				this.currentFile.setText(t('sync.alreadyUpToDate'));
 			} else {
 				this.stopButtonComponent.buttonEl.addClass('hidden');
-				this.hideButtonComponent.setButtonText(i18n.t('sync.closeButton'));
-				this.currentFile.setText(i18n.t('sync.complete'));
+				this.hideButtonComponent.setButtonText(t('sync.closeButton'));
+				this.currentFile.setText(t('sync.complete'));
 			}
 		} else if (progress.completed.length > 0) {
 			const lastFile = progress.completed.at(-1);
@@ -151,7 +149,7 @@ export default class SyncProgressModal extends Modal {
 	}
 
 	private getPlanningStageText(stage: SyncPlanningSubStage): string {
-		return i18n.t(`sync.planningStage.${stage}`);
+		return t(`sync.planningStage.${stage}`);
 	}
 
 	onOpen() {
@@ -169,14 +167,14 @@ export default class SyncProgressModal extends Modal {
 		const title = header.createEl('h2', {
 			cls: 'm-0',
 		});
-		title.setText(i18n.t('sync.progressTitle'));
+		title.setText(t('sync.progressTitle'));
 
 		const statusSection = container.createDiv({
 			cls: 'flex flex-col gap-1',
 		});
 
 		const currentStage = statusSection.createDiv();
-		currentStage.setText(i18n.t('sync.progressTitle'));
+		currentStage.setText(t('sync.progressTitle'));
 
 		const currentFile = statusSection.createDiv({
 			cls: 'text-3 text-[var(--text-muted)] truncate overflow-hidden whitespace-nowrap',
@@ -206,7 +204,7 @@ export default class SyncProgressModal extends Modal {
 			cls: 'flex flex-col gap-1',
 		});
 		this.syncStateCurrentOperation = syncStateProgressSection.createDiv();
-		this.syncStateCurrentOperation.setText(i18n.t('sync.updatingSyncState'));
+		this.syncStateCurrentOperation.setText(t('sync.updatingSyncState'));
 		this.syncStateCurrentOperation.hide();
 
 		const syncStateProgressStats = syncStateProgressSection.createDiv({
@@ -234,7 +232,7 @@ export default class SyncProgressModal extends Modal {
 		const filesHeader = filesSection.createDiv({
 			cls: 'font-500 text-3.5 pb-1 border-b border-[var(--background-modifier-border)]',
 		});
-		filesHeader.setText(i18n.t('sync.completedFilesTitle'));
+		filesHeader.setText(t('sync.completedFilesTitle'));
 
 		const filesList = filesSection.createDiv({
 			cls: 'flex-1 overflow-y-auto border border-[var(--background-modifier-border)] border-solid rounded p-1',
@@ -253,11 +251,11 @@ export default class SyncProgressModal extends Modal {
 
 		new Setting(footerButtons)
 			.addButton((button) => {
-				button.setButtonText(i18n.t('sync.hideButton')).onClick(() => this.close());
+				button.setButtonText(t('sync.hideButton')).onClick(() => this.close());
 				this.hideButtonComponent = button;
 			})
 			.addButton((button) => {
-				button.setButtonText(i18n.t('sync.stopButton')).setWarning().onClick(syncCancel);
+				button.setButtonText(t('sync.stopButton')).setWarning().onClick(syncCancel);
 				this.stopButtonComponent = button;
 			});
 

@@ -84,6 +84,13 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 		logger.info(`Migrated exclusion rules.`);
 	}
 
+	// remove at 22 April 2026
+	if ('language' in plugin.settings) {
+		delete plugin.settings.language;
+		changed = true;
+		logger.info('Migrated user language settings.');
+	}
+
 	if (changed) void plugin.saveSettings();
 }
 

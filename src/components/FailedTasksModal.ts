@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 
 interface FailedTaskInfo {
 	taskName: string;
@@ -22,7 +22,7 @@ export default class FailedTasksModal extends Modal {
 	}
 
 	onOpen() {
-		this.setTitle(i18n.t('failedTasks.title'));
+		this.setTitle(t('failedTasks.title'));
 
 		const { contentEl } = this;
 		contentEl.empty();
@@ -30,14 +30,14 @@ export default class FailedTasksModal extends Modal {
 		const instruction = contentEl.createEl('p', {
 			cls: 'failed-tasks-instruction',
 		});
-		instruction.setText(i18n.t('failedTasks.instruction'));
+		instruction.setText(t('failedTasks.instruction'));
 
 		if (this.context) {
 			const contextEl = contentEl.createEl('p', {
 				cls: 'failed-tasks-instruction',
 			});
 			contextEl.setText(
-				i18n.t('failedTasks.context', {
+				t('failedTasks.context', {
 					syncType: this.context.syncType,
 					failedCount: this.context.failedCount,
 				}),
@@ -53,9 +53,9 @@ export default class FailedTasksModal extends Modal {
 
 		const thead = table.createEl('thead');
 		const headerRow = thead.createEl('tr');
-		headerRow.createEl('th', { text: i18n.t('failedTasks.taskName') });
-		headerRow.createEl('th', { text: i18n.t('failedTasks.localPath') });
-		headerRow.createEl('th', { text: i18n.t('failedTasks.errorMessage') });
+		headerRow.createEl('th', { text: t('failedTasks.taskName') });
+		headerRow.createEl('th', { text: t('failedTasks.localPath') });
+		headerRow.createEl('th', { text: t('failedTasks.errorMessage') });
 
 		const tbody = table.createEl('tbody');
 		this.failedTasks.forEach((task) => {
@@ -69,7 +69,7 @@ export default class FailedTasksModal extends Modal {
 		settingDiv.className = 'm-top-1';
 		new Setting(settingDiv).addButton((button) => {
 			button
-				.setButtonText(i18n.t('failedTasks.close'))
+				.setButtonText(t('failedTasks.close'))
 				.setCta()
 				.onClick(() => this.close());
 		});

@@ -6,7 +6,6 @@ import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
 import { setupCommands } from './services/command.setup';
-import { setupI18n } from './services/i18n.setup';
 import ObservabilityService from './services/observability.service';
 import { ProgressService } from './services/progress.service';
 import RealtimeSyncService from './services/realtime-sync.service';
@@ -83,7 +82,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		useFastSyncOnLocalChange: true,
 		startupSyncDelaySeconds: 0,
 		scheduledSyncIntervalSeconds: 0,
-		language: '',
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
@@ -98,7 +96,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public scheduledSyncService = new ScheduledSyncService(this, this.syncSchedulerService);
 
 	async onload() {
-		setupI18n();
 		await this.loadSettings();
 		apiLimiter.setMaxConcurrent(this.settings.maxConcurrentWebDAVCalls);
 		apiLimiter.setMinTime(this.settings.minTimeBetweenWebDAVCalls);

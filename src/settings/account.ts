@@ -1,6 +1,6 @@
 import { Notice, Setting, TextComponent } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
 import handleInput from '~/utils/handle-input';
 import BaseSettings from './settings.base';
@@ -27,14 +27,14 @@ export default class AccountSettings extends BaseSettings {
 		let remoteBaseDirText: TextComponent | undefined;
 		this.containerEl.empty();
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.backupWarning.name'))
-			.setDesc(i18n.t('settings.backupWarning.desc'));
+			.setName(t('settings.backupWarning.name'))
+			.setDesc(t('settings.backupWarning.desc'));
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.serverUrl.name'))
-			.setDesc(i18n.t('settings.serverUrl.desc'))
+			.setName(t('settings.serverUrl.name'))
+			.setDesc(t('settings.serverUrl.desc'))
 			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.serverUrl.placeholder')).setValue(
+				text.setPlaceholder(t('settings.serverUrl.placeholder')).setValue(
 					this.plugin.settings.serverUrl,
 				);
 				text.inputEl.addEventListener('blur', () =>
@@ -43,10 +43,10 @@ export default class AccountSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.account.name'))
-			.setDesc(i18n.t('settings.account.desc'))
+			.setName(t('settings.account.name'))
+			.setDesc(t('settings.account.desc'))
 			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.account.placeholder')).setValue(
+				text.setPlaceholder(t('settings.account.placeholder')).setValue(
 					this.plugin.settings.account,
 				);
 				text.inputEl.addEventListener('blur', () =>
@@ -55,10 +55,10 @@ export default class AccountSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.credential.name'))
-			.setDesc(i18n.t('settings.credential.desc'))
+			.setName(t('settings.credential.name'))
+			.setDesc(t('settings.credential.desc'))
 			.addText((text) => {
-				text.setPlaceholder(i18n.t('settings.credential.placeholder')).setValue(
+				text.setPlaceholder(t('settings.credential.placeholder')).setValue(
 					this.plugin.settings.credential,
 				);
 				text.inputEl.type = 'password';
@@ -70,11 +70,11 @@ export default class AccountSettings extends BaseSettings {
 		this.displayCheckConnection();
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.remoteDir.name'))
-			.setDesc(i18n.t('settings.remoteDir.desc'))
+			.setName(t('settings.remoteDir.name'))
+			.setDesc(t('settings.remoteDir.desc'))
 			.addText((text) => {
 				remoteBaseDirText = text;
-				text.setPlaceholder(i18n.t('settings.remoteDir.placeholder')).setValue(
+				text.setPlaceholder(t('settings.remoteDir.placeholder')).setValue(
 					this.plugin.settings.remoteDir,
 				);
 				text.inputEl.addEventListener('blur', () => {
@@ -87,7 +87,7 @@ export default class AccountSettings extends BaseSettings {
 			.addButton((button) => {
 				button.setIcon('folder').onClick(() => {
 					if (!this.plugin.isAccountConfigured()) {
-						new Notice(i18n.t('sync.error.accountNotConfigured'));
+						new Notice(t('sync.error.accountNotConfigured'));
 						return;
 					}
 					new SelectRemoteBaseDirModal(this.app, this.plugin, (path) => {
@@ -102,10 +102,10 @@ export default class AccountSettings extends BaseSettings {
 
 	private displayCheckConnection() {
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.checkConnection.name'))
-			.setDesc(i18n.t('settings.checkConnection.desc'))
+			.setName(t('settings.checkConnection.name'))
+			.setDesc(t('settings.checkConnection.desc'))
 			.addButton((button) => {
-				button.setButtonText(i18n.t('settings.checkConnection.name')).onClick((event) => {
+				button.setButtonText(t('settings.checkConnection.name')).onClick((event) => {
 					const buttonEl = event.currentTarget;
 					if (!(buttonEl instanceof HTMLElement)) return;
 					void this.checkConnection(buttonEl);
@@ -116,7 +116,7 @@ export default class AccountSettings extends BaseSettings {
 	private async checkConnection(buttonEl: HTMLElement) {
 		const normalizedUrl = this.getNormalizedServerUrl();
 		if (!normalizedUrl) {
-			new Notice(i18n.t('settings.serverUrl.invalid'));
+			new Notice(t('settings.serverUrl.invalid'));
 			return;
 		}
 
@@ -125,30 +125,30 @@ export default class AccountSettings extends BaseSettings {
 
 		buttonEl.classList.add('connection-button', 'loading');
 		buttonEl.classList.remove('success', 'error');
-		buttonEl.textContent = i18n.t('settings.checkConnection.name');
+		buttonEl.textContent = t('settings.checkConnection.name');
 		try {
 			const { success, error } = await this.plugin.webDAVService.checkWebDAVConnection();
 			buttonEl.classList.remove('loading');
 			if (success) {
 				buttonEl.classList.add('success');
-				buttonEl.textContent = i18n.t('settings.checkConnection.successButton');
-				new Notice(i18n.t('settings.checkConnection.success'));
+				buttonEl.textContent = t('settings.checkConnection.successButton');
+				new Notice(t('settings.checkConnection.success'));
 				return;
 			}
 
 			buttonEl.classList.add('error');
-			buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
+			buttonEl.textContent = t('settings.checkConnection.failureButton');
 			const reason = error?.message?.trim();
 			new Notice(
 				reason
-					? i18n.t('settings.checkConnection.failureWithReason', { reason })
-					: i18n.t('settings.checkConnection.failure'),
+					? t('settings.checkConnection.failureWithReason', { reason })
+					: t('settings.checkConnection.failure'),
 			);
 		} catch {
 			buttonEl.classList.remove('loading');
 			buttonEl.classList.add('error');
-			buttonEl.textContent = i18n.t('settings.checkConnection.failureButton');
-			new Notice(i18n.t('settings.checkConnection.failure'));
+			buttonEl.textContent = t('settings.checkConnection.failureButton');
+			new Notice(t('settings.checkConnection.failure'));
 		}
 	}
 }

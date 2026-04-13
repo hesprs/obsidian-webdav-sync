@@ -1,36 +1,33 @@
 import { clamp } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { ConflictStrategy, SyncMode, UnmergeableStrategy } from './index';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {
 	display() {
 		this.containerEl.empty();
-		new Setting(this.containerEl).setName(i18n.t('settings.sections.common')).setHeading();
+		new Setting(this.containerEl).setName(t('settings.sections.common')).setHeading();
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.conflictStrategy.name'))
-			.setDesc(i18n.t('settings.conflictStrategy.desc'))
+			.setName(t('settings.conflictStrategy.name'))
+			.setDesc(t('settings.conflictStrategy.desc'))
 			.addDropdown((dropdown) =>
 				dropdown
 					.addOption(
 						ConflictStrategy.DiffMatchPatch,
-						i18n.t('settings.conflictStrategy.diffMatchPatch'),
+						t('settings.conflictStrategy.diffMatchPatch'),
 					)
 					.addOption(
 						ConflictStrategy.LatestTimeStamp,
-						i18n.t('settings.conflictStrategy.latestTimestamp'),
+						t('settings.conflictStrategy.latestTimestamp'),
 					)
-					.addOption(
-						ConflictStrategy.KeepLocal,
-						i18n.t('settings.conflictStrategy.keepLocal'),
-					)
+					.addOption(ConflictStrategy.KeepLocal, t('settings.conflictStrategy.keepLocal'))
 					.addOption(
 						ConflictStrategy.KeepRemote,
-						i18n.t('settings.conflictStrategy.keepRemote'),
+						t('settings.conflictStrategy.keepRemote'),
 					)
-					.addOption(ConflictStrategy.Skip, i18n.t('settings.conflictStrategy.skip'))
+					.addOption(ConflictStrategy.Skip, t('settings.conflictStrategy.skip'))
 					.setValue(this.plugin.settings.conflictStrategy)
 					.onChange((value) => {
 						const originalValue = this.plugin.settings.conflictStrategy;
@@ -49,26 +46,23 @@ export default class CommonSettings extends BaseSettings {
 
 		if (this.plugin.settings.conflictStrategy === ConflictStrategy.DiffMatchPatch)
 			new Setting(this.containerEl)
-				.setName(i18n.t('settings.unmergeableStrategy.name'))
-				.setDesc(i18n.t('settings.unmergeableStrategy.desc'))
+				.setName(t('settings.unmergeableStrategy.name'))
+				.setDesc(t('settings.unmergeableStrategy.desc'))
 				.addDropdown((dropdown) =>
 					dropdown
 						.addOption(
 							UnmergeableStrategy.LatestTimeStamp,
-							i18n.t('settings.conflictStrategy.latestTimestamp'),
+							t('settings.conflictStrategy.latestTimestamp'),
 						)
 						.addOption(
 							UnmergeableStrategy.KeepLocal,
-							i18n.t('settings.conflictStrategy.keepLocal'),
+							t('settings.conflictStrategy.keepLocal'),
 						)
 						.addOption(
 							UnmergeableStrategy.KeepRemote,
-							i18n.t('settings.conflictStrategy.keepRemote'),
+							t('settings.conflictStrategy.keepRemote'),
 						)
-						.addOption(
-							UnmergeableStrategy.Skip,
-							i18n.t('settings.conflictStrategy.skip'),
-						)
+						.addOption(UnmergeableStrategy.Skip, t('settings.conflictStrategy.skip'))
 						.setValue(this.plugin.settings.unmergeableStrategy)
 						.onChange((value) => {
 							this.plugin.settings.unmergeableStrategy = value as UnmergeableStrategy;
@@ -77,8 +71,8 @@ export default class CommonSettings extends BaseSettings {
 				);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.useGitStyle.name'))
-			.setDesc(i18n.t('settings.useGitStyle.desc'))
+			.setName(t('settings.useGitStyle.name'))
+			.setDesc(t('settings.useGitStyle.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.useGitStyle).onChange((value) => {
 					this.plugin.settings.useGitStyle = value;
@@ -87,8 +81,8 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.showSyncStatusInNotificationOnMobile.name'))
-			.setDesc(i18n.t('settings.showSyncStatusInNotificationOnMobile.desc'))
+			.setName(t('settings.showSyncStatusInNotificationOnMobile.name'))
+			.setDesc(t('settings.showSyncStatusInNotificationOnMobile.desc'))
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.showSyncStatusInNotificationOnMobile)
@@ -100,8 +94,8 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.confirmBeforeSync.name'))
-			.setDesc(i18n.t('settings.confirmBeforeSync.desc'))
+			.setName(t('settings.confirmBeforeSync.name'))
+			.setDesc(t('settings.confirmBeforeSync.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.confirmBeforeSync).onChange((value) => {
 					this.plugin.settings.confirmBeforeSync = value;
@@ -110,8 +104,8 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.confirmBeforeDeleteInAutoSync.name'))
-			.setDesc(i18n.t('settings.confirmBeforeDeleteInAutoSync.desc'))
+			.setName(t('settings.confirmBeforeDeleteInAutoSync.name'))
+			.setDesc(t('settings.confirmBeforeDeleteInAutoSync.desc'))
 			.addToggle((toggle) =>
 				toggle
 					.setValue(this.plugin.settings.confirmBeforeDeleteInAutoSync)
@@ -122,8 +116,8 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.realtimeSync.name'))
-			.setDesc(i18n.t('settings.realtimeSync.desc'))
+			.setName(t('settings.realtimeSync.name'))
+			.setDesc(t('settings.realtimeSync.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.realtimeSync).onChange((value) => {
 					this.plugin.settings.realtimeSync = value;
@@ -132,8 +126,8 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.useFastSyncOnLocalChange.name'))
-			.setDesc(i18n.t('settings.useFastSyncOnLocalChange.desc'))
+			.setName(t('settings.useFastSyncOnLocalChange.name'))
+			.setDesc(t('settings.useFastSyncOnLocalChange.desc'))
 			.addToggle((toggle) =>
 				toggle.setValue(this.plugin.settings.useFastSyncOnLocalChange).onChange((value) => {
 					this.plugin.settings.useFastSyncOnLocalChange = value;
@@ -142,11 +136,11 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.startupSyncDelay.name'))
-			.setDesc(i18n.t('settings.startupSyncDelay.desc'))
+			.setName(t('settings.startupSyncDelay.name'))
+			.setDesc(t('settings.startupSyncDelay.desc'))
 			.addText((text) => {
 				const maxSeconds = 86400;
-				text.setPlaceholder(i18n.t('settings.startupSyncDelay.placeholder')).setValue(
+				text.setPlaceholder(t('settings.startupSyncDelay.placeholder')).setValue(
 					this.plugin.settings.startupSyncDelaySeconds.toString(),
 				);
 				text.inputEl.addEventListener('blur', () => {
@@ -158,11 +152,11 @@ export default class CommonSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.scheduledSyncInterval.name'))
-			.setDesc(i18n.t('settings.scheduledSyncInterval.desc'))
+			.setName(t('settings.scheduledSyncInterval.name'))
+			.setDesc(t('settings.scheduledSyncInterval.desc'))
 			.addText((text) => {
 				const maxMinutes = 1440;
-				text.setPlaceholder(i18n.t('settings.scheduledSyncInterval.placeholder')).setValue(
+				text.setPlaceholder(t('settings.scheduledSyncInterval.placeholder')).setValue(
 					Math.round(this.plugin.settings.scheduledSyncIntervalSeconds / 60).toString(),
 				);
 				text.inputEl.addEventListener(
@@ -176,12 +170,12 @@ export default class CommonSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.syncMode.name'))
-			.setDesc(i18n.t('settings.syncMode.desc'))
+			.setName(t('settings.syncMode.name'))
+			.setDesc(t('settings.syncMode.desc'))
 			.addDropdown((dropdown) =>
 				dropdown
-					.addOption(SyncMode.STRICT, i18n.t('settings.syncMode.strict'))
-					.addOption(SyncMode.LOOSE, i18n.t('settings.syncMode.loose'))
+					.addOption(SyncMode.STRICT, t('settings.syncMode.strict'))
+					.addOption(SyncMode.LOOSE, t('settings.syncMode.loose'))
 					.setValue(this.plugin.settings.syncMode)
 					.onChange((value) => {
 						this.plugin.settings.syncMode = value as SyncMode;
@@ -195,9 +189,9 @@ export default class CommonSettings extends BaseSettings {
 		const finalValue = isNaN(numValue) ? 0 : clamp(numValue, 0, maxSeconds);
 
 		if (isNaN(numValue)) {
-			new Notice(i18n.t('settings.startupSyncDelay.invalidValue'));
+			new Notice(t('settings.startupSyncDelay.invalidValue'));
 		} else if (finalValue !== numValue) {
-			new Notice(i18n.t('settings.startupSyncDelay.exceedsMax', { max: maxSeconds }));
+			new Notice(t('settings.startupSyncDelay.exceedsMax', { max: maxSeconds }));
 		}
 
 		text.setValue(finalValue.toString());
@@ -213,9 +207,9 @@ export default class CommonSettings extends BaseSettings {
 		text.setValue(finalValue.toString());
 
 		if (isNaN(numValue)) {
-			new Notice(i18n.t('settings.scheduledSyncInterval.invalidValue'));
+			new Notice(t('settings.scheduledSyncInterval.invalidValue'));
 		} else if (finalValue !== numValue) {
-			new Notice(i18n.t('settings.scheduledSyncInterval.exceedsMax', { max: maxMinutes }));
+			new Notice(t('settings.scheduledSyncInterval.exceedsMax', { max: maxMinutes }));
 		}
 
 		this.plugin.settings.scheduledSyncIntervalSeconds = finalValue * 60;

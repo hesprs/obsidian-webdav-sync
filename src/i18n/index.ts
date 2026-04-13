@@ -1,32 +1,64 @@
-import i18n from 'i18next';
+import type { InterpolationValues, KeyOfObject } from '~/types';
 import en from './enold';
 import ru from './ru';
 import zhHans from './zh-Hans';
 
-const defaultNS = 'translation';
-export const languages = ['en', 'zh-Hans', 'ru'] as const;
+type Language = keyof typeof resources;
+export type TranslationResource = typeof en;
+type TranslationKey = KeyOfObject<TranslationResource>;
 
-const resources: Record<(typeof languages)[number], { translation: typeof en }> = {
-	'zh-Hans': { translation: zhHans },
-	en: { translation: en },
-	ru: { translation: ru },
-} as const;
+const fallbackLanguage: Language = 'en';
 
-declare module 'i18next' {
-	interface CustomTypeOptions {
-		defaultNS: 'translation';
-		resources: (typeof resources)['en'];
-	}
+const resources = {
+	'zh-Hans': zhHans,
+	en,
+	ru,
+} as const satisfies Record<string, TranslationResource>;
+
+let currentLanguage: Language = fallbackLanguage;
+
+function getValue(resource: TranslationResource, key: string): string | undefined {
+	const value = key.split('.').reduce<unknown>((current, segment) => {
+		if (current === null || typeof current !== 'object') return undefined;
+		return (current as Record<string, unknown>)[segment];
+	}, resource);
+
+	return typeof value === 'string' ? value : undefined;
 }
 
-void i18n.init({
-	ns: ['translation'],
-	defaultNS,
-	resources,
-	fallbackLng: 'en',
-	interpolation: {
-		escapeValue: false,
-	},
-});
+function interpolate(template: string, params?: InterpolationValues): string {
+	if (params === undefined) return template;
 
-export default i18n;
+	return template.replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, (match, key: string) => {
+		const value = params[key];
+		return value === undefined ? match : String(value);
+	});
+}
+
+function isLanguage(key: string): key is Language {
+	return key in resources;
+}
+
+function setLanguage(language: string | null | undefined): Language {
+	currentLanguage = resolveLanguage(language);
+	return currentLanguage;
+}
+
+function resolveLanguage(code: string | null | undefined): Language {
+	if (!code) return fallbackLanguage;
+
+	const segments = code.split('-');
+	if (segments[0] === 'zh') {
+		return 'zh-Hans';
+	}
+
+	return isLanguage(segments[0]) ? segments[0] : fallbackLanguage;
+}
+
+export default function t(key: TranslationKey, params?: InterpolationValues): string {
+	const template =
+		getValue(resources[currentLanguage], key) ?? getValue(resources.en, key) ?? key;
+	return interpolate(template, params);
+}
+
+setLanguage(window.localStorage.getItem('language'));
