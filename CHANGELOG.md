@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.3.0 - 2026-04-13
+
+**Note: breaking change present (moved WebDAV credential into secret store), but auto-migration available. The real intrusion is zero for most users.**
+
+### Security / credentials
+
+- Store WebDAV credentials in Obsidian’s credential storage instead of plaintext settings.
+- Added a migration that moves existing plaintext tokens into the secret store.
+
+### Sync engine / behavior
+
+- Supported syncing the `.obsidian/` config folder (excluded by default).
+- Updated realtime sync to honor inclusion / exclusion glob rules before real-time sync.
+- Added fallback handling for non-mergeable files when smart merge is selected.
+- Moved conflict-resolution strategy settings into the settings model and updated the sync decision flow accordingly.
+- Simplified startup setup by replacing command and i18n service classes with direct setup functions.
+- Switched vault traversal, stat reads, content reads, and trashing to adapter-based async APIs.
+- Introduced a vault-aware trash file location now respects user's configured trash location instead of into Obsidian trash.
+
+### Internationalization / settings cleanup
+
+- Replaced i18next with a lightweight custom translation helper and typed translation keys to decrease bundle size and improve performance.
+- Fixed language auto detection that always display English.
+- Removed the manual language setting and the related i18n setup service. Now the i18n option is entirely integrated with Obsidian's language setting.
+
 ## Obsidian WebDAV Sync v2.2.0 - 2026-04-11
 
 ### Memory and performance optimizations
