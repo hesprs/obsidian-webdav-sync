@@ -8,14 +8,12 @@ export type TranslationResource = typeof en;
 type TranslationKey = KeyOfObject<TranslationResource>;
 
 const fallbackLanguage: Language = 'en';
-
 const resources = {
 	'zh-Hans': zhHans,
 	en,
 	ru,
 } as const satisfies Record<string, TranslationResource>;
-
-let currentLanguage: Language = fallbackLanguage;
+let currentLanguage: Language = resolveLanguage(window.localStorage.getItem('language'));
 
 function getValue(resource: TranslationResource, key: string): string | undefined {
 	const value = key.split('.').reduce<unknown>((current, segment) => {
@@ -39,11 +37,6 @@ function isLanguage(key: string): key is Language {
 	return key in resources;
 }
 
-function setLanguage(language: string | null | undefined): Language {
-	currentLanguage = resolveLanguage(language);
-	return currentLanguage;
-}
-
 function resolveLanguage(code: string | null | undefined): Language {
 	if (!code) return fallbackLanguage;
 
@@ -60,5 +53,3 @@ export default function t(key: TranslationKey, params?: InterpolationValues): st
 		getValue(resources[currentLanguage], key) ?? getValue(resources.en, key) ?? key;
 	return interpolate(template, params);
 }
-
-setLanguage(window.localStorage.getItem('language'));
