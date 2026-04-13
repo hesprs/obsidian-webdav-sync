@@ -13,7 +13,7 @@ const resources = {
 	en,
 	ru,
 } as const satisfies Record<string, TranslationResource>;
-let currentLanguage: Language = resolveLanguage(window.localStorage.getItem('language'));
+let currentLanguage = resolveLanguage();
 
 function getValue(resource: TranslationResource, key: string): string | undefined {
 	const value = key.split('.').reduce<unknown>((current, segment) => {
@@ -26,7 +26,6 @@ function getValue(resource: TranslationResource, key: string): string | undefine
 
 function interpolate(template: string, params?: InterpolationValues): string {
 	if (params === undefined) return template;
-
 	return template.replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, (match, key: string) => {
 		const value = params[key];
 		return value === undefined ? match : String(value);
@@ -37,14 +36,10 @@ function isLanguage(key: string): key is Language {
 	return key in resources;
 }
 
-function resolveLanguage(code: string | null | undefined): Language {
-	if (!code) return fallbackLanguage;
-
+function resolveLanguage(): Language {
+	const code = window.localStorage.getItem('language') ?? navigator.language;
 	const segments = code.split('-');
-	if (segments[0] === 'zh') {
-		return 'zh-Hans';
-	}
-
+	if (segments[0] === 'zh') return 'zh-Hans';
 	return isLanguage(segments[0]) ? segments[0] : fallbackLanguage;
 }
 
