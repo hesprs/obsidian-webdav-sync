@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import RemoveLocalTask from '../sync/tasks/remove-local.task';
 
 export default class DeleteConfirmModal extends Modal {
@@ -21,7 +21,7 @@ export default class DeleteConfirmModal extends Modal {
 	}
 
 	onOpen() {
-		this.setTitle(i18n.t('deleteConfirm.title'));
+		this.setTitle(t('deleteConfirm.title'));
 
 		const { contentEl } = this;
 		contentEl.empty();
@@ -30,7 +30,7 @@ export default class DeleteConfirmModal extends Modal {
 			cls: 'delete-confirm-instruction',
 		});
 		instruction.className = 'pre-line';
-		instruction.setText(i18n.t('deleteConfirm.instruction'));
+		instruction.setText(t('deleteConfirm.instruction'));
 
 		const tableContainer = contentEl.createDiv({
 			cls: 'max-h-50vh overflow-y-auto',
@@ -40,10 +40,10 @@ export default class DeleteConfirmModal extends Modal {
 		const thead = table.createEl('thead');
 		const headerRow = thead.createEl('tr');
 		const selectHeader = headerRow.createEl('th', {
-			text: i18n.t('deleteConfirm.select'),
+			text: t('deleteConfirm.select'),
 		});
 		selectHeader.className = 'text-center';
-		headerRow.createEl('th', { text: i18n.t('deleteConfirm.filePath') });
+		headerRow.createEl('th', { text: t('deleteConfirm.filePath') });
 
 		const tbody = table.createEl('tbody');
 		this.tasks.forEach((task, index) => {
@@ -73,7 +73,7 @@ export default class DeleteConfirmModal extends Modal {
 		new Setting(settingDiv)
 			.addButton((button) => {
 				button
-					.setButtonText(i18n.t('deleteConfirm.deleteAndReupload'))
+					.setButtonText(t('deleteConfirm.deleteAndReupload'))
 					.setCta()
 					.onClick(() => {
 						this.confirmed = true;
@@ -81,7 +81,7 @@ export default class DeleteConfirmModal extends Modal {
 					});
 			})
 			.addButton((button) => {
-				button.setButtonText(i18n.t('deleteConfirm.skipForNow')).onClick(() => {
+				button.setButtonText(t('deleteConfirm.skipForNow')).onClick(() => {
 					this.confirmed = false;
 					this.close();
 				});

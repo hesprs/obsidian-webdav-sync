@@ -1,5 +1,5 @@
 import { App, Modal, Setting } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import getTaskName from '~/utils/get-task-name';
 import { BaseTask } from '../sync/tasks/task.interface';
 
@@ -17,13 +17,13 @@ export default class TaskListConfirmModal extends Modal {
 	}
 
 	onOpen() {
-		this.setTitle(i18n.t('taskList.title'));
+		this.setTitle(t('taskList.title'));
 
 		const { contentEl } = this;
 		contentEl.empty();
 
 		const instruction = contentEl.createEl('p');
-		instruction.setText(i18n.t('taskList.instruction'));
+		instruction.setText(t('taskList.instruction'));
 
 		const tableContainer = contentEl.createDiv({
 			cls: 'max-h-50vh overflow-y-auto',
@@ -32,10 +32,10 @@ export default class TaskListConfirmModal extends Modal {
 
 		const thead = table.createEl('thead');
 		const headerRow = thead.createEl('tr');
-		headerRow.createEl('th', { text: i18n.t('taskList.execute') });
-		headerRow.createEl('th', { text: i18n.t('taskList.action') });
-		headerRow.createEl('th', { text: i18n.t('taskList.localPath') });
-		headerRow.createEl('th', { text: i18n.t('taskList.remotePath') });
+		headerRow.createEl('th', { text: t('taskList.execute') });
+		headerRow.createEl('th', { text: t('taskList.action') });
+		headerRow.createEl('th', { text: t('taskList.localPath') });
+		headerRow.createEl('th', { text: t('taskList.remotePath') });
 
 		const tbody = table.createEl('tbody');
 		this.tasks.forEach((task, index) => {
@@ -64,7 +64,7 @@ export default class TaskListConfirmModal extends Modal {
 		new Setting(settingDiv)
 			.addButton((button) => {
 				button
-					.setButtonText(i18n.t('taskList.continue'))
+					.setButtonText(t('taskList.continue'))
 					.setCta()
 					.onClick(() => {
 						this.result = true;
@@ -72,7 +72,7 @@ export default class TaskListConfirmModal extends Modal {
 					});
 			})
 			.addButton((button) => {
-				button.setButtonText(i18n.t('taskList.cancel')).onClick(() => {
+				button.setButtonText(t('taskList.cancel')).onClick(() => {
 					this.result = false;
 					this.close();
 				});

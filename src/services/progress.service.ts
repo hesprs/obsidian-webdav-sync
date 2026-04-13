@@ -3,7 +3,7 @@ import { Notice } from 'obsidian';
 import type { SyncPlanningProgress, SyncProgressSummary, SyncRunSnapshot } from '~/events';
 import SyncProgressModal from '../components/SyncProgressModal';
 import { syncRun } from '../events';
-import i18n from '../i18n';
+import t from '../i18n';
 import WebDAVSyncPlugin from '../index';
 
 export class ProgressService {
@@ -62,7 +62,7 @@ export class ProgressService {
 
 	public showProgressModal() {
 		if (!this.hasActiveRun()) {
-			new Notice(i18n.t('sync.notSyncing'));
+			new Notice(t('sync.notSyncing'));
 			return;
 		}
 		this.closeProgressModal();

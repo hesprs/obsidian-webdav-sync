@@ -1,4 +1,4 @@
-import * as i18n from '@solid-primitives/i18n';
+import { translator, flatten } from '@solid-primitives/i18n';
 import { createResource, createSignal } from 'solid-js';
 import en from './en';
 import ru from './ru';
@@ -22,12 +22,12 @@ export const [locale, setLocale] = createSignal<Locale>(toLocale(navigator.langu
 const [dict] = createResource(locale, (locale) => {
 	switch (locale) {
 		case 'zh':
-			return i18n.flatten(zh);
+			return flatten(zh);
 		case 'ru':
-			return i18n.flatten(ru);
+			return flatten(ru);
 		default:
-			return i18n.flatten(en);
+			return flatten(en);
 	}
 });
 
-export const t = i18n.translator(dict);
+export const t = translator(dict);

@@ -1,6 +1,6 @@
 import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
-import type en from '~/i18n/enold';
+import type { TranslationResource } from '~/i18n';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
 import getTaskName from '~/utils/get-task-name';
@@ -33,7 +33,7 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 		this.local = options.local;
 		this.remote = options.remote;
 	}
-	readonly name?: keyof typeof en.sync.fileOp;
+	readonly name?: keyof TranslationResource['sync']['fileOp'];
 	readonly localPath: string;
 	readonly remotePath: string;
 	protected readonly webdav: WebDAVClient;

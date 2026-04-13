@@ -1,6 +1,6 @@
 import type { MergeTaskOptions } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { getLocalContent, getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
@@ -69,7 +69,7 @@ export default class MergeTask extends BaseTask<MergeTaskOptions> {
 				const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
 					overwrite: true,
 				});
-				if (!putResult) throw new Error(i18n.t('sync.error.failedToUploadMerged'));
+				if (!putResult) throw new Error(t('sync.error.failedToUploadMerged'));
 				const fetchedRemoteStat = await statWebDAVItem(this.webdav, this.remotePath);
 				if (!fetchedRemoteStat || fetchedRemoteStat.isDir)
 					throw new Error(

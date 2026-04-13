@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import type WebDAVSyncPlugin from '..';
 import SyncConfirmModal from '../components/SyncConfirmModal';
 
@@ -14,7 +14,7 @@ export function launchManualSync(
 	if (plugin.isSyncing) return;
 
 	if (!plugin.isAccountConfigured()) {
-		new Notice(i18n.t('sync.error.accountNotConfigured'));
+		new Notice(t('sync.error.accountNotConfigured'));
 		return;
 	}
 

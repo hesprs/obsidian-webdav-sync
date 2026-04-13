@@ -1,4 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
+
+vi.mock('~/i18n', () => ({
+	default: (key: string) => key,
+}));
+
 import MkdirLocalTask from '~/sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
 import PullTask from '~/sync/tasks/pull.task';

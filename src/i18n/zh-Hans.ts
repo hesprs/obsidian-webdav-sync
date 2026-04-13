@@ -10,11 +10,6 @@ export default {
 			filters: '过滤规则',
 			development: '开发设置',
 		},
-		language: {
-			name: '语言',
-			desc: '选择界面语言',
-			auto: '自动检测',
-		},
 		account: {
 			name: '账号',
 			desc: '输入你的 WebDAV 账号',

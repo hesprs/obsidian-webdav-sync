@@ -14,7 +14,7 @@ import {
 	updateSyncRunSnapshot,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
@@ -255,7 +255,7 @@ export class SyncEngine {
 					errorSummary:
 						failedCount > 0
 							? {
-									message: i18n.t('sync.completeWithFailed', { failedCount }),
+									message: t('sync.completeWithFailed', { failedCount }),
 								}
 							: undefined,
 				},
@@ -443,7 +443,7 @@ export class SyncEngine {
 			if (this.isCancelled) {
 				return {
 					success: false,
-					error: new TaskError(i18n.t('sync.cancelled'), task),
+					error: new TaskError(t('sync.cancelled'), task),
 				};
 			}
 			const taskResult = await task.exec();
@@ -464,7 +464,7 @@ export class SyncEngine {
 				if (this.isCancelled) {
 					return {
 						success: false,
-						error: new TaskError(i18n.t('sync.cancelled'), task),
+						error: new TaskError(t('sync.cancelled'), task),
 					};
 				}
 				continue;

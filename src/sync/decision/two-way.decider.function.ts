@@ -1,5 +1,5 @@
 import type { FileStatModel, FolderStatModel, StatModel } from '~/types';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { normalizePathToAbsolute } from '~/platform/path';
 import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '~/settings';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
@@ -44,8 +44,7 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 	const removeRecords: Array<string> = [];
 
 	for (const path of mixedPath) {
-		if (hasInvalidChar(path))
-			throw new Error(`${i18n.t('sync.fileOp.filenameError')}: ${path}`);
+		if (hasInvalidChar(path)) throw new Error(`${t('sync.fileOp.filenameError')}: ${path}`);
 		const remote = remoteStats.get(path);
 		const local = localStats.get(path);
 		if (!(local?.isDir || remote?.isDir))
@@ -397,9 +396,9 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 			CONFLICT: () => {
 				const _remoteForm = remote.isDir ? 'folder' : 'file';
 				const _localForm = local.isDir ? 'folder' : 'file';
-				const remoteForm = i18n.t(`sync.fileFolderConflict.${_remoteForm}`);
-				const localForm = i18n.t(`sync.fileFolderConflict.${_localForm}`);
-				const message = i18n.t(`sync.fileFolderConflict.message`, {
+				const remoteForm = t(`sync.fileFolderConflict.${_remoteForm}`);
+				const localForm = t(`sync.fileFolderConflict.${_localForm}`);
+				const message = t(`sync.fileFolderConflict.message`, {
 					remoteForm,
 					localForm,
 					path,

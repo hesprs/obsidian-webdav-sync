@@ -1,7 +1,7 @@
 import { parse as bytesParse } from 'bytes-iec';
 import { isNil } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { apiLimiter } from '~/utils/api-limiter';
 import { isNumeric } from '~/utils/is-numeric';
 import BaseSettings from './settings.base';
@@ -12,14 +12,14 @@ const MAX_BYTES = bytesParse(MAX_FILE_SIZE, { mode: 'jedec' }) ?? 524288000;
 export default class ControlsSettings extends BaseSettings {
 	display() {
 		this.containerEl.empty();
-		new Setting(this.containerEl).setName(i18n.t('settings.sections.control')).setHeading();
+		new Setting(this.containerEl).setName(t('settings.sections.control')).setHeading();
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.skipLargeFiles.name'))
-			.setDesc(i18n.t('settings.skipLargeFiles.desc'))
+			.setName(t('settings.skipLargeFiles.name'))
+			.setDesc(t('settings.skipLargeFiles.desc'))
 			.addText((text) => {
 				const currentValue = this.plugin.settings.skipLargeFiles.maxSize.trim();
-				text.setPlaceholder(i18n.t('settings.skipLargeFiles.placeholder')).setValue(
+				text.setPlaceholder(t('settings.skipLargeFiles.placeholder')).setValue(
 					currentValue,
 				);
 
@@ -27,11 +27,11 @@ export default class ControlsSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.realtimeSyncDelay.name'))
-			.setDesc(i18n.t('settings.realtimeSyncDelay.desc'))
+			.setName(t('settings.realtimeSyncDelay.name'))
+			.setDesc(t('settings.realtimeSyncDelay.desc'))
 			.addText((text) => {
 				const currentValue = (this.plugin.settings.realtimeSyncDelay / 1000).toString();
-				text.setPlaceholder(i18n.t('settings.realtimeSyncDelay.placeholder')).setValue(
+				text.setPlaceholder(t('settings.realtimeSyncDelay.placeholder')).setValue(
 					currentValue,
 				);
 				text.inputEl.addEventListener(
@@ -41,13 +41,13 @@ export default class ControlsSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.maxConcurrentWebDAVCalls.name'))
-			.setDesc(i18n.t('settings.maxConcurrentWebDAVCalls.desc'))
+			.setName(t('settings.maxConcurrentWebDAVCalls.name'))
+			.setDesc(t('settings.maxConcurrentWebDAVCalls.desc'))
 			.addText((text) => {
 				const currentValue = this.plugin.settings.maxConcurrentWebDAVCalls.toString();
-				text.setPlaceholder(
-					i18n.t('settings.maxConcurrentWebDAVCalls.placeholder'),
-				).setValue(currentValue);
+				text.setPlaceholder(t('settings.maxConcurrentWebDAVCalls.placeholder')).setValue(
+					currentValue,
+				);
 				text.inputEl.addEventListener(
 					'blur',
 					() =>
@@ -58,11 +58,11 @@ export default class ControlsSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.maxConcurrentSyncTasks.name'))
-			.setDesc(i18n.t('settings.maxConcurrentSyncTasks.desc'))
+			.setName(t('settings.maxConcurrentSyncTasks.name'))
+			.setDesc(t('settings.maxConcurrentSyncTasks.desc'))
 			.addText((text) => {
 				const currentValue = this.plugin.settings.maxConcurrentSyncTasks.toString();
-				text.setPlaceholder(i18n.t('settings.maxConcurrentSyncTasks.placeholder')).setValue(
+				text.setPlaceholder(t('settings.maxConcurrentSyncTasks.placeholder')).setValue(
 					currentValue,
 				);
 				text.inputEl.addEventListener(
@@ -72,13 +72,13 @@ export default class ControlsSettings extends BaseSettings {
 			});
 
 		new Setting(this.containerEl)
-			.setName(i18n.t('settings.minTimeBetweenWebDAVCalls.name'))
-			.setDesc(i18n.t('settings.minTimeBetweenWebDAVCalls.desc'))
+			.setName(t('settings.minTimeBetweenWebDAVCalls.name'))
+			.setDesc(t('settings.minTimeBetweenWebDAVCalls.desc'))
 			.addText((text) => {
 				const currentValue = this.plugin.settings.minTimeBetweenWebDAVCalls.toString();
-				text.setPlaceholder(
-					i18n.t('settings.minTimeBetweenWebDAVCalls.placeholder'),
-				).setValue(currentValue);
+				text.setPlaceholder(t('settings.minTimeBetweenWebDAVCalls.placeholder')).setValue(
+					currentValue,
+				);
 				text.inputEl.addEventListener(
 					'blur',
 					() =>
@@ -94,7 +94,7 @@ export default class ControlsSettings extends BaseSettings {
 		const interval = parseFloat(rawInterval) * 1000;
 		const original = this.plugin.settings.realtimeSyncDelay;
 		if (isNaN(interval) || interval < 0) {
-			new Notice(i18n.t('settings.realtimeSyncDelay.invalidValue'));
+			new Notice(t('settings.realtimeSyncDelay.invalidValue'));
 			component.setValue((original / 1000).toString());
 			return;
 		}
@@ -114,7 +114,7 @@ export default class ControlsSettings extends BaseSettings {
 		const interval = parseInt(rawInterval);
 		const original = this.plugin.settings[field];
 		if (isNaN(interval) || interval < 0) {
-			new Notice(i18n.t(`settings.${field}.invalidValue`));
+			new Notice(t(`settings.${field}.invalidValue`));
 			component.setValue(original.toString());
 			return;
 		}
@@ -134,12 +134,12 @@ export default class ControlsSettings extends BaseSettings {
 			value += 'B';
 		const parsedBytes = bytesParse(value, { mode: 'jedec' });
 		if (parsedBytes === null) {
-			new Notice(i18n.t('settings.skipLargeFiles.invalidFormat'));
+			new Notice(t('settings.skipLargeFiles.invalidFormat'));
 			component.setValue(this.plugin.settings.skipLargeFiles.maxSize);
 			return;
 		}
 		if (parsedBytes > MAX_BYTES) {
-			new Notice(i18n.t('settings.skipLargeFiles.exceedsMaxSize'));
+			new Notice(t('settings.skipLargeFiles.exceedsMaxSize'));
 			value = MAX_FILE_SIZE;
 		}
 		component.setValue(value);

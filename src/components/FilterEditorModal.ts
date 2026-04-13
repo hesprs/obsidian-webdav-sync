@@ -1,6 +1,6 @@
 import { cloneDeep } from 'lodash-es';
 import { Modal, Setting } from 'obsidian';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { getUserOptions, type GlobMatchOptions } from '~/utils/glob-match';
 import WebDAVSyncPlugin from '..';
 
@@ -37,9 +37,9 @@ export default class FilterEditorModal extends Modal {
 				? 'settings.filters.include.desc'
 				: 'settings.filters.exclude.desc';
 
-		contentEl.createEl('h2', { text: i18n.t(titleKey) });
+		contentEl.createEl('h2', { text: t(titleKey) });
 		contentEl.createEl('p', {
-			text: i18n.t(descKey),
+			text: t(descKey),
 			cls: 'setting-item-description',
 		});
 
@@ -56,7 +56,7 @@ export default class FilterEditorModal extends Modal {
 				const input = listContainer.createEl('input', {
 					type: 'text',
 					cls: 'flex-1',
-					placeholder: i18n.t('settings.filters.placeholder'),
+					placeholder: t('settings.filters.placeholder'),
 					value: filter.expr,
 				});
 				input.spellcheck = false;
@@ -86,13 +86,13 @@ export default class FilterEditorModal extends Modal {
 					updateButtonStatus();
 				});
 				const trash = listContainer.createEl('button', {
-					text: i18n.t('settings.filters.remove'),
+					text: t('settings.filters.remove'),
 				});
 				let confirmDelete = false;
 				trash.addEventListener('click', () => {
 					if (!confirmDelete) {
 						confirmDelete = true;
-						trash.setText(i18n.t('settings.filters.confirmRemove'));
+						trash.setText(t('settings.filters.confirmRemove'));
 						trash.addClass('mod-warning');
 					} else {
 						this.filters.splice(index, 1);
@@ -101,7 +101,7 @@ export default class FilterEditorModal extends Modal {
 				});
 				trash.addEventListener('blur', () => {
 					confirmDelete = false;
-					trash.setText(i18n.t('settings.filters.remove'));
+					trash.setText(t('settings.filters.remove'));
 					trash.removeClass('mod-warning');
 				});
 				itemContainer.appendChild(input);
@@ -113,7 +113,7 @@ export default class FilterEditorModal extends Modal {
 		updateList();
 
 		new Setting(contentEl).addButton((button) => {
-			button.setButtonText(i18n.t('settings.filters.add')).onClick(() => {
+			button.setButtonText(t('settings.filters.add')).onClick(() => {
 				this.filters.push({
 					expr: '',
 					options: {
@@ -127,7 +127,7 @@ export default class FilterEditorModal extends Modal {
 		new Setting(contentEl)
 			.addButton((button) => {
 				button
-					.setButtonText(i18n.t('settings.filters.save'))
+					.setButtonText(t('settings.filters.save'))
 					.setCta()
 					.onClick(() => {
 						this.onSave(this.filters);
@@ -135,7 +135,7 @@ export default class FilterEditorModal extends Modal {
 					});
 			})
 			.addButton((button) => {
-				button.setButtonText(i18n.t('settings.filters.cancel')).onClick(() => {
+				button.setButtonText(t('settings.filters.cancel')).onClick(() => {
 					this.close();
 				});
 			});

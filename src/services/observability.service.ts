@@ -1,7 +1,7 @@
 import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
 import { syncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
-import i18n from '~/i18n';
+import t from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
 import type WebDAVSyncPlugin from '..';
 
@@ -123,7 +123,7 @@ export default class ObservabilityService {
 	private applyNotice(run: SyncRunSnapshot, previousRun: SyncRunSnapshot | null) {
 		const warning = this.getNewWarning(run, previousRun);
 		if (warning) {
-			new Notice(i18n.t(warning.messageKey), 5000);
+			new Notice(t(warning.messageKey), 5000);
 			return;
 		}
 
@@ -180,49 +180,49 @@ export default class ObservabilityService {
 
 		this.shownFailureModalRunIds.add(run.runId);
 		new FailedTasksModal(this.plugin.app, run.resultSummary.failed, {
-			syncType: i18n.t(`sync.runKind.${run.runKind}`),
+			syncType: t(`sync.runKind.${run.runKind}`),
 			failedCount: run.resultSummary.failedTasks,
 		}).open();
 	}
 
 	private getStatusText(run: SyncRunSnapshot): string {
-		const syncType = i18n.t(`sync.runKind.${run.runKind}`);
+		const syncType = t(`sync.runKind.${run.runKind}`);
 		switch (run.stage) {
 			case 'queued':
 			case 'planning':
 				return this.getPlanningStatusText(syncType, run);
 			case 'awaiting_confirmation':
-				return `${syncType} · ${i18n.t('sync.awaitingConfirmation')}`;
+				return `${syncType} · ${t('sync.awaitingConfirmation')}`;
 			case 'executing': {
 				const { totalTasks, completedTasks } = run.progressSummary;
-				if (totalTasks === 0) return `${syncType} · ${i18n.t('sync.start')}`;
+				if (totalTasks === 0) return `${syncType} · ${t('sync.start')}`;
 				const percent = Math.round((completedTasks / totalTasks) * 10000) / 100;
-				return `${syncType} · ${i18n.t('sync.progress', { percent })}`;
+				return `${syncType} · ${t('sync.progress', { percent })}`;
 			}
 			case 'completed':
 				return run.resultSummary?.failedTasks
-					? `${syncType} · ${i18n.t('sync.completeWithFailed', {
+					? `${syncType} · ${t('sync.completeWithFailed', {
 							failedCount: run.resultSummary.failedTasks,
 						})}`
-					: `${syncType} · ${i18n.t('sync.complete')}`;
+					: `${syncType} · ${t('sync.complete')}`;
 			case 'completed_noop':
-				return `${syncType} · ${i18n.t(run.mode === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate')}`;
+				return `${syncType} · ${t(run.mode === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate')}`;
 			case 'cancelled':
-				return `${syncType} · ${i18n.t('sync.cancelled')}`;
+				return `${syncType} · ${t('sync.cancelled')}`;
 			case 'failed':
 				return run.resultSummary?.failedTasks
-					? `${syncType} · ${i18n.t('sync.completeWithFailed', {
+					? `${syncType} · ${t('sync.completeWithFailed', {
 							failedCount: run.resultSummary.failedTasks,
 						})}`
-					: `${syncType} · ${i18n.t('sync.failedStatus')}`;
+					: `${syncType} · ${t('sync.failedStatus')}`;
 		}
 	}
 
 	private getPlanningStatusText(syncType: string, run: SyncRunSnapshot): string {
 		const planningProgress = run.planningProgress;
-		if (!planningProgress) return `${syncType} · ${i18n.t('sync.preparing')}`;
+		if (!planningProgress) return `${syncType} · ${t('sync.preparing')}`;
 		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
-		const stageText = i18n.t(`sync.planningStage.${subStage}`);
+		const stageText = t(`sync.planningStage.${subStage}`);
 		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
 		return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
 	}
@@ -236,29 +236,29 @@ export default class ObservabilityService {
 
 		switch (run.stage) {
 			case 'planning':
-				return run.mode === 'manual' ? i18n.t('sync.preparing') : null;
+				return run.mode === 'manual' ? t('sync.preparing') : null;
 			case 'executing':
-				return run.mode === 'manual' ? i18n.t('sync.start') : null;
+				return run.mode === 'manual' ? t('sync.start') : null;
 			case 'completed':
 				return run.mode === 'manual'
 					? run.resultSummary?.failedTasks
-						? i18n.t('sync.completeWithFailed', {
+						? t('sync.completeWithFailed', {
 								failedCount: run.resultSummary.failedTasks,
 							})
-						: i18n.t('sync.complete')
+						: t('sync.complete')
 					: null;
 			case 'completed_noop':
-				return run.mode === 'manual' ? i18n.t('sync.noChangesToSync') : null;
+				return run.mode === 'manual' ? t('sync.noChangesToSync') : null;
 			case 'cancelled':
-				return run.mode === 'manual' ? i18n.t('sync.cancelled') : null;
+				return run.mode === 'manual' ? t('sync.cancelled') : null;
 			case 'failed':
 				if (run.resultSummary?.failedTasks) {
-					return i18n.t('sync.completeWithFailed', {
+					return t('sync.completeWithFailed', {
 						failedCount: run.resultSummary.failedTasks,
 					});
 				}
-				return i18n.t('sync.failedWithError', {
-					error: run.errorSummary?.message ?? i18n.t('sync.failedStatus'),
+				return t('sync.failedWithError', {
+					error: run.errorSummary?.message ?? t('sync.failedStatus'),
 				});
 			default:
 				return null;
