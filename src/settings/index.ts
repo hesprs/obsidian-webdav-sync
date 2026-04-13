@@ -1,5 +1,5 @@
+import type WebDAVSyncPlugin from '~';
 import { App, PluginSettingTab } from 'obsidian';
-import type WebDAVSyncPlugin from '~/index';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
@@ -31,7 +31,7 @@ export enum UnmergeableStrategy {
 export interface PluginSettings {
 	serverUrl: string;
 	account: string;
-	credential: string;
+	token: string;
 	remoteDir: string;
 	showSyncStatusInNotificationOnMobile: boolean;
 	useGitStyle: boolean;

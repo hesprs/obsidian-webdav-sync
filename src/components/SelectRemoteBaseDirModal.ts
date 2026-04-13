@@ -1,8 +1,8 @@
 import { App, Modal } from 'obsidian';
+import WebDAVSyncPlugin from '~';
 import { getDirectoryContents } from '~/api';
 import { normalizeBaseDir, normalizePathToAbsolute, remoteBasename } from '~/platform/path';
 import { mkdirsWebDAV } from '~/utils/mkdirs-webdav';
-import WebDAVSyncPlugin from '..';
 import { mount as mountWebDAVExplorer } from './explorer';
 
 export default class SelectRemoteBaseDirModal extends Modal {

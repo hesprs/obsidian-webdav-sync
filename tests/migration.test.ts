@@ -1,5 +1,5 @@
+import type WebDAVSyncPlugin from '~';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type WebDAVSyncPlugin from '~/index';
 import type { StatModel } from '~/types';
 import { normalizeVaultPath } from '~/platform/path';
 import { migrateStorage } from '~/storage';

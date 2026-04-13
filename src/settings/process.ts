@@ -1,12 +1,12 @@
+import type WebDAVSyncPlugin from '~';
 import { parse as bytesParse } from 'bytes-iec';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import { hash } from '~/platform/crypto';
 import { normalizeBaseDir } from '~/platform/path';
 import logger from '~/utils/logger';
-import type WebDAVSyncPlugin from '..';
 import { ConflictStrategy } from '.';
 
-// TODO: remove migration in October 2026
+// TODO: remove migration in May 2026
 export function processSettings(plugin: WebDAVSyncPlugin): void {
 	let changed = false;
 
@@ -89,6 +89,23 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 		delete plugin.settings.language;
 		changed = true;
 		logger.info('Migrated user language settings.');
+	}
+
+	// remove at 1 May 2026
+	if ('credential' in plugin.settings) {
+		try {
+			const credential = plugin.settings.credential;
+			if (credential && typeof credential === 'string') {
+				plugin.app.secretStorage.setSecret('webdav-token', credential);
+				plugin.settings.token = 'webdav-token';
+			}
+			delete plugin.settings.credential;
+			changed = true;
+			logger.info('Migrated user WebDAV token to secret storage.');
+		} catch (e) {
+			logger.error('Failed to migrate WebDAV token!', e);
+			throw e;
+		}
 	}
 
 	if (changed) void plugin.saveSettings();

@@ -1,7 +1,7 @@
 import { clamp } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import t from '~/i18n';
-import { ConflictStrategy, SyncMode, UnmergeableStrategy } from './index';
+import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '.';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {

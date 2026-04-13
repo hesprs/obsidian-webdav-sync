@@ -1,9 +1,9 @@
+import type WebDAVSyncPlugin from '~';
 import { Notice, Platform } from 'obsidian';
 import FailedTasksModal from '~/components/FailedTasksModal';
 import { syncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import t from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
-import type WebDAVSyncPlugin from '..';
 
 const TERMINAL_STAGES: SyncRunStage[] = ['completed', 'completed_noop', 'cancelled', 'failed'];
 const MOBILE_SYNC_NOTICE_HIDE_DELAY = 2000;

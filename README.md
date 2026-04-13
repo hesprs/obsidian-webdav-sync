@@ -115,7 +115,7 @@ The only scenario you may need to manually delete some files happens when you ex
 Below is a list of planned features and improvements, the faster this plugin is adopted and the star ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
 
 - [x] Support syncing files in the Obsidian config folder (`.obsidian/`)
-- [ ] Saving WebDAV credentials in Obsidian Keychain
+- [x] Saving WebDAV credentials in Obsidian Keychain
 - [x] Allow users to adjust rate and concurrency limits
 - [x] Enhance observability of sync progress
 - [ ] Implement E2E encryption like the one in Remotely Save

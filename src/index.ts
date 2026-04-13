@@ -24,6 +24,7 @@ import {
 import { processSettings } from './settings/process';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
 import { apiLimiter } from './utils/api-limiter';
+import { getCredential } from './utils/get-credential';
 
 function createGlobMatchOptions(expr: string) {
 	return {
@@ -39,7 +40,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public settings: PluginSettings = {
 		serverUrl: '',
 		account: '',
-		credential: '',
+		token: '',
 		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
@@ -132,7 +133,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	}
 
 	getToken() {
-		const token = `${this.settings.account}:${this.settings.credential}`;
+		const token = `${this.settings.account}:${getCredential(this)}`;
 		return btoa(token);
 	}
 
@@ -146,8 +147,9 @@ export default class WebDAVSyncPlugin extends Plugin {
 			this.settings.serverUrl.trim() !== '' &&
 			!!this.settings.account &&
 			this.settings.account.trim() !== '' &&
-			!!this.settings.credential &&
-			this.settings.credential.trim() !== ''
+			!!this.settings.token &&
+			this.settings.token.trim() !== '' &&
+			!!this.app.secretStorage.getSecret(this.settings.token)
 		);
 	}
 }

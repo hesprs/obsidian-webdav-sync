@@ -1,7 +1,7 @@
+import type WebDAVSyncPlugin from '~';
 import type { SyncTrigger } from '~/events';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
-import type WebDAVSyncPlugin from '..';
 import type { SyncExecutionRequest, SyncOptions } from './sync-executor.service';
 import type SyncExecutorService from './sync-executor.service';
 
