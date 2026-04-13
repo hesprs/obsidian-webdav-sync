@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.3.1 - 2026-04-13
+
+- Fixed the i18n bug that causes all non-English default users all fallback to English when they are using their native locale in Obsidian.
+
 ## Obsidian WebDAV Sync v2.3.0 - 2026-04-13
 
 **Note: breaking change present (moved WebDAV credential into secret store), but auto-migration available. The real intrusion is zero for most users.**
