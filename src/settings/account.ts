@@ -1,4 +1,4 @@
-import { Notice, Setting, TextComponent } from 'obsidian';
+import { Notice, SecretComponent, Setting, TextComponent } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
@@ -57,15 +57,16 @@ export default class AccountSettings extends BaseSettings {
 		new Setting(this.containerEl)
 			.setName(t('settings.credential.name'))
 			.setDesc(t('settings.credential.desc'))
-			.addText((text) => {
-				text.setPlaceholder(t('settings.credential.placeholder')).setValue(
-					this.plugin.settings.credential,
-				);
-				text.inputEl.type = 'password';
-				text.inputEl.addEventListener('blur', () => {
-					handleInput(text, this.plugin, 'credential');
-				});
-			});
+			.addComponent((element) =>
+				new SecretComponent(this.app, element)
+					.setValue(this.plugin.settings.token)
+					.onChange((token) => {
+						if (this.plugin.settings.token !== token) {
+							this.plugin.settings.token = token;
+							void this.plugin.saveSettings();
+						}
+					}),
+			);
 
 		this.displayCheckConnection();
 

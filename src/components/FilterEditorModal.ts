@@ -1,8 +1,8 @@
 import { cloneDeep } from 'lodash-es';
 import { Modal, Setting } from 'obsidian';
+import WebDAVSyncPlugin from '~';
 import t from '~/i18n';
 import { getUserOptions, type GlobMatchOptions } from '~/utils/glob-match';
-import WebDAVSyncPlugin from '..';
 
 enum FilterType {
 	Include = 'include',

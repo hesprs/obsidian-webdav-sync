@@ -1,6 +1,6 @@
+import type WebDAVSyncPlugin from '~';
 import localspace from 'localspace';
 import { isNil } from 'lodash-es';
-import type WebDAVSyncPlugin from '~/index';
 import type { RecordStatModel, StatModel } from '~/types';
 import {
 	normalizePathToAbsolute,

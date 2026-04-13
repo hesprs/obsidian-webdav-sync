@@ -1,3 +1,4 @@
+import type WebDAVSyncPlugin from '~';
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import {
 	createQueuedSyncRunSnapshot,
@@ -14,7 +15,6 @@ import { isSyncCancelledError } from '~/sync/errors';
 import { SyncRunKind } from '~/types';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
-import type WebDAVSyncPlugin from '..';
 
 export interface SyncOptions {
 	mode: SyncStartMode;

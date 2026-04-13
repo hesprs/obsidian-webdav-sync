@@ -1,6 +1,6 @@
+import WebDAVSyncPlugin from '~';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
-import WebDAVSyncPlugin from '..';
 import { launchManualSync } from './manual-sync.service';
 
 export function setupCommands(plugin: WebDAVSyncPlugin) {

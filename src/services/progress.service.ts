@@ -1,10 +1,10 @@
 import { throttle } from 'lodash-es';
 import { Notice } from 'obsidian';
+import WebDAVSyncPlugin from '~';
 import type { SyncPlanningProgress, SyncProgressSummary, SyncRunSnapshot } from '~/events';
-import SyncProgressModal from '../components/SyncProgressModal';
-import { syncRun } from '../events';
-import t from '../i18n';
-import WebDAVSyncPlugin from '../index';
+import SyncProgressModal from '~/components/SyncProgressModal';
+import { syncRun } from '~/events';
+import t from '~/i18n';
 
 export class ProgressService {
 	private progressModal: SyncProgressModal | null = null;

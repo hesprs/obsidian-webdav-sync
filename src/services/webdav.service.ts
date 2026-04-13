@@ -1,6 +1,7 @@
 import { createClient, type WebDAVClient } from 'webdav';
+import WebDAVSyncPlugin from '~';
 import { apiLimiter } from '~/utils/api-limiter';
-import WebDAVSyncPlugin from '../index';
+import { getCredential } from '~/utils/get-credential';
 
 export function createRateLimitedWebDAVClient(client: WebDAVClient): WebDAVClient {
 	return new Proxy(client, {
@@ -42,7 +43,7 @@ export class WebDAVService {
 	createWebDAVClient(): WebDAVClient {
 		const client = createClient(this.getServerUrl(), {
 			username: this.plugin.settings.account,
-			password: this.plugin.settings.credential,
+			password: getCredential(this.plugin),
 		});
 		return createRateLimitedWebDAVClient(client);
 	}

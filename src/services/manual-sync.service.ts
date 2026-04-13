@@ -1,7 +1,7 @@
+import type WebDAVSyncPlugin from '~';
 import { Notice } from 'obsidian';
+import SyncConfirmModal from '~/components/SyncConfirmModal';
 import t from '~/i18n';
-import type WebDAVSyncPlugin from '..';
-import SyncConfirmModal from '../components/SyncConfirmModal';
 
 interface LaunchManualSyncOptions {
 	skipConfirmation?: boolean;

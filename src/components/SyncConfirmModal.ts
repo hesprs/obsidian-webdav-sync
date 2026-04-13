@@ -1,7 +1,7 @@
+import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
-import type WebDAVSyncPlugin from '../index';
-import t from '../i18n';
-import { launchManualSync } from '../services/manual-sync.service';
+import t from '~/i18n';
+import { launchManualSync } from '~/services/manual-sync.service';
 
 export default class SyncConfirmModal extends Modal {
 	constructor(private plugin: WebDAVSyncPlugin) {

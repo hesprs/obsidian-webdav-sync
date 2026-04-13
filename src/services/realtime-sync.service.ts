@@ -1,11 +1,11 @@
 import type { TAbstractFile } from 'obsidian';
+import WebDAVSyncPlugin from '~';
 import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import type SyncSchedulerService from './sync-scheduler.service';
-import WebDAVSyncPlugin from '..';
 
 export default class RealtimeSyncService {
 	private onChange = async (file: TAbstractFile, old?: string) => {

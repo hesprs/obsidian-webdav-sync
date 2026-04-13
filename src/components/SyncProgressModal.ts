@@ -1,16 +1,16 @@
 import { ButtonComponent, Modal, setIcon, Setting } from 'obsidian';
+import WebDAVSyncPlugin from '~';
+import { syncCancel, SyncPlanningSubStage } from '~/events';
+import t from '~/i18n';
 import CleanRecordTask from '~/sync/tasks/clean-record.task';
+import MergeTask from '~/sync/tasks/merge.task';
+import MkdirLocalTask from '~/sync/tasks/mkdir-local.task';
+import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
+import PullTask from '~/sync/tasks/pull.task';
+import PushTask from '~/sync/tasks/push.task';
+import RemoveLocalTask from '~/sync/tasks/remove-local.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
-import WebDAVSyncPlugin from '..';
-import { syncCancel, SyncPlanningSubStage } from '../events';
-import t from '../i18n';
-import MergeTask from '../sync/tasks/merge.task';
-import MkdirLocalTask from '../sync/tasks/mkdir-local.task';
-import MkdirRemoteTask from '../sync/tasks/mkdir-remote.task';
-import PullTask from '../sync/tasks/pull.task';
-import PushTask from '../sync/tasks/push.task';
-import RemoveLocalTask from '../sync/tasks/remove-local.task';
-import RemoveRemoteTask from '../sync/tasks/remove-remote.task';
+import RemoveRemoteTask from '~/sync/tasks/remove-remote.task';
 
 export default class SyncProgressModal extends Modal {
 	private progressBar!: HTMLDivElement;
