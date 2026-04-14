@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.3.2 - 2026-04-14
+
+- Fixed the file deletion bug that causes the plugin unable to delete any files on Android.
+- Made the plugin prune stale records during syncing.
+
 ## Obsidian WebDAV Sync v2.3.1 - 2026-04-13
 
 - Fixed the i18n bug that causes all non-English default users all fallback to English when they are using their native locale in Obsidian.

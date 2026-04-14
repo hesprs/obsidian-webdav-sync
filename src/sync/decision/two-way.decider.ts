@@ -1,8 +1,10 @@
 import type { SyncRecord } from '~/storage';
 import type { RecordStatsMap, StatsMap } from '~/types';
 import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
+import postTraversal from '~/fs/post-traversal';
 import { traverseVault } from '~/fs/traverse-vault';
 import { traverseWebDAV } from '~/fs/traverse-webdav';
+import { useSettings } from '~/settings';
 import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
@@ -69,7 +71,7 @@ export default class TwoWaySyncDecider {
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
-				? extractRemoteRecords(records)
+				? await extractRemoteRecords(records)
 				: await traverseWebDAV({
 						onProgress: (progress) =>
 							onProgress({
@@ -128,8 +130,9 @@ export default class TwoWaySyncDecider {
 	}
 }
 
-function extractRemoteRecords(records: RecordStatsMap): StatsMap {
+async function extractRemoteRecords(records: RecordStatsMap): Promise<StatsMap> {
 	const res: StatsMap = new Map();
+	const { filterRules, skipLargeFiles } = await useSettings();
 	for (const [path, record] of records) res.set(path, record.remote);
-	return res;
+	return postTraversal(res, filterRules, skipLargeFiles.bytes);
 }

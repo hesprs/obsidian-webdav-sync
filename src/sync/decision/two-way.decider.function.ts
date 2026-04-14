@@ -18,7 +18,9 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 		taskFactory,
 		remoteBaseDir,
 	} = input;
-	const mixedPath = Array.from(new Set([...localStats.keys(), ...remoteStats.keys()]));
+	const mixedPath = Array.from(
+		new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]),
+	);
 
 	logger.debug('local state', Array.from(localStats.keys()));
 	logger.debug('remote state', Array.from(remoteStats.keys()));
@@ -446,12 +448,8 @@ export function twoWayDecider(input: SyncDecisionInput): BaseTask[] {
 		logger.debug(`cleaning orphaned sync record ${path}`, {
 			reason: 'both local and remote deleted',
 		});
-		tasks.push(
-			taskFactory.createCleanRecordTask({
-				remotePath: path,
-				localPath: path,
-			}),
-		);
+		tasks.push(taskFactory.createCleanRecordTask({ remotePath: path, localPath: path }));
 	}
+
 	return tasks;
 }
