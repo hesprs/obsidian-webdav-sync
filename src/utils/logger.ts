@@ -240,7 +240,6 @@ class Logger {
 
 		if (summary.resultSummary) {
 			lines.push('#### Outcome', '');
-			lines.push(`- Total tasks: ${summary.resultSummary.totalTasks}`);
 			lines.push(`- Succeeded: ${summary.resultSummary.succeededTasks}`);
 			lines.push(`- Failed: ${summary.resultSummary.failedTasks}`, '');
 		}
