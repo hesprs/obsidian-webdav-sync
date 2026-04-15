@@ -1,0 +1,69 @@
+name: 🐛 Bug Report
+description: File a bug report to help us improve.
+title: '[Bug]: '
+labels: ['bug']
+assignees:
+  - hesprs
+
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for taking the time to fill out this bug report!
+
+  - type: textarea
+    id: real-outcome
+    attributes:
+      label: Real Outcome
+      description: A brief and clear description on what happened.
+      placeholder: Tell us what you see!
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-outcome
+    attributes:
+      label: Expected Outcome
+      description: Tell us what do you think is the correct behaviour.
+      placeholder: Tell us what you expect!
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this behaviour?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Wait for '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Support Log
+      description: Please go to plugin settings - `Development settings` - `Support report`, click `Export to note`, copy and paste the content of the full log. This will be automatically formatted into code, so no need for backticks.
+      render: shell
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Issue Policies
+      description: By submitting this issue, I agree to follow the issue policies below.
+      options:
+        - label: "I agree to follow this project's issue policies and confirm:"
+          required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        - I have provided clear and reproducible information about the issue.
+        - I have ensured that this issue only contains one bug.
+        - I have checked historical bugs and there's no entry fitting this scenario.
+        - I have confirmed that the issue doesn't contain any sensitive information.
+        - Issues caused by non-standard WebDAV server configurations **will not be fixed**.
+        - Issues where maintainers has requested clarification / coordinated testing but the reporter hasn't provide any further information will be closed after 24  hours.
+        - Issues without enough information will be closed after 24 hours.

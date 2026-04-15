@@ -1,0 +1,35 @@
+name: 🚀 Feature Request
+description: Suggest an idea for this project.
+title: '[Feature Request]: '
+labels: ['feature-request']
+assignees:
+  - hesprs
+
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for suggesting a new feature!
+
+  - type: checkboxes
+    id: duplication-check
+    attributes:
+      label: Duplication Check
+      description: Please confirm that you have searched existing feature requests and found no similar.
+      options:
+        - label: I have searched the existing issues
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: How Should It Be Like?
+      description: A clear and concise description of how you dreamed function will be like.
+      placeholder: I'm always frustrated when [...]
+    validations:
+      required: true
+
+  - type: textarea
+    id: mechanism
+    attributes:
+      label: How Would It Work?
+      description: If you are the developer, how would you write code and design the mechanism to achieve the requested feature? (OK to keep blank if you don't understand the code).
