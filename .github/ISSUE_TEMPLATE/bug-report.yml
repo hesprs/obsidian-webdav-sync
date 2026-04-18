@@ -28,6 +28,15 @@ body:
     validations:
       required: true
 
+  - type: input
+    id: provider
+    attributes:
+      label: WebDAV Service Provider
+      description: The WebDAV service from which provider are you using?
+      placeholder: e.g., self-hosted [...] NAS
+    validations:
+      required: true
+
   - type: textarea
     id: reproduction
     attributes:
@@ -65,5 +74,5 @@ body:
         - I have checked historical bugs and there's no entry fitting this scenario.
         - I have confirmed that the issue doesn't contain any sensitive information.
         - Issues caused by non-standard WebDAV server configurations **will not be fixed**.
-        - Issues where maintainers has requested clarification / coordinated testing but the reporter hasn't provide any further information will be closed after 24  hours.
+        - Issues where maintainers has requested clarification / coordinated testing but the reporter hasn't provide any further information will be closed after 24 hours.
         - Issues without enough information will be closed after 24 hours.
