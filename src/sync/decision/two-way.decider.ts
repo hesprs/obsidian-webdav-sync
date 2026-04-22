@@ -134,5 +134,9 @@ async function extractRemoteRecords(records: RecordStatsMap): Promise<StatsMap> 
 	const res: StatsMap = new Map();
 	const { filterRules, skipLargeFiles } = await useSettings();
 	for (const [path, record] of records) res.set(path, record.remote);
-	return postTraversal(res, filterRules, skipLargeFiles.bytes);
+	return postTraversal(
+		res,
+		filterRules,
+		skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
+	);
 }

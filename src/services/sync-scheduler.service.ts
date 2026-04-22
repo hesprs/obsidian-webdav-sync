@@ -83,7 +83,7 @@ export default class SyncSchedulerService {
 			0,
 		);
 
-		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSyncDelay - Date.now());
+		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSync.value - Date.now());
 	}
 
 	private reduceBatch(batch: SyncRequest[]): SyncExecutionRequest {

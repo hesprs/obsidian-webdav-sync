@@ -1,19 +1,31 @@
+import { useSettings, type PluginSettings } from '~/settings';
+
 /**
  * A simple rate limiter for API calls.
  * @param options.maxConcurrent - The maximum number of concurrent requests.
  * @param options.minTime - The minimum time between requests.
  */
 class ApiLimiter {
-	private maxConcurrent: number;
-	private minTime: number;
 	private activeCount = 0;
 	private lastStartTime = 0;
 	private readonly queue: Array<() => void> = [];
 	private timer: number | null = null;
+	private settings: PluginSettings | undefined;
 
-	constructor({ maxConcurrent, minTime }: { maxConcurrent?: number; minTime?: number }) {
-		this.maxConcurrent = maxConcurrent ?? 0;
-		this.minTime = minTime ?? 0;
+	constructor() {
+		void (async () => (this.settings = await useSettings()))();
+	}
+
+	get maxConcurrent() {
+		if (!this.settings) return Infinity;
+		const field = this.settings.maxWebDAVConcurrency;
+		return field.enabled ? field.value : Infinity;
+	}
+
+	get minTime() {
+		if (!this.settings) return 0;
+		const field = this.settings.minWebDAVRequestInterval;
+		return field.enabled ? field.value : 0;
 	}
 
 	schedule<T>(fn: () => T | Promise<T>): Promise<T> {
@@ -38,19 +50,8 @@ class ApiLimiter {
 		return (...args: TArgs) => this.schedule(() => fn(...args));
 	}
 
-	setMinTime(value: number) {
-		this.minTime = value;
-	}
-	setMaxConcurrent(value: number) {
-		this.maxConcurrent = value;
-	}
-
 	private processQueue() {
-		if (
-			(this.maxConcurrent !== 0 && this.activeCount >= this.maxConcurrent) ||
-			this.queue.length === 0
-		)
-			return;
+		if (this.activeCount >= this.maxConcurrent || this.queue.length === 0) return;
 
 		const now = Date.now();
 		const nextAllowed = this.lastStartTime + this.minTime;
@@ -75,7 +76,4 @@ class ApiLimiter {
 	}
 }
 
-export const apiLimiter = new ApiLimiter({
-	maxConcurrent: 0,
-	minTime: 0,
-});
+export const apiLimiter = new ApiLimiter();

@@ -92,5 +92,9 @@ export async function traverseWebDAV({
 			}),
 		);
 	}
-	return postTraversal(result, filterRules, skipLargeFiles.bytes);
+	return postTraversal(
+		result,
+		filterRules,
+		skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
+	);
 }

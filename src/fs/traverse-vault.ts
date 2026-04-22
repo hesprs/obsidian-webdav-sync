@@ -40,5 +40,9 @@ export async function traverseVault({ vault }: TraverseVaultOptions) {
 			}),
 		);
 	}
-	return postTraversal(result, filterRules, skipLargeFiles.bytes);
+	return postTraversal(
+		result,
+		filterRules,
+		skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
+	);
 }

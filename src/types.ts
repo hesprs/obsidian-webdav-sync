@@ -39,3 +39,8 @@ export type KeyOfObject<T, P extends string = ''> = T extends object
 				: never;
 		}[keyof T]
 	: never;
+
+export type ToggleNumericSettingsField = {
+	enabled: boolean;
+	value: number;
+};

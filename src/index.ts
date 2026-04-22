@@ -22,8 +22,7 @@ import {
 	UnmergeableStrategy,
 } from './settings';
 import { processSettings } from './settings/process';
-import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
-import { apiLimiter } from './utils/api-limiter';
+import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import { getCredential } from './utils/get-credential';
 
 function createGlobMatchOptions(expr: string) {
@@ -72,17 +71,38 @@ export default class WebDAVSyncPlugin extends Plugin {
 			inclusionRules: [],
 		},
 		skipLargeFiles: {
-			maxSize: '30 MB',
-			bytes: 31457280,
+			enabled: true,
+			value: 31457280,
 		},
-		realtimeSync: false,
-		realtimeSyncDelay: 5000,
-		maxConcurrentWebDAVCalls: 100,
-		maxConcurrentSyncTasks: 100,
-		minTimeBetweenWebDAVCalls: 0,
+		realtimeSync: {
+			enabled: false,
+			value: 5000,
+		},
+		maxWebDAVConcurrency: {
+			enabled: true,
+			value: 100,
+		},
+		maxSyncTaskConcurrency: {
+			enabled: true,
+			value: 100,
+		},
+		minWebDAVRequestInterval: {
+			enabled: false,
+			value: 0,
+		},
+		startupSync: {
+			enabled: false,
+			value: 0,
+		},
+		scheduledSync: {
+			enabled: false,
+			value: 600,
+		},
+		maxThroughputConcurrency: {
+			enabled: true,
+			value: 104_857_600,
+		},
 		useFastSyncOnLocalChange: true,
-		startupSyncDelaySeconds: 0,
-		scheduledSyncIntervalSeconds: 0,
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
@@ -98,15 +118,12 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		apiLimiter.setMaxConcurrent(this.settings.maxConcurrentWebDAVCalls);
-		apiLimiter.setMinTime(this.settings.minTimeBetweenWebDAVCalls);
 		await this.syncStateStore.initialize().catch(() => undefined);
 		await this.baseTextStore.initialize().catch(() => undefined);
-		await migrateStorage(this);
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		setupCommands(this);
-		await this.scheduledSyncService.start();
+		this.scheduledSyncService.start();
 	}
 
 	onunload() {
@@ -123,9 +140,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		processSettings(this);
 	}
 
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+	saveSettings = async () => await this.saveData(this.settings);
 
 	toggleSyncUI(isSyncing: boolean) {
 		this.isSyncing = isSyncing;

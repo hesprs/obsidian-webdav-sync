@@ -1,5 +1,6 @@
 import type WebDAVSyncPlugin from '~';
 import { App, PluginSettingTab } from 'obsidian';
+import type { ToggleNumericSettingsField } from '~/types';
 import type { GlobMatchOptions } from '~/utils/glob-match';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
@@ -40,22 +41,19 @@ export interface PluginSettings {
 	confirmBeforeSync: boolean;
 	confirmBeforeDeleteInAutoSync: boolean;
 	syncMode: SyncMode;
+	useFastSyncOnLocalChange: boolean;
 	filterRules: {
 		exclusionRules: GlobMatchOptions[];
 		inclusionRules: GlobMatchOptions[];
 	};
-	skipLargeFiles: {
-		maxSize: string;
-		bytes: number;
-	};
-	realtimeSync: boolean;
-	realtimeSyncDelay: number;
-	maxConcurrentWebDAVCalls: number;
-	maxConcurrentSyncTasks: number;
-	minTimeBetweenWebDAVCalls: number;
-	useFastSyncOnLocalChange: boolean;
-	startupSyncDelaySeconds: number;
-	scheduledSyncIntervalSeconds: number;
+	skipLargeFiles: ToggleNumericSettingsField; // value is max size
+	realtimeSync: ToggleNumericSettingsField; // value is delay
+	maxWebDAVConcurrency: ToggleNumericSettingsField; // value is max
+	maxThroughputConcurrency: ToggleNumericSettingsField; // value is max
+	maxSyncTaskConcurrency: ToggleNumericSettingsField; // value is max
+	minWebDAVRequestInterval: ToggleNumericSettingsField; // value is min
+	startupSync: ToggleNumericSettingsField; // value is delay
+	scheduledSync: ToggleNumericSettingsField; // value is interval
 }
 
 let pluginInstance: WebDAVSyncPlugin | null = null;

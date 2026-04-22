@@ -22,6 +22,11 @@ const sharedOptions = {
 	remote: {} as never,
 };
 
+const dummyOption = {
+	enabled: false,
+	value: 0,
+};
+
 describe('optimizeSync', () => {
 	it('creates directories before file writes and merges subtree removals', () => {
 		const tasks = optimizeTasks(
@@ -59,7 +64,8 @@ describe('optimizeSync', () => {
 				new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
 				new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
 			],
-			0,
+			dummyOption,
+			dummyOption,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
@@ -91,7 +97,8 @@ describe('optimizeSync', () => {
 					remotePath: 'archive',
 				}),
 			],
-			0,
+			dummyOption,
+			dummyOption,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);

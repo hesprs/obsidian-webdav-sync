@@ -12,7 +12,7 @@ export default class RealtimeSyncService {
 		const { useFastSyncOnLocalChange, realtimeSync, filterRules } = await useSettings();
 		const exclusions = buildRules(filterRules.exclusionRules);
 		const inclusions = buildRules(filterRules.inclusionRules);
-		if (!realtimeSync) return;
+		if (!realtimeSync.enabled) return;
 		if (
 			!needIncludeFromGlobRules(file.path, inclusions, exclusions) &&
 			!(old && needIncludeFromGlobRules(old, inclusions, exclusions))

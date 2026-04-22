@@ -208,7 +208,11 @@ export class SyncEngine {
 				}
 			}
 
-			const optimizedTaskGroups = optimizeTasks(tasks, settings.maxConcurrentSyncTasks);
+			const optimizedTaskGroups = optimizeTasks(
+				tasks,
+				settings.maxSyncTaskConcurrency,
+				settings.maxThroughputConcurrency,
+			);
 			const optimizedTasks = optimizedTaskGroups.flat();
 			const allTasksResult: TaskResult[] = [];
 

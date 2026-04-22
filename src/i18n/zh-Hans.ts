@@ -1,12 +1,14 @@
-export default {
+import type en from './enold';
+
+const translation: typeof en = {
 	errors: {
 		filenameUnsupportedChars: '文件 {{path}} 包含不支持的字符：{{chars}}',
 	},
 	settings: {
-		title: 'WebDAV 设置',
+		invalidValue: '无效数值，已恢复至上一次设置',
 		sections: {
 			common: '通用设置',
-			control: '速率与大文件设置',
+			control: '限控设置',
 			filters: '过滤规则',
 			development: '开发设置',
 		},
@@ -70,19 +72,9 @@ export default {
 			name: '手动同步前确认',
 			desc: '显示待处理任务，经确认后执行（不影响自动同步）',
 		},
-		realtimeSyncDelay: {
-			name: '实时同步延迟',
-			desc: '检测到变更到触发实时同步之间的延迟时间（秒）。数值越大，同步响应越慢，但能减少 WebDAV 流量。',
-			placeholder: '输入秒数',
-			invalidValue: '无效数值，已恢复至上一次的值',
-		},
 		confirmBeforeDeleteInAutoSync: {
 			name: '自动同步时删除文件前确认',
 			desc: '自动同步过程中检测到本地文件将被删除时，弹出确认对话框让你选择删除或重新上传',
-		},
-		realtimeSync: {
-			name: '实时同步',
-			desc: '文件修改后自动进行同步',
 		},
 		useFastSyncOnLocalChange: {
 			name: '本地变更快速同步',
@@ -93,38 +85,6 @@ export default {
 			desc: '选择严格或宽松同步模式。对于文件数量较多的用户，推荐使用宽松模式以获得更快的同步速度。在宽松模式下，名称相同且大小相等但无同步记录的文件将被视为已同步。',
 			strict: '严格',
 			loose: '宽松',
-		},
-		startupSyncDelay: {
-			name: '启动后自动同步',
-			desc: '设置启动后第几秒自动执行一次同步。设置为 0 则禁用启动时自动同步。',
-			placeholder: '输入秒数 (例如 5, 0 则禁用)',
-			invalidValue: '无效的数值，已重置为 0',
-			exceedsMax: '数值超过最大限制 {{max}} 秒（1天），已自动调整',
-		},
-		scheduledSyncInterval: {
-			name: '定时同步间隔',
-			desc: '设置后台定期同步的时间间隔（单位：分钟）。设为 0 可禁用定时同步。',
-			placeholder: '输入分钟数（例如：5，或 0 以禁用）',
-			invalidValue: '无效数值，已重置为 0',
-			exceedsMax: '数值超过最大限制 {{max}} 分钟（1 天），已自动调整',
-		},
-		maxConcurrentWebDAVCalls: {
-			name: '最大并发 WebDAV 请求数',
-			desc: '允许的最大并发 WebDAV 请求数量。数值越高，同步速度越快，但可能触发服务商的速率限制。设置为 0 可取消此限制。',
-			invalidValue: '无效数值，已恢复至上一次设置',
-			placeholder: '请输入数字',
-		},
-		maxConcurrentSyncTasks: {
-			name: '最大并发同步任务数',
-			desc: '同步任务是原子级的同步操作，例如下载文件或删除目录。此设置控制可并发执行的任务最大数量。设置为 0 可取消限制。',
-			invalidValue: '无效数值，已恢复至上一次设置',
-			placeholder: '请输入数字',
-		},
-		minTimeBetweenWebDAVCalls: {
-			name: 'WebDAV 请求最小间隔时间',
-			desc: '两次 WebDAV 请求之间的最小间隔（毫秒）。数值越小，同步速度越快，但可能触发速率限制。设置为 0 可取消此限制。',
-			invalidValue: '无效数值，已恢复至上一次设置',
-			placeholder: '请输入毫秒数',
 		},
 		filters: {
 			name: '过滤器',
@@ -146,6 +106,46 @@ export default {
 				desc: '匹配这些 Glob 模式的文件/文件夹将被同步（若已定义）。如需包含特定文件，请记得添加文件扩展名（例如：.md）。',
 			},
 		},
+		startupSync: {
+			name: '启动时自动同步',
+			desc: '在启动后自动触发同步。请在输入框中设置启动后的延迟时间，以便自动执行同步。',
+			placeholder: '输入延迟时间（例如 10s、1min）',
+		},
+		scheduledSync: {
+			name: '定时同步',
+			desc: '定期触发后台同步。请在输入框中设置周期性后台同步的间隔。',
+			placeholder: '输入间隔时间（例如 10min、0.5h）',
+		},
+		realtimeSync: {
+			name: '实时同步',
+			desc: '一旦文件被修改，立即自动触发同步。请在输入框中设置从文件修改到触发同步之间的延迟。',
+			placeholder: '同步延迟（例如 1s、500ms）',
+		},
+		maxWebDAVConcurrency: {
+			name: '最大并发 WebDAV 请求数',
+			desc: '限制最大并发 WebDAV 请求数量。请在输入框中设置该限制。',
+			placeholder: '输入数量',
+		},
+		maxSyncTaskConcurrency: {
+			name: '最大并发同步任务数',
+			desc: '同步任务是原子性的同步操作，例如下载文件或移除目录。此设置限制同时执行的最大任务数。请在输入框中设置该限制。',
+			placeholder: '输入数量',
+		},
+		minWebDAVRequestInterval: {
+			name: 'WebDAV 请求最小间隔时间',
+			desc: '限制 WebDAV 请求之间的最小时间间隔。请在输入框中设置该间隔。',
+			placeholder: '输入间隔时间（例如 1s、300ms）',
+		},
+		skipLargeFiles: {
+			name: '跳过大文件',
+			desc: '在同步过程中跳过超过此大小的文件。请在输入框中设置大小限制。',
+			placeholder: '输入大小限制（例如 10MB、0.5GB）',
+		},
+		maxThroughputConcurrency: {
+			name: '最大并发吞吐量',
+			desc: '限制同时上传或下载的文件总大小上限。在输入框中设置该限制。',
+			placeholder: '输入文件大小（例如 100MB、0.5GB）',
+		},
 		clearRecords: {
 			name: '清除记录',
 			desc: 'WebDAV 同步记录用于协调本地与远程文件之间的同步操作。此选项允许您选择性清除记录。警告：此操作极可能导致数据丢失。',
@@ -153,13 +153,6 @@ export default {
 			allButton: '清除所有记录',
 			vaultCleared: '仓库记录已清除',
 			allCleared: '所有记录已清除',
-		},
-		skipLargeFiles: {
-			name: '跳过大文件',
-			desc: '同步时将跳过超过此大小的文件。如遇同步崩溃，可尝试降低此值。',
-			placeholder: '例如：10 MiB 或 500 KiB',
-			invalidFormat: '无效的文件大小格式，请使用如 "10MB" 或 "500KB" 的格式',
-			exceedsMaxSize: '文件大小超过最大限制 500MB',
 		},
 		log: {
 			name: '支持报告',
@@ -291,3 +284,5 @@ export default {
 		longAgo: '很久前',
 	},
 };
+
+export default translation;

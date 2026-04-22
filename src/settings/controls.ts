@@ -1,154 +1,65 @@
-import { parse as bytesParse } from 'bytes-iec';
-import { isNil } from 'lodash-es';
-import { Notice, Setting, TextComponent } from 'obsidian';
+import { Setting } from 'obsidian';
 import t from '~/i18n';
-import { apiLimiter } from '~/utils/api-limiter';
-import { isNumeric } from '~/utils/is-numeric';
+import generateSettingEntry, { UserInputType } from './generate-setting-entry';
 import BaseSettings from './settings.base';
-
-const MAX_FILE_SIZE = '500MB';
-const MAX_BYTES = bytesParse(MAX_FILE_SIZE, { mode: 'jedec' }) ?? 524288000;
 
 export default class ControlsSettings extends BaseSettings {
 	display() {
 		this.containerEl.empty();
 		new Setting(this.containerEl).setName(t('settings.sections.control')).setHeading();
 
-		new Setting(this.containerEl)
-			.setName(t('settings.skipLargeFiles.name'))
-			.setDesc(t('settings.skipLargeFiles.desc'))
-			.addText((text) => {
-				const currentValue = this.plugin.settings.skipLargeFiles.maxSize.trim();
-				text.setPlaceholder(t('settings.skipLargeFiles.placeholder')).setValue(
-					currentValue,
-				);
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.skipLargeFiles.name'),
+			desc: t('settings.skipLargeFiles.desc'),
+			placeholder: t('settings.skipLargeFiles.placeholder'),
+			field: this.plugin.settings.skipLargeFiles,
+			type: UserInputType.FileSize,
+			saveSettings: this.plugin.saveSettings,
+			rejectZero: true,
+		});
 
-				text.inputEl.addEventListener('blur', () => void this.handleMaxFileSizeBlur(text));
-			});
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.maxWebDAVConcurrency.name'),
+			desc: t('settings.maxWebDAVConcurrency.desc'),
+			placeholder: t('settings.maxWebDAVConcurrency.placeholder'),
+			field: this.plugin.settings.maxWebDAVConcurrency,
+			type: UserInputType.Number,
+			saveSettings: this.plugin.saveSettings,
+			rejectZero: true,
+		});
 
-		new Setting(this.containerEl)
-			.setName(t('settings.realtimeSyncDelay.name'))
-			.setDesc(t('settings.realtimeSyncDelay.desc'))
-			.addText((text) => {
-				const currentValue = (this.plugin.settings.realtimeSyncDelay / 1000).toString();
-				text.setPlaceholder(t('settings.realtimeSyncDelay.placeholder')).setValue(
-					currentValue,
-				);
-				text.inputEl.addEventListener(
-					'blur',
-					() => void this.handleRealtimeSyncDelayBlur(text),
-				);
-			});
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.maxSyncTaskConcurrency.name'),
+			desc: t('settings.maxSyncTaskConcurrency.desc'),
+			placeholder: t('settings.maxSyncTaskConcurrency.placeholder'),
+			field: this.plugin.settings.maxSyncTaskConcurrency,
+			type: UserInputType.Number,
+			saveSettings: this.plugin.saveSettings,
+			rejectZero: true,
+		});
 
-		new Setting(this.containerEl)
-			.setName(t('settings.maxConcurrentWebDAVCalls.name'))
-			.setDesc(t('settings.maxConcurrentWebDAVCalls.desc'))
-			.addText((text) => {
-				const currentValue = this.plugin.settings.maxConcurrentWebDAVCalls.toString();
-				text.setPlaceholder(t('settings.maxConcurrentWebDAVCalls.placeholder')).setValue(
-					currentValue,
-				);
-				text.inputEl.addEventListener(
-					'blur',
-					() =>
-						void this.handleNumericBlur(text, 'maxConcurrentWebDAVCalls', (max) =>
-							apiLimiter.setMaxConcurrent(max),
-						),
-				);
-			});
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.minWebDAVRequestInterval.name'),
+			desc: t('settings.minWebDAVRequestInterval.desc'),
+			placeholder: t('settings.minWebDAVRequestInterval.placeholder'),
+			field: this.plugin.settings.minWebDAVRequestInterval,
+			type: UserInputType.Time,
+			saveSettings: this.plugin.saveSettings,
+		});
 
-		new Setting(this.containerEl)
-			.setName(t('settings.maxConcurrentSyncTasks.name'))
-			.setDesc(t('settings.maxConcurrentSyncTasks.desc'))
-			.addText((text) => {
-				const currentValue = this.plugin.settings.maxConcurrentSyncTasks.toString();
-				text.setPlaceholder(t('settings.maxConcurrentSyncTasks.placeholder')).setValue(
-					currentValue,
-				);
-				text.inputEl.addEventListener(
-					'blur',
-					() => void this.handleNumericBlur(text, 'maxConcurrentSyncTasks'),
-				);
-			});
-
-		new Setting(this.containerEl)
-			.setName(t('settings.minTimeBetweenWebDAVCalls.name'))
-			.setDesc(t('settings.minTimeBetweenWebDAVCalls.desc'))
-			.addText((text) => {
-				const currentValue = this.plugin.settings.minTimeBetweenWebDAVCalls.toString();
-				text.setPlaceholder(t('settings.minTimeBetweenWebDAVCalls.placeholder')).setValue(
-					currentValue,
-				);
-				text.inputEl.addEventListener(
-					'blur',
-					() =>
-						void this.handleNumericBlur(text, 'minTimeBetweenWebDAVCalls', (interval) =>
-							apiLimiter.setMinTime(interval),
-						),
-				);
-			});
-	}
-
-	private async handleRealtimeSyncDelayBlur(component: TextComponent) {
-		const rawInterval = component.getValue();
-		const interval = parseFloat(rawInterval) * 1000;
-		const original = this.plugin.settings.realtimeSyncDelay;
-		if (isNaN(interval) || interval < 0) {
-			new Notice(t('settings.realtimeSyncDelay.invalidValue'));
-			component.setValue((original / 1000).toString());
-			return;
-		}
-
-		if (interval !== original) {
-			this.plugin.settings.realtimeSyncDelay = interval;
-			await this.plugin.saveSettings();
-		}
-	}
-
-	private async handleNumericBlur(
-		component: TextComponent,
-		field: 'maxConcurrentWebDAVCalls' | 'minTimeBetweenWebDAVCalls' | 'maxConcurrentSyncTasks',
-		callback?: (interval: number) => void,
-	) {
-		const rawInterval = component.getValue();
-		const interval = parseInt(rawInterval);
-		const original = this.plugin.settings[field];
-		if (isNaN(interval) || interval < 0) {
-			new Notice(t(`settings.${field}.invalidValue`));
-			component.setValue(original.toString());
-			return;
-		}
-		component.setValue(interval.toString());
-
-		if (interval !== original) {
-			this.plugin.settings[field] = interval;
-			callback?.(interval);
-			await this.plugin.saveSettings();
-		}
-	}
-
-	private async handleMaxFileSizeBlur(component: TextComponent) {
-		let value = component.getValue().trim();
-		if (!value) value = MAX_FILE_SIZE;
-		else if (isNumeric(value) || (isNil(bytesParse(value)) && !isNil(bytesParse(value + 'B'))))
-			value += 'B';
-		const parsedBytes = bytesParse(value, { mode: 'jedec' });
-		if (parsedBytes === null) {
-			new Notice(t('settings.skipLargeFiles.invalidFormat'));
-			component.setValue(this.plugin.settings.skipLargeFiles.maxSize);
-			return;
-		}
-		if (parsedBytes > MAX_BYTES) {
-			new Notice(t('settings.skipLargeFiles.exceedsMaxSize'));
-			value = MAX_FILE_SIZE;
-		}
-		component.setValue(value);
-		if (this.plugin.settings.skipLargeFiles.maxSize !== value) {
-			this.plugin.settings.skipLargeFiles = {
-				maxSize: value,
-				bytes: parsedBytes,
-			};
-			await this.plugin.saveSettings();
-		}
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.maxThroughputConcurrency.name'),
+			desc: t('settings.maxThroughputConcurrency.desc'),
+			placeholder: t('settings.maxThroughputConcurrency.placeholder'),
+			field: this.plugin.settings.maxThroughputConcurrency,
+			type: UserInputType.FileSize,
+			saveSettings: this.plugin.saveSettings,
+			rejectZero: true,
+		});
 	}
 }
