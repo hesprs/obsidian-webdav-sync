@@ -28,6 +28,7 @@ export interface PluginSettings {
 	serverUrl: string;
 	account: string;
 	token: string;
+	exhaustiveRemoteTraversal: boolean;
 	remoteDir: string;
 	showSyncStatusInNotificationOnMobile: boolean;
 	useGitStyle: boolean;
@@ -35,7 +36,7 @@ export interface PluginSettings {
 	unmergeableStrategy: UnmergeableStrategy;
 	confirmBeforeSync: boolean;
 	confirmBeforeDeleteInAutoSync: boolean;
-	useFastSyncOnLocalChange: boolean;
+	fastRealtimeSync: boolean;
 	filterRules: {
 		exclusionRules: GlobMatchOptions[];
 		inclusionRules: GlobMatchOptions[];

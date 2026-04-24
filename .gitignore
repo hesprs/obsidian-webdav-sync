@@ -1,16 +1,15 @@
 .vscode
 .slim
 **/codemap.md
+plans
 PLAN.md
 LOG.md
 MEMORY.md
 AGENTS.md
+REQUIREMENTS.md
 
 # npm
 node_modules
-
-# obsidian
-data.json
 
 # Local
 *.local
@@ -22,5 +21,3 @@ data.json
 
 # build output
 dist
-styles.css
-main.js

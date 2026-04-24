@@ -116,13 +116,25 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(t('settings.useFastSyncOnLocalChange.name'))
-			.setDesc(t('settings.useFastSyncOnLocalChange.desc'))
+			.setName(t('settings.fastRealtimeSync.name'))
+			.setDesc(t('settings.fastRealtimeSync.desc'))
 			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.useFastSyncOnLocalChange).onChange((value) => {
-					this.plugin.settings.useFastSyncOnLocalChange = value;
+				toggle.setValue(this.plugin.settings.fastRealtimeSync).onChange((value) => {
+					this.plugin.settings.fastRealtimeSync = value;
 					void this.plugin.saveSettings();
 				}),
+			);
+
+		new Setting(this.containerEl)
+			.setName(t('settings.exhaustiveRemoteTraversal.name'))
+			.setDesc(t('settings.exhaustiveRemoteTraversal.desc'))
+			.addToggle((toggle) =>
+				toggle
+					.setValue(this.plugin.settings.exhaustiveRemoteTraversal)
+					.onChange((value) => {
+						this.plugin.settings.exhaustiveRemoteTraversal = value;
+						void this.plugin.saveSettings();
+					}),
 			);
 
 		generateSettingEntry({

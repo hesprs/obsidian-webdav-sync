@@ -76,9 +76,13 @@ const translation: typeof en = {
 			name: '自动同步时删除文件前确认',
 			desc: '自动同步过程中检测到本地文件将被删除时，弹出确认对话框让你选择删除或重新上传',
 		},
-		useFastSyncOnLocalChange: {
-			name: '本地变更快速同步',
-			desc: '对本地实时变更使用 fast 同步。这样更快，但在下一次普通同步前无法发现远程编辑、删除或重命名。',
+		fastRealtimeSync: {
+			name: '实时同步快速模式',
+			desc: '在快速同步期间假设远程内容未发生变化，从而复用缓存数据并避免不必要的请求。这可以提高同步性能，但会忽略远程的更改。建议与启动同步或定时同步配合使用。',
+		},
+		exhaustiveRemoteTraversal: {
+			name: '彻底远程遍历',
+			desc: '在一次 WebDAV 请求中遍历整个远程目录树，包括所有子目录。这可以大幅减少大型目录的遍历时间，但可能与某些 WebDAV 服务器存在兼容性问题。（即在 PROPFIND 请求中发送 "Depth: infinity"）',
 		},
 		filters: {
 			name: '过滤器',
@@ -264,11 +268,6 @@ const translation: typeof en = {
 		localPath: '本地路径',
 		errorMessage: '失败原因',
 		close: '关闭',
-	},
-	textAreaModal: {
-		copy: '复制',
-		close: '关闭',
-		copied: '文本已复制到剪贴板',
 	},
 	time: {
 		justNow: '刚刚',

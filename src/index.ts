@@ -43,6 +43,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		serverUrl: '',
 		account: '',
 		token: '',
+		exhaustiveRemoteTraversal: false,
 		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
@@ -104,7 +105,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 			enabled: true,
 			value: 52_428_800,
 		},
-		useFastSyncOnLocalChange: true,
+		fastRealtimeSync: true,
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();

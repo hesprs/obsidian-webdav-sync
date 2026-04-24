@@ -24,90 +24,104 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 	}
 
 	// remove at 10 May 2026
-	if ('maxConcurrentWebDAVCalls' in settings) {
-		if (
-			'bytes' in settings.skipLargeFiles &&
-			typeof settings.skipLargeFiles.bytes === 'number'
-		) {
-			const enabled = settings.skipLargeFiles.bytes !== 0;
-			settings.skipLargeFiles = {
-				enabled,
-				value: enabled ? settings.skipLargeFiles.bytes : 31457280,
-			};
-		}
+	if ('bytes' in settings.skipLargeFiles && typeof settings.skipLargeFiles.bytes === 'number') {
+		const enabled = settings.skipLargeFiles.bytes !== 0;
+		settings.skipLargeFiles = {
+			enabled,
+			value: enabled ? settings.skipLargeFiles.bytes : 31457280,
+		};
+		changed = true;
+	}
 
-		if (
-			typeof settings.realtimeSync === 'boolean' &&
-			'realtimeSyncDelay' in settings &&
-			typeof settings.realtimeSyncDelay === 'number'
-		) {
-			settings.realtimeSync = {
-				enabled: settings.realtimeSync,
-				value: settings.realtimeSyncDelay,
-			};
-			delete settings.realtimeSyncDelay;
-		}
+	if (
+		typeof settings.realtimeSync === 'boolean' &&
+		'realtimeSyncDelay' in settings &&
+		typeof settings.realtimeSyncDelay === 'number'
+	) {
+		settings.realtimeSync = {
+			enabled: settings.realtimeSync,
+			value: settings.realtimeSyncDelay,
+		};
+		delete settings.realtimeSyncDelay;
+		changed = true;
+	}
 
-		if (typeof settings.maxConcurrentWebDAVCalls === 'number') {
-			const enabled = settings.maxConcurrentWebDAVCalls !== 0;
-			settings.maxWebDAVConcurrency = {
-				enabled,
-				value: enabled ? settings.maxConcurrentWebDAVCalls : 100,
-			};
-			delete settings.maxConcurrentWebDAVCalls;
-		}
+	if (
+		'maxConcurrentWebDAVCalls' in settings &&
+		typeof settings.maxConcurrentWebDAVCalls === 'number'
+	) {
+		const enabled = settings.maxConcurrentWebDAVCalls !== 0;
+		settings.maxWebDAVConcurrency = {
+			enabled,
+			value: enabled ? settings.maxConcurrentWebDAVCalls : 100,
+		};
+		delete settings.maxConcurrentWebDAVCalls;
+		changed = true;
+	}
 
-		if (
-			'maxConcurrentSyncTasks' in settings &&
-			typeof settings.maxConcurrentSyncTasks === 'number'
-		) {
-			const enabled = settings.maxConcurrentSyncTasks !== 0;
-			settings.maxSyncTaskConcurrency = {
-				enabled,
-				value: enabled ? settings.maxConcurrentSyncTasks : 100,
-			};
-			delete settings.maxConcurrentSyncTasks;
-		}
+	if (
+		'maxConcurrentSyncTasks' in settings &&
+		typeof settings.maxConcurrentSyncTasks === 'number'
+	) {
+		const enabled = settings.maxConcurrentSyncTasks !== 0;
+		settings.maxSyncTaskConcurrency = {
+			enabled,
+			value: enabled ? settings.maxConcurrentSyncTasks : 100,
+		};
+		delete settings.maxConcurrentSyncTasks;
+		changed = true;
+	}
 
-		if (
-			'minTimeBetweenWebDAVCalls' in settings &&
-			typeof settings.minTimeBetweenWebDAVCalls === 'number'
-		) {
-			const enabled = settings.minTimeBetweenWebDAVCalls !== 0;
-			settings.minWebDAVRequestInterval = {
-				enabled,
-				value: enabled ? settings.minTimeBetweenWebDAVCalls : 0,
-			};
-			delete settings.minTimeBetweenWebDAVCalls;
-		}
+	if (
+		'minTimeBetweenWebDAVCalls' in settings &&
+		typeof settings.minTimeBetweenWebDAVCalls === 'number'
+	) {
+		const enabled = settings.minTimeBetweenWebDAVCalls !== 0;
+		settings.minWebDAVRequestInterval = {
+			enabled,
+			value: enabled ? settings.minTimeBetweenWebDAVCalls : 0,
+		};
+		delete settings.minTimeBetweenWebDAVCalls;
+		changed = true;
+	}
 
-		if (
-			'startupSyncDelaySeconds' in settings &&
-			typeof settings.startupSyncDelaySeconds === 'number'
-		) {
-			const enabled = settings.startupSyncDelaySeconds !== 0;
-			settings.startupSync = {
-				enabled,
-				value: enabled ? settings.startupSyncDelaySeconds * 1000 : 5000,
-			};
-			delete settings.startupSyncDelaySeconds;
-		}
+	if (
+		'startupSyncDelaySeconds' in settings &&
+		typeof settings.startupSyncDelaySeconds === 'number'
+	) {
+		const enabled = settings.startupSyncDelaySeconds !== 0;
+		settings.startupSync = {
+			enabled,
+			value: enabled ? settings.startupSyncDelaySeconds * 1000 : 5000,
+		};
+		delete settings.startupSyncDelaySeconds;
+		changed = true;
+	}
 
-		if (
-			'scheduledSyncIntervalSeconds' in settings &&
-			typeof settings.scheduledSyncIntervalSeconds === 'number'
-		) {
-			const enabled = settings.scheduledSyncIntervalSeconds !== 0;
-			settings.scheduledSync = {
-				enabled,
-				value: enabled ? settings.scheduledSyncIntervalSeconds * 1000 : 1000 * 60 * 10,
-			};
-			delete settings.scheduledSyncIntervalSeconds;
-		}
+	if (
+		'scheduledSyncIntervalSeconds' in settings &&
+		typeof settings.scheduledSyncIntervalSeconds === 'number'
+	) {
+		const enabled = settings.scheduledSyncIntervalSeconds !== 0;
+		settings.scheduledSync = {
+			enabled,
+			value: enabled ? settings.scheduledSyncIntervalSeconds * 1000 : 1000 * 60 * 10,
+		};
+		delete settings.scheduledSyncIntervalSeconds;
+		changed = true;
+	}
 
-		if ('syncMode' in settings) delete settings.syncMode;
+	if ('syncMode' in settings) {
+		delete settings.syncMode;
+		changed = true;
+	}
 
-		logger.info('Migrated settings to new toggle + numeric input style.');
+	if (
+		'useFastSyncOnLocalChange' in settings &&
+		typeof settings.useFastSyncOnLocalChange === 'boolean'
+	) {
+		settings.fastRealtimeSync = settings.useFastSyncOnLocalChange;
+		delete settings.useFastSyncOnLocalChange;
 		changed = true;
 	}
 

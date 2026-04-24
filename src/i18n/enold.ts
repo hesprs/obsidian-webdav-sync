@@ -74,9 +74,13 @@ export default {
 			name: 'Confirm before deleting files during auto-sync',
 			desc: 'Show a confirmation dialog when local files are about to be deleted during auto-sync, allowing you to choose to delete or re-upload them.',
 		},
-		useFastSyncOnLocalChange: {
-			name: 'Fast sync on local changes',
-			desc: 'Use fast sync for real-time local file changes. This is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
+		fastRealtimeSync: {
+			name: 'Fast mode for real-time sync',
+			desc: "Assume remote content doesn't change during a fast sync to reuse cached data and avoid unnecessary requests. This can improve sync performance but ignores remote changes. Recommend to use with startup sync periodic sync",
+		},
+		exhaustiveRemoteTraversal: {
+			name: 'Exhaustive remote traversal',
+			desc: 'Traverse the entire remote directory tree within one WebDAV request, including all subdirectories. This could drastically reduce traversal time for large directories, but may have compatibility issues with some WebDAV servers. (This is to send "Depth: infinity" in PROPFIND request)',
 		},
 		filters: {
 			name: 'Sync filters',
@@ -264,11 +268,6 @@ export default {
 		localPath: 'Local path',
 		errorMessage: 'Error',
 		close: 'Close',
-	},
-	textAreaModal: {
-		copy: 'Copy',
-		close: 'Close',
-		copied: 'Text copied to clipboard',
 	},
 	time: {
 		justNow: 'Just now',

@@ -117,6 +117,7 @@ export async function getDirectoryContents(
 	serverUrl: string,
 	token: string,
 	path: string,
+	infinity = false,
 ): Promise<FileStat[]> {
 	const endpoint = serverUrl.trim().replace(/\/+$/, '');
 	if (!endpoint) throw new Error('WebDAV server URL is not configured');
@@ -133,7 +134,7 @@ export async function getDirectoryContents(
 				headers: {
 					Authorization: `Basic ${token}`,
 					'Content-Type': 'application/xml',
-					Depth: '1',
+					Depth: infinity ? 'infinity' : '1',
 				},
 				body: `<?xml version="1.0" encoding="utf-8"?>
 <propfind xmlns="DAV:">

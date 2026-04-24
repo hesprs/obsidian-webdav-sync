@@ -27,6 +27,7 @@ vi.mock('~/settings', () => ({
 	useSettings: vi.fn(() => ({
 		serverUrl: 'https://dav.example.com/dav',
 		remoteDir: '/test/',
+		exhaustiveRemoteTraversal: false,
 		skipLargeFiles: {
 			maxSize: '10MB',
 			bytes: 10 * 1024 * 1024,
@@ -62,12 +63,14 @@ describe('WebDAVTraversal', () => {
 			'https://dav.example.com/dav',
 			'token',
 			'/test/',
+			false,
 		);
 		expect(vi.mocked(getDirectoryContents)).toHaveBeenNthCalledWith(
 			2,
 			'https://dav.example.com/dav',
 			'token',
 			'/test/webdav-sync/',
+			false,
 		);
 	});
 
@@ -98,6 +101,7 @@ describe('WebDAVTraversal', () => {
 			'https://dav.example.com/dav',
 			'token',
 			'/test/missing/',
+			false,
 		);
 	});
 });

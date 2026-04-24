@@ -28,17 +28,17 @@ export async function traverseWebDAV({
 	token,
 	throwIfCancelled,
 }: TraverseWebDAVOptions) {
-	const { filterRules, skipLargeFiles, serverUrl, remoteDir } = await useSettings();
-	const queue = [remoteDir];
+	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
+		await useSettings();
 	const result: StatsMap = new Map();
-	let processedCount = 0;
+
 	const getContentFunc = (path: string) =>
-		apiLimiter.wrap(getDirectoryContents)(serverUrl, token, path);
+		apiLimiter.wrap(getDirectoryContents)(serverUrl, token, path, exhaustiveRemoteTraversal);
 
 	const getContent = async (path: string) => {
-		throwIfCancelled?.();
 		let retryCount = 0;
 		while (true) {
+			throwIfCancelled?.();
 			if (retryCount > 3) throw new Error('Failed to get WebDAV content after 3 retries');
 			try {
 				retryCount++;
@@ -50,48 +50,71 @@ export async function traverseWebDAV({
 		}
 	};
 
-	const reportProgress = (current: string) => {
-		throwIfCancelled?.();
-		processedCount++;
-		onProgress?.({
-			processedDirectories: processedCount,
-			totalDirectories: processedCount + queue.length,
-			currentDirectory: current,
+	if (exhaustiveRemoteTraversal) {
+		const resultItems = (await getContent(remoteDir)).map((stat) => {
+			const path = normalizePathToAbsolute(
+				remoteDir,
+				stat.filename,
+				stat.type === 'directory',
+			);
+			return remoteToStatModel(stat, path);
 		});
-	};
+		for (const item of resultItems) {
+			const vaultPath = normalizePathToRelative(remoteDir, item.path);
+			result.set(vaultPath, item);
+		}
+		onProgress?.({
+			processedDirectories: result.size,
+			totalDirectories: result.size,
+			currentDirectory: remoteDir,
+		});
+	} else {
+		let processedCount = 0;
+		const queue = [remoteDir];
+		const reportProgress = (current: string) => {
+			throwIfCancelled?.();
+			processedCount++;
+			onProgress?.({
+				processedDirectories: processedCount,
+				totalDirectories: processedCount + queue.length,
+				currentDirectory: current,
+			});
+		};
 
-	while (queue.length > 0) {
-		const currentLevelPaths = queue.splice(0);
+		while (queue.length > 0) {
+			const currentLevelPaths = queue.splice(0);
 
-		await Promise.all(
-			currentLevelPaths.map(async (currentPath) => {
-				try {
-					const resultItems = (await getContent(currentPath)).map((stat) => {
-						const path = normalizePathToAbsolute(
-							remoteDir,
-							stat.filename,
-							stat.type === 'directory',
-						);
-						return remoteToStatModel(stat, path);
-					});
+			await Promise.all(
+				currentLevelPaths.map(async (currentPath) => {
+					try {
+						const resultItems = (await getContent(currentPath)).map((stat) => {
+							const path = normalizePathToAbsolute(
+								remoteDir,
+								stat.filename,
+								stat.type === 'directory',
+							);
+							return remoteToStatModel(stat, path);
+						});
 
-					for (const item of resultItems) {
-						const vaultPath = normalizePathToRelative(remoteDir, item.path);
-						result.set(vaultPath, item);
-						if (item.isDir) queue.push(item.path);
-					}
-					reportProgress(currentPath);
-				} catch (err) {
-					logger.error(`Error processing ${currentPath}`, err);
-					if (isNotFoundError(err)) {
+						for (const item of resultItems) {
+							const vaultPath = normalizePathToRelative(remoteDir, item.path);
+							result.set(vaultPath, item);
+							if (item.isDir) queue.push(item.path);
+						}
 						reportProgress(currentPath);
-						return;
+					} catch (err) {
+						logger.error(`Error processing ${currentPath}`, err);
+						if (isNotFoundError(err)) {
+							reportProgress(currentPath);
+							return;
+						}
+						throw err;
 					}
-					throw err;
-				}
-			}),
-		);
+				}),
+			);
+		}
 	}
+
 	return postTraversal(
 		result,
 		filterRules,
