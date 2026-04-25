@@ -32,6 +32,6 @@ export function setupCommands(plugin: WebDAVSyncPlugin) {
 		id: 'show-sync-progress',
 		icon: 'activity',
 		name: t('sync.showProgressButton'),
-		callback: () => plugin.progressService.showProgressModal(),
+		callback: () => plugin.observabilityService.showProgressModal(),
 	});
 }

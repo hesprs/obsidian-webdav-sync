@@ -6,11 +6,11 @@ import {
 	syncRun,
 	syncCancel,
 	type SyncFailedTaskInfo,
-	type SyncPlanningProgress,
-	type SyncPlanSummary,
 	type SyncProgressSummary,
 	type SyncRunSnapshot,
 	updateSyncRunSnapshot,
+	type ProgressPatch,
+	type SyncPlanSummary,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
 import t from '~/i18n';
@@ -71,7 +71,7 @@ export class SyncEngine {
 
 	async preparePlan(
 		runKind: SyncRunKind = SyncRunKind.normal,
-		onProgress?: (progress: SyncPlanningProgress) => void,
+		onProgress?: (progress: ProgressPatch) => void,
 	): Promise<BaseTask[]> {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
@@ -89,18 +89,17 @@ export class SyncEngine {
 
 	async start({
 		request,
-		tasks: passedTasks,
+		tasks,
 		run,
 	}: {
 		request: SyncExecutionRequest;
-		tasks?: BaseTask[];
+		tasks: BaseTask[];
 		run: SyncRunSnapshot;
 	}): Promise<SyncRunSnapshot> {
 		try {
 			this.runKind = request.runKind;
 
 			const settings = this.settings;
-			let tasks = passedTasks ?? (await this.preparePlan(request.runKind));
 			let currentRun = updateSyncRunSnapshot(run, {
 				planSummary: this.summarizePlan(tasks),
 			});
@@ -160,7 +159,7 @@ export class SyncEngine {
 				});
 				syncRun(currentRun);
 				const confirmExec =
-					await this.plugin.progressService.confirmManualTasks(displayableTasks);
+					await this.plugin.observabilityService.confirmManualTasks(displayableTasks);
 				if (confirmExec.confirmed)
 					tasks = [...notDisplayableTasks, ...confirmExec.selectedTasks];
 				else {

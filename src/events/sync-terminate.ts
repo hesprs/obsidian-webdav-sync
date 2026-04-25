@@ -61,7 +61,7 @@ function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 		runKind: run.runKind,
 		stage: run.stage,
 		timestamps: run.timestamps,
-		planSummary: run.planSummary,
+		remoteWalkSummary: run.remoteWalkSummary,
 		progressSummary: run.progressSummary,
 		resultSummary: run.resultSummary,
 		errorSummary: run.errorSummary,

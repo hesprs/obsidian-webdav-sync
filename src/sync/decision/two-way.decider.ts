@@ -1,6 +1,6 @@
+import type { ProgressPatch } from '~/events';
 import type { SyncRecord } from '~/storage';
 import type { RecordStatsMap, StatsMap } from '~/types';
-import { SyncPlanningSubStage, type SyncPlanningProgress } from '~/events';
 import postTraversal from '~/fs/post-traversal';
 import { traverseVault } from '~/fs/traverse-vault';
 import { traverseWebDAV } from '~/fs/traverse-webdav';
@@ -52,20 +52,22 @@ export default class TwoWaySyncDecider {
 	}
 
 	async decide(options?: {
-		onProgress?: (progress: SyncPlanningProgress) => void;
+		onProgress?: (progress: ProgressPatch) => void;
 		throwIfCancelled?: () => void;
 	}): Promise<BaseTask[]> {
-		const onProgress = (progress: SyncPlanningProgress) => options?.onProgress?.(progress);
+		const onProgress = (progress: ProgressPatch) => options?.onProgress?.(progress);
 
 		const records = await this.syncRecordStorage.getRecords();
 
 		const currentLocalStats = await traverseVault({ vault: this.vault });
 
 		onProgress({
-			subStage: SyncPlanningSubStage.walkingRemote,
-			totalWorkUnits: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
-			completedWorkUnits: 0,
-			currentItem: this.remoteBaseDir,
+			stage: 'walking_remote',
+			remoteWalkSummary: {
+				totalItems: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
+				completedItems: 0,
+				currentItem: this.remoteBaseDir,
+			},
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
@@ -73,10 +75,12 @@ export default class TwoWaySyncDecider {
 				: await traverseWebDAV({
 						onProgress: (progress) =>
 							onProgress({
-								subStage: SyncPlanningSubStage.walkingRemote,
-								totalWorkUnits: progress.totalDirectories,
-								completedWorkUnits: progress.processedDirectories,
-								currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+								stage: 'walking_remote',
+								remoteWalkSummary: {
+									totalItems: progress.totalDirectories,
+									completedItems: progress.processedDirectories,
+									currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+								},
 							}),
 						token: this.token,
 						throwIfCancelled: options?.throwIfCancelled,

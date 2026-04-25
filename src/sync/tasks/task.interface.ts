@@ -46,15 +46,12 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 
 	toJSON() {
 		const path =
-			this.local && this.remote
-				? this.localPath
-				: this.remote
-					? this.remotePath
-					: this.localPath;
-		return {
-			taskName: getTaskName(this),
-			path,
-		};
+			this.name === 'removeRemote' ||
+			this.name === 'removeRemoteRecursively' ||
+			this.name === 'createRemoteDir'
+				? this.remotePath
+				: this.localPath;
+		return { taskName: getTaskName(this), path };
 	}
 }
 

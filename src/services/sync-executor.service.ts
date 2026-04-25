@@ -3,7 +3,6 @@ import type { BaseTask } from '~/sync/tasks/task.interface';
 import {
 	createQueuedSyncRunSnapshot,
 	syncRun,
-	SyncPlanningSubStage,
 	type SyncRunMode,
 	type SyncRunSnapshot,
 	type SyncTrigger,
@@ -33,7 +32,6 @@ export interface SyncExecutionResult {
 	run: SyncRunSnapshot | null;
 }
 
-// TODO: don't instantiate SyncEngine every time
 export default class SyncExecutorService {
 	constructor(private plugin: WebDAVSyncPlugin) {}
 
@@ -64,21 +62,12 @@ export default class SyncExecutorService {
 				runKind: request.runKind,
 				queuedAt: request.queuedAt,
 			});
-			syncRun(run);
-
 			run = updateSyncRunSnapshot(run, {
-				stage: 'planning',
-				planningProgress: {
-					subStage: SyncPlanningSubStage.preConnecting,
-					totalWorkUnits: 0,
-					completedWorkUnits: 0,
-					currentItem: this.plugin.settings.remoteDir,
-				},
-				timestamps: {
-					planningStartedAt: Date.now(),
-				},
+				stage: 'pre_connecting',
+				timestamps: { planningStartedAt: Date.now() },
 			});
 			syncRun(run);
+
 			logger.info(
 				'Planning started',
 				{
@@ -95,8 +84,8 @@ export default class SyncExecutorService {
 
 			let tasks: BaseTask[] | null = null;
 			try {
-				tasks = await sync.preparePlan(request.runKind, (planningProgress) => {
-					run = updateSyncRunSnapshot(run, { planningProgress });
+				tasks = await sync.preparePlan(request.runKind, (patch) => {
+					run = updateSyncRunSnapshot(run, patch);
 					syncRun(run);
 				});
 			} catch (error) {

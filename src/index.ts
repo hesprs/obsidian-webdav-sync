@@ -7,7 +7,6 @@ import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
 import { setupCommands } from './services/command.setup';
 import ObservabilityService from './services/observability.service';
-import { ProgressService } from './services/progress.service';
 import RealtimeSyncService from './services/realtime-sync.service';
 import ScheduledSyncService from './services/scheduled-sync.service';
 import SyncExecutorService from './services/sync-executor.service';
@@ -111,7 +110,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public syncStateStore = new IndexedDbSyncStateStore();
 	public baseTextStore = new IndexedDbBaseTextStore();
 	public fileChunkStore = new IndexedDbFileChunkStore();
-	public progressService = new ProgressService(this);
 	public observabilityService = new ObservabilityService(this);
 	public webDAVService = new WebDAVService(this);
 	public syncExecutorService = new SyncExecutorService(this);
@@ -139,7 +137,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		syncCancel();
 		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
-		this.progressService.unload();
 		this.observabilityService.unload();
 	}
 

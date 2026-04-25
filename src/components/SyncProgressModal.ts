@@ -2,15 +2,16 @@ import { Modal, Setting } from 'obsidian';
 import WebDAVSyncPlugin from '~';
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import { mount as mountFileTree, type FileTreeSelectionController } from '~/components/fileTree';
-import { syncCancel } from '~/events';
+import { syncCancel, type SyncRunSnapshot, type SyncRunStage } from '~/events';
 import t from '~/i18n';
+import { TERMINAL_STAGES } from '~/services/observability.service';
 
 interface ManualConfirmationSession {
 	onConfirm: () => void;
 	onCancel: () => void;
 }
 
-type ActionMode = 'progress' | 'confirmation' | 'terminal';
+type SyncStage = 'none' | 'walking' | 'confirmation' | 'syncing' | 'terminal';
 
 export default class SyncProgressModal extends Modal {
 	private progressBar!: HTMLDivElement;
@@ -20,76 +21,86 @@ export default class SyncProgressModal extends Modal {
 	private confirmationDescription!: HTMLParagraphElement;
 	private confirmationContainer!: HTMLDivElement;
 	private controls: HTMLElement | undefined;
-	private syncCancelled = false;
-	private cancelSubscription: () => void;
-	private actionMode: ActionMode = 'progress';
+	private stage: SyncStage = 'none';
+	private lastStage: SyncStage = 'none';
 	private renderTree?: () => void;
 	private selectionController?: FileTreeSelectionController;
 	private confirmationSession?: ManualConfirmationSession;
 
 	constructor(
-		private plugin: WebDAVSyncPlugin,
+		plugin: WebDAVSyncPlugin,
 		private closeCallback?: () => void,
 	) {
 		super(plugin.app);
-		this.cancelSubscription = syncCancel.subscribe(() => {
-			this.syncCancelled = true;
-			this.update();
-		});
 	}
 
-	public update(): void {
+	private getUnits(run: SyncRunSnapshot | null): {
+		completed: number;
+		total: number;
+		percentage?: number;
+	} {
+		if (!run) return { total: 1, completed: 0 };
+		const stage = run.stage;
+		if (stage === 'walking_remote')
+			return {
+				completed: run.remoteWalkSummary?.completedItems || 0,
+				total: run.remoteWalkSummary?.totalItems || 1,
+			};
+		if (stage === 'executing' || stage === 'completed')
+			return {
+				completed: run.progressSummary.completedTasks,
+				total: run.progressSummary.totalTasks,
+			};
+		if (stage === 'completed_noop') return { total: 0, completed: 0, percentage: 100 };
+		return { total: 1, completed: 0 };
+	}
+
+	private updateStage(currentRun: SyncRunSnapshot | null): void {
+		this.stage = this.resolveStage(currentRun?.stage);
+		if (this.stage === this.lastStage) return;
+		this.renderControls();
+		if (this.lastStage === 'confirmation') this.clearTaskConfirmation();
+		this.lastStage = this.stage;
+	}
+
+	private resolveStage(stage?: SyncRunStage): SyncStage {
+		if (stage && TERMINAL_STAGES.includes(stage)) return 'terminal';
+		if (stage === 'awaiting_confirmation') return 'confirmation';
+		if (stage === 'executing') return 'syncing';
+		if (stage === 'walking_remote') return 'walking';
+		return 'none';
+	}
+
+	public update(run: SyncRunSnapshot | null): void {
 		if (!this.progressBar || !this.progressText || !this.progressStats || !this.currentFile)
 			return;
+		const stage = run?.stage;
 
-		const progress = this.plugin.progressService.syncProgress;
-		const planningProgress = this.plugin.progressService.planningProgress;
-		const currentRun = this.plugin.progressService.currentRun;
-		const isPlanningStage = currentRun?.stage === 'planning' || currentRun?.stage === 'queued';
-		const completedUnits = isPlanningStage
-			? (planningProgress?.completedWorkUnits ?? 0)
-			: progress.completedTasks;
-		const totalUnits = isPlanningStage
-			? (planningProgress?.totalWorkUnits ?? 0)
-			: progress.totalTasks;
+		const { completed, total, percentage } = this.getUnits(run);
+		this.updateStage(run);
 
-		const percent = Math.round((completedUnits / totalUnits) * 100) || 0;
-
+		const percent = percentage ?? (Math.round((completed / total) * 100) || 0);
 		const percentText = `${percent}%`;
 		this.progressBar.style.width = percentText;
 		this.progressText.setText(percentText);
-		this.actionMode = this.resolveActionMode(currentRun?.stage);
-		this.renderControls();
+		this.progressStats.setText(t('sync.progressStats', { completed, total }));
 
-		this.progressStats.setText(
-			t('sync.progressStats', {
-				completed: completedUnits,
-				total: totalUnits,
-			}),
-		);
-
-		if (isPlanningStage)
+		if (stage === 'pre_connecting') this.currentFile.setText(t('sync.preConnecting'));
+		else if (stage === 'walking_remote')
 			this.currentFile.setText(
-				planningProgress
-					? `${t(`sync.planningStage.${planningProgress.subStage}`)} ${planningProgress.currentItem}`
-					: t('sync.preparing'),
+				`${t('sync.walkingRemote')} ${run?.remoteWalkSummary?.currentItem}`,
 			);
-		else if (currentRun?.stage === 'awaiting_confirmation')
+		else if (stage === 'awaiting_confirmation')
 			this.currentFile.setText(t('sync.awaitingConfirmation'));
-		else if (currentRun?.stage === 'executing' && progress.completed.length === 0)
-			this.currentFile.setText(t('sync.start'));
-		else if (this.plugin.progressService.syncEnd) {
-			if (currentRun?.stage === 'cancelled' || this.syncCancelled)
-				this.currentFile.setText(t('sync.cancelled'));
-			else if (currentRun?.stage === 'failed')
-				this.currentFile.setText(t('sync.failedStatus'));
-			else if (currentRun?.stage === 'completed_noop')
-				this.currentFile.setText(t('sync.alreadyUpToDate'));
-			else this.currentFile.setText(t('sync.complete'));
-		} else if (progress.completed.length > 0) {
-			const lastFile = progress.completed.at(-1);
+		else if (stage === 'executing' && run?.progressSummary.completed.length === 0)
+			this.currentFile.setText(t('sync.syncingFiles'));
+		else if (stage === 'cancelled') this.currentFile.setText(t('sync.cancelled'));
+		else if (stage === 'failed') this.currentFile.setText(t('sync.failedStatus'));
+		else if (stage === 'completed_noop') this.currentFile.setText(t('sync.alreadyUpToDate'));
+		else if (run?.stage === 'executing' && run?.progressSummary.completed.length > 0) {
+			const lastFile = run.progressSummary.completed.at(-1);
 			if (lastFile) this.currentFile.setText(`${lastFile.taskName} ${lastFile.path}`);
-		}
+		} else this.currentFile.setText(t('sync.complete'));
 	}
 
 	onOpen() {
@@ -110,11 +121,11 @@ export default class SyncProgressModal extends Modal {
 		});
 
 		const currentFile = progressTextContainer.createDiv({
-			cls: 'text-3.25 text-[var(--text-muted)] truncate overflow-hidden whitespace-nowrap',
+			cls: 'text-3 text-[var(--text-muted)] truncate whitespace-nowrap',
 		});
 
 		const progressStats = progressTextContainer.createDiv({
-			cls: 'text-3.25 text-[var(--text-muted)] ml-auto',
+			cls: 'text-3 text-[var(--text-muted)] ml-auto whitespace-nowrap ml-2',
 		});
 
 		const progressBarContainer = progressSection.createDiv({
@@ -126,7 +137,7 @@ export default class SyncProgressModal extends Modal {
 		});
 
 		const progressText = progressBarContainer.createDiv({
-			cls: 'absolute w-full text-center text-3 leading-5 text-[var(--text-on-accent)] mix-blend-difference',
+			cls: 'absolute w-full text-center text-3 leading-5 text-[var(--text-on-accent)]',
 		});
 
 		this.progressBar = progressBar;
@@ -135,38 +146,13 @@ export default class SyncProgressModal extends Modal {
 		this.currentFile = currentFile;
 
 		this.confirmationDescription = container.createEl('p', {
-			cls: 'pre-line hidden mt-2 mb-0',
+			cls: 'whitespace-pre-line hidden mt-2 mb-0',
 			text: t('sync.manualConfirmation'),
 		});
 
 		this.confirmationContainer = container.createDiv({
 			cls: 'webdav-sync-confirmation-container hidden',
 		});
-
-		this.renderControls();
-		this.update();
-	}
-
-	showTaskConfirmation(tasks: BaseTask[], session: ManualConfirmationSession): void {
-		this.confirmationSession = session;
-		this.unmountTaskConfirmation();
-		this.confirmationDescription.removeClass('hidden');
-		this.confirmationContainer.removeClass('hidden');
-		this.renderTree = mountFileTree(this.confirmationContainer, {
-			tasks,
-			controllerRef: (controller) => {
-				this.selectionController = controller;
-			},
-		});
-		this.actionMode = 'confirmation';
-		this.renderControls();
-	}
-
-	clearTaskConfirmation(): void {
-		this.confirmationSession = undefined;
-		this.unmountTaskConfirmation();
-		this.actionMode = this.resolveActionMode(this.plugin.progressService.currentRun?.stage);
-		this.renderControls();
 	}
 
 	getSelectedTasks(): BaseTask[] {
@@ -177,31 +163,23 @@ export default class SyncProgressModal extends Modal {
 		return this.selectionController?.getSnapshot().unselectedTasks ?? [];
 	}
 
-	private resolveActionMode(stage?: string): ActionMode {
-		if (this.confirmationSession) return 'confirmation';
-		if (stage && ['completed', 'completed_noop', 'cancelled', 'failed'].includes(stage)) {
-			return 'terminal';
-		}
-		return 'progress';
-	}
-
 	private renderControls(): void {
 		if (this.controls) this.controls.remove();
 		const setting = new Setting(this.contentEl);
 		this.controls = setting.settingEl;
 
-		if (this.actionMode === 'confirmation') {
+		if (this.stage === 'confirmation') {
 			setting
 				.addButton((button) => {
 					button
 						.setButtonText(t('sync.confirmModal.confirm'))
 						.setCta()
-						.onClick(() => this.confirmationSession?.onConfirm());
+						.onClick(this.confirm);
 				})
 				.addButton((button) => {
 					button
 						.setButtonText(t('sync.confirmModal.cancel'))
-						.onClick(() => this.confirmationSession?.onCancel());
+						.onClick(this.cancelConfirmation);
 				});
 			return;
 		}
@@ -209,19 +187,29 @@ export default class SyncProgressModal extends Modal {
 		setting.addButton((button) => {
 			button
 				.setButtonText(
-					this.actionMode === 'terminal' ? t('sync.closeButton') : t('sync.hideButton'),
+					this.stage === 'terminal' ? t('sync.closeButton') : t('sync.hideButton'),
 				)
 				.onClick(() => this.close());
 		});
 
-		if (this.actionMode === 'progress') {
+		if (this.stage === 'syncing' || this.stage === 'walking') {
 			setting.addButton((button) => {
 				button.setButtonText(t('sync.stopButton')).setWarning().onClick(syncCancel);
 			});
 		}
 	}
 
-	private unmountTaskConfirmation(): void {
+	showTaskConfirmation(tasks: BaseTask[], session: ManualConfirmationSession): void {
+		this.confirmationSession = session;
+		this.confirmationDescription.removeClass('hidden');
+		this.confirmationContainer.removeClass('hidden');
+		this.renderTree = mountFileTree(this.confirmationContainer, {
+			tasks,
+			controllerRef: (controller) => (this.selectionController = controller),
+		});
+	}
+
+	private clearTaskConfirmation(): void {
 		this.selectionController = undefined;
 		this.renderTree?.();
 		this.renderTree = undefined;
@@ -234,14 +222,22 @@ export default class SyncProgressModal extends Modal {
 		}
 	}
 
-	onClose(): void {
+	private cancelConfirmation = (): void => {
 		const pendingCancel = this.confirmationSession?.onCancel;
 		this.confirmationSession = undefined;
-		this.unmountTaskConfirmation();
-		this.cancelSubscription();
-		const { contentEl } = this;
-		contentEl.empty();
 		pendingCancel?.();
+	};
+
+	private confirm = (): void => {
+		const pendingConfirm = this.confirmationSession?.onConfirm;
+		this.confirmationSession = undefined;
+		pendingConfirm?.();
+	};
+
+	onClose(): void {
+		this.cancelConfirmation();
+		this.clearTaskConfirmation();
+		this.contentEl.empty();
 		if (this.closeCallback) this.closeCallback();
 	}
 }

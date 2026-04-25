@@ -5,25 +5,14 @@ export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
 export type SyncRunMode = 'manual' | 'auto';
 export type SyncRunStage =
 	| 'queued'
-	| 'planning'
+	| 'pre_connecting'
+	| 'walking_remote'
 	| 'awaiting_confirmation'
 	| 'executing'
 	| 'completed'
 	| 'completed_noop'
 	| 'cancelled'
 	| 'failed';
-
-export enum SyncPlanningSubStage {
-	preConnecting = 'preConnecting',
-	walkingRemote = 'walkingRemote',
-}
-
-export interface SyncPlanningProgress {
-	subStage: SyncPlanningSubStage;
-	totalWorkUnits: number;
-	completedWorkUnits: number;
-	currentItem?: string;
-}
 
 export interface SyncRunWarning {
 	code: 'delete_confirmation';
@@ -35,6 +24,12 @@ export interface SyncPlanSummary {
 	requiresConfirmation: boolean;
 	requiresDeleteConfirmation: boolean;
 	warnings: SyncRunWarning[];
+}
+
+export interface RemoteWalkSummary {
+	totalItems: number;
+	completedItems: number;
+	currentItem: string;
 }
 
 export interface SyncProgressSummary {
@@ -82,8 +77,8 @@ export interface SyncRunSnapshot {
 	runKind: SyncRunKind;
 	stage: SyncRunStage;
 	timestamps: SyncRunTimestamps;
-	planningProgress?: SyncPlanningProgress;
 	planSummary?: SyncPlanSummary;
+	remoteWalkSummary?: RemoteWalkSummary;
 	progressSummary: SyncProgressSummary;
 	resultSummary?: SyncResultSummary;
 	errorSummary?: SyncErrorSummary;
@@ -119,11 +114,13 @@ export function createQueuedSyncRunSnapshot(input: {
 	};
 }
 
+export type ProgressPatch = Partial<Omit<SyncRunSnapshot, 'timestamps'>> & {
+	timestamps?: Partial<SyncRunTimestamps>;
+};
+
 export function updateSyncRunSnapshot(
 	snapshot: SyncRunSnapshot,
-	patch: Partial<Omit<SyncRunSnapshot, 'timestamps'>> & {
-		timestamps?: Partial<SyncRunTimestamps>;
-	},
+	patch: ProgressPatch,
 ): SyncRunSnapshot {
 	const updatedAt = patch.timestamps?.updatedAt ?? Date.now();
 	const timestamps: SyncRunTimestamps = {
