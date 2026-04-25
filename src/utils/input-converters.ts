@@ -11,7 +11,7 @@ function createUnitConverter<T extends string>(config: UnitConfig<T>) {
 	const unitMap = new Map<string, number>();
 	units.forEach((u, i) => unitMap.set(u.toLowerCase(), multipliers[i]));
 	return {
-		parse(input: string): number | undefined {
+		parse: (input: string): number | undefined => {
 			const match = input.trim().match(/^(-?\d+(?:\.\d+)?)\s*([a-z]*)$/i);
 			if (!match) return undefined;
 			const num = parseFloat(match[1]);
@@ -20,7 +20,7 @@ function createUnitConverter<T extends string>(config: UnitConfig<T>) {
 			if (!unitMap.has(rawUnit)) return undefined;
 			return num * (unitMap.get(rawUnit) as number);
 		},
-		format(value: number): string {
+		format: (value: number): string => {
 			let idx = units.length - 1;
 			while (idx > 0 && value < multipliers[idx]) idx--;
 			const scaled = value / multipliers[idx];
