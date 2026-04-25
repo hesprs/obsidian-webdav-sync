@@ -119,7 +119,7 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] Enhance observability of sync progress
 - [ ] Implement E2E encryption like the one in Remotely Save
 - [x] Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
-- [ ] Refurbish sync selection UI
+- [x] Refurbish sync selection UI
 
 ## License, Copyright, and Originality
 

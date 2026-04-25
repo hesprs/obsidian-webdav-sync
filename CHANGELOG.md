@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.4.0 - 2026-04-25
+
+### Performance, Stability, and UI Improvements
+
+- Refurbished sync task selection and confirmation modals into an interactive file-tree task UI for sync.
+- Implemented IndexedDB-backed download chunking, wired the file-chunk store into the sync engine, refactored storage around BaseStore.
+- Implemented bin-packing based load balancing with a max concurrent throughput control to further control memory fluctuation.
+- Refactored the sync progress modal and related sync task handling to simplify the UI path and progress behavior.
+- Added exhaustive remote traversal option (`Depth: infinity`), renamed fast sync settings and logic to fastRealtimeSync, removed SyncMode setting since it is confusing and helps trivially.
+- Reworked settings interface for more standardized input experience and validation, reusable setting field components, file-size/time converters, and translation updates.
+
 ## Obsidian WebDAV Sync v2.3.2 - 2026-04-14
 
 - Fixed the file deletion bug that causes the plugin unable to delete any files on Android.
