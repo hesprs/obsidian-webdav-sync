@@ -1,11 +1,18 @@
 import type WebDAVSyncPlugin from '~';
 import { Notice, Platform } from 'obsidian';
+import type { BaseTask } from '~/sync/tasks/task.interface';
 import FailedTasksModal from '~/components/FailedTasksModal';
+import SyncProgressModal from '~/components/SyncProgressModal';
 import { syncRun, type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning } from '~/events';
 import t from '~/i18n';
 import { formatRelativeTime } from '~/utils/format-relative-time';
 
-const TERMINAL_STAGES: SyncRunStage[] = ['completed', 'completed_noop', 'cancelled', 'failed'];
+export const TERMINAL_STAGES: SyncRunStage[] = [
+	'completed',
+	'completed_noop',
+	'cancelled',
+	'failed',
+];
 const MOBILE_SYNC_NOTICE_HIDE_DELAY = 2000;
 
 export default class ObservabilityService {
@@ -22,6 +29,7 @@ export default class ObservabilityService {
 	private baseStatusText: string = '';
 	private mobileSyncNotice: Notice | null = null;
 	private mobileSyncNoticeHideTimeout: number | null = null;
+	private progressModal: SyncProgressModal | null = null;
 
 	constructor(private plugin: WebDAVSyncPlugin) {
 		this.syncStatusBar = plugin.addStatusBarItem();
@@ -29,6 +37,7 @@ export default class ObservabilityService {
 
 	unload() {
 		this.unsubscribe();
+		this.progressModal?.close();
 		this.stopTimeUpdates();
 		this.hideMobileSyncNotice();
 	}
@@ -125,9 +134,7 @@ export default class ObservabilityService {
 			return;
 		}
 
-		if (this.shouldUseMobileSyncNotice()) {
-			return;
-		}
+		if (this.shouldUseMobileSyncNotice()) return;
 
 		const noticeText = this.getNoticeText(run, previousRun);
 		if (noticeText) new Notice(noticeText);
@@ -150,21 +157,6 @@ export default class ObservabilityService {
 		this.mobileSyncNotice = null;
 	}
 
-	private applyProgressModal(run: SyncRunSnapshot, previousRun: SyncRunSnapshot | null) {
-		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
-		if (
-			isNewStage &&
-			run.mode === 'manual' &&
-			(run.stage === 'planning' || run.stage === 'executing')
-		) {
-			this.plugin.progressService.showProgressModal();
-			return;
-		}
-
-		if (run.mode === 'auto' && TERMINAL_STAGES.includes(run.stage))
-			this.plugin.progressService.closeProgressModal();
-	}
-
 	private applyFailureModal(run: SyncRunSnapshot) {
 		if (
 			run.mode !== 'manual' ||
@@ -184,45 +176,43 @@ export default class ObservabilityService {
 	}
 
 	private getStatusText(run: SyncRunSnapshot): string {
-		const syncType = t(`sync.runKind.${run.runKind}`);
+		const getText = (text: string) => `${t(`sync.runKind.${run.runKind}`)} · ${text}`;
 		switch (run.stage) {
 			case 'queued':
-			case 'planning':
-				return this.getPlanningStatusText(syncType, run);
+			case 'pre_connecting':
+				return getText(t('sync.preConnecting'));
+			case 'walking_remote': {
+				const { totalItems, completedItems } = run.remoteWalkSummary ?? {};
+				return getText(`${t('sync.walkingRemote')} (${completedItems}/${totalItems})`);
+			}
 			case 'awaiting_confirmation':
-				return `${syncType} · ${t('sync.awaitingConfirmation')}`;
+				return getText(t('sync.awaitingConfirmation'));
 			case 'executing': {
 				const { totalTasks, completedTasks } = run.progressSummary;
-				if (totalTasks === 0) return `${syncType} · ${t('sync.start')}`;
-				const percent = Math.round((completedTasks / totalTasks) * 10000) / 100;
-				return `${syncType} · ${t('sync.progress', { percent })}`;
+				const percent = Math.round((completedTasks / totalTasks || 1) * 10000) / 100;
+				return getText(t('sync.progress', { percent }));
 			}
 			case 'completed':
 				return run.resultSummary?.failedTasks
-					? `${syncType} · ${t('sync.completeWithFailed', {
-							failedCount: run.resultSummary.failedTasks,
-						})}`
-					: `${syncType} · ${t('sync.complete')}`;
+					? getText(
+							t('sync.completeWithFailed', {
+								failedCount: run.resultSummary.failedTasks,
+							}),
+						)
+					: getText(t('sync.complete'));
 			case 'completed_noop':
-				return `${syncType} · ${t(run.mode === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate')}`;
+				return getText(t(run.mode === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate'));
 			case 'cancelled':
-				return `${syncType} · ${t('sync.cancelled')}`;
+				return getText(t('sync.cancelled'));
 			case 'failed':
 				return run.resultSummary?.failedTasks
-					? `${syncType} · ${t('sync.completeWithFailed', {
-							failedCount: run.resultSummary.failedTasks,
-						})}`
-					: `${syncType} · ${t('sync.failedStatus')}`;
+					? getText(
+							t('sync.completeWithFailed', {
+								failedCount: run.resultSummary.failedTasks,
+							}),
+						)
+					: getText(t('sync.failedStatus'));
 		}
-	}
-
-	private getPlanningStatusText(syncType: string, run: SyncRunSnapshot): string {
-		const planningProgress = run.planningProgress;
-		if (!planningProgress) return `${syncType} · ${t('sync.preparing')}`;
-		const { totalWorkUnits, completedWorkUnits, subStage } = planningProgress;
-		const stageText = t(`sync.planningStage.${subStage}`);
-		if (totalWorkUnits <= 0) return `${syncType} · ${stageText}`;
-		return `${syncType} · ${stageText} (${completedWorkUnits}/${totalWorkUnits})`;
 	}
 
 	private getNoticeText(
@@ -231,33 +221,37 @@ export default class ObservabilityService {
 	): string | null {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
 		if (!isNewStage) return null;
+		const ifManual = (text: string) => (run.mode === 'manual' ? text : null);
 
 		switch (run.stage) {
-			case 'planning':
-				return run.mode === 'manual' ? t('sync.preparing') : null;
+			case 'pre_connecting':
+				return ifManual(t('sync.preConnecting'));
+			case 'walking_remote':
+				return ifManual(t('sync.walkingRemote'));
 			case 'executing':
-				return run.mode === 'manual' ? t('sync.start') : null;
+				return ifManual(t('sync.syncingFiles'));
 			case 'completed':
-				return run.mode === 'manual'
-					? run.resultSummary?.failedTasks
+				return ifManual(
+					run.resultSummary?.failedTasks
 						? t('sync.completeWithFailed', {
 								failedCount: run.resultSummary.failedTasks,
 							})
-						: t('sync.complete')
-					: null;
+						: t('sync.complete'),
+				);
 			case 'completed_noop':
-				return run.mode === 'manual' ? t('sync.noChangesToSync') : null;
+				return ifManual(t('sync.alreadyUpToDate'));
 			case 'cancelled':
-				return run.mode === 'manual' ? t('sync.cancelled') : null;
+				return ifManual(t('sync.cancelled'));
 			case 'failed':
-				if (run.resultSummary?.failedTasks) {
-					return t('sync.completeWithFailed', {
-						failedCount: run.resultSummary.failedTasks,
-					});
-				}
-				return t('sync.failedWithError', {
-					error: run.errorSummary?.message ?? t('sync.failedStatus'),
-				});
+				return ifManual(
+					run.resultSummary?.failedTasks
+						? t('sync.completeWithFailed', {
+								failedCount: run.resultSummary.failedTasks,
+							})
+						: t('sync.failedWithError', {
+								error: run.errorSummary?.message ?? t('sync.failedStatus'),
+							}),
+				);
 			default:
 				return null;
 		}
@@ -272,11 +266,55 @@ export default class ObservabilityService {
 			previousRun?.runId === run.runId ? (previousRun.planSummary?.warnings ?? []) : [];
 
 		for (const warning of currentWarnings) {
-			if (!previousWarnings.some((item) => item.code === warning.code)) {
-				return warning;
-			}
+			if (!previousWarnings.some((item) => item.code === warning.code)) return warning;
 		}
-
 		return null;
+	}
+
+	private applyProgressModal(run: SyncRunSnapshot, previousRun: SyncRunSnapshot | null) {
+		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
+		if (isNewStage && run.mode === 'manual' && !this.progressModal)
+			this.createProgressModal().open();
+		this.progressModal?.update(run);
+	}
+
+	showProgressModal() {
+		if (this.previousRun === null || TERMINAL_STAGES.includes(this.previousRun.stage)) {
+			new Notice(t('sync.notSyncing'));
+			return;
+		}
+		if (this.progressModal) this.progressModal.open();
+		else this.createProgressModal().open();
+	}
+
+	createProgressModal() {
+		this.progressModal = new SyncProgressModal(this.plugin, () => (this.progressModal = null));
+		return this.progressModal;
+	}
+
+	private ensureProgressModal(): { modal: SyncProgressModal; autoOpened: boolean } {
+		if (this.progressModal) return { modal: this.progressModal, autoOpened: false };
+		const modal = this.createProgressModal();
+		modal.open();
+		return { modal, autoOpened: true };
+	}
+
+	public confirmManualTasks(tasks: BaseTask[]): Promise<{
+		confirmed: boolean;
+		selectedTasks: BaseTask[];
+	}> {
+		const { modal, autoOpened } = this.ensureProgressModal();
+		return new Promise((resolve) => {
+			const finish = (confirmed: boolean) => {
+				const selectedTasks = confirmed ? modal.getSelectedTasks() : [];
+				if (confirmed && autoOpened) this.progressModal?.close();
+				resolve({ confirmed, selectedTasks });
+			};
+
+			modal.showTaskConfirmation(tasks, {
+				onConfirm: () => finish(true),
+				onCancel: () => finish(false),
+			});
+		});
 	}
 }

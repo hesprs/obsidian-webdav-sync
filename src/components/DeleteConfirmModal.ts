@@ -30,7 +30,7 @@ export default class DeleteConfirmModal extends Modal {
 		const instruction = contentEl.createEl('p', {
 			cls: 'delete-confirm-instruction',
 		});
-		instruction.className = 'pre-line';
+		instruction.className = 'whitespace-pre-line';
 		instruction.setText(t('deleteConfirm.instruction'));
 
 		const treeContainer = contentEl.createDiv({

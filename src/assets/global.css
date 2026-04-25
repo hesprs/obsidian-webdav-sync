@@ -103,18 +103,6 @@ input.success {
 	background-color: var(--background-modifier-hover);
 }
 
-.pre-line {
-	white-space: pre-line;
-}
-
-.text-center {
-	text-align: center;
-}
-
-.m-top-1 {
-	margin-top: 1em;
-}
-
 .webdav-sync-file-tree {
 	display: flex;
 	flex-direction: column;

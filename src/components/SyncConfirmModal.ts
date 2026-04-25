@@ -25,12 +25,12 @@ export default class SyncConfirmModal extends Modal {
 				strategy: t(`settings.conflictStrategy.${settings.conflictStrategy}`),
 			}),
 		});
-		contentEl.createEl('p', { text: t('sync.confirmModal.message'), cls: 'pre-line' });
+		contentEl.createEl('p', {
+			text: t('sync.confirmModal.message'),
+			cls: 'whitespace-pre-line',
+		});
 
 		new Setting(contentEl)
-			.addButton((button) =>
-				button.setButtonText(t('sync.confirmModal.cancel')).onClick(() => this.close()),
-			)
 			.addButton((button) =>
 				button
 					.setButtonText(t('sync.confirmModal.confirm'))
@@ -39,6 +39,9 @@ export default class SyncConfirmModal extends Modal {
 						this.close();
 						launchManualSync(this.plugin, { skipConfirmation: true });
 					}),
+			)
+			.addButton((button) =>
+				button.setButtonText(t('sync.confirmModal.cancel')).onClick(() => this.close()),
 			);
 	}
 

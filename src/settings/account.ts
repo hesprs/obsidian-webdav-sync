@@ -25,7 +25,7 @@ export default class AccountSettings extends BaseSettings {
 		new Setting(this.containerEl)
 			.setName(t('settings.tips.name'))
 			.setDesc(t('settings.tips.desc'))
-			.setClass('pre-line');
+			.setClass('whitespace-pre-line');
 
 		new Setting(this.containerEl)
 			.setName(t('settings.serverUrl.name'))
