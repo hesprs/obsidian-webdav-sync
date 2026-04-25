@@ -2,16 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.4.1 - 2026-04-25
+
+- Adjusted manual sync progress UI address text overflow problem on mobile devices.
+- Refactored and standardized internal data flow of tracking sync progress.
+- Fixed the bug that, when the UI is previously hidden, confirm the sync using the progress UI will cause the sync to be aborted.
+- Improved i18n and iconography, removed unused entries.
+
 ## Obsidian WebDAV Sync v2.4.0 - 2026-04-25
 
 ### Performance, Stability, and UI Improvements
 
-- Refurbished sync task selection and confirmation modals into an interactive file-tree task UI for sync.
-- Implemented IndexedDB-backed download chunking, wired the file-chunk store into the sync engine, refactored storage around BaseStore.
-- Implemented bin-packing based load balancing with a max concurrent throughput control to further control memory fluctuation.
-- Refactored the sync progress modal and related sync task handling to simplify the UI path and progress behavior.
-- Added exhaustive remote traversal option (`Depth: infinity`), renamed fast sync settings and logic to fastRealtimeSync, removed SyncMode setting since it is confusing and helps trivially.
-- Reworked settings interface for more standardized input experience and validation, reusable setting field components, file-size/time converters, and translation updates.
+- Replaced the sync task selection and confirmation modals with an interactive file-tree interface, allowing visually browse and select specific files or folders for synchronization.
+- Enabled reliable resumption of large file downloads by implementing chunked storage, ensuring that interrupted transfers can continue from where they left off without restarting.
+- Optimized memory usage during sync operations by introducing smart load balancing, which prevents performance spikes and keeps the application responsive even when handling gigabytes at once.
+- Simplified the sync progress display and behavior, providing a clearer and more consistent view of ongoing synchronization tasks.
+- Added an option to recursively traverse all remote directories (`Depth: infinity`) in one request to further improve performance.
+- Streamlined sync settings by renaming "Fast Sync" to "Fast Realtime Sync" for clarity and removing the confusing "Sync Mode" option, reducing configuration complexity.
+- Standardized the settings interface with improved input validation, reusable components, and human-readable file size and time conversions, making it easier to configure and understand sync preferences.
 
 ## Obsidian WebDAV Sync v2.3.2 - 2026-04-14
 
