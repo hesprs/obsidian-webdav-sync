@@ -80,5 +80,3 @@ export default class FailedTasksModal extends Modal {
 		contentEl.empty();
 	}
 }
-
-export type { FailedTaskInfo };

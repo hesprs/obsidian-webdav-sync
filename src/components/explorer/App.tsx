@@ -1,9 +1,9 @@
 import { Notice } from 'obsidian';
 import { createSignal, Show } from 'solid-js';
+import t from '~/i18n';
 import { normalizeRemotePath } from '~/platform/path';
 import { createFileList, type FileStat } from './components/FileList';
 import NewFolder from './components/NewFolder';
-import { t } from './i18n';
 
 function joinRemotePath(...parts: string[]): `/${string}` {
 	return normalizeRemotePath(parts.join('/')) as `/${string}`;
@@ -66,17 +66,18 @@ function App(props: AppProps) {
 		<div class="flex flex-col gap-4 h-50vh">
 			<SingleCol />
 			<div class="flex gap-2 text-xs">
-				<span>{t('currentPath')}:</span>
-				<span class="break-all">{cwd() ?? '/'}</span>
+				<span>{t('dirSelector.currentPath', { path: cwd() ?? '/' })}</span>
 			</div>
 			<div class="flex items-center gap-2">
-				<button onClick={pop}>{t('goBack')}</button>
+				<button onClick={pop}>{t('dirSelector.goBack')}</button>
 				<a class="no-underline" onClick={() => setShowNewFolder(true)}>
-					{t('newFolder')}
+					{t('dirSelector.newFolder')}
 				</a>
 				<div class="flex-1"></div>
-				<button onClick={props.onClose}>{t('cancel')}</button>
-				<button onclick={() => props.onConfirm(cwd() ?? '/')}>{t('confirm')}</button>
+				<button onClick={props.onClose}>{t('dirSelector.cancel')}</button>
+				<button onclick={() => props.onConfirm(cwd() ?? '/')}>
+					{t('dirSelector.confirm')}
+				</button>
 			</div>
 		</div>
 	);

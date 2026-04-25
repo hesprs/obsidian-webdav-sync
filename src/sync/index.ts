@@ -2,7 +2,6 @@ import type { WebDAVClient } from 'webdav';
 import { Vault } from 'obsidian';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
-import TaskListConfirmModal from '~/components/TaskListConfirmModal';
 import {
 	syncRun,
 	syncCancel,
@@ -160,11 +159,10 @@ export class SyncEngine {
 					},
 				});
 				syncRun(currentRun);
-				const confirmExec = await new TaskListConfirmModal(
-					this.app,
-					displayableTasks,
-				).openAndWait();
-				if (confirmExec.confirm) tasks = [...notDisplayableTasks, ...confirmExec.tasks];
+				const confirmExec =
+					await this.plugin.progressService.confirmManualTasks(displayableTasks);
+				if (confirmExec.confirmed)
+					tasks = [...notDisplayableTasks, ...confirmExec.selectedTasks];
 				else {
 					currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
 					return currentRun;
@@ -208,7 +206,11 @@ export class SyncEngine {
 				}
 			}
 
-			const optimizedTaskGroups = optimizeTasks(tasks, settings.maxConcurrentSyncTasks);
+			const optimizedTaskGroups = optimizeTasks(
+				tasks,
+				settings.maxSyncTaskConcurrency,
+				settings.maxThroughputConcurrency,
+			);
 			const optimizedTasks = optimizedTaskGroups.flat();
 			const allTasksResult: TaskResult[] = [];
 
@@ -303,6 +305,7 @@ export class SyncEngine {
 			this.getStateKey(),
 			this.plugin.syncStateStore,
 			this.plugin.baseTextStore,
+			this.plugin.fileChunkStore,
 		);
 	}
 
@@ -404,11 +407,7 @@ export class SyncEngine {
 		return {
 			totalTasks: totalDisplayableTasks.length,
 			completedTasks: allCompletedTasks.length,
-			completed: allCompletedTasks.map((task) => ({
-				taskName: getTaskName(task),
-				localPath: task.localPath,
-				remotePath: task.remotePath,
-			})),
+			completed: allCompletedTasks.map((task) => task.toJSON()),
 		};
 	}
 

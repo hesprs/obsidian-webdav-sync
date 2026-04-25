@@ -1,10 +1,12 @@
 import { App, Modal, Setting } from 'obsidian';
+import { mount as mountFileTree, type FileTreeSelectionController } from '~/components/fileTree';
 import t from '~/i18n';
 import RemoveLocalTask from '~/sync/tasks/remove-local.task';
 
 export default class DeleteConfirmModal extends Modal {
 	private confirmed: boolean = false;
-	private selectedTasks: boolean[] = [];
+	private renderTree?: () => void;
+	private selectionController?: FileTreeSelectionController;
 	private resolver:
 		| ((value: {
 				tasksToDelete: RemoveLocalTask[];
@@ -17,7 +19,6 @@ export default class DeleteConfirmModal extends Modal {
 		private tasks: RemoveLocalTask[],
 	) {
 		super(app);
-		this.selectedTasks = Array.from<boolean>({ length: tasks.length }).fill(true);
 	}
 
 	onOpen() {
@@ -32,45 +33,17 @@ export default class DeleteConfirmModal extends Modal {
 		instruction.className = 'pre-line';
 		instruction.setText(t('deleteConfirm.instruction'));
 
-		const tableContainer = contentEl.createDiv({
-			cls: 'max-h-50vh overflow-y-auto',
+		const treeContainer = contentEl.createDiv({
+			cls: 'max-h-50vh overflow-y-auto webdav-sync-delete-confirm-tree mb-3',
 		});
-		const table = tableContainer.createEl('table', { cls: 'task-list-table' });
-
-		const thead = table.createEl('thead');
-		const headerRow = thead.createEl('tr');
-		const selectHeader = headerRow.createEl('th', {
-			text: t('deleteConfirm.select'),
-		});
-		selectHeader.className = 'text-center';
-		headerRow.createEl('th', { text: t('deleteConfirm.filePath') });
-
-		const tbody = table.createEl('tbody');
-		this.tasks.forEach((task, index) => {
-			const row = tbody.createEl('tr');
-			const checkboxCell = row.createEl('td');
-			checkboxCell.className = 'text-center';
-			const checkbox = checkboxCell.createEl('input');
-			checkbox.type = 'checkbox';
-			checkbox.checked = this.selectedTasks[index];
-			checkbox.addEventListener('change', (e) => {
-				this.selectedTasks[index] = checkbox.checked;
-				e.stopPropagation();
-			});
-			row.addEventListener('click', (e) => {
-				if (e.target === checkbox) {
-					return;
-				}
-				checkbox.checked = !checkbox.checked;
-				this.selectedTasks[index] = checkbox.checked;
-				e.stopPropagation();
-			});
-			row.createEl('td', { text: task.localPath });
+		this.renderTree = mountFileTree(treeContainer, {
+			tasks: this.tasks,
+			controllerRef: (controller) => {
+				this.selectionController = controller;
+			},
 		});
 
-		const settingDiv = contentEl.createDiv();
-		settingDiv.className = 'm-top-1';
-		new Setting(settingDiv)
+		new Setting(contentEl)
 			.addButton((button) => {
 				button
 					.setButtonText(t('deleteConfirm.deleteAndReupload'))
@@ -100,6 +73,10 @@ export default class DeleteConfirmModal extends Modal {
 	}
 
 	onClose() {
+		const selectionSnapshot = this.selectionController?.getSnapshot();
+		this.selectionController = undefined;
+		this.renderTree?.();
+		this.renderTree = undefined;
 		this.contentEl.empty();
 
 		const resolver = this.resolver;
@@ -115,8 +92,8 @@ export default class DeleteConfirmModal extends Modal {
 		}
 
 		resolver({
-			tasksToDelete: this.tasks.filter((_, index) => this.selectedTasks[index]),
-			tasksToReupload: this.tasks.filter((_, index) => !this.selectedTasks[index]),
+			tasksToDelete: (selectionSnapshot?.selectedTasks ?? []) as RemoveLocalTask[],
+			tasksToReupload: (selectionSnapshot?.unselectedTasks ?? []) as RemoveLocalTask[],
 		});
 	}
 }

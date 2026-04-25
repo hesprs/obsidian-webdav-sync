@@ -1,13 +1,6 @@
+import type { ConflictStrategy, UnmergeableStrategy } from '~/settings';
 import type { RecordStatsMap, StatsMap, StatModel, FileStatModel, FolderStatModel } from '~/types';
-import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '~/settings';
 import { BaseTask } from '../tasks/task.interface';
-
-export interface SyncDecisionSettings {
-	conflictStrategy: ConflictStrategy;
-	unmergeableStrategy: UnmergeableStrategy;
-	useGitStyle: boolean;
-	syncMode: SyncMode;
-}
 
 export interface TaskOptions {
 	remotePath: string;
@@ -32,23 +25,30 @@ export interface OptionsWithLocalFolderStat extends TaskOptions {
 	local: FolderStatModel;
 }
 
+export interface OptionsWithLocalStat extends TaskOptions {
+	local: StatModel;
+}
+
+export interface OptionsWithRemoteStat extends TaskOptions {
+	remote: StatModel;
+}
+
 export interface OptionsWithBothStats extends TaskOptions {
 	local: StatModel;
 	remote: StatModel;
 }
 
-export interface MergeTaskOptions extends TaskOptions {
+export interface OptionsWithBothFileStats extends TaskOptions {
 	local: FileStatModel;
 	remote: FileStatModel;
-	useGitStyle: boolean;
 }
 
 export interface TaskFactory {
 	createPullTask(options: OptionsWithRemoteFileStat): BaseTask<OptionsWithRemoteFileStat>;
 	createPushTask(options: OptionsWithLocalFileStat): BaseTask<OptionsWithLocalFileStat>;
-	createMergeTask(options: MergeTaskOptions): BaseTask<OptionsWithBothStats>;
-	createRemoveLocalTask(options: TaskOptions): BaseTask;
-	createRemoveRemoteTask(options: TaskOptions): BaseTask;
+	createMergeTask(options: OptionsWithBothFileStats): BaseTask<OptionsWithBothFileStats>;
+	createRemoveLocalTask(options: OptionsWithLocalStat): BaseTask<OptionsWithLocalStat>;
+	createRemoveRemoteTask(options: OptionsWithRemoteStat): BaseTask<OptionsWithRemoteStat>;
 	createMkdirLocalTask(
 		options: OptionsWithRemoteFolderStat,
 	): BaseTask<OptionsWithRemoteFolderStat>;
@@ -60,10 +60,13 @@ export interface TaskFactory {
 }
 
 export interface SyncDecisionInput {
-	settings: SyncDecisionSettings;
 	currentLocalStats: StatsMap;
 	currentRemoteStats: StatsMap;
 	records: RecordStatsMap;
 	remoteBaseDir: string;
 	taskFactory: TaskFactory;
+	settings: {
+		conflictStrategy: ConflictStrategy;
+		unmergeableStrategy: UnmergeableStrategy;
+	};
 }

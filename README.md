@@ -54,7 +54,6 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
   - Use remote
   - Use local
   - Skip
-- 🚀 **Strict / loose sync modes** for different vault sizes
 - 📦 **Large file skipping** via configurable size threshold
 - 🔁 **Robust file handling** that doesn't mess up your notes
 - 📜 **Lightweight local database** empowers scalability and ensures performance
@@ -119,15 +118,15 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] Allow users to adjust rate and concurrency limits
 - [x] Enhance observability of sync progress
 - [ ] Implement E2E encryption like the one in Remotely Save
-- [ ] Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
-- [ ] Refurbish sync selection UI
+- [x] Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
+- [x] Refurbish sync selection UI
 
 ## License, Copyright, and Originality
 
 Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on universality, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
 
-<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 76018, ratio remained: 39% -->
+<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 77852, ratio remained: 39% -->
 
-Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 39% (till April 11 2026) of the effort is contributed by Nutstore.
+Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 39% (till April 20 2026) of the effort is contributed by Nutstore.
 
 Copyright ©️ 2026 Hesprs (Hēsperus), 2025-2026 Nutstore

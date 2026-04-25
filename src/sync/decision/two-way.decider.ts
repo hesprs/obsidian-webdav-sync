@@ -8,12 +8,14 @@ import { useSettings } from '~/settings';
 import { SyncRunKind } from '~/types';
 import type { SyncEngine } from '..';
 import type {
-	MergeTaskOptions,
+	OptionsWithBothFileStats,
 	OptionsWithBothStats,
 	OptionsWithLocalFileStat,
 	OptionsWithLocalFolderStat,
+	OptionsWithLocalStat,
 	OptionsWithRemoteFileStat,
 	OptionsWithRemoteFolderStat,
+	OptionsWithRemoteStat,
 	SyncDecisionInput,
 	TaskFactory,
 	TaskOptions,
@@ -39,10 +41,6 @@ export default class TwoWaySyncDecider {
 
 	get webdav() {
 		return this.sync.webdav;
-	}
-
-	get settings() {
-		return this.sync.settings;
 	}
 
 	get vault() {
@@ -96,11 +94,11 @@ export default class TwoWaySyncDecider {
 				new PullTask({ ...commonTaskOptions, ...options }),
 			createPushTask: (options: OptionsWithLocalFileStat) =>
 				new PushTask({ ...commonTaskOptions, ...options }),
-			createMergeTask: (options: MergeTaskOptions) =>
+			createMergeTask: (options: OptionsWithBothFileStats) =>
 				new MergeTask({ ...commonTaskOptions, ...options }),
-			createRemoveLocalTask: (options: TaskOptions) =>
+			createRemoveLocalTask: (options: OptionsWithLocalStat) =>
 				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
-			createRemoveRemoteTask: (options: TaskOptions) =>
+			createRemoveRemoteTask: (options: OptionsWithRemoteStat) =>
 				new RemoveRemoteTask({ ...commonTaskOptions, ...options }),
 			createMkdirLocalTask: (options: OptionsWithRemoteFolderStat) =>
 				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
@@ -114,10 +112,8 @@ export default class TwoWaySyncDecider {
 
 		const decisionInput: SyncDecisionInput = {
 			settings: {
-				conflictStrategy: this.settings.conflictStrategy,
-				useGitStyle: this.settings.useGitStyle,
-				syncMode: this.settings.syncMode,
-				unmergeableStrategy: this.settings.unmergeableStrategy,
+				conflictStrategy: this.sync.settings.conflictStrategy,
+				unmergeableStrategy: this.sync.settings.unmergeableStrategy,
 			},
 			currentLocalStats,
 			currentRemoteStats,
@@ -134,5 +130,9 @@ async function extractRemoteRecords(records: RecordStatsMap): Promise<StatsMap> 
 	const res: StatsMap = new Map();
 	const { filterRules, skipLargeFiles } = await useSettings();
 	for (const [path, record] of records) res.set(path, record.remote);
-	return postTraversal(res, filterRules, skipLargeFiles.bytes);
+	return postTraversal(
+		res,
+		filterRules,
+		skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
+	);
 }

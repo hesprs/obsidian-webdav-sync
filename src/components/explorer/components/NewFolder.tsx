@@ -1,5 +1,5 @@
 import { createSignal } from 'solid-js';
-import { t } from '../i18n';
+import t from '~/i18n';
 
 interface NewFolderProps {
 	class?: string;
@@ -22,8 +22,8 @@ function NewFolder(props: NewFolderProps) {
 				value={name()}
 				onInput={(e) => setName(e.target.value)}
 			/>
-			<button onClick={() => props.onConfirm(name())}>{t('confirm')}</button>
-			<button onClick={() => props.onCancel()}>{t('cancel')}</button>
+			<button onClick={() => props.onConfirm(name())}>{t('dirSelector.confirm')}</button>
+			<button onClick={() => props.onCancel()}>{t('dirSelector.cancel')}</button>
 		</div>
 	);
 }

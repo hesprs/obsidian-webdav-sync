@@ -8,15 +8,11 @@ import BaseSettings from './settings.base';
 export default class AccountSettings extends BaseSettings {
 	private getNormalizedServerUrl(): string | null {
 		const serverUrl = this.plugin.settings.serverUrl.trim().replace(/\/+$/, '');
-		if (!serverUrl) {
-			return null;
-		}
+		if (!serverUrl) return null;
 
 		try {
 			const parsedUrl = new URL(serverUrl);
-			if (!['http:', 'https:'].includes(parsedUrl.protocol)) {
-				return null;
-			}
+			if (!['http:', 'https:'].includes(parsedUrl.protocol)) return null;
 			return parsedUrl.toString().replace(/\/+$/, '');
 		} catch {
 			return null;
@@ -27,8 +23,9 @@ export default class AccountSettings extends BaseSettings {
 		let remoteBaseDirText: TextComponent | undefined;
 		this.containerEl.empty();
 		new Setting(this.containerEl)
-			.setName(t('settings.backupWarning.name'))
-			.setDesc(t('settings.backupWarning.desc'));
+			.setName(t('settings.tips.name'))
+			.setDesc(t('settings.tips.desc'))
+			.setClass('pre-line');
 
 		new Setting(this.containerEl)
 			.setName(t('settings.serverUrl.name'))

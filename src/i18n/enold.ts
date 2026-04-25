@@ -3,9 +3,10 @@ export default {
 		filenameUnsupportedChars: 'File {{path}} contains unsupported characters: {{chars}}',
 	},
 	settings: {
+		invalidValue: 'Invalid value, reset to the previous value',
 		sections: {
 			common: 'General',
-			control: 'Rate & file size control',
+			control: 'Limits & controls',
 			filters: 'Filter rules',
 			development: 'Development settings',
 		},
@@ -48,9 +49,9 @@ export default {
 			name: 'Show sync status in mobile notification',
 			desc: 'Keep a mobile notice visible during sync and hide it two seconds after sync ends',
 		},
-		backupWarning: {
-			name: 'Backup warning',
-			desc: '⚠️ Note: sync process will modify or delete local files. Please backup important files before syncing.',
+		tips: {
+			name: 'Tips',
+			desc: '⚠️ Sync process will modify or delete local files. Please backup important files before syncing.',
 		},
 		conflictStrategy: {
 			name: 'Conflict resolution strategy',
@@ -73,59 +74,13 @@ export default {
 			name: 'Confirm before deleting files during auto-sync',
 			desc: 'Show a confirmation dialog when local files are about to be deleted during auto-sync, allowing you to choose to delete or re-upload them.',
 		},
-		realtimeSync: {
-			name: 'Real-time sync',
-			desc: 'Automatically sync changes as soon as files are modified.',
+		fastRealtimeSync: {
+			name: 'Fast mode for real-time sync',
+			desc: "Assume remote content doesn't change during a fast sync to reuse cached data and avoid unnecessary requests. This can improve sync performance but ignores remote changes. Recommend to use with startup sync periodic sync",
 		},
-		realtimeSyncDelay: {
-			name: 'Real-time sync delay',
-			desc: 'Delay in seconds between changes being detected to triggering realtime sync, higher values mean more lagging but less WebDAV traffic.',
-			placeholder: 'Enter seconds',
-			invalidValue: 'Invalid value, reset to the previous value',
-		},
-		maxConcurrentWebDAVCalls: {
-			name: 'Max concurrent WebDAV requests',
-			desc: 'Maximum number of concurrent WebDAV requests, higher values mean faster syncing but may reach rate limits. Set to 0 to disable limiting.',
-			invalidValue: 'Invalid value, reset to the previous value',
-			placeholder: 'Enter number',
-		},
-		maxConcurrentSyncTasks: {
-			name: 'Max concurrent sync tasks',
-			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting controls the maximum number of tasks to be executed concurrently. Set to 0 to disable limiting.',
-			invalidValue: 'Invalid value, reset to the previous value',
-			placeholder: 'Enter number',
-		},
-		minTimeBetweenWebDAVCalls: {
-			name: 'Min time between WebDAV requests',
-			desc: 'Minimum time in milliseconds between WebDAV requests, smaller values mean faster syncing but may reach rate limits. Set to 0 to disable limiting.',
-			invalidValue: 'Invalid value, reset to the previous value',
-			placeholder: 'Enter milliseconds',
-		},
-		useFastSyncOnLocalChange: {
-			name: 'Fast sync on local changes',
-			desc: 'Use fast sync for real-time local file changes. This is faster, but remote edits, deletes, and renames are not detected until the next normal sync.',
-		},
-		syncMode: {
-			name: 'Sync mode',
-			desc: 'Choose between strict or loose sync mode. Loose mode is recommended for users with many files for faster syncing. In loose mode, files with the same name and equal size that have no sync record will be assumed to be synced.',
-			strict: 'Strict',
-			loose: 'Loose',
-		},
-		startupSyncDelay: {
-			name: 'Auto-sync on startup',
-			desc: 'Set the number of seconds after startup to automatically perform a sync. Set to 0 to disable auto-sync on startup.',
-			placeholder: 'Enter seconds (e.g., 5, 0 to disable)',
-			invalidValue: 'Invalid value, reset to 0',
-			exceedsMax:
-				'Value exceeds maximum limit of {{max}} seconds (1 day), automatically adjusted',
-		},
-		scheduledSyncInterval: {
-			name: 'Scheduled sync interval',
-			desc: 'Set the interval for periodic background synchronization (in minutes). Set to 0 to disable scheduled sync.',
-			placeholder: 'Enter minutes (e.g., 5, 0 to disable)',
-			invalidValue: 'Invalid value, reset to 0',
-			exceedsMax:
-				'Value exceeds maximum limit of {{max}} minutes (1 day), automatically adjusted',
+		exhaustiveRemoteTraversal: {
+			name: 'Exhaustive remote traversal',
+			desc: 'Traverse the entire remote directory tree within one WebDAV request, including all subdirectories. This could drastically reduce traversal time for large directories, but may have compatibility issues with some WebDAV servers. (This is to send "Depth: infinity" in PROPFIND request)',
 		},
 		filters: {
 			name: 'Sync filters',
@@ -148,12 +103,45 @@ export default {
 				desc: 'Files/folders matching these glob patterns will be synced (if defined). Please remember to add file extensions (for example, .md) if you want to include files.',
 			},
 		},
+		startupSync: {
+			name: 'Startup sync',
+			desc: 'Automatically trigger a sync after startup. Set the delay after startup to automatically perform a sync in the field.',
+			placeholder: 'Enter delay (e.g. 10s, 1min)',
+		},
+		scheduledSync: {
+			name: 'Scheduled sync',
+			desc: 'Periodically trigger background synchronization. Set the interval for periodic background sync in the field.',
+			placeholder: 'Enter delay (e.g. 10min, 0.5h)',
+		},
+		realtimeSync: {
+			name: 'Real-time sync',
+			desc: 'Trigger syncs automatically as soon as files are modified. Alter the delay between a file being modified and the sync being triggered in the field.',
+			placeholder: 'Sync delay (e.g. 1s, 500ms)',
+		},
+		maxWebDAVConcurrency: {
+			name: 'Max concurrent WebDAV requests',
+			desc: 'Limit the maximum number of concurrent WebDAV requests. Alter the delay in the field.',
+			placeholder: 'Enter number',
+		},
+		maxSyncTaskConcurrency: {
+			name: 'Max concurrent sync tasks',
+			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting limits the maximum number of tasks to be executed concurrently. Alter the limit in the field.',
+			placeholder: 'Enter number',
+		},
+		maxThroughputConcurrency: {
+			name: 'Max concurrent throughput',
+			desc: 'Limit the maximum total size of files that are uploaded or downloaded concurrently. Alter the limit in the field.',
+			placeholder: 'Enter file size (e.g. 100MB, 0.5GB)',
+		},
+		minWebDAVRequestInterval: {
+			name: 'Min time between WebDAV requests',
+			desc: 'Limit the minimum time between WebDAV requests. Alter the delay in the field.',
+			placeholder: 'Enter interval (e.g. 1s, 300ms)',
+		},
 		skipLargeFiles: {
 			name: 'Skip large files',
-			desc: 'Files exceeding this size will be skipped during synchronization. If sync issues occur, try lowering this value.',
-			placeholder: 'E.g., 10 MiB or 500 KiB',
-			invalidFormat: 'Invalid file size format. Please use formats like "10MB" or "500KB"',
-			exceedsMaxSize: 'File size exceeds maximum limit of 500MB',
+			desc: 'Skip files exceeding this size during synchronization. Alter the size limit in the field.',
+			placeholder: 'Enter size limit (e.g. 10MB, 0.5GB)',
 		},
 		clearRecords: {
 			name: 'Clear records',
@@ -201,10 +189,10 @@ export default {
 		showProgressButton: 'Show sync progress',
 		notSyncing: 'No sync currently in progress',
 		progressTitle: 'Sync progress',
-		progressStats: 'Completed: {{completed}} / {{total}} tasks',
-		completedFilesTitle: 'Completed tasks',
+		progressStats: 'Completed {{completed}} / {{total}}',
 		syncingFiles: '⌛️ Syncing files...',
-		awaitingConfirmation: 'Waiting for confirmation',
+		awaitingConfirmation: '💤 Waiting for confirmation',
+		manualConfirmation: 'Review the tasks below. Confirm to execute the selected tasks.',
 		planningStage: {
 			preConnecting: '📋 Pre-connecting',
 			walkingRemote: '📋 Walking remote',
@@ -236,7 +224,6 @@ export default {
 			removeLocalRecursively: 'Remove local recursively',
 			removeRemote: 'Remove remote',
 			removeRemoteRecursively: 'Remove remote recursively',
-			rename: 'Rename',
 			sync: 'Sync',
 			upload: 'Upload',
 			cleanRecord: 'Clean record',
@@ -250,17 +237,6 @@ export default {
 			remoteDir: 'Remote directory: {{dir}}',
 			strategy: 'Sync strategy: {{strategy}}',
 		},
-	},
-	taskList: {
-		title: 'Sync task list',
-		instruction:
-			'Please review the tasks below. Click "Continue" to execute the selected tasks, or "Cancel" to skip this sync.',
-		execute: 'Execute',
-		action: 'Action',
-		localPath: 'Local path',
-		remotePath: 'Remote path',
-		continue: 'Continue',
-		cancel: 'Cancel',
 	},
 	deleteConfirm: {
 		title: 'Confirm local file deletion',
@@ -281,16 +257,18 @@ export default {
 		errorMessage: 'Error',
 		close: 'Close',
 	},
-	textAreaModal: {
-		copy: 'Copy',
-		close: 'Close',
-		copied: 'Text copied to clipboard',
-	},
 	time: {
 		justNow: 'Just now',
 		minutesAgo: '{{count}}min ago',
 		hoursAgo: '{{count}}h ago',
 		daysAgo: '{{count}}d ago',
 		longAgo: 'Long ago',
+	},
+	dirSelector: {
+		currentPath: 'Current path: {{path}}',
+		goBack: 'Go back',
+		newFolder: 'New folder',
+		cancel: 'Cancel',
+		confirm: 'Confirm',
 	},
 };

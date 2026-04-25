@@ -4,6 +4,26 @@ vi.mock('~/i18n', () => ({
 	default: (key: string) => key,
 }));
 
+vi.mock('~/settings', () => ({
+	ConflictStrategy: {
+		DiffMatchPatch: 'diffMatchPatch',
+		LatestTimeStamp: 'latestTimestamp',
+		KeepLocal: 'keepLocal',
+		KeepRemote: 'keepRemote',
+		Skip: 'skip',
+	},
+	UnmergeableStrategy: {
+		LatestTimeStamp: 'latestTimestamp',
+		KeepLocal: 'keepLocal',
+		KeepRemote: 'keepRemote',
+		Skip: 'skip',
+	},
+	useSettings: async () => ({
+		useGitStyle: false,
+		maxThroughputConcurrency: { enabled: false, value: 0 },
+	}),
+}));
+
 import MkdirLocalTask from '~/sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
 import PullTask from '~/sync/tasks/pull.task';
@@ -20,6 +40,11 @@ const sharedOptions = {
 	syncRecord: {} as never,
 	local: {} as never,
 	remote: {} as never,
+};
+
+const dummyOption = {
+	enabled: false,
+	value: 0,
 };
 
 describe('optimizeSync', () => {
@@ -59,7 +84,8 @@ describe('optimizeSync', () => {
 				new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
 				new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
 			],
-			0,
+			dummyOption,
+			dummyOption,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
@@ -91,7 +117,8 @@ describe('optimizeSync', () => {
 					remotePath: 'archive',
 				}),
 			],
-			0,
+			dummyOption,
+			dummyOption,
 		).flatMap((task) => task);
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);

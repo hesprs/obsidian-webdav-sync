@@ -17,13 +17,15 @@ import {
 	type PluginSettings,
 	SyncSettingTab,
 	setPluginInstance,
-	SyncMode,
 	ConflictStrategy,
 	UnmergeableStrategy,
 } from './settings';
 import { processSettings } from './settings/process';
-import { IndexedDbBaseTextStore, IndexedDbSyncStateStore, migrateStorage } from './storage';
-import { apiLimiter } from './utils/api-limiter';
+import {
+	IndexedDbBaseTextStore,
+	IndexedDbSyncStateStore,
+	IndexedDbFileChunkStore,
+} from './storage';
 import { getCredential } from './utils/get-credential';
 
 function createGlobMatchOptions(expr: string) {
@@ -41,6 +43,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		serverUrl: '',
 		account: '',
 		token: '',
+		exhaustiveRemoteTraversal: false,
 		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		showSyncStatusInNotificationOnMobile: true,
 		useGitStyle: false,
@@ -48,7 +51,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
 		confirmBeforeSync: true,
 		confirmBeforeDeleteInAutoSync: true,
-		syncMode: SyncMode.LOOSE,
 		filterRules: {
 			exclusionRules: [
 				'**/.git',
@@ -72,21 +74,43 @@ export default class WebDAVSyncPlugin extends Plugin {
 			inclusionRules: [],
 		},
 		skipLargeFiles: {
-			maxSize: '30 MB',
-			bytes: 31457280,
+			enabled: true,
+			value: 31457280,
 		},
-		realtimeSync: false,
-		realtimeSyncDelay: 5000,
-		maxConcurrentWebDAVCalls: 100,
-		maxConcurrentSyncTasks: 100,
-		minTimeBetweenWebDAVCalls: 0,
-		useFastSyncOnLocalChange: true,
-		startupSyncDelaySeconds: 0,
-		scheduledSyncIntervalSeconds: 0,
+		realtimeSync: {
+			enabled: false,
+			value: 5000,
+		},
+		maxWebDAVConcurrency: {
+			enabled: true,
+			value: 100,
+		},
+		maxSyncTaskConcurrency: {
+			enabled: true,
+			value: 100,
+		},
+		minWebDAVRequestInterval: {
+			enabled: false,
+			value: 0,
+		},
+		startupSync: {
+			enabled: false,
+			value: 0,
+		},
+		scheduledSync: {
+			enabled: false,
+			value: 600,
+		},
+		maxThroughputConcurrency: {
+			enabled: true,
+			value: 52_428_800,
+		},
+		fastRealtimeSync: true,
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
 	public baseTextStore = new IndexedDbBaseTextStore();
+	public fileChunkStore = new IndexedDbFileChunkStore();
 	public progressService = new ProgressService(this);
 	public observabilityService = new ObservabilityService(this);
 	public webDAVService = new WebDAVService(this);
@@ -98,19 +122,20 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		await this.loadSettings();
-		apiLimiter.setMaxConcurrent(this.settings.maxConcurrentWebDAVCalls);
-		apiLimiter.setMinTime(this.settings.minTimeBetweenWebDAVCalls);
-		await this.syncStateStore.initialize().catch(() => undefined);
-		await this.baseTextStore.initialize().catch(() => undefined);
-		await migrateStorage(this);
+		await this.syncStateStore.initialize();
+		await this.baseTextStore.initialize();
+		await this.fileChunkStore.initialize();
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		setupCommands(this);
-		await this.scheduledSyncService.start();
+		this.scheduledSyncService.start();
 	}
 
-	onunload() {
+	async onunload() {
 		setPluginInstance(null);
+		await this.syncStateStore.unload();
+		await this.baseTextStore.unload();
+		await this.fileChunkStore.unload();
 		syncCancel();
 		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
@@ -123,9 +148,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		processSettings(this);
 	}
 
-	async saveSettings() {
-		await this.saveData(this.settings);
-	}
+	saveSettings = async () => await this.saveData(this.settings);
 
 	toggleSyncUI(isSyncing: boolean) {
 		this.isSyncing = isSyncing;

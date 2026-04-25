@@ -9,10 +9,10 @@ import type SyncSchedulerService from './sync-scheduler.service';
 
 export default class RealtimeSyncService {
 	private onChange = async (file: TAbstractFile, old?: string) => {
-		const { useFastSyncOnLocalChange, realtimeSync, filterRules } = await useSettings();
+		const { fastRealtimeSync, realtimeSync, filterRules } = await useSettings();
 		const exclusions = buildRules(filterRules.exclusionRules);
 		const inclusions = buildRules(filterRules.inclusionRules);
-		if (!realtimeSync) return;
+		if (!realtimeSync.enabled) return;
 		if (
 			!needIncludeFromGlobRules(file.path, inclusions, exclusions) &&
 			!(old && needIncludeFromGlobRules(old, inclusions, exclusions))
@@ -24,7 +24,7 @@ export default class RealtimeSyncService {
 
 		await this.syncScheduler.requestSync({
 			mode: SyncStartMode.AUTO_SYNC,
-			runKind: useFastSyncOnLocalChange ? SyncRunKind.fast : SyncRunKind.normal,
+			runKind: fastRealtimeSync ? SyncRunKind.fast : SyncRunKind.normal,
 			source: 'realtime',
 		});
 	};

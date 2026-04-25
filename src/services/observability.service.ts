@@ -54,9 +54,7 @@ export default class ObservabilityService {
 	}
 
 	private updateStatusBarWithTime(): void {
-		if (this.lastSyncTime === null) {
-			return;
-		}
+		if (this.lastSyncTime === null) return;
 
 		const now = Date.now();
 		const diffSeconds = Math.floor((now - this.lastSyncTime) / 1000);

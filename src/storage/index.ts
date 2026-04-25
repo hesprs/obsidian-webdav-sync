@@ -1,4 +1,4 @@
 export * from './sync-record';
 export * from './sync-record.store';
 export * from './base-text.store';
-export * from './migration';
+export * from './file-chunk.store';

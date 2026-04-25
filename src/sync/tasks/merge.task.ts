@@ -1,7 +1,8 @@
-import type { MergeTaskOptions } from '~/sync/decision/sync-decision.interface';
+import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
+import { useSettings } from '~/settings';
 import { getLocalContent, getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
@@ -9,7 +10,7 @@ import { statVaultItem, statWebDAVItem } from '~/utils/stat-item';
 import { resolveByIntelligentMerge } from '../utils/merge';
 import { BaseTask, toTaskError } from './task.interface';
 
-export default class MergeTask extends BaseTask<MergeTaskOptions> {
+export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 	readonly name = 'merge';
 
 	async exec() {
@@ -58,7 +59,7 @@ export default class MergeTask extends BaseTask<MergeTaskOptions> {
 			if (!mergeResult.success) {
 				const mergeDigInResult = mergeDigIn(localText, baseText, remoteText, {
 					stringSeparator: '\n',
-					useGitStyle: this.options.useGitStyle,
+					useGitStyle: (await useSettings()).useGitStyle,
 				});
 				mergedText = mergeDigInResult.result.join('\n');
 			} else mergedText = mergeResult.mergedText as string;

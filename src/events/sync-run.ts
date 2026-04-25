@@ -42,8 +42,7 @@ export interface SyncProgressSummary {
 	completedTasks: number;
 	completed: Array<{
 		taskName: string;
-		localPath: string;
-		remotePath: string;
+		path: string;
 	}>;
 }
 

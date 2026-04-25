@@ -1,6 +1,4 @@
 import type WebDAVSyncPlugin from '~';
-import { clamp } from 'lodash-es';
-import { useSettings, type PluginSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
 import type SyncSchedulerService from './sync-scheduler.service';
@@ -10,30 +8,28 @@ export default class ScheduledSyncService {
 	private startupSyncTimer: number | null = null;
 
 	constructor(
-		_plugin: WebDAVSyncPlugin,
+		private plugin: WebDAVSyncPlugin,
 		private syncScheduler: SyncSchedulerService,
 	) {}
 
-	async start() {
-		const settings = await useSettings();
-
-		if (settings.startupSyncDelaySeconds > 0) {
-			this.startupSyncTimer = window.setTimeout(() => {
-				void this.handleStartupSync();
-			}, settings.startupSyncDelaySeconds * 1000);
-		} else this.startTimer(settings);
+	get settings() {
+		return this.plugin.settings;
 	}
 
-	private startTimer(settings: PluginSettings) {
+	start() {
+		if (this.settings.startupSync.enabled) {
+			this.startupSyncTimer = window.setTimeout(() => {
+				void this.handleStartupSync();
+			}, this.settings.startupSync.value);
+		} else this.startTimer();
+	}
+
+	private startTimer() {
 		this.stopTimer();
-
-		const intervalMs = settings.scheduledSyncIntervalSeconds * 1000;
-		const clampedIntervalMs = clamp(intervalMs, 0, 2 ** 31 - 1);
-
-		if (clampedIntervalMs > 0) {
+		if (this.settings.scheduledSync.enabled) {
 			this.scheduledSyncTimer = window.setInterval(() => {
 				void this.handleIntervalSync();
-			}, clampedIntervalMs);
+			}, this.settings.scheduledSync.value);
 		}
 	}
 
@@ -45,7 +41,7 @@ export default class ScheduledSyncService {
 				source: 'startup',
 			});
 		} finally {
-			this.startTimer(await useSettings());
+			this.startTimer();
 		}
 	}
 
@@ -62,11 +58,6 @@ export default class ScheduledSyncService {
 			window.clearInterval(this.scheduledSyncTimer);
 			this.scheduledSyncTimer = null;
 		}
-	}
-
-	async updateInterval() {
-		const settings = await useSettings();
-		this.startTimer(settings);
 	}
 
 	unload() {

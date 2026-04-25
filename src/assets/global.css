@@ -114,3 +114,76 @@ input.success {
 .m-top-1 {
 	margin-top: 1em;
 }
+
+.webdav-sync-file-tree {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.webdav-sync-file-tree input[type='checkbox'] {
+	accent-color: var(--interactive-accent);
+}
+
+.webdav-sync-file-tree__row {
+	display: flex;
+	align-items: center;
+	min-height: 28px;
+}
+
+.webdav-sync-file-tree__main {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+}
+
+.webdav-sync-file-tree__checkbox-spacer {
+	width: 8px;
+	height: 8px;
+	margin: 4px;
+	border-radius: 50%;
+	background-color: var(--text-muted);
+	flex-shrink: 0;
+}
+
+.webdav-sync-file-tree__icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+}
+
+.webdav-sync-file-tree__label {
+	min-width: 0;
+	word-break: break-word;
+	color: var(--text-normal);
+}
+
+.webdav-sync-file-tree__row.is-unselected .webdav-sync-file-tree__label {
+	color: var(--text-muted);
+}
+
+.webdav-sync-confirmation-container,
+.webdav-sync-delete-confirm-tree {
+	max-height: 50vh;
+	overflow-y: auto;
+	padding: 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+}
+
+@container (max-width: 340px) {
+	.numeric-toggle {
+		flex-direction: column;
+	}
+}
+
+@container (max-width: 500px) {
+	.is-phone .numeric-toggle {
+		flex-direction: column;
+	}
+}

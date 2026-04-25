@@ -10,10 +10,10 @@ export default class SyncConfirmModal extends Modal {
 
 	onOpen() {
 		const { contentEl } = this;
+		this.setTitle(t('sync.confirmModal.title'));
 		const settings = this.plugin.settings;
 		contentEl.empty();
 
-		contentEl.createEl('h2', { text: t('sync.confirmModal.title') });
 		const infoDiv = contentEl.createDiv({ cls: 'sync-info' });
 		infoDiv.createEl('p', {
 			text: t('sync.confirmModal.remoteDir', {

@@ -1,7 +1,7 @@
-import { clamp } from 'lodash-es';
-import { Notice, Setting, TextComponent } from 'obsidian';
+import { Setting } from 'obsidian';
 import t from '~/i18n';
-import { ConflictStrategy, SyncMode, UnmergeableStrategy } from '.';
+import { ConflictStrategy, UnmergeableStrategy } from '.';
+import generateSettingEntry, { UserInputType } from './generate-setting-entry';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {
@@ -116,104 +116,56 @@ export default class CommonSettings extends BaseSettings {
 			);
 
 		new Setting(this.containerEl)
-			.setName(t('settings.realtimeSync.name'))
-			.setDesc(t('settings.realtimeSync.desc'))
+			.setName(t('settings.fastRealtimeSync.name'))
+			.setDesc(t('settings.fastRealtimeSync.desc'))
 			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.realtimeSync).onChange((value) => {
-					this.plugin.settings.realtimeSync = value;
+				toggle.setValue(this.plugin.settings.fastRealtimeSync).onChange((value) => {
+					this.plugin.settings.fastRealtimeSync = value;
 					void this.plugin.saveSettings();
 				}),
 			);
 
 		new Setting(this.containerEl)
-			.setName(t('settings.useFastSyncOnLocalChange.name'))
-			.setDesc(t('settings.useFastSyncOnLocalChange.desc'))
+			.setName(t('settings.exhaustiveRemoteTraversal.name'))
+			.setDesc(t('settings.exhaustiveRemoteTraversal.desc'))
 			.addToggle((toggle) =>
-				toggle.setValue(this.plugin.settings.useFastSyncOnLocalChange).onChange((value) => {
-					this.plugin.settings.useFastSyncOnLocalChange = value;
-					void this.plugin.saveSettings();
-				}),
-			);
-
-		new Setting(this.containerEl)
-			.setName(t('settings.startupSyncDelay.name'))
-			.setDesc(t('settings.startupSyncDelay.desc'))
-			.addText((text) => {
-				const maxSeconds = 86400;
-				text.setPlaceholder(t('settings.startupSyncDelay.placeholder')).setValue(
-					this.plugin.settings.startupSyncDelaySeconds.toString(),
-				);
-				text.inputEl.addEventListener('blur', () => {
-					this.handleStartupSyncDelayBlur(text, maxSeconds);
-				});
-				text.inputEl.type = 'number';
-				text.inputEl.min = '0';
-				text.inputEl.max = maxSeconds.toString();
-			});
-
-		new Setting(this.containerEl)
-			.setName(t('settings.scheduledSyncInterval.name'))
-			.setDesc(t('settings.scheduledSyncInterval.desc'))
-			.addText((text) => {
-				const maxMinutes = 1440;
-				text.setPlaceholder(t('settings.scheduledSyncInterval.placeholder')).setValue(
-					Math.round(this.plugin.settings.scheduledSyncIntervalSeconds / 60).toString(),
-				);
-				text.inputEl.addEventListener(
-					'blur',
-					() => void this.handleScheduledSyncIntervalBlur(text, maxMinutes),
-				);
-				text.inputEl.type = 'number';
-				text.inputEl.min = '0';
-				text.inputEl.max = maxMinutes.toString();
-				text.inputEl.step = '1';
-			});
-
-		new Setting(this.containerEl)
-			.setName(t('settings.syncMode.name'))
-			.setDesc(t('settings.syncMode.desc'))
-			.addDropdown((dropdown) =>
-				dropdown
-					.addOption(SyncMode.STRICT, t('settings.syncMode.strict'))
-					.addOption(SyncMode.LOOSE, t('settings.syncMode.loose'))
-					.setValue(this.plugin.settings.syncMode)
+				toggle
+					.setValue(this.plugin.settings.exhaustiveRemoteTraversal)
 					.onChange((value) => {
-						this.plugin.settings.syncMode = value as SyncMode;
+						this.plugin.settings.exhaustiveRemoteTraversal = value;
 						void this.plugin.saveSettings();
 					}),
 			);
-	}
 
-	private handleStartupSyncDelayBlur(text: TextComponent, maxSeconds: number) {
-		const numValue = parseFloat(text.getValue());
-		const finalValue = isNaN(numValue) ? 0 : clamp(numValue, 0, maxSeconds);
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.realtimeSync.name'),
+			desc: t('settings.realtimeSync.desc'),
+			placeholder: t('settings.realtimeSync.placeholder'),
+			field: this.plugin.settings.realtimeSync,
+			type: UserInputType.Time,
+			saveSettings: this.plugin.saveSettings,
+		});
 
-		if (isNaN(numValue)) {
-			new Notice(t('settings.startupSyncDelay.invalidValue'));
-		} else if (finalValue !== numValue) {
-			new Notice(t('settings.startupSyncDelay.exceedsMax', { max: maxSeconds }));
-		}
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.startupSync.name'),
+			desc: t('settings.startupSync.desc'),
+			placeholder: t('settings.startupSync.placeholder'),
+			field: this.plugin.settings.startupSync,
+			type: UserInputType.Time,
+			saveSettings: this.plugin.saveSettings,
+		});
 
-		text.setValue(finalValue.toString());
-		if (this.plugin.settings.startupSyncDelaySeconds !== finalValue) {
-			this.plugin.settings.startupSyncDelaySeconds = finalValue;
-			void this.plugin.saveSettings();
-		}
-	}
-
-	private async handleScheduledSyncIntervalBlur(text: TextComponent, maxMinutes: number) {
-		const numValue = parseFloat(text.getValue());
-		const finalValue = isNaN(numValue) ? 0 : Math.round(clamp(numValue, 0, maxMinutes));
-		text.setValue(finalValue.toString());
-
-		if (isNaN(numValue)) {
-			new Notice(t('settings.scheduledSyncInterval.invalidValue'));
-		} else if (finalValue !== numValue) {
-			new Notice(t('settings.scheduledSyncInterval.exceedsMax', { max: maxMinutes }));
-		}
-
-		this.plugin.settings.scheduledSyncIntervalSeconds = finalValue * 60;
-		await this.plugin.saveSettings();
-		await this.plugin.scheduledSyncService.updateInterval();
+		generateSettingEntry({
+			container: this.containerEl,
+			name: t('settings.scheduledSync.name'),
+			desc: t('settings.scheduledSync.desc'),
+			placeholder: t('settings.scheduledSync.placeholder'),
+			field: this.plugin.settings.scheduledSync,
+			type: UserInputType.Time,
+			saveSettings: this.plugin.saveSettings,
+			rejectZero: true,
+		});
 	}
 }

@@ -1,8 +1,8 @@
 {
 	"id": "webdav-sync",
 	"name": "WebDAV Sync",
-	"version": "2.3.2",
-	"minAppVersion": "1.11.4",
+	"version": "2.4.0",
+	"minAppVersion": "1.12.3",
 	"authorUrl": "https://hesprs.github.io",
 	"description": "General-purpose & bidirectional WebDAV syncing for your vault. Designed for stability and robust file handling without vendor lock-in.",
 	"author": "Hēsperus",

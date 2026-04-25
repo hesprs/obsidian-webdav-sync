@@ -39,18 +39,21 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 	protected readonly webdav: WebDAVClient;
 	protected readonly syncRecord: SyncRecord;
 	protected readonly vault: Vault;
-	protected readonly local: (BaseTaskOptions & T)['local'];
-	protected readonly remote: (BaseTaskOptions & T)['remote'];
+	readonly local: (BaseTaskOptions & T)['local'];
+	readonly remote: (BaseTaskOptions & T)['remote'];
 
 	abstract exec(): MaybePromise<TaskResult>;
 
 	toJSON() {
-		const { localPath, remotePath } = this;
-		const taskName = getTaskName(this);
+		const path =
+			this.local && this.remote
+				? this.localPath
+				: this.remote
+					? this.remotePath
+					: this.localPath;
 		return {
-			taskName,
-			localPath,
-			remotePath,
+			taskName: getTaskName(this),
+			path,
 		};
 	}
 }

@@ -1,8 +1,9 @@
+import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { trashFile } from '~/utils/trash-file-accordingly';
 import { BaseTask, toTaskError } from './task.interface';
 
-export default class RemoveLocalTask extends BaseTask {
+export default class RemoveLocalTask extends BaseTask<OptionsWithLocalStat> {
 	readonly name = 'removeLocal';
 
 	async exec() {

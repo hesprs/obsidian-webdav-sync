@@ -1,26 +1,14 @@
-.vscode
-.slim
 **/codemap.md
+plans
 PLAN.md
 LOG.md
 MEMORY.md
 AGENTS.md
+REQUIREMENTS.md
+PROGRESS.md
 
-# npm
 node_modules
-
-# obsidian
-data.json
-
-# Local
-*.local
-*.log*
-
-# Environment variables
-.env
 .ignore
-
-# build output
 dist
-styles.css
-main.js
+.vscode
+.slim
