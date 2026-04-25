@@ -131,11 +131,11 @@ export default class WebDAVSyncPlugin extends Plugin {
 		this.scheduledSyncService.start();
 	}
 
-	async onunload() {
+	onunload() {
 		setPluginInstance(null);
-		await this.syncStateStore.unload();
-		await this.baseTextStore.unload();
-		await this.fileChunkStore.unload();
+		void this.syncStateStore.unload();
+		void this.baseTextStore.unload();
+		void this.fileChunkStore.unload();
 		syncCancel();
 		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
