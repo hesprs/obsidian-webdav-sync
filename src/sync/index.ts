@@ -13,6 +13,7 @@ import {
 	type SyncPlanSummary,
 } from '~/events';
 import { finalizeSyncRun } from '~/events/sync-terminate';
+import { statItem } from '~/fs/vault';
 import t from '~/i18n';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
@@ -21,7 +22,6 @@ import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-item';
 import WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import {
@@ -286,7 +286,7 @@ export class SyncEngine {
 		const final: (PushTask | MkdirRemoteTask)[] = [];
 		for (const task of tasks) {
 			const options = task.options;
-			const local = await statVaultItem(this.vault, options.localPath);
+			const local = await statItem(this.vault, options.localPath);
 			if (!local)
 				throw new Error(`Local file item not found during reupload: ${options.localPath}`);
 			if (local.isDir) final.push(new MkdirRemoteTask({ ...options, local }));

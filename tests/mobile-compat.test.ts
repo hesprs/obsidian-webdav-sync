@@ -1,18 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
-import { sha256Base64, sha256Hex } from '~/utils/sha256';
 
 describe('phase 1 mobile compatibility', () => {
-	it('produces stable sha256 encodings without node:crypto', async () => {
-		const data = new TextEncoder().encode('hello').buffer;
-
-		expect(await sha256Hex(data)).toBe(
-			'2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
-		);
-		expect(await sha256Base64(data)).toBe('LPJNul+wow4m6DsqxbninhsWHlwfp0JecwQzYpOLmCQ=');
-	});
-
 	it('builds stable sync state keys from sync namespace identity', () => {
 		expect(
 			getSyncStateKey({

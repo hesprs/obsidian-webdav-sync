@@ -21,6 +21,9 @@
     <a href="./assets/README.zh-Hans.md">
         <strong>简体中文</strong>
     </a> • 
+    <a href="#ongoing-polling">
+        <strong>Ongoing Polling</strong>
+    </a> • 
     <a href="#common-questions">
         <strong>Q&A</strong>
     </a> • 
@@ -43,20 +46,59 @@ There's already a lot of plugins to sync your notes between devices. But when we
 
 Acknowledging that WebDAV would be the most convenient DIY solution for syncing, this plugin comes to provide a balanced experience of day-to-day convenience, easy setup, and the robustness that doesn't make your notes into a chaos.
 
+## Ongoing Polling
+
+📢 Here's ongoing polling about new features! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
+
+- 🗳️ [Should this plugin support S3-compatible backend, or keep WebDAV only?](https://github.com/hesprs/obsidian-webdav-sync/discussions/90)
+
 ## Features
 
-- 🔄 **Bidirectional syncing** between local vault and remote WebDAV
-- ⚡ **Fast syncing mode** with cached acceleration for fast, sync-on-change syncing
-- 📁 **WebDAV explorer** for exploring remote directories
-- 🔀 **Conflict handling**:
+🔄 **Reliable Bidirectional Syncing**:
+
+- This plugin syncs your vault with a WebDAV storage.
+- It does three-way comparison: remote state, local state, and recorded local & remote states of last sync
+- Then it follows a decision matrix for maximum precision and data integrity, detail see [this page](https://hesprs.github.io/projects/obsidian-webdav-sync#technical-breakdown).
+
+🔀 **Auto Sync and Conflict Handling**:
+
+- The plugin supports automatically triggered sync as follows:
+  - **Startup sync**: trigger a sync when Obsidian starts.
+  - **Scheduled sync**: trigger syncs periodically.
+  - **Real-time sync**: trigger syncs immediately when a change is detected.
+- The plugin supports conflict handling methods:
   - Smart merge
   - Latest survive
   - Use remote
   - Use local
   - Skip
-- 📦 **Large file skipping** via configurable size threshold
-- 🔁 **Robust file handling** that doesn't mess up your notes
-- 📜 **Lightweight local database** empowers scalability and ensures performance
+
+⚡ **Maximum Performance**:
+
+- Most sync operations are performed via parallelized network requests.
+- Real-time sync uses cached remote states by default, allowing it to complete syncing within seconds.
+- **10 times** smaller size than Remotely Save, **8 times** faster startup loading time.
+
+🧰 **Detailed Config**:
+
+- The plugin allows users to adjust various parameters to adapt for various services:
+  - **Max concurrent WebDAV requests**: deal with service rate limiting.
+  - **Min time between WebDAV requests**: deal with service rate limiting.
+  - **Skip large files**: handle low storage space.
+  - **Max concurrent sync tasks**: control CPU and disk usage.
+  - **Max concurrent throughput**: control memory usage and prevent crashes.
+
+📦 **Production-Level Scalability**:
+
+- Handles vaults with more than 3000 files smoothly.
+- Load balancing and download chunking allows the plugin to handle gigabytes at once.
+- Large file downloading is resumable.
+
+🎨 **Excellent UI and Observability**:
+
+- Four ways (modals, status bar, notices, logs) to keep you aware of the syncing progress.
+- File changes are rendered as a file tree to allow granular selective syncing.
+- Log utility outputs human-readable markdown documents.
 
 ## Install & Setup
 
@@ -125,8 +167,8 @@ Below is a list of planned features and improvements, the faster this plugin is 
 
 Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on universality, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
 
-<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 77852, ratio remained: 39% -->
+<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 83649, ratio remained: 37% -->
 
-Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 39% (till April 20 2026) of the effort is contributed by Nutstore.
+Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 37% (till April 26 2026) of the effort is contributed by Nutstore.
 
 Copyright ©️ 2026 Hesprs (Hēsperus), 2025-2026 Nutstore

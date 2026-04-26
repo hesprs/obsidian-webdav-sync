@@ -1,8 +1,8 @@
+import { statItem } from '~/fs/vault';
+import { getContent } from '~/fs/webdav';
 import { arrayBufferToText, toArrayBuffer, type BinaryLike } from '~/platform/binary';
 import { useSettings } from '~/settings';
-import { getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
-import { statVaultItem } from '~/utils/stat-item';
 import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
 import { isMergeablePath } from '../utils/is-mergeable-path';
 import { getStdChunkSize, splitChunks } from '../utils/split-chunks';
@@ -52,14 +52,14 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 				}
 				await this.syncRecord.removeFileChunk(this.remotePath);
 			} else {
-				remoteContent = await getRemoteContent(this.webdav, this.remotePath);
+				remoteContent = await getContent(this.webdav, this.remotePath);
 				await this.vault.adapter.writeBinary(this.localPath, remoteContent, {
 					ctime: this.remote.mtime - 1000, // #1
 				});
 			}
 
 			// no race condition since we've just written it
-			const local = await statVaultItem(this.vault, this.localPath);
+			const local = await statItem(this.vault, this.localPath);
 			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({

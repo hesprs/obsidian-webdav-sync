@@ -6,9 +6,9 @@ import { apiLimiter } from '~/utils/api-limiter';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
-import { remoteToStatModel } from '~/utils/to-stat-model';
-import type { OnProgress } from './fs.interface';
-import postTraversal from './post-traversal';
+import type { OnProgress } from '../fs.interface';
+import postTraversal from '../post-traversal';
+import { toStatModel } from './utils';
 
 interface TraverseWebDAVOptions {
 	onProgress?: OnProgress;
@@ -23,11 +23,7 @@ function isNotFoundError(err: unknown): boolean {
 	return typeof errWithRes.message === 'string' && /^404\s*:/.test(errWithRes.message);
 }
 
-export async function traverseWebDAV({
-	onProgress,
-	token,
-	throwIfCancelled,
-}: TraverseWebDAVOptions) {
+export async function traverse({ onProgress, token, throwIfCancelled }: TraverseWebDAVOptions) {
 	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
 		await useSettings();
 	const result: StatsMap = new Map();
@@ -57,7 +53,7 @@ export async function traverseWebDAV({
 				stat.filename,
 				stat.type === 'directory',
 			);
-			return remoteToStatModel(stat, path);
+			return toStatModel(stat, path);
 		});
 		for (const item of resultItems) {
 			const vaultPath = normalizePathToRelative(remoteDir, item.path);
@@ -93,7 +89,7 @@ export async function traverseWebDAV({
 								stat.filename,
 								stat.type === 'directory',
 							);
-							return remoteToStatModel(stat, path);
+							return toStatModel(stat, path);
 						});
 
 						for (const item of resultItems) {

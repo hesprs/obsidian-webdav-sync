@@ -67,7 +67,7 @@ export default class SyncProgressModal extends Modal {
 		if (stage && TERMINAL_STAGES.includes(stage)) return 'terminal';
 		if (stage === 'awaiting_confirmation') return 'confirmation';
 		if (stage === 'executing') return 'syncing';
-		if (stage === 'walking_remote') return 'walking';
+		if (stage === 'walking_remote' || stage === 'pre_connecting') return 'walking';
 		return 'none';
 	}
 

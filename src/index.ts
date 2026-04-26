@@ -73,7 +73,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 			inclusionRules: [],
 		},
 		skipLargeFiles: {
-			enabled: true,
+			enabled: false,
 			value: 31457280,
 		},
 		realtimeSync: {
