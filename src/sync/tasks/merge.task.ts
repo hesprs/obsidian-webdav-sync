@@ -1,12 +1,12 @@
 import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
+import { getContent as getLocalContent, statItem as statVaultItem } from '~/fs/vault';
+import { statItem as statWebDAVItem, getContent as getRemoteContent } from '~/fs/webdav';
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
-import { getLocalContent, getRemoteContent } from '~/utils/get-content';
 import logger from '~/utils/logger';
 import { mergeDigIn } from '~/utils/merge-dig-in';
-import { statVaultItem, statWebDAVItem } from '~/utils/stat-item';
 import { resolveByIntelligentMerge } from '../utils/merge';
 import { BaseTask, toTaskError } from './task.interface';
 

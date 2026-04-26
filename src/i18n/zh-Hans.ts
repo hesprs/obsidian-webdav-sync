@@ -121,28 +121,28 @@ const translation: typeof en = {
 		},
 		maxWebDAVConcurrency: {
 			name: '最大并发 WebDAV 请求数',
-			desc: '限制最大并发 WebDAV 请求数量。请在输入框中设置该限制。',
+			desc: '限制最大并发 WebDAV 请求数量。此选项适用于具有速率限制的服务。请在输入框中设置允许的最大并发数。',
 			placeholder: '输入数量',
 		},
 		maxSyncTaskConcurrency: {
 			name: '最大并发同步任务数',
-			desc: '同步任务是原子性的同步操作，例如下载文件或移除目录。此设置限制同时执行的最大任务数。请在输入框中设置该限制。',
+			desc: '同步任务是原子性的同步操作，例如下载文件或移除目录。此设置限制同时执行的最大任务数，有助于降低 CPU 和磁盘占用。请在输入框中设置该限制。',
 			placeholder: '输入数量',
+		},
+		maxThroughputConcurrency: {
+			name: '最大并发吞吐量',
+			desc: '限制同时上传或下载的文件总大小上限。此选项有助于控制内存使用并防止崩溃。请在输入框中设置该大小限制。',
+			placeholder: '输入文件大小（例如 100MB、0.5GB）',
 		},
 		minWebDAVRequestInterval: {
 			name: 'WebDAV 请求最小间隔时间',
-			desc: '限制 WebDAV 请求之间的最小时间间隔。请在输入框中设置该间隔。',
+			desc: '限制 WebDAV 请求之间的最小时间间隔。此选项适用于具有速率限制的服务。请在输入框中设置该间隔。',
 			placeholder: '输入间隔时间（例如 1s、300ms）',
 		},
 		skipLargeFiles: {
 			name: '跳过大文件',
-			desc: '在同步过程中跳过超过此大小的文件。请在输入框中设置大小限制。',
+			desc: '在同步过程中跳过超过此大小的文件。此选项适用于存储空间受限的服务。请在输入框中设置大小限制。',
 			placeholder: '输入大小限制（例如 10MB、0.5GB）',
-		},
-		maxThroughputConcurrency: {
-			name: '最大并发吞吐量',
-			desc: '限制同时上传或下载的文件总大小上限。在输入框中设置该限制。',
-			placeholder: '输入文件大小（例如 100MB、0.5GB）',
 		},
 		clearRecords: {
 			name: '清除记录',

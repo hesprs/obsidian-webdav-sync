@@ -1,6 +1,6 @@
 import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
+import { statItem } from '~/fs/webdav';
 import logger from '~/utils/logger';
-import { statWebDAVItem } from '~/utils/stat-item';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat> {
@@ -9,7 +9,7 @@ export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat
 	async exec() {
 		try {
 			await this.webdav.createDirectory(this.remotePath);
-			const remote = await statWebDAVItem(this.webdav, this.remotePath);
+			const remote = await statItem(this.webdav, this.remotePath);
 
 			if (!remote || !remote.isDir)
 				throw new Error(

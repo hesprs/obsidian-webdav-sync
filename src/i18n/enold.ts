@@ -120,27 +120,27 @@ export default {
 		},
 		maxWebDAVConcurrency: {
 			name: 'Max concurrent WebDAV requests',
-			desc: 'Limit the maximum number of concurrent WebDAV requests. Alter the delay in the field.',
+			desc: 'Limit the maximum number of concurrent WebDAV requests. This option is useful for services with rate limits. Alter the maximum concurrency allowed in the field.',
 			placeholder: 'Enter number',
 		},
 		maxSyncTaskConcurrency: {
 			name: 'Max concurrent sync tasks',
-			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting limits the maximum number of tasks to be executed concurrently. Alter the limit in the field.',
+			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting limits the maximum number of tasks to be executed concurrently, which is useful to reduce CPU and disk usage. Alter the limit in the field.',
 			placeholder: 'Enter number',
 		},
 		maxThroughputConcurrency: {
 			name: 'Max concurrent throughput',
-			desc: 'Limit the maximum total size of files that are uploaded or downloaded concurrently. Alter the limit in the field.',
+			desc: 'Limit the maximum total size of files that are uploaded or downloaded concurrently. This option is useful to control memory usage and prevent crashes. Alter the size in the field.',
 			placeholder: 'Enter file size (e.g. 100MB, 0.5GB)',
 		},
 		minWebDAVRequestInterval: {
 			name: 'Min time between WebDAV requests',
-			desc: 'Limit the minimum time between WebDAV requests. Alter the delay in the field.',
+			desc: 'Limit the minimum time between WebDAV requests. This option is useful for services with rate limits. Alter the interval in the field.',
 			placeholder: 'Enter interval (e.g. 1s, 300ms)',
 		},
 		skipLargeFiles: {
 			name: 'Skip large files',
-			desc: 'Skip files exceeding this size during synchronization. Alter the size limit in the field.',
+			desc: 'Skip files exceeding this size during synchronization. This option is useful for services with storage space limitations. Alter the size limit in the field.',
 			placeholder: 'Enter size limit (e.g. 10MB, 0.5GB)',
 		},
 		clearRecords: {

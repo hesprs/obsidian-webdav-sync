@@ -3,14 +3,14 @@ import type { StatsMap } from '~/types';
 import { normalizeVaultPath } from '~/platform/path';
 import { useSettings } from '~/settings';
 import logger from '~/utils/logger';
-import { localToStatModel } from '~/utils/to-stat-model';
-import postTraversal from './post-traversal';
+import postTraversal from '../post-traversal';
+import { toStatModel } from './utils';
 
 interface TraverseVaultOptions {
 	vault: Vault;
 }
 
-export async function traverseVault({ vault }: TraverseVaultOptions) {
+export async function traverse({ vault }: TraverseVaultOptions) {
 	const { filterRules, skipLargeFiles } = await useSettings();
 	const queue = [vault.getRoot().path];
 	const result: StatsMap = new Map();
@@ -28,7 +28,7 @@ export async function traverseVault({ vault }: TraverseVaultOptions) {
 							const _stat = await vault.adapter.stat(_path);
 							if (!_stat) throw new Error(`Stat of ${_path} not found!`);
 							const path = normalizeVaultPath(_path);
-							const stat = localToStatModel(_stat, path);
+							const stat = toStatModel(_stat, path);
 							result.set(path, stat);
 						}),
 					);
