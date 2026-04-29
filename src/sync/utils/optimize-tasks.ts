@@ -1,6 +1,5 @@
-import { chunk } from 'lodash-es';
 import type { ToggleNumericSettingsField } from '~/types';
-import zipMerge from '~/utils/zip-merge';
+import { chunk, zipMerge } from '~/utils/fns';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import PullTask from '../tasks/pull.task';

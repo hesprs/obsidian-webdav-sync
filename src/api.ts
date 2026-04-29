@@ -1,9 +1,9 @@
 import type { FileStat } from 'webdav';
-import { XMLParser } from 'fast-xml-parser';
-import { isNil } from 'lodash-es';
 import { normalizeRemotePath, remoteBasename } from './platform/path';
+import { isNil } from './utils/fns';
 import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
+import { parseXML } from './utils/parse-xml';
 import requestUrl from './utils/request-url';
 import sleep from './utils/sleep';
 
@@ -148,17 +148,7 @@ export async function getDirectoryContents(
 </propfind>`,
 			});
 
-			const parseXml = new XMLParser({
-				attributeNamePrefix: '',
-				removeNSPrefix: true,
-				parseTagValue: false,
-				numberParseOptions: {
-					eNotation: false,
-					hex: true,
-					leadingZeros: true,
-				},
-			});
-			const result: WebDAVResponse = parseXml.parse(response.text);
+			const result: WebDAVResponse = parseXML(response.text);
 
 			const items = Array.isArray(result.multistatus.response)
 				? result.multistatus.response

@@ -1,6 +1,4 @@
-import { diff_match_patch } from 'diff-match-patch';
-import { isEqual } from 'lodash-es';
-import { diff3Merge as nodeDiff3Merge } from 'node-diff3';
+import { diff3Merge } from 'node-diff3';
 
 // --- Logic for Latest Timestamp Resolution ---
 
@@ -25,30 +23,25 @@ export type LatestTimestampResult =
 export function resolveByLatestTimestamp(params: LatestTimestampParams): LatestTimestampResult {
 	const { localMtime, remoteMtime, localContent, remoteContent } = params;
 
-	if (remoteMtime === localMtime) {
-		return { status: LatestTimestampResolution.NoChange };
-	}
-
+	if (remoteMtime === localMtime) return { status: LatestTimestampResolution.NoChange };
 	const useRemote = remoteMtime > localMtime;
 
 	if (useRemote) {
 		// Only return UseRemote if content is actually different
-		if (!isEqual(localContent, remoteContent)) {
+		if (localContent !== remoteContent)
 			return {
 				status: LatestTimestampResolution.UseRemote,
 				content: remoteContent,
 			};
-		}
 		return { status: LatestTimestampResolution.NoChange };
 	} else {
 		// Local is newer (or same age but remote wasn't newer)
 		// Only return UseLocal if content is actually different
-		if (!isEqual(localContent, remoteContent)) {
+		if (localContent !== remoteContent)
 			return {
 				status: LatestTimestampResolution.UseLocal,
 				content: localContent,
 			};
-		}
 		return { status: LatestTimestampResolution.NoChange };
 	}
 }
@@ -74,41 +67,19 @@ function diff3MergeStrings(
 	local: string | string[],
 	remote: string | string[],
 ): string | false {
-	const regions = nodeDiff3Merge(local, base, remote, {
+	const regions = diff3Merge(local, base, remote, {
 		excludeFalseConflicts: true,
 		stringSeparator: '\n',
 	});
 
-	if (regions.some((region) => !region.ok)) {
-		return false;
-	}
-	const result: string[][] = [];
-	for (const region of regions) {
-		if (region.ok) {
-			result.push(region.ok);
-		}
-	}
-	return result.flat().join('\n');
+	if (regions.some((region) => !region.ok)) return false;
+	return regions.flatMap((region) => region.ok).join('\n');
 }
 
 export function resolveByIntelligentMerge(params: IntelligentMergeParams): IntelligentMergeResult {
 	const { localContentText, remoteContentText, baseContentText } = params;
-
 	if (localContentText === remoteContentText) return { success: true, isIdentical: true };
-
 	const diff3MergedText = diff3MergeStrings(baseContentText, localContentText, remoteContentText);
-
 	if (diff3MergedText !== false) return { success: true, mergedText: diff3MergedText };
-
-	const dmp = new diff_match_patch();
-	dmp.Match_Threshold = 0.2;
-	dmp.Patch_Margin = 2;
-
-	const diffs = dmp.diff_main(baseContentText, remoteContentText);
-	const patches = dmp.patch_make(baseContentText, diffs);
-	let [mergedDmpText, solveResult] = dmp.patch_apply(patches, localContentText);
-
-	if (solveResult.includes(false)) return { success: false };
-
-	return { success: true, mergedText: mergedDmpText };
+	return { success: false };
 }
