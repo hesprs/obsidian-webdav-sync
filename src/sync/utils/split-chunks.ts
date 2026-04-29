@@ -1,6 +1,6 @@
-import { chunk } from 'lodash-es';
 import type { FileChunkKey } from '~/storage/file-chunk.store';
 import type { ToggleNumericSettingsField } from '~/types';
+import { chunk } from '~/utils/fns';
 
 interface Fragment {
 	start: number;

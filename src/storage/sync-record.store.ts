@@ -1,5 +1,5 @@
-import { isNil } from 'lodash-es';
 import type { RecordStatModel, RecordStatsMap } from '~/types';
+import { isNil } from '~/utils/fns';
 import { BaseStore, parseKey, SYNC_STATE_STORE_NAME } from './store.interface';
 
 export class IndexedDbSyncStateStore extends BaseStore {

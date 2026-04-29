@@ -1,5 +1,4 @@
 import GlobToRegExp from 'glob-to-regexp';
-import { cloneDeep } from 'lodash-es';
 
 export interface GlobMatchUserOptions {
 	caseSensitive: boolean;
@@ -121,8 +120,8 @@ export default class GlobMatch {
 }
 
 export function getUserOptions(opt: GlobMatchOptions | string): GlobMatchUserOptions {
-	if (typeof opt === 'string') return cloneDeep(DEFAULT_USER_OPTIONS);
-	return opt.options ?? cloneDeep(DEFAULT_USER_OPTIONS);
+	if (typeof opt === 'string') return structuredClone(DEFAULT_USER_OPTIONS);
+	return opt.options ?? structuredClone(DEFAULT_USER_OPTIONS);
 }
 
 export function needIncludeFromGlobRules(

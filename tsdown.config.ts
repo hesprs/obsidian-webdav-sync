@@ -4,14 +4,16 @@ import { defineConfig } from 'tsdown';
 import solid from 'unplugin-solid/rolldown';
 import pkg from './package.json' with { type: 'json' };
 
-const dev = process.env.MODE === 'dev';
+const mode = process.env.MODE;
+const dev = mode === 'dev';
+const inspect = mode === 'inspect';
 
 export default defineConfig({
 	entry: 'src/index.ts',
 	platform: 'browser',
 	minify: !dev,
 	define: {
-		'process.env.MODE': JSON.stringify(process.env.MODE) ?? '"prod"',
+		'process.env.MODE': JSON.stringify(mode) ?? '"prod"',
 		'process.env.VERSION': JSON.stringify(pkg.version),
 	},
 	plugins: [solid()],
@@ -61,5 +63,6 @@ export default defineConfig({
 		minify: !dev,
 		fileName: 'styles.css',
 	},
-	clean: !dev,
+	clean: !dev && !inspect,
+	devtools: inspect,
 });

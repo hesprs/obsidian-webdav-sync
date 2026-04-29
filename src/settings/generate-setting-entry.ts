@@ -1,4 +1,3 @@
-import { isNaN } from 'lodash-es';
 import { Notice, Setting, TextComponent } from 'obsidian';
 import type { ToggleNumericSettingsField } from '~/types';
 import t from '~/i18n';
