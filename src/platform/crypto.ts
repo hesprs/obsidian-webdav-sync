@@ -1,13 +1,9 @@
-import { isNil } from 'lodash-es';
-import deepStringify from '~/utils/deep-stringify';
-
 export async function sha256Digest(data: BufferSource): Promise<ArrayBuffer> {
 	return globalThis.crypto.subtle.digest('SHA-256', data);
 }
 
 export function hash(input: unknown): string {
-	const str = typeof input === 'string' ? input : deepStringify(input);
-	if (isNil(str)) throw new Error('hash failed');
+	const str = JSON.stringify(input);
 	let hash = 0x811c9dc5;
 	for (let i = 0; i < str.length; i++) {
 		hash ^= str.charCodeAt(i);

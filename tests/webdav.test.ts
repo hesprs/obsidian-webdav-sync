@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { parseXML } from '~/utils/parse-xml';
 import requestUrl from '~/utils/request-url';
 
 vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
+}));
+vi.mock('~/utils/parse-xml', () => ({
+	parseXML: vi.fn(),
 }));
 vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));
 vi.mock('~/utils/logger', () => ({
@@ -17,6 +21,16 @@ describe('getDirectoryContents', () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
 	});
+
+	const parseXMLMock = vi.mocked(parseXML);
+
+	function mockParsedResponse(response: unknown[]): void {
+		parseXMLMock.mockReturnValueOnce({
+			multistatus: {
+				response,
+			},
+		} as never);
+	}
 
 	it('parses absolute href responses (Nextcloud style)', async () => {
 		const { getDirectoryContents } = await import('../src/api');
@@ -58,6 +72,40 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/remote.php/dav/files/alice/Notes/',
+				propstat: {
+					prop: {
+						resourcetype: { collection: {} },
+						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+					},
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+			{
+				href: '/remote.php/dav/files/alice/Notes/Folder%20A/',
+				propstat: {
+					prop: {
+						resourcetype: { collection: {} },
+						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+					},
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+			{
+				href: '/remote.php/dav/files/alice/Notes/Project%20Plan.md',
+				propstat: {
+					prop: {
+						resourcetype: {},
+						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+						getcontentlength: '12',
+						getcontenttype: 'text/markdown',
+					},
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+		]);
 
 		const files = await getDirectoryContents(
 			'https://cloud.example.com/remote.php/dav/files/alice',
@@ -101,6 +149,19 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/vault/Notes/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/Notes/%E4%B8%AD%E6%96%87.md',
+				propstat: {
+					prop: { resourcetype: {}, getcontentlength: '4' },
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+		]);
 
 		const files = await getDirectoryContents(
 			'https://dav.example.com/vault',
@@ -153,6 +214,29 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/dav/Notes/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/dav/Notes/Folder/',
+				propstat: [
+					{ prop: { resourcetype: {} }, status: 'HTTP/1.1 404 Not Found' },
+					{ prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+				],
+			},
+			{
+				href: '/dav/Notes/file.md',
+				propstat: [
+					{ prop: { resourcetype: {} }, status: 'HTTP/1.1 404 Not Found' },
+					{
+						prop: { resourcetype: {}, getcontentlength: '9' },
+						status: 'HTTP/1.1 200 OK',
+					},
+				],
+			},
+		]);
 
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
@@ -194,6 +278,23 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/dav/Notes/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/dav/Notes/Broken.md',
+				propstat: { status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/dav/Notes/Ok.md',
+				propstat: {
+					prop: { resourcetype: {}, getcontentlength: '5' },
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+		]);
 
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
@@ -224,6 +325,16 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/dav/test/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/dav/test/abc/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+		]);
 
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/test/');
 
@@ -254,6 +365,16 @@ describe('getDirectoryContents', () => {
   </d:response>
 </d:multistatus>`,
 		} as never);
+		mockParsedResponse([
+			{
+				href: '/dav/<test>/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: '/dav/<test>/ab & c/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+		]);
 
 		const files = await getDirectoryContents(
 			'https://dav.example.com/dav',

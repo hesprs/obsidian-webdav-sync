@@ -1,4 +1,4 @@
-import { round } from 'lodash-es';
+import { round } from './fns';
 
 interface UnitConfig<T extends string = string> {
 	units: readonly T[];

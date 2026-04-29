@@ -1,4 +1,3 @@
-import { cloneDeep } from 'lodash-es';
 import { Modal, Setting } from 'obsidian';
 import WebDAVSyncPlugin from '~';
 import t from '~/i18n';
@@ -21,7 +20,7 @@ export default class FilterEditorModal extends Modal {
 		private filterType: FilterType = FilterType.Exclude,
 	) {
 		super(plugin.app);
-		this.filters = cloneDeep(filters);
+		this.filters = structuredClone(filters);
 	}
 
 	onOpen() {
