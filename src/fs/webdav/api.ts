@@ -119,11 +119,11 @@ export default async function getDirectoryContents(
 	token: string,
 	path: string,
 	infinity = false,
-): Promise<Array<FileStat>> {
+): Promise<Array<Omit<FileStat, 'etag'>>> {
 	const endpoint = serverUrl.trim().replace(/\/+$/, '');
 	if (!endpoint) throw new Error('WebDAV server URL is not configured');
 
-	const contents: Array<FileStat> = [];
+	const contents: Array<Omit<FileStat, 'etag'>> = [];
 	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 	let currentUrl = buildDirectoryUrl(endpoint, path);
 
