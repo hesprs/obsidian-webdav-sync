@@ -3,8 +3,8 @@ import { getContent } from '~/fs/webdav';
 import { arrayBufferToText, toArrayBuffer, type BinaryLike } from '~/platform/binary';
 import { useSettings } from '~/settings';
 import logger from '~/utils/logger';
-import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
-import { isMergeablePath } from '../utils/is-mergeable-path';
+import { type OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
+import isMergeablePath from '../utils/is-mergeable-path';
 import { getStdChunkSize, splitChunks } from '../utils/split-chunks';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -19,12 +19,18 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 				this.remote.size <= chunkSize
 					? []
 					: await this.syncRecord.getFileChunkKeys(this.remote);
-			const split = splitChunks(this.remote.size, maxThroughput, 4, cache, chunkSize);
+			const split = splitChunks({
+				cache,
+				chunkSize,
+				multiplex: 4,
+				setting: maxThroughput,
+				total: this.remote.size,
+			});
 			let remoteContent: ArrayBuffer | undefined;
 
 			if (split) {
 				logger.debug(`Pulling large file \`${this.remotePath}\` in chunks.`);
-				for (const group of split) {
+				for (const group of split)
 					await Promise.all(
 						group.map(async ({ start, end }) => {
 							const buffer = await toArrayBuffer(
@@ -33,13 +39,13 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 								})) as BinaryLike,
 							);
 							await this.syncRecord.setFileChunk(buffer, {
-								start,
 								end,
+								start,
 								...this.remote,
 							});
 						}),
 					);
-				}
+
 				const keys = (await this.syncRecord.getFileChunkKeys(this.remote))
 					.sort((a, b) => a.start - b.start)
 					.map(({ key }) => key);
@@ -58,24 +64,24 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 				});
 			}
 
-			// no race condition since we've just written it
+			// No race condition since we've just written it
 			const local = await statItem(this.vault, this.localPath);
 			if (!local || local.isDir)
 				throw new Error(`failed to read local file stat after pull: ${this.localPath}`);
 			await this.syncRecord.upsertRecords({
-				key: this.localPath,
-				local,
-				remote: this.remote,
 				baseText:
 					isMergeablePath(this.localPath) && remoteContent
 						? await arrayBufferToText(remoteContent)
 						: undefined,
+				key: this.localPath,
+				local,
+				remote: this.remote,
 			});
 
 			return { success: true } as const;
-		} catch (e) {
-			logger.error(`Failed to pull file ${this.remotePath} from remote`, e);
-			return { success: false, error: toTaskError(e, this) };
+		} catch (error) {
+			logger.error(`Failed to pull file ${this.remotePath} from remote`, error);
+			return { error: toTaskError(error, this), success: false };
 		}
 	}
 }

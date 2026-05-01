@@ -1,5 +1,5 @@
-import type { TAbstractFile } from 'obsidian';
-import WebDAVSyncPlugin from '~';
+import type WebDAVSyncPlugin from '~';
+import { type TAbstractFile } from 'obsidian';
 import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';
@@ -8,7 +8,7 @@ import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import type SyncSchedulerService from './sync-scheduler.service';
 
 export default class RealtimeSyncService {
-	private onChange = async (file: TAbstractFile, old?: string) => {
+	private readonly onChange = async (file: TAbstractFile, old?: string) => {
 		const { fastRealtimeSync, realtimeSync, filterRules } = await useSettings();
 		const exclusions = buildRules(filterRules.exclusionRules);
 		const inclusions = buildRules(filterRules.inclusionRules);
@@ -30,8 +30,8 @@ export default class RealtimeSyncService {
 	};
 
 	constructor(
-		private plugin: WebDAVSyncPlugin,
-		private syncScheduler: SyncSchedulerService,
+		private readonly plugin: WebDAVSyncPlugin,
+		private readonly syncScheduler: SyncSchedulerService,
 	) {
 		this.plugin.registerEvent(this.vault.on('create', this.onChange));
 		this.plugin.registerEvent(this.vault.on('delete', this.onChange));

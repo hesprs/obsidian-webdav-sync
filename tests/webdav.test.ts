@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseXML } from '~/composable/parse-xml';
+import parseXML from '~/composable/parse-xml';
 import requestUrl from '~/utils/request-url';
 
 vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
 }));
 vi.mock('~/composable/parse-xml', () => ({
-	parseXML: vi.fn(),
+	default: vi.fn(),
 }));
 vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));
 vi.mock('~/utils/logger', () => ({
@@ -24,7 +24,7 @@ describe('getDirectoryContents', () => {
 
 	const parseXMLMock = vi.mocked(parseXML);
 
-	function mockParsedResponse(response: unknown[]): void {
+	function mockParsedResponse(response: Array<unknown>): void {
 		parseXMLMock.mockReturnValueOnce({
 			multistatus: {
 				response,
@@ -33,7 +33,7 @@ describe('getDirectoryContents', () => {
 	}
 
 	it('parses absolute href responses (Nextcloud style)', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -77,8 +77,8 @@ describe('getDirectoryContents', () => {
 				href: '/remote.php/dav/files/alice/Notes/',
 				propstat: {
 					prop: {
-						resourcetype: { collection: {} },
 						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+						resourcetype: { collection: {} },
 					},
 					status: 'HTTP/1.1 200 OK',
 				},
@@ -87,8 +87,8 @@ describe('getDirectoryContents', () => {
 				href: '/remote.php/dav/files/alice/Notes/Folder%20A/',
 				propstat: {
 					prop: {
-						resourcetype: { collection: {} },
 						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+						resourcetype: { collection: {} },
 					},
 					status: 'HTTP/1.1 200 OK',
 				},
@@ -97,10 +97,10 @@ describe('getDirectoryContents', () => {
 				href: '/remote.php/dav/files/alice/Notes/Project%20Plan.md',
 				propstat: {
 					prop: {
-						resourcetype: {},
-						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
 						getcontentlength: '12',
 						getcontenttype: 'text/markdown',
+						getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+						resourcetype: {},
 					},
 					status: 'HTTP/1.1 200 OK',
 				},
@@ -123,7 +123,7 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('parses path-only href responses (server-relative style)', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -157,7 +157,7 @@ describe('getDirectoryContents', () => {
 			{
 				href: '/Notes/%E4%B8%AD%E6%96%87.md',
 				propstat: {
-					prop: { resourcetype: {}, getcontentlength: '4' },
+					prop: { getcontentlength: '4', resourcetype: {} },
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
@@ -175,7 +175,7 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('handles propstat arrays and picks successful prop values', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -231,7 +231,7 @@ describe('getDirectoryContents', () => {
 				propstat: [
 					{ prop: { resourcetype: {} }, status: 'HTTP/1.1 404 Not Found' },
 					{
-						prop: { resourcetype: {}, getcontentlength: '9' },
+						prop: { getcontentlength: '9', resourcetype: {} },
 						status: 'HTTP/1.1 200 OK',
 					},
 				],
@@ -248,7 +248,7 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('skips malformed response items without prop values', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -290,7 +290,7 @@ describe('getDirectoryContents', () => {
 			{
 				href: '/dav/Notes/Ok.md',
 				propstat: {
-					prop: { resourcetype: {}, getcontentlength: '5' },
+					prop: { getcontentlength: '5', resourcetype: {} },
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
@@ -304,7 +304,7 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('keeps nested absolute path when listing non-root directory', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -344,7 +344,7 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('decodes XML entities', async () => {
-		const { getDirectoryContents } = await import('../src/api');
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>

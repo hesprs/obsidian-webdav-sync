@@ -1,45 +1,39 @@
 import { Notice } from 'obsidian';
-import { createEffect, createSignal, For, Show } from 'solid-js';
+import { For, Show, createEffect, createSignal } from 'solid-js';
 import { type fs } from '../App';
 import File from './File';
 import Folder from './Folder';
 
-export interface FileStat {
+export type FileStat = {
 	path: string;
 	basename: string;
 	isDir: boolean;
-}
+};
 
-export interface FileListProps {
+export type FileListProps = {
 	path: string;
 	fs: fs;
 	onClick: (file: FileStat) => void;
-}
+};
 
 export function createFileList() {
 	const [version, setVersion] = createSignal(0);
 	return {
-		refresh: () => {
-			setVersion((v) => ++v);
-		},
 		FileList: (props: FileListProps) => {
-			const [items, setItems] = createSignal<FileStat[]>([]);
+			const [items, setItems] = createSignal<Array<FileStat>>([]);
 
 			const sortedItems = () =>
 				items().sort((a, b) => {
 					if (a.isDir === b.isDir) return a.basename.localeCompare(b.basename, ['zh']);
-					if (a.isDir && !b.isDir) return -1;
-					else return 1;
+					return a.isDir && !b.isDir ? -1 : 1;
 				});
 
 			async function refresh() {
 				try {
-					const items = await props.fs.ls(props.path);
-					setItems(items);
-				} catch (e) {
-					if (e instanceof Error) {
-						new Notice(e.message);
-					}
+					const newItems = await props.fs.ls(props.path);
+					setItems(newItems);
+				} catch (error) {
+					if (error instanceof Error) new Notice(error.message);
 				}
 			}
 
@@ -64,6 +58,9 @@ export function createFileList() {
 					)}
 				</For>
 			);
+		},
+		refresh: () => {
+			setVersion((v) => ++v);
 		},
 	};
 }

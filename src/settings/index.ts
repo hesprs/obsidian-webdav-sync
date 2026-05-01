@@ -1,7 +1,7 @@
 import type WebDAVSyncPlugin from '~';
-import { App, PluginSettingTab } from 'obsidian';
-import type { UserOptions } from '~/composable/glob-match';
-import type { ToggleNumericSettingsField } from '~/types';
+import { PluginSettingTab, type App } from 'obsidian';
+import { type UserOptions } from '~/composable/glob-match';
+import { type ToggleNumericSettingsField } from '~/types';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
@@ -24,12 +24,12 @@ export enum UnmergeableStrategy {
 	Skip = 'skip',
 }
 
-export interface GlobMatchOptions {
+export type GlobMatchOptions = {
 	expr: string;
 	options: UserOptions;
-}
+};
 
-export interface PluginSettings {
+export type PluginSettings = {
 	serverUrl: string;
 	account: string;
 	token: string;
@@ -43,22 +43,22 @@ export interface PluginSettings {
 	confirmBeforeDeleteInAutoSync: boolean;
 	fastRealtimeSync: boolean;
 	filterRules: {
-		exclusionRules: GlobMatchOptions[];
-		inclusionRules: GlobMatchOptions[];
+		exclusionRules: Array<GlobMatchOptions>;
+		inclusionRules: Array<GlobMatchOptions>;
 	};
-	skipLargeFiles: ToggleNumericSettingsField; // value is max size
-	realtimeSync: ToggleNumericSettingsField; // value is delay
-	maxWebDAVConcurrency: ToggleNumericSettingsField; // value is max
-	maxThroughputConcurrency: ToggleNumericSettingsField; // value is max
-	maxSyncTaskConcurrency: ToggleNumericSettingsField; // value is max
-	minWebDAVRequestInterval: ToggleNumericSettingsField; // value is min
-	startupSync: ToggleNumericSettingsField; // value is delay
-	scheduledSync: ToggleNumericSettingsField; // value is interval
-}
+	skipLargeFiles: ToggleNumericSettingsField; // Value is max size
+	realtimeSync: ToggleNumericSettingsField; // Value is delay
+	maxWebDAVConcurrency: ToggleNumericSettingsField; // Value is max
+	maxThroughputConcurrency: ToggleNumericSettingsField; // Value is max
+	maxSyncTaskConcurrency: ToggleNumericSettingsField; // Value is max
+	minWebDAVRequestInterval: ToggleNumericSettingsField; // Value is min
+	startupSync: ToggleNumericSettingsField; // Value is delay
+	scheduledSync: ToggleNumericSettingsField; // Value is interval
+};
 
-let pluginInstance: WebDAVSyncPlugin | null = null;
+let pluginInstance: WebDAVSyncPlugin | undefined;
 
-export function setPluginInstance(plugin: WebDAVSyncPlugin | null) {
+export function setPluginInstance(plugin?: WebDAVSyncPlugin) {
 	pluginInstance = plugin;
 }
 
@@ -67,7 +67,7 @@ export function getPluginInstance() {
 }
 
 export function waitUntilPluginInstance() {
-	return waitUntil(() => !!pluginInstance, 100);
+	return waitUntil(() => Boolean(pluginInstance), 100);
 }
 
 export async function useSettings() {

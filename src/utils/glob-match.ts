@@ -2,7 +2,7 @@ import GlobMatch, { type UserOptions } from '~/composable/glob-match';
 
 export function buildRules(
 	rules: Array<{ expr: string; options?: UserOptions }> = [],
-): GlobMatch[] {
+): Array<GlobMatch> {
 	return rules
 		.filter((rule) => rule.expr?.trim())
 		.map((rule) => new GlobMatch(rule.expr, rule.options));
@@ -10,8 +10,8 @@ export function buildRules(
 
 export function needIncludeFromGlobRules(
 	path: string,
-	inclusion: GlobMatch[],
-	exclusion: GlobMatch[],
+	inclusion: Array<GlobMatch>,
+	exclusion: Array<GlobMatch>,
 ): boolean {
 	for (const rule of exclusion) if (rule.matchesAncestor(path)) return false;
 

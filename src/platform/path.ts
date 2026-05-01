@@ -1,7 +1,7 @@
-function splitSegments(path: string): string[] {
+function splitSegments(path: string): Array<string> {
 	const normalized = path.replace(/\\/g, '/');
 	const segments = normalized.split('/');
-	const resolved: string[] = [];
+	const resolved: Array<string> = [];
 
 	for (const segment of segments) {
 		if (segment === '' || segment === '.') continue;
@@ -27,7 +27,7 @@ export function normalizePathToRelative(remoteBaseDir: string, remotePath: strin
 
 	if (normalizedRemotePath === normalizedBasePath) return '/';
 
-	// already relative
+	// Already relative
 	if (!normalizedRemotePath.startsWith(normalizedBasePath) || remoteBaseDir === '/')
 		return normalizedRemotePath.slice(1);
 

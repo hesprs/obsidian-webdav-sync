@@ -1,6 +1,6 @@
-import type { FileStat, WebDAVClient } from 'webdav';
-import type { StatModel } from '~/types';
-import { toArrayBuffer, type BinaryLike } from '~/platform/binary';
+import { type FileStat, type WebDAVClient } from 'webdav';
+import { type BinaryLike, toArrayBuffer } from '~/platform/binary';
+import { type StatModel } from '~/types';
 
 export async function statItem(client: WebDAVClient, path: string) {
 	const stat = (await client.stat(path, { details: false })) as FileStat;
@@ -9,8 +9,9 @@ export async function statItem(client: WebDAVClient, path: string) {
 
 export function toStatModel(from: FileStat, path: string): StatModel {
 	const isDir = from.type === 'directory';
-	if (isDir) return { path, isDir };
-	else return { path, isDir, mtime: new Date(from.lastmod).valueOf(), size: from.size };
+	return isDir
+		? { isDir, path }
+		: { isDir, mtime: new Date(from.lastmod).valueOf(), path, size: from.size };
 }
 
 export async function getContent(webdav: WebDAVClient, path: string) {

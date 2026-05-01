@@ -1,6 +1,6 @@
-import type { ToggleNumericSettingsField } from '~/types';
+import { type ToggleNumericSettingsField } from '~/types';
+import type PushTask from '../tasks/push.task';
 import PullTask from '../tasks/pull.task';
-import PushTask from '../tasks/push.task';
 import { getAndDeleteAt, getLast } from './array-utils';
 
 type ArrayOfTasks = Array<PushTask | PullTask>;
@@ -11,18 +11,16 @@ export default function limitPushPullTasks(
 	throughput: ToggleNumericSettingsField,
 ): Array<ArrayOfTasks> {
 	if (tasks.length === 0 || (!chunk.enabled && !throughput.enabled)) return [tasks];
-	// first-fit decreasing bin packing
+	// First-fit decreasing bin packing
 	const sortedTasks = tasks
 		.map((task) => {
-			let size = 0;
-			if (task instanceof PullTask) size = task.remote.size;
-			else size = task.local.size;
+			const size = task instanceof PullTask ? task.remote.size : task.local.size;
 			return { size, task };
 		})
 		.sort((a, b) => b.size - a.size);
-	const firstTask = getAndDeleteAt(sortedTasks, 0);
-	const res: Array<ArrayOfTasks> = [[firstTask.task]];
-	let throughputCounter = firstTask.size;
+	const initialTask = getAndDeleteAt(sortedTasks, 0);
+	const res: Array<ArrayOfTasks> = [[initialTask.task]];
+	let throughputCounter = initialTask.size;
 	while (sortedTasks.length !== 0) {
 		const lastArray = getLast(res);
 		let nextTask: { size: number; task: PushTask | PullTask } | undefined;

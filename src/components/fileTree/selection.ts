@@ -1,13 +1,11 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
-import type { FileTreeData, FileTreeSelectionSnapshot } from './types';
+import { type BaseTask } from '~/sync/tasks/task.interface';
+import { type FileTreeData, type FileTreeSelectionSnapshot } from './types';
 
-export class FileTreeSelectionController {
+export default class FileTreeSelectionController {
 	private readonly selectedTaskIds = new Set<string>();
 
 	constructor(private readonly data: FileTreeData) {
-		for (const taskNodeId of data.taskNodeIds) {
-			this.selectedTaskIds.add(taskNodeId);
-		}
+		for (const taskNodeId of data.taskNodeIds) this.selectedTaskIds.add(taskNodeId);
 	}
 
 	isSelected(nodeId: string): boolean {
@@ -22,35 +20,27 @@ export class FileTreeSelectionController {
 		this.setSelected(nodeId, nextSelected, changed);
 
 		if (node.isCreateFolderTask) {
-			if (!nextSelected) {
-				for (const descendantId of node.selectableDescendantTaskIds) {
+			if (!nextSelected)
+				for (const descendantId of node.selectableDescendantTaskIds)
 					this.setSelected(descendantId, false, changed);
-				}
-			}
-		} else if (node.isDeleteFolderTask) {
-			if (nextSelected) {
-				for (const descendantId of node.selectableDescendantTaskIds) {
+		} else if (node.isDeleteFolderTask)
+			if (nextSelected)
+				for (const descendantId of node.selectableDescendantTaskIds)
 					this.setSelected(descendantId, true, changed);
-				}
-			}
-		}
 
-		if (nextSelected) {
-			for (const ancestorId of node.ancestorCreateFolderTaskIds) {
+		if (nextSelected)
+			for (const ancestorId of node.ancestorCreateFolderTaskIds)
 				this.setSelected(ancestorId, true, changed);
-			}
-		} else {
-			for (const ancestorId of node.ancestorDeleteFolderTaskIds) {
+		else
+			for (const ancestorId of node.ancestorDeleteFolderTaskIds)
 				this.setSelected(ancestorId, false, changed);
-			}
-		}
 
 		return changed;
 	}
 
 	getSnapshot(): FileTreeSelectionSnapshot {
-		const selectedTasks: BaseTask[] = [];
-		const unselectedTasks: BaseTask[] = [];
+		const selectedTasks: Array<BaseTask> = [];
+		const unselectedTasks: Array<BaseTask> = [];
 		for (const taskNodeId of this.data.taskNodeIds) {
 			const task = this.data.nodes[taskNodeId]?.task;
 			if (!task) continue;

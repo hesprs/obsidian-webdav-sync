@@ -2,12 +2,12 @@ import type WebDAVSyncPlugin from '~';
 import logger from '~/utils/logger';
 
 // TODO: remove migration in May 2026
-export function processSettings(plugin: WebDAVSyncPlugin): void {
+export default function processSettings(plugin: WebDAVSyncPlugin): void {
 	let changed = false;
 	const settings = plugin.settings;
 
-	// remove at 1 May 2026
-	if ('credential' in settings) {
+	// Remove at 1 May 2026
+	if ('credential' in settings)
 		try {
 			const credential = settings.credential;
 			if (credential && typeof credential === 'string') {
@@ -17,18 +17,17 @@ export function processSettings(plugin: WebDAVSyncPlugin): void {
 			delete settings.credential;
 			changed = true;
 			logger.info('Migrated user WebDAV token to secret storage.');
-		} catch (e) {
-			logger.error('Failed to migrate WebDAV token!', e);
-			throw e;
+		} catch (error) {
+			logger.error('Failed to migrate WebDAV token!', error);
+			throw error;
 		}
-	}
 
-	// remove at 10 May 2026
+	// Remove at 10 May 2026
 	if ('bytes' in settings.skipLargeFiles && typeof settings.skipLargeFiles.bytes === 'number') {
 		const enabled = settings.skipLargeFiles.bytes !== 0;
 		settings.skipLargeFiles = {
 			enabled,
-			value: enabled ? settings.skipLargeFiles.bytes : 31457280,
+			value: enabled ? settings.skipLargeFiles.bytes : 31_457_280,
 		};
 		changed = true;
 	}

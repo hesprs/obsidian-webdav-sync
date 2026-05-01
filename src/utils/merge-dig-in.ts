@@ -3,10 +3,10 @@ import { diff3Merge, diffComm } from 'node-diff3';
 /**
  * https://github.com/bhousel/node-diff3/blob/39c04c024620d3971010abf4ba3e2cbdba2f3f81/index.mjs#L464
  */
-export function mergeDigIn(
-	a: string[] | string,
-	o: string[] | string,
-	b: string[] | string,
+export default function mergeDigIn(
+	a: Array<string> | string,
+	o: Array<string> | string,
+	b: Array<string> | string,
 	_options: {
 		excludeFalseConflicts?: boolean;
 		stringSeparator?: string | RegExp;
@@ -15,8 +15,8 @@ export function mergeDigIn(
 ) {
 	const options = {
 		excludeFalseConflicts: true,
-		stringSeparator: /\s+/,
 		label: {},
+		stringSeparator: /\s+/,
 		useGitStyle: false,
 		..._options,
 	};
@@ -27,24 +27,24 @@ export function mergeDigIn(
 
 	const regions = diff3Merge(a, o, b, options);
 	let conflict = false;
-	let result: string[] = [];
+	const result: Array<string> = [];
 
 	regions.forEach((region) => {
-		if (region.ok) result = result.concat(region.ok);
+		if (region.ok) result.push(...region.ok);
 		else {
-			const c = diffComm(region.conflict?.a as string[], region.conflict?.b as string[]);
-			for (let j = 0; j < c.length; j++) {
-				const inner = c[j];
+			const c = diffComm(
+				region.conflict?.a as Array<string>,
+				region.conflict?.b as Array<string>,
+			);
+			for (const inner of c) {
 				conflict = true;
-				result = result.concat([aSection], inner.buffer1, [xSection], inner.buffer2, [
-					bSection,
-				]);
+				result.push(aSection, ...inner.buffer1, xSection, ...inner.buffer2, bSection);
 			}
 		}
 	});
 
 	return {
-		conflict: conflict,
-		result: result,
+		conflict,
+		result,
 	};
 }

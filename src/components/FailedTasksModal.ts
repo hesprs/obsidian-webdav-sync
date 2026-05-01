@@ -1,22 +1,22 @@
-import { App, Modal, Setting } from 'obsidian';
+import { Modal, Setting, type App } from 'obsidian';
 import t from '~/i18n';
 
-interface FailedTaskInfo {
+type FailedTaskInfo = {
 	taskName: string;
 	localPath: string;
 	errorMessage: string;
-}
+};
 
-interface FailedTasksContext {
+type FailedTasksContext = {
 	syncType: string;
 	failedCount: number;
-}
+};
 
 export default class FailedTasksModal extends Modal {
 	constructor(
 		app: App,
-		private failedTasks: FailedTaskInfo[],
-		private context?: FailedTasksContext,
+		private readonly failedTasks: Array<FailedTaskInfo>,
+		private readonly context?: FailedTasksContext,
 	) {
 		super(app);
 	}
@@ -38,8 +38,8 @@ export default class FailedTasksModal extends Modal {
 			});
 			contextEl.setText(
 				t('failedTasks.context', {
-					syncType: this.context.syncType,
 					failedCount: this.context.failedCount,
+					syncType: this.context.syncType,
 				}),
 			);
 		}

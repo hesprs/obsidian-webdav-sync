@@ -1,4 +1,4 @@
-export function isSameTime(
+export default function isSameTime(
 	timestamp1: Date | number | undefined,
 	timestamp2: Date | number | undefined,
 ): boolean {

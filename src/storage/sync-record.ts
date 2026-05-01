@@ -1,14 +1,14 @@
-import type { RecordStatsMap, StatModel } from '~/types';
-import type { IndexedDbBaseTextStore } from './base-text.store';
-import type { IndexedDbFileChunkStore } from './file-chunk.store';
-import { type IndexedDbSyncStateStore } from './sync-record.store';
+import { type RecordStatsMap, type StatModel } from '~/types';
+import type IndexedDbFileChunkStore from './file-chunk.store';
+import type IndexedDbSyncStateStore from './sync-record.store';
+import IndexedDbBaseTextStore from './base-text.store';
 
-export class SyncRecord {
+export default class SyncRecord {
 	constructor(
-		private namespace: string,
-		private stateStore: IndexedDbSyncStateStore,
-		private textStore: IndexedDbBaseTextStore,
-		private fileStore: IndexedDbFileChunkStore,
+		private readonly namespace: string,
+		private readonly stateStore: IndexedDbSyncStateStore,
+		private readonly textStore: IndexedDbBaseTextStore,
+		private readonly fileStore: IndexedDbFileChunkStore,
 	) {}
 
 	async removeRecords(path: string): Promise<void> {

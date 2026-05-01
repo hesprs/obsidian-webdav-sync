@@ -1,5 +1,5 @@
 import { requestUrl as obsidianRequestUrl } from 'obsidian';
-import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import logger from '~/utils/logger';
 import requestUrl from '~/utils/request-url';
 
@@ -25,16 +25,16 @@ describe('requestUrl', () => {
 
 	it('skips logging expected 404 responses when throw is false', async () => {
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
+			headers: {},
 			status: 404,
 			text: '<html>not found</html>',
-			headers: {},
 		} as never);
 
 		await expect(
 			requestUrl({
-				url: 'https://dav.example.com/missing/',
 				method: 'PROPFIND',
 				throw: false,
+				url: 'https://dav.example.com/missing/',
 			}),
 		).resolves.toMatchObject({ status: 404 });
 
@@ -43,9 +43,9 @@ describe('requestUrl', () => {
 
 	it('still logs and throws unexpected 404 responses', async () => {
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
+			headers: {},
 			status: 404,
 			text: '<html>not found</html>',
-			headers: {},
 		} as never);
 
 		await expect(requestUrl('https://dav.example.com/missing/')).rejects.toThrow(
@@ -57,16 +57,16 @@ describe('requestUrl', () => {
 
 	it('still logs non-404 failures even when throw is false', async () => {
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
+			headers: {},
 			status: 500,
 			text: 'server error',
-			headers: {},
 		} as never);
 
 		await expect(
 			requestUrl({
-				url: 'https://dav.example.com/missing/',
 				method: 'PROPFIND',
 				throw: false,
+				url: 'https://dav.example.com/missing/',
 			}),
 		).resolves.toMatchObject({ status: 500 });
 
@@ -75,25 +75,25 @@ describe('requestUrl', () => {
 
 	it('logs safe response metadata instead of raw response objects', async () => {
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
-			status: 401,
-			text: '<html>unauthorized</html>',
 			headers: { 'content-type': 'text/html' },
 			json: () => {
 				throw new SyntaxError("JSON Parse error: Unrecognized token '<'");
 			},
+			status: 401,
+			text: '<html>unauthorized</html>',
 		} as never);
 
 		await expect(
 			requestUrl({
-				url: 'https://dav.example.com/test',
 				method: 'DELETE',
 				throw: false,
+				url: 'https://dav.example.com/test',
 			}),
 		).resolves.toMatchObject({ status: 401 });
 
 		expect(logger.error).toHaveBeenCalledWith('Received unexpected status code 401', {
-			status: 401,
 			headers: { 'content-type': 'text/html' },
+			status: 401,
 			text: '<html>unauthorized</html>',
 		});
 	});

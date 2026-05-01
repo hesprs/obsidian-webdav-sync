@@ -1,29 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('~/i18n', () => ({
-	default: (key: string) => key,
-}));
-
-vi.mock('~/settings', () => ({
-	ConflictStrategy: {
-		DiffMatchPatch: 'diffMatchPatch',
-		LatestTimeStamp: 'latestTimestamp',
-		KeepLocal: 'keepLocal',
-		KeepRemote: 'keepRemote',
-		Skip: 'skip',
-	},
-	UnmergeableStrategy: {
-		LatestTimeStamp: 'latestTimestamp',
-		KeepLocal: 'keepLocal',
-		KeepRemote: 'keepRemote',
-		Skip: 'skip',
-	},
-	useSettings: async () => ({
-		useGitStyle: false,
-		maxThroughputConcurrency: { enabled: false, value: 0 },
-	}),
-}));
-
 import MkdirLocalTask from '~/sync/tasks/mkdir-local.task';
 import MkdirRemoteTask from '~/sync/tasks/mkdir-remote.task';
 import PullTask from '~/sync/tasks/pull.task';
@@ -32,14 +7,38 @@ import RemoveLocalRecursivelyTask from '~/sync/tasks/remove-local-recursively.ta
 import RemoveLocalTask from '~/sync/tasks/remove-local.task';
 import RemoveRemoteRecursivelyTask from '~/sync/tasks/remove-remote-recursively.task';
 import RemoveRemoteTask from '~/sync/tasks/remove-remote.task';
-import { optimizeTasks } from '~/sync/utils/optimize-tasks';
+import optimizeTasks from '~/sync/utils/optimize-tasks';
+
+vi.mock('~/i18n', () => ({
+	default: (key: string) => key,
+}));
+
+vi.mock('~/settings', () => ({
+	ConflictStrategy: {
+		DiffMatchPatch: 'diffMatchPatch',
+		KeepLocal: 'keepLocal',
+		KeepRemote: 'keepRemote',
+		LatestTimeStamp: 'latestTimestamp',
+		Skip: 'skip',
+	},
+	UnmergeableStrategy: {
+		KeepLocal: 'keepLocal',
+		KeepRemote: 'keepRemote',
+		LatestTimeStamp: 'latestTimestamp',
+		Skip: 'skip',
+	},
+	useSettings: async () => ({
+		maxThroughputConcurrency: { enabled: false, value: 0 },
+		useGitStyle: false,
+	}),
+}));
 
 const sharedOptions = {
-	vault: {} as never,
-	webdav: {} as never,
-	syncRecord: {} as never,
 	local: {} as never,
 	remote: {} as never,
+	syncRecord: {} as never,
+	vault: {} as never,
+	webdav: {} as never,
 };
 
 const dummyOption = {
@@ -86,7 +85,7 @@ describe('optimizeSync', () => {
 			],
 			dummyOption,
 			dummyOption,
-		).flatMap((task) => task);
+		).flat();
 
 		expect(tasks[0]).toBeInstanceOf(RemoveRemoteRecursivelyTask);
 		expect(tasks[1]).toBeInstanceOf(RemoveLocalRecursivelyTask);
@@ -119,7 +118,7 @@ describe('optimizeSync', () => {
 			],
 			dummyOption,
 			dummyOption,
-		).flatMap((task) => task);
+		).flat();
 
 		expect(tasks[0]).toBeInstanceOf(RemoveLocalTask);
 		expect(tasks[1]).toBeInstanceOf(MkdirRemoteTask);

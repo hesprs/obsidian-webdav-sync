@@ -14,20 +14,22 @@ export default function createUnitConverter<T extends UnitMap>({
 }: UnitConfig<T>) {
 	const entries = Object.entries(units);
 	const unitMap: Record<string, number> = {};
-	entries.forEach(([u, multiplier]) => (unitMap[u.toLowerCase()] = multiplier));
+	entries.forEach(([u, multiplier]) => {
+		unitMap[u.toLowerCase()] = multiplier;
+	});
 	return {
+		format: (value: number): string => {
+			const entry = entries[entries.findLastIndex(([, v]) => value >= v)] || entries[0];
+			const scaled = value / entry[1];
+			return `${round(scaled, 2)} ${entry[0]}`;
+		},
 		parse: (input: string): number | undefined => {
-			const match = input.trim().match(/^(-?\d+(?:\.\d+)?)\s*([a-z]*)$/i);
+			const match = /^(-?\d+(?:\.\d+)?)\s*([a-z]*)$/i.exec(input.trim());
 			if (!match) return undefined;
 			const num = parseFloat(match[1]);
 			if (!Number.isFinite(num) || num < 0) return undefined;
 			const rawUnit = (match[2] || (defaultUnit as string)).toLowerCase();
 			return rawUnit in unitMap ? num * unitMap[rawUnit] : undefined;
-		},
-		format: (value: number): string => {
-			const entry = entries[entries.findLastIndex(([, v]) => value >= v)] || entries[0];
-			const scaled = value / entry[1];
-			return `${round(scaled, 2)} ${entry[0]}`;
 		},
 	};
 }

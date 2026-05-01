@@ -1,15 +1,15 @@
+import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
-import WebDAVSyncPlugin from '~';
-import type { BaseTask } from '~/sync/tasks/task.interface';
 import { mount as mountFileTree, type FileTreeSelectionController } from '~/components/fileTree';
 import { syncCancel, type SyncRunSnapshot, type SyncRunStage } from '~/events';
 import t from '~/i18n';
 import { TERMINAL_STAGES } from '~/services/observability.service';
+import { type BaseTask } from '~/sync/tasks/task.interface';
 
-interface ManualConfirmationSession {
+type ManualConfirmationSession = {
 	onConfirm: () => void;
 	onCancel: () => void;
-}
+};
 
 type SyncStage = 'none' | 'walking' | 'confirmation' | 'syncing' | 'terminal';
 
@@ -29,17 +29,17 @@ export default class SyncProgressModal extends Modal {
 
 	constructor(
 		plugin: WebDAVSyncPlugin,
-		private closeCallback?: () => void,
+		private readonly closeCallback?: () => void,
 	) {
 		super(plugin.app);
 	}
 
-	private getUnits(run: SyncRunSnapshot | null): {
+	private getUnits(run?: SyncRunSnapshot): {
 		completed: number;
 		total: number;
 		percentage?: number;
 	} {
-		if (!run) return { total: 1, completed: 0 };
+		if (!run) return { completed: 0, total: 1 };
 		const stage = run.stage;
 		if (stage === 'walking_remote')
 			return {
@@ -51,11 +51,11 @@ export default class SyncProgressModal extends Modal {
 				completed: run.progressSummary.completedTasks,
 				total: run.progressSummary.totalTasks,
 			};
-		if (stage === 'completed_noop') return { total: 0, completed: 0, percentage: 100 };
-		return { total: 1, completed: 0 };
+		if (stage === 'completed_noop') return { completed: 0, percentage: 100, total: 0 };
+		return { completed: 0, total: 1 };
 	}
 
-	private updateStage(currentRun: SyncRunSnapshot | null): void {
+	private updateStage(currentRun?: SyncRunSnapshot): void {
 		this.stage = this.resolveStage(currentRun?.stage);
 		if (this.stage === this.lastStage) return;
 		this.renderControls();
@@ -71,7 +71,7 @@ export default class SyncProgressModal extends Modal {
 		return 'none';
 	}
 
-	public update(run: SyncRunSnapshot | null): void {
+	public update(run?: SyncRunSnapshot): void {
 		if (!this.progressBar || !this.progressText || !this.progressStats || !this.currentFile)
 			return;
 		const stage = run?.stage;
@@ -155,11 +155,11 @@ export default class SyncProgressModal extends Modal {
 		});
 	}
 
-	getSelectedTasks(): BaseTask[] {
+	getSelectedTasks(): Array<BaseTask> {
 		return this.selectionController?.getSnapshot().selectedTasks ?? [];
 	}
 
-	getUnselectedTasks(): BaseTask[] {
+	getUnselectedTasks(): Array<BaseTask> {
 		return this.selectionController?.getSnapshot().unselectedTasks ?? [];
 	}
 
@@ -192,20 +192,19 @@ export default class SyncProgressModal extends Modal {
 				.onClick(() => this.close());
 		});
 
-		if (this.stage === 'syncing' || this.stage === 'walking') {
+		if (this.stage === 'syncing' || this.stage === 'walking')
 			setting.addButton((button) => {
 				button.setButtonText(t('sync.stopButton')).setWarning().onClick(syncCancel);
 			});
-		}
 	}
 
-	showTaskConfirmation(tasks: BaseTask[], session: ManualConfirmationSession): void {
+	showTaskConfirmation(tasks: Array<BaseTask>, session: ManualConfirmationSession): void {
 		this.confirmationSession = session;
 		this.confirmationDescription.removeClass('hidden');
 		this.confirmationContainer.removeClass('hidden');
 		this.renderTree = mountFileTree(this.confirmationContainer, {
-			tasks,
 			controllerRef: (controller) => (this.selectionController = controller),
+			tasks,
 		});
 	}
 
@@ -217,18 +216,16 @@ export default class SyncProgressModal extends Modal {
 			this.confirmationContainer.empty();
 			this.confirmationContainer.addClass('hidden');
 		}
-		if (this.confirmationDescription) {
-			this.confirmationDescription.addClass('hidden');
-		}
+		if (this.confirmationDescription) this.confirmationDescription.addClass('hidden');
 	}
 
-	private cancelConfirmation = (): void => {
+	private readonly cancelConfirmation = (): void => {
 		const pendingCancel = this.confirmationSession?.onCancel;
 		this.confirmationSession = undefined;
 		pendingCancel?.();
 	};
 
-	private confirm = (): void => {
+	private readonly confirm = (): void => {
 		const pendingConfirm = this.confirmationSession?.onConfirm;
 		this.confirmationSession = undefined;
 		pendingConfirm?.();

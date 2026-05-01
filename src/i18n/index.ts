@@ -4,9 +4,9 @@ import ru from './ru';
 import zhHans from './zh-Hans';
 
 const resources = {
-	'zh-Hans': zhHans,
 	en,
 	ru,
+	'zh-Hans': zhHans,
 } as const;
 type Languages = keyof typeof resources;
 export type TranslationShape = typeof en;

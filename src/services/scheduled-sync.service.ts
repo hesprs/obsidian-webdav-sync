@@ -4,12 +4,12 @@ import { SyncRunKind } from '~/types';
 import type SyncSchedulerService from './sync-scheduler.service';
 
 export default class ScheduledSyncService {
-	private scheduledSyncTimer: number | null = null;
-	private startupSyncTimer: number | null = null;
+	private scheduledSyncTimer: number | undefined;
+	private startupSyncTimer: number | undefined;
 
 	constructor(
-		private plugin: WebDAVSyncPlugin,
-		private syncScheduler: SyncSchedulerService,
+		private readonly plugin: WebDAVSyncPlugin,
+		private readonly syncScheduler: SyncSchedulerService,
 	) {}
 
 	get settings() {
@@ -17,20 +17,19 @@ export default class ScheduledSyncService {
 	}
 
 	start() {
-		if (this.settings.startupSync.enabled) {
+		if (this.settings.startupSync.enabled)
 			this.startupSyncTimer = window.setTimeout(() => {
 				void this.handleStartupSync();
 			}, this.settings.startupSync.value);
-		} else this.startTimer();
+		else this.startTimer();
 	}
 
 	private startTimer() {
 		this.stopTimer();
-		if (this.settings.scheduledSync.enabled) {
+		if (this.settings.scheduledSync.enabled)
 			this.scheduledSyncTimer = window.setInterval(() => {
 				void this.handleIntervalSync();
 			}, this.settings.scheduledSync.value);
-		}
 	}
 
 	private async handleStartupSync() {
@@ -54,17 +53,17 @@ export default class ScheduledSyncService {
 	}
 
 	private stopTimer() {
-		if (this.scheduledSyncTimer !== null) {
+		if (this.scheduledSyncTimer !== undefined) {
 			window.clearInterval(this.scheduledSyncTimer);
-			this.scheduledSyncTimer = null;
+			this.scheduledSyncTimer = undefined;
 		}
 	}
 
 	unload() {
 		this.stopTimer();
-		if (this.startupSyncTimer !== null) {
+		if (this.startupSyncTimer !== undefined) {
 			window.clearTimeout(this.startupSyncTimer);
-			this.startupSyncTimer = null;
+			this.startupSyncTimer = undefined;
 		}
 	}
 }

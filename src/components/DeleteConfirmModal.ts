@@ -1,22 +1,22 @@
-import { App, Modal, Setting } from 'obsidian';
-import { mount as mountFileTree, type FileTreeSelectionController } from '~/components/fileTree';
+import { type App, Modal, Setting } from 'obsidian';
+import type RemoveLocalTask from '~/sync/tasks/remove-local.task';
+import { type FileTreeSelectionController, mount as mountFileTree } from '~/components/fileTree';
 import t from '~/i18n';
-import RemoveLocalTask from '~/sync/tasks/remove-local.task';
 
 export default class DeleteConfirmModal extends Modal {
-	private confirmed: boolean = false;
+	private confirmed = false;
 	private renderTree?: () => void;
 	private selectionController?: FileTreeSelectionController;
 	private resolver:
 		| ((value: {
-				tasksToDelete: RemoveLocalTask[];
-				tasksToReupload: RemoveLocalTask[];
+				tasksToDelete: Array<RemoveLocalTask>;
+				tasksToReupload: Array<RemoveLocalTask>;
 		  }) => void)
-		| null = null;
+		| undefined;
 
 	constructor(
 		app: App,
-		private tasks: RemoveLocalTask[],
+		private readonly tasks: Array<RemoveLocalTask>,
 	) {
 		super(app);
 	}
@@ -37,10 +37,10 @@ export default class DeleteConfirmModal extends Modal {
 			cls: 'max-h-50vh overflow-y-auto webdav-sync-delete-confirm-tree mb-3',
 		});
 		this.renderTree = mountFileTree(treeContainer, {
-			tasks: this.tasks,
 			controllerRef: (controller) => {
 				this.selectionController = controller;
 			},
+			tasks: this.tasks,
 		});
 
 		new Setting(contentEl)
@@ -62,8 +62,8 @@ export default class DeleteConfirmModal extends Modal {
 	}
 
 	openAndWait(): Promise<{
-		tasksToDelete: RemoveLocalTask[];
-		tasksToReupload: RemoveLocalTask[];
+		tasksToDelete: Array<RemoveLocalTask>;
+		tasksToReupload: Array<RemoveLocalTask>;
 	}> {
 		return new Promise((resolve) => {
 			this.confirmed = false;
@@ -80,7 +80,7 @@ export default class DeleteConfirmModal extends Modal {
 		this.contentEl.empty();
 
 		const resolver = this.resolver;
-		this.resolver = null;
+		this.resolver = undefined;
 		if (!resolver) return;
 
 		if (!this.confirmed) {
@@ -92,8 +92,8 @@ export default class DeleteConfirmModal extends Modal {
 		}
 
 		resolver({
-			tasksToDelete: (selectionSnapshot?.selectedTasks ?? []) as RemoveLocalTask[],
-			tasksToReupload: (selectionSnapshot?.unselectedTasks ?? []) as RemoveLocalTask[],
+			tasksToDelete: (selectionSnapshot?.selectedTasks ?? []) as Array<RemoveLocalTask>,
+			tasksToReupload: (selectionSnapshot?.unselectedTasks ?? []) as Array<RemoveLocalTask>,
 		});
 	}
 }

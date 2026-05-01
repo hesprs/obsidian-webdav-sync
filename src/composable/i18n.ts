@@ -13,7 +13,10 @@ type KeyOfObject<T, P extends string = ''> = T extends object
 
 type StringTree = { [key: string]: string | StringTree };
 type Resources<TranslationShape extends StringTree> = Record<string, TranslationShape>;
-type CreateI18nOptions<TranslationShape extends {}, T extends Resources<TranslationShape>> = {
+type CreateI18nOptions<
+	TranslationShape extends StringTree,
+	T extends Resources<TranslationShape>,
+> = {
 	resources: T;
 	current: keyof T;
 };
@@ -33,12 +36,12 @@ export default function createI18n<TranslationShape extends StringTree>(
 		return value as string;
 	}
 	return {
+		changeLanguage: (language: Languages) => {
+			options.current = language;
+		},
 		translation: (key: TranslationKey, params?: InterpolationValues): string => {
 			const template = getValue(options.resources[options.current], key);
 			return interpolate(template, params);
-		},
-		changeLanguage: (language: Languages) => {
-			options.current = language;
 		},
 	};
 }

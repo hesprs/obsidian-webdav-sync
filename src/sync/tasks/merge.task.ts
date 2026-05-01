@@ -1,12 +1,12 @@
-import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
-import type { StatModel } from '~/types';
 import { getContent as getLocalContent, statItem as statVaultItem } from '~/fs/vault';
-import { statItem as statWebDAVItem, getContent as getRemoteContent } from '~/fs/webdav';
+import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs/webdav';
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
+import { type OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
+import { type StatModel } from '~/types';
 import logger from '~/utils/logger';
-import { mergeDigIn } from '~/utils/merge-dig-in';
+import mergeDigIn from '~/utils/merge-dig-in';
 import { resolveByIntelligentMerge } from '../utils/merge';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -19,7 +19,7 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			try {
 				localBuffer = await getLocalContent(this.vault, this.localPath);
 			} catch {
-				// ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
+				// Ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
 				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
 				return { success: true } as const;
 			}
@@ -29,9 +29,9 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
 					baseText: await arrayBufferToText(localBuffer),
+					key: this.localPath,
 					local: this.local,
 					remote: this.remote,
-					key: this.localPath,
 				});
 				return { success: true } as const;
 			}
@@ -41,17 +41,17 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			const baseText = (await this.syncRecord.getBaseText(this.localPath)) ?? localText;
 			let mergedText: string;
 			const mergeResult = resolveByIntelligentMerge({
+				baseContentText: baseText,
 				localContentText: localText,
 				remoteContentText: remoteText,
-				baseContentText: baseText,
 			});
 
 			if (mergeResult.isIdentical) {
 				await this.syncRecord.upsertRecords({
 					baseText: localText,
+					key: this.localPath,
 					local: this.local,
 					remote: this.remote,
-					key: this.localPath,
 				});
 				return { success: true } as const;
 			}
@@ -94,14 +94,17 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 
 			await this.syncRecord.upsertRecords({
 				baseText: mergedText,
+				key: this.localPath,
 				local: newLocal ?? this.local,
 				remote: newRemote ?? this.remote,
-				key: this.localPath,
 			});
 			return { success: true } as const;
-		} catch (e) {
-			logger.error(`Failed to resolve conflict for ${this.localPath} by smart merging`, e);
-			return { success: false, error: toTaskError(e, this) };
+		} catch (error) {
+			logger.error(
+				`Failed to resolve conflict for ${this.localPath} by smart merging`,
+				error,
+			);
+			return { error: toTaskError(error, this), success: false };
 		}
 	}
 }

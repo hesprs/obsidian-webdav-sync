@@ -1,16 +1,16 @@
 import { setIcon, setTooltip } from 'obsidian';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import type { BaseTask } from '~/sync/tasks/task.interface';
-import { getTaskIcon } from './icon-map';
-import { FileTreeSelectionController } from './selection';
-import { createFileTreeData } from './tree-data';
+import { type BaseTask } from '~/sync/tasks/task.interface';
+import getTaskIcon from './icon-map';
+import FileTreeSelectionController from './selection';
+import createFileTreeData from './tree-data';
 
-export interface FileTreeAppProps {
-	tasks: BaseTask[];
+export type FileTreeAppProps = {
+	tasks: Array<BaseTask>;
 	onSelectionChange?: () => void;
 	controllerRef?: (controller: FileTreeSelectionController) => void;
-}
+};
 
 export default function App(props: FileTreeAppProps) {
 	const data = createFileTreeData(props.tasks);
@@ -29,7 +29,7 @@ export default function App(props: FileTreeAppProps) {
 					const task = node.task;
 					const icon = task
 						? getTaskIcon(task)
-						: { icon: 'folder-open', color: 'var(--text-normal)' };
+						: { color: 'var(--text-normal)', icon: 'folder-open' };
 					const rowClass = task && !selectedById[nodeId] ? 'is-unselected' : '';
 					return (
 						<div
@@ -43,12 +43,12 @@ export default function App(props: FileTreeAppProps) {
 										nodeId,
 										!selectedById[nodeId],
 									);
-									for (const changedNodeId of changed) {
+									for (const changedNodeId of changed)
 										setSelectedById(
 											changedNodeId,
 											controller.isSelected(changedNodeId),
 										);
-									}
+
 									props.onSelectionChange?.();
 								}}
 							>

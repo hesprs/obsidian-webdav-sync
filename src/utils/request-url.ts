@@ -1,7 +1,8 @@
-import { requestUrl as req, type RequestUrlParam, type RequestUrlResponse } from 'obsidian';
+import { type RequestUrlParam, type RequestUrlResponse, requestUrl as req } from 'obsidian';
 import logger from './logger';
 
 class RequestUrlError extends Error {
+	name = 'RequestUrlError';
 	constructor(public res: RequestUrlResponse) {
 		super(`${res.status}: ${res.text}`);
 	}
@@ -9,8 +10,8 @@ class RequestUrlError extends Error {
 
 function getSafeResponseMetadata(res: RequestUrlResponse) {
 	return {
-		status: res.status,
 		headers: { ...res.headers },
+		status: res.status,
 		text: res.text,
 	};
 }
@@ -25,17 +26,8 @@ function isExpectedNotFoundResponse(
 export default async function requestUrl(p: RequestUrlParam | string) {
 	const params: RequestUrlParam =
 		typeof p === 'string'
-			? {
-					url: p,
-					throw: false,
-				}
-			: {
-					...p,
-					throw: false,
-					headers: {
-						...p.headers,
-					},
-				};
+			? { throw: false, url: p }
+			: { ...p, headers: { ...p.headers }, throw: false };
 
 	const res = await req(params);
 

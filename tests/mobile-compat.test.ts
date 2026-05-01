@@ -6,32 +6,32 @@ describe('phase 1 mobile compatibility', () => {
 	it('builds stable sync state keys from sync namespace identity', () => {
 		expect(
 			getSyncStateKey({
-				vaultName: 'Vault',
+				account: 'alice',
 				remoteBaseDir: '/remote/base/',
 				serverUrl: 'https://dav.example.com///',
-				account: 'alice',
+				vaultName: 'Vault',
 			}),
 		).toBe(
 			getSyncStateKey({
-				vaultName: 'Vault',
+				account: 'alice',
 				remoteBaseDir: '/remote/base',
 				serverUrl: 'https://dav.example.com',
-				account: 'alice',
+				vaultName: 'Vault',
 			}),
 		);
 		expect(
 			getSyncStateKey({
-				vaultName: 'Vault',
+				account: 'alice',
 				remoteBaseDir: '/remote/base',
 				serverUrl: 'https://dav.example.com',
-				account: 'alice',
+				vaultName: 'Vault',
 			}),
 		).not.toBe(
 			getSyncStateKey({
-				vaultName: 'Vault',
+				account: 'bob',
 				remoteBaseDir: '/remote/base',
 				serverUrl: 'https://dav.example.com',
-				account: 'bob',
+				vaultName: 'Vault',
 			}),
 		);
 	});
@@ -41,14 +41,14 @@ describe('phase 1 mobile compatibility', () => {
 		const slice = source.subarray(1, 4);
 		const arrayBuffer = await toArrayBuffer(slice);
 
-		expect(Array.from(new Uint8Array(arrayBuffer))).toEqual([2, 3, 4]);
+		expect([...new Uint8Array(arrayBuffer)]).toEqual([2, 3, 4]);
 		expect(arrayBuffer.byteLength).toBe(3);
 	});
 
 	it('supports blob payloads at the binary boundary', async () => {
 		const arrayBuffer = await toArrayBuffer(new Blob([new Uint8Array([7, 8, 9])]));
 
-		expect(Array.from(new Uint8Array(arrayBuffer))).toEqual([7, 8, 9]);
+		expect([...new Uint8Array(arrayBuffer)]).toEqual([7, 8, 9]);
 	});
 
 	it('compares normalized binary payloads by bytes', async () => {

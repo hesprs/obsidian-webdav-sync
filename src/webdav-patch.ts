@@ -1,11 +1,10 @@
+import { type RequestUrlParam } from 'obsidian';
 /**
  * Patch webdav request to use obsidian's requestUrl
  *
  * reference: https://github.com/remotely-save/remotely-save/blob/34db181af002f8d71ea0a87e7965abc57b294914/src/fsWebdav.ts#L25
  */
-import type { RequestOptionsWithState } from 'webdav';
-import { type RequestUrlParam } from 'obsidian';
-import { getPatcher } from 'webdav';
+import { type RequestOptionsWithState, getPatcher } from 'webdav';
 import { VALID_REQURL } from '~/consts';
 import requestUrl from './utils/request-url';
 
@@ -44,54 +43,49 @@ function onlyAscii(str: string) {
 	return !/[^\x20-\x7E]/g.test(str);
 }
 
-if (VALID_REQURL) {
-	getPatcher().patch('request', async (options: unknown): Promise<Response> => {
-		const requestOptions = options as RequestOptionsWithState;
-		const transformedHeaders = objKeyToLower({ ...requestOptions.headers });
-		delete transformedHeaders['host'];
-		delete transformedHeaders['content-length'];
+export default function patchWebDav() {
+	if (VALID_REQURL)
+		getPatcher().patch('request', async (options: unknown): Promise<Response> => {
+			const requestOptions = options as RequestOptionsWithState;
+			const transformedHeaders = objKeyToLower({ ...requestOptions.headers });
+			delete transformedHeaders.host;
+			delete transformedHeaders['content-length'];
 
-		const reqContentType = transformedHeaders['accept'] ?? transformedHeaders['content-type'];
+			const reqContentType = transformedHeaders.accept ?? transformedHeaders['content-type'];
 
-		const retractedHeaders = { ...transformedHeaders };
-		if ('authorization' in retractedHeaders) retractedHeaders['authorization'] = '<retracted>';
+			const retractedHeaders = { ...transformedHeaders };
+			if ('authorization' in retractedHeaders) retractedHeaders.authorization = '<retracted>';
 
-		const p: RequestUrlParam = {
-			url: requestOptions.url,
-			method: requestOptions.method,
-			body: requestOptions.data as string | ArrayBuffer,
-			headers: transformedHeaders,
-			contentType: reqContentType,
-			throw: false,
-		};
+			const p: RequestUrlParam = {
+				body: requestOptions.data as string | ArrayBuffer,
+				contentType: reqContentType,
+				headers: transformedHeaders,
+				method: requestOptions.method,
+				throw: false,
+				url: requestOptions.url,
+			};
 
-		let r = await requestUrl(p);
+			const r = await requestUrl(p);
 
-		const rspHeaders = objKeyToLower({ ...r.headers });
-		for (const key in rspHeaders) {
-			if (key in rspHeaders) {
-				if (!onlyAscii(rspHeaders[key])) {
-					rspHeaders[key] = encodeURIComponent(rspHeaders[key]);
-				}
-			}
-		}
+			const rspHeaders = objKeyToLower({ ...r.headers });
+			for (const key in rspHeaders)
+				if (key in rspHeaders)
+					if (!onlyAscii(rspHeaders[key]))
+						rspHeaders[key] = encodeURIComponent(rspHeaders[key]);
 
-		let r2: Response | undefined = undefined;
-		const statusText = STATUS_TEXTS[r.status] ?? 'Unknown';
-		if ([101, 103, 204, 205, 304].includes(r.status)) {
-			r2 = new Response(null, {
-				status: r.status,
-				statusText: statusText,
-				headers: rspHeaders,
-			});
-		} else {
-			r2 = new Response(r.arrayBuffer, {
-				status: r.status,
-				statusText: statusText,
-				headers: rspHeaders,
-			});
-		}
+			const statusText = STATUS_TEXTS[r.status] ?? 'Unknown';
+			const r2 = [101, 103, 204, 205, 304].includes(r.status)
+				? new Response(undefined, {
+						headers: rspHeaders,
+						status: r.status,
+						statusText,
+					})
+				: new Response(r.arrayBuffer, {
+						headers: rspHeaders,
+						status: r.status,
+						statusText,
+					});
 
-		return r2;
-	});
+			return r2;
+		});
 }

@@ -2,15 +2,15 @@ export function isNil(value: unknown): value is null | undefined {
 	return value === null || value === undefined;
 }
 
-export function chunk<T>(arr: T[], size: number): T[][] {
-	const chunks: T[][] = [];
+export function chunk<T>(arr: Array<T>, size: number): Array<Array<T>> {
+	const chunks: Array<Array<T>> = [];
 	for (let i = 0; i < arr.length; i += size) chunks.push(arr.slice(i, i + size));
 	return chunks;
 }
 
-export function zipMerge<T>(arr1: T[][], arr2: T[][]): T[][] {
+export function zipMerge<T>(arr1: Array<Array<T>>, arr2: Array<Array<T>>): Array<Array<T>> {
 	const length = Math.max(arr1.length, arr2.length);
-	const result: T[][] = [];
+	const result: Array<Array<T>> = [];
 
 	for (let i = 0; i < length; i++) {
 		const sub1 = arr1[i] || [];

@@ -1,19 +1,17 @@
 import { diff3Merge } from 'node-diff3';
 
-// --- Logic for Latest Timestamp Resolution ---
-
 export enum LatestTimestampResolution {
 	NoChange,
 	UseRemote,
 	UseLocal,
 }
 
-export interface LatestTimestampParams {
+export type LatestTimestampParams = {
 	localMtime: number;
 	remoteMtime: number;
 	localContent: ArrayBuffer;
 	remoteContent: ArrayBuffer;
-}
+};
 
 export type LatestTimestampResult =
 	| { status: LatestTimestampResolution.NoChange }
@@ -27,45 +25,39 @@ export function resolveByLatestTimestamp(params: LatestTimestampParams): LatestT
 	const useRemote = remoteMtime > localMtime;
 
 	if (useRemote) {
-		// Only return UseRemote if content is actually different
 		if (localContent !== remoteContent)
 			return {
-				status: LatestTimestampResolution.UseRemote,
 				content: remoteContent,
+				status: LatestTimestampResolution.UseRemote,
 			};
-		return { status: LatestTimestampResolution.NoChange };
-	} else {
-		// Local is newer (or same age but remote wasn't newer)
-		// Only return UseLocal if content is actually different
-		if (localContent !== remoteContent)
-			return {
-				status: LatestTimestampResolution.UseLocal,
-				content: localContent,
-			};
-		return { status: LatestTimestampResolution.NoChange };
-	}
+	} else if (localContent !== remoteContent)
+		return {
+			content: localContent,
+			status: LatestTimestampResolution.UseLocal,
+		};
+	return { status: LatestTimestampResolution.NoChange };
 }
 
 // --- Logic for Intelligent Merge Resolution ---
 
-export interface IntelligentMergeParams {
+export type IntelligentMergeParams = {
 	localContentText: string;
 	remoteContentText: string;
 	baseContentText: string;
-}
+};
 
-export interface IntelligentMergeResult {
+export type IntelligentMergeResult = {
 	success: boolean;
 	mergedText?: string;
 	error?: string; // Generic error message
 	isIdentical?: boolean; // Flag if contents were already identical
-}
+};
 
 // Helper for diff3Merge logic, adapted from the original class method
 function diff3MergeStrings(
-	base: string | string[],
-	local: string | string[],
-	remote: string | string[],
+	base: string | Array<string>,
+	local: string | Array<string>,
+	remote: string | Array<string>,
 ): string | false {
 	const regions = diff3Merge(local, base, remote, {
 		excludeFalseConflicts: true,
@@ -78,8 +70,8 @@ function diff3MergeStrings(
 
 export function resolveByIntelligentMerge(params: IntelligentMergeParams): IntelligentMergeResult {
 	const { localContentText, remoteContentText, baseContentText } = params;
-	if (localContentText === remoteContentText) return { success: true, isIdentical: true };
+	if (localContentText === remoteContentText) return { isIdentical: true, success: true };
 	const diff3MergedText = diff3MergeStrings(baseContentText, localContentText, remoteContentText);
-	if (diff3MergedText !== false) return { success: true, mergedText: diff3MergedText };
+	if (diff3MergedText !== false) return { mergedText: diff3MergedText, success: true };
 	return { success: false };
 }

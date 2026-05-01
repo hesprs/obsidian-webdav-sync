@@ -1,25 +1,25 @@
-import type { WebDAVClient } from 'webdav';
-import { Vault } from 'obsidian';
-import type { TranslationShape } from '~/i18n';
-import type { SyncRecord } from '~/storage';
-import type { MaybePromise } from '~/types';
+import { type Vault } from 'obsidian';
+import { type WebDAVClient } from 'webdav';
+import { type TranslationShape } from '~/i18n';
+import { type SyncRecord } from '~/storage';
+import { type MaybePromise } from '~/types';
 import getTaskName from '~/utils/get-task-name';
-import type { TaskOptions } from '../decision/sync-decision.interface';
+import { type TaskOptions } from '../decision/sync-decision.interface';
 
-export interface BaseTaskOptions {
+export type BaseTaskOptions = {
 	vault: Vault;
 	webdav: WebDAVClient;
 	syncRecord: SyncRecord;
-}
+};
 
-interface TaskSuccessResult {
+type TaskSuccessResult = {
 	success: true;
-}
+};
 
-interface TaskFailureResult {
+type TaskFailureResult = {
 	success: false;
 	error: TaskError;
-}
+};
 
 export type TaskResult = TaskSuccessResult | TaskFailureResult;
 
@@ -51,7 +51,7 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 			this.name === 'createRemoteDir'
 				? this.remotePath
 				: this.localPath;
-		return { taskName: getTaskName(this), path };
+		return { path, taskName: getTaskName(this) };
 	}
 }
 
@@ -67,9 +67,8 @@ export class TaskError extends Error {
 }
 
 export function toTaskError(e: unknown, task: BaseTask): TaskError {
-	if (e instanceof TaskError) {
-		return e;
-	}
+	if (e instanceof TaskError) return e;
+
 	const message = e instanceof Error ? e.message : String(e);
 	return new TaskError(message, task, e instanceof Error ? e : undefined);
 }

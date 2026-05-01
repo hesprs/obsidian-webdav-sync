@@ -1,6 +1,5 @@
-import type { LocalSpaceInstance } from 'localspace';
-import localspace from 'localspace';
-import { isSub } from '~/utils/is-sub';
+import localspace, { type LocalSpaceInstance } from 'localspace';
+import isSub from '~/utils/is-sub';
 import logger from '~/utils/logger';
 
 export function createStorageUnavailableError(cause: unknown): Error {
@@ -27,11 +26,11 @@ export abstract class BaseStore {
 
 	constructor(storeName: string) {
 		this.store = localspace.createInstance({
+			coalesceWindowMs: 500,
+			coalesceWrites: true,
+			driver: [localspace.INDEXEDDB],
 			name: STORAGE_NAME,
 			storeName,
-			driver: [localspace.INDEXEDDB],
-			coalesceWrites: true,
-			coalesceWindowMs: 500,
 		});
 		this.storeName = storeName;
 	}
@@ -95,3 +94,9 @@ export abstract class BaseStore {
 		return `${this.storeName}:${namespace}:${path}`;
 	}
 }
+
+export type FileChunkKey = {
+	start: number;
+	end: number;
+	key: string;
+};

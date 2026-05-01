@@ -1,6 +1,6 @@
 import { Notice, Setting } from 'obsidian';
-import type { ToggleNumericSettingsField } from '~/types';
 import t from '~/i18n';
+import { type ToggleNumericSettingsField } from '~/types';
 import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/input-converters';
 
 export enum UserInputType {
@@ -72,22 +72,28 @@ export default function generateSettingEntry({
 
 function format(value: number, type: UserInputType): string {
 	switch (type) {
-		case UserInputType.Number:
+		case UserInputType.Number: {
 			return value.toString();
-		case UserInputType.Time:
+		}
+		case UserInputType.Time: {
 			return formatTime(value);
-		case UserInputType.FileSize:
+		}
+		case UserInputType.FileSize: {
 			return formatFileSize(value);
+		}
 	}
 }
 
 function parse(value: string, type: UserInputType): number | undefined {
 	switch (type) {
-		case UserInputType.Number:
+		case UserInputType.Number: {
 			return parseFloat(value);
-		case UserInputType.Time:
+		}
+		case UserInputType.Time: {
 			return parseTime(value);
-		case UserInputType.FileSize:
+		}
+		case UserInputType.FileSize: {
 			return parseFileSize(value);
+		}
 	}
 }

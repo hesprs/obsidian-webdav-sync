@@ -1,15 +1,15 @@
-import { App, Modal } from 'obsidian';
-import WebDAVSyncPlugin from '~';
-import { getDirectoryContents } from '~/api';
+import type WebDAVSyncPlugin from '~';
+import { type App, Modal } from 'obsidian';
+import getDirectoryContents from '~/fs/webdav/api';
 import { mkdirsWebDAV } from '~/fs/webdav/utils';
 import { normalizeBaseDir, normalizePathToAbsolute, remoteBasename } from '~/platform/path';
-import { mount as mountWebDAVExplorer } from './explorer';
+import mountWebDAVExplorer from './explorer';
 
 export default class SelectRemoteBaseDirModal extends Modal {
 	constructor(
 		app: App,
-		private plugin: WebDAVSyncPlugin,
-		private onConfirm: (path: string) => void,
+		private readonly plugin: WebDAVSyncPlugin,
+		private readonly onConfirm: (path: string) => void,
 	) {
 		super(app);
 	}
@@ -38,7 +38,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 							fileStat.filename,
 							isDir,
 						);
-						return { path, isDir, basename: remoteBasename(path) };
+						return { basename: remoteBasename(path), isDir, path };
 					});
 				},
 				mkdirs: async (path) => {

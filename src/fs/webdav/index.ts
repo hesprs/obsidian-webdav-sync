@@ -1,2 +1,3 @@
 export * from './utils';
-export * from './traverse';
+export { default as traverseWebDAV } from './traverse';
+export { default as getDirectoryContents } from './api';
