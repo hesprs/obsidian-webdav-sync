@@ -22,7 +22,7 @@
         <strong>简体中文</strong>
     </a> • 
     <a href="#ongoing-polling">
-        <strong>Ongoing Polling</strong>
+        <strong>Polling</strong>
     </a> • 
     <a href="#common-questions">
         <strong>Q&A</strong>

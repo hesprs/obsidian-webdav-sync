@@ -1,9 +1,9 @@
 import type { FileStat } from 'webdav';
+import { parseXML } from './composable/parse-xml';
 import { normalizeRemotePath, remoteBasename } from './platform/path';
 import { isNil } from './utils/fns';
 import { isRetryableError } from './utils/is-retryable-error';
 import logger from './utils/logger';
-import { parseXML } from './utils/parse-xml';
 import requestUrl from './utils/request-url';
 import sleep from './utils/sleep';
 

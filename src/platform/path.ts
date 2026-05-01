@@ -1,5 +1,5 @@
 function splitSegments(path: string): string[] {
-	const normalized = path.replaceAll('\\', '/');
+	const normalized = path.replace(/\\/g, '/');
 	const segments = normalized.split('/');
 	const resolved: string[] = [];
 
