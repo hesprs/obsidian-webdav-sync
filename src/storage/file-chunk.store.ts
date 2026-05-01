@@ -1,4 +1,4 @@
-import localspace from 'localspace';
+import localspace, { ttlPlugin } from 'localspace';
 import { isSub } from '~/utils/is-sub';
 import logger from '~/utils/logger';
 import {
@@ -20,6 +20,7 @@ export class IndexedDbFileChunkStore {
 		storeName: FILE_CHUNK_STORE_NAME,
 		driver: [localspace.INDEXEDDB],
 		coalesceWrites: false,
+		plugins: [ttlPlugin({ defaultTTL: 60 * 1000 * 60 * 10 })],
 	});
 
 	async initialize() {

@@ -1,50 +1,28 @@
-import type { InterpolationValues, KeyOfObject } from '~/types';
+import createI18n from '~/composable/i18n';
 import en from './enold';
 import ru from './ru';
 import zhHans from './zh-Hans';
 
-type Language = keyof typeof resources;
-export type TranslationResource = typeof en;
-type TranslationKey = KeyOfObject<TranslationResource>;
-
-const fallbackLanguage: Language = 'en';
 const resources = {
 	'zh-Hans': zhHans,
 	en,
 	ru,
-} as const satisfies Record<string, TranslationResource>;
-let currentLanguage = resolveLanguage();
+} as const;
+type Languages = keyof typeof resources;
+export type TranslationShape = typeof en;
 
-function getValue(resource: TranslationResource, key: string): string | undefined {
-	const value = key.split('.').reduce<unknown>((current, segment) => {
-		if (current === null || typeof current !== 'object') return undefined;
-		return (current as Record<string, unknown>)[segment];
-	}, resource);
+export default createI18n<TranslationShape>({
+	current: resolveLanguage(),
+	resources,
+}).translation;
 
-	return typeof value === 'string' ? value : undefined;
-}
-
-function interpolate(template: string, params?: InterpolationValues): string {
-	if (params === undefined) return template;
-	return template.replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, (match, key: string) => {
-		const value = params[key];
-		return value === undefined ? match : String(value);
-	});
-}
-
-function isLanguage(key: string): key is Language {
+function isLanguage(key: string): key is Languages {
 	return key in resources;
 }
 
-function resolveLanguage(): Language {
+function resolveLanguage(): Languages {
 	const code = window.localStorage.getItem('language') ?? navigator.language;
 	const segments = code.split('-');
 	if (segments[0] === 'zh') return 'zh-Hans';
-	return isLanguage(segments[0]) ? segments[0] : fallbackLanguage;
-}
-
-export default function t(key: TranslationKey, params?: InterpolationValues): string {
-	const template =
-		getValue(resources[currentLanguage], key) ?? getValue(resources.en, key) ?? key;
-	return interpolate(template, params);
+	return isLanguage(segments[0]) ? segments[0] : 'en';
 }

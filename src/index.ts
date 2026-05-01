@@ -1,7 +1,6 @@
 import './webdav-patch';
 import './assets/global.css';
 import { Plugin } from 'obsidian';
-import type { GlobMatchOptions } from './utils/glob-match';
 import { SyncRibbonManager } from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
@@ -18,6 +17,7 @@ import {
 	setPluginInstance,
 	ConflictStrategy,
 	UnmergeableStrategy,
+	type GlobMatchOptions,
 } from './settings';
 import { processSettings } from './settings/process';
 import {
