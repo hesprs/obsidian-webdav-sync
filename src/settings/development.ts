@@ -45,10 +45,10 @@ export default class DevelopmentSettings extends BaseSettings {
 	private async clearVaultRecords() {
 		const { account, remoteDir, serverUrl } = this.plugin.settings;
 		const namespace = getSyncStateKey({
-			vaultName: this.plugin.app.vault.getName(),
+			account,
 			remoteBaseDir: remoteDir,
 			serverUrl,
-			account,
+			vaultName: this.plugin.app.vault.getName(),
 		});
 		await Promise.all([
 			this.plugin.syncStateStore.removeNamespace(namespace),

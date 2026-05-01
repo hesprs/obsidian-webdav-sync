@@ -3,11 +3,11 @@ import { Notice } from 'obsidian';
 import SyncConfirmModal from '~/components/SyncConfirmModal';
 import t from '~/i18n';
 
-interface LaunchManualSyncOptions {
+type LaunchManualSyncOptions = {
 	skipConfirmation?: boolean;
-}
+};
 
-export function launchManualSync(
+export default function launchManualSync(
 	plugin: WebDAVSyncPlugin,
 	options: LaunchManualSyncOptions = {},
 ): void {

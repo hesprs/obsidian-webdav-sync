@@ -1,13 +1,13 @@
 import type WebDAVSyncPlugin from '~';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
-import { launchManualSync } from '~/services/manual-sync.service';
+import launchManualSync from '~/services/manual-sync.service';
 
-export class SyncRibbonManager {
-	private startRibbonEl: HTMLElement;
-	private stopRibbonEl: HTMLElement;
+export default class SyncRibbonManager {
+	private readonly startRibbonEl: HTMLElement;
+	private readonly stopRibbonEl: HTMLElement;
 
-	constructor(private plugin: WebDAVSyncPlugin) {
+	constructor(private readonly plugin: WebDAVSyncPlugin) {
 		this.startRibbonEl = this.plugin.addRibbonIcon('refresh-ccw', t('sync.startButton'), () =>
 			launchManualSync(this.plugin),
 		);

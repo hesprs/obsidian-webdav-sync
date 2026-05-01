@@ -1,5 +1,5 @@
-import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import { statItem } from '~/fs/webdav';
+import { type OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -23,9 +23,9 @@ export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat
 			});
 
 			return { success: true } as const;
-		} catch (e) {
-			logger.error(`Failed to create remote directory: ${this.remotePath}`, e);
-			return { success: false, error: toTaskError(e, this) };
+		} catch (error) {
+			logger.error(`Failed to create remote directory: ${this.remotePath}`, error);
+			return { error: toTaskError(error, this), success: false };
 		}
 	}
 }

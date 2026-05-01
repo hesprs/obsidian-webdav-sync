@@ -7,7 +7,7 @@ class ApiLimiter {
 	private activeCount = 0;
 	private lastStartTime = 0;
 	private readonly queue: Array<() => void> = [];
-	private timer: number | null = null;
+	private timer: number | undefined;
 	maxConcurrency: number;
 	minInterval: number;
 
@@ -32,7 +32,7 @@ class ApiLimiter {
 		});
 	}
 
-	wrap<TArgs extends unknown[], TResult>(
+	wrap<TArgs extends Array<unknown>, TResult>(
 		fn: (...args: TArgs) => TResult | Promise<TResult>,
 	): (...args: TArgs) => Promise<TResult> {
 		return (...args: TArgs) => this.schedule(() => fn(...args));
@@ -46,7 +46,7 @@ class ApiLimiter {
 		if (now < nextAllowed) {
 			if (this.timer) return;
 			this.timer = window.setTimeout(() => {
-				this.timer = null;
+				this.timer = undefined;
 				this.processQueue();
 			}, nextAllowed - now);
 			return;
@@ -61,4 +61,5 @@ class ApiLimiter {
 	}
 }
 
-export const apiLimiter = new ApiLimiter();
+const apiLimiter = new ApiLimiter();
+export default apiLimiter;

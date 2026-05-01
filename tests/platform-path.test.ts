@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
 	normalizeBaseDir,
+	normalizePathToRelative,
 	normalizeRemotePath,
 	normalizeVaultPath,
 	remoteBasename,
 	vaultBasename,
 	vaultDirname,
-	normalizePathToRelative,
 } from '~/platform/path';
 
 describe('remote path helpers', () => {

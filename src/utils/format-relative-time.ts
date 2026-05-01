@@ -1,6 +1,6 @@
 import t from '~/i18n';
 
-export function formatRelativeTime(timestamp: number): string {
+export default function formatRelativeTime(timestamp: number): string {
 	const now = Date.now();
 	const diffMs = now - timestamp;
 	const diffSeconds = Math.floor(diffMs / 1000);

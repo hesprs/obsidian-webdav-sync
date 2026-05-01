@@ -1,2 +1,2 @@
 export * from './utils';
-export * from './traverse';
+export { default as traverseVault } from './traverse';

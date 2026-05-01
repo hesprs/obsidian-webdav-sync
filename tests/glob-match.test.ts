@@ -4,7 +4,7 @@ import { needIncludeFromGlobRules } from '~/utils/glob-match';
 
 const options = { caseSensitive: false };
 
-const makeRules = (patterns: string[]) =>
+const makeRules = (patterns: Array<string>) =>
 	patterns.map((pattern) => new GlobMatch(pattern, options));
 
 describe('needIncludeFromGlobRules', () => {
@@ -21,13 +21,13 @@ describe('needIncludeFromGlobRules', () => {
 
 	it('includes files matched by include rules', () => {
 		const inclusion = makeRules(['*.txt']);
-		const exclusion: GlobMatch[] = [];
+		const exclusion: Array<GlobMatch> = [];
 
 		expect(needIncludeFromGlobRules('document.txt', inclusion, exclusion)).toBe(true);
 	});
 
 	it('excludes files matched by exclude rules', () => {
-		const inclusion: GlobMatch[] = [];
+		const inclusion: Array<GlobMatch> = [];
 		const exclusion = makeRules(['*.log']);
 
 		expect(needIncludeFromGlobRules('debug.log', inclusion, exclusion)).toBe(false);

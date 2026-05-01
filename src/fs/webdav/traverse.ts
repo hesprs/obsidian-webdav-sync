@@ -1,20 +1,20 @@
-import type { StatsMap } from '~/types';
-import { getDirectoryContents } from '~/api';
-import { apiLimiter } from '~/composable/api-limiter';
+import apiLimiter from '~/composable/api-limiter';
 import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
-import { isRetryableError } from '~/utils/is-retryable-error';
+import { type StatsMap } from '~/types';
+import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
-import type { OnProgress } from '../fs.interface';
+import { type OnProgress } from '../fs.interface';
 import postTraversal from '../post-traversal';
+import getDirectoryContents from './api';
 import { toStatModel } from './utils';
 
-interface TraverseWebDAVOptions {
+type TraverseWebDAVOptions = {
 	onProgress?: OnProgress;
 	throwIfCancelled?: () => void;
 	token: string;
-}
+};
 
 function isNotFoundError(err: unknown): boolean {
 	if (!err || typeof err !== 'object') return false;
@@ -23,7 +23,11 @@ function isNotFoundError(err: unknown): boolean {
 	return typeof errWithRes.message === 'string' && /^404\s*:/.test(errWithRes.message);
 }
 
-export async function traverse({ onProgress, token, throwIfCancelled }: TraverseWebDAVOptions) {
+export default async function traverse({
+	onProgress,
+	token,
+	throwIfCancelled,
+}: TraverseWebDAVOptions) {
 	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
 		await useSettings();
 	const result: StatsMap = new Map();
@@ -39,9 +43,9 @@ export async function traverse({ onProgress, token, throwIfCancelled }: Traverse
 			try {
 				retryCount++;
 				return await getContentFunc(path);
-			} catch (err) {
-				if (isRetryableError(err)) await sleep(5_000);
-				else throw err;
+			} catch (error) {
+				if (isRetryableError(error)) await sleep(5000);
+				else throw error;
 			}
 		}
 	};
@@ -60,9 +64,9 @@ export async function traverse({ onProgress, token, throwIfCancelled }: Traverse
 			result.set(vaultPath, item);
 		}
 		onProgress?.({
+			currentDirectory: remoteDir,
 			processedDirectories: result.size,
 			totalDirectories: result.size,
-			currentDirectory: remoteDir,
 		});
 	} else {
 		let processedCount = 0;
@@ -71,9 +75,9 @@ export async function traverse({ onProgress, token, throwIfCancelled }: Traverse
 			throwIfCancelled?.();
 			processedCount++;
 			onProgress?.({
+				currentDirectory: current,
 				processedDirectories: processedCount,
 				totalDirectories: processedCount + queue.length,
-				currentDirectory: current,
 			});
 		};
 
@@ -98,13 +102,13 @@ export async function traverse({ onProgress, token, throwIfCancelled }: Traverse
 							if (item.isDir) queue.push(item.path);
 						}
 						reportProgress(currentPath);
-					} catch (err) {
-						logger.error(`Error processing ${currentPath}`, err);
-						if (isNotFoundError(err)) {
+					} catch (error) {
+						logger.error(`Error processing ${currentPath}`, error);
+						if (isNotFoundError(error)) {
 							reportProgress(currentPath);
 							return;
 						}
-						throw err;
+						throw error;
 					}
 				}),
 			);

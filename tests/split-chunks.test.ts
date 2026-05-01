@@ -1,8 +1,8 @@
 // oxlint-disable typescript/no-non-null-assertion
-import { describe, it, expect } from 'vitest';
-import type { FileChunkKey } from '~/storage/file-chunk.store';
-import type { ToggleNumericSettingsField } from '~/types';
+import { describe, expect, it } from 'vitest';
+import { type FileChunkKey } from '~/storage';
 import { splitChunks } from '~/sync/utils/split-chunks';
+import { type ToggleNumericSettingsField } from '~/types';
 
 // Byte constants for precise testing
 const KB = 1024;
@@ -16,14 +16,16 @@ describe('splitChunks (Public API)', () => {
 	describe('Basic chunking', () => {
 		it('returns undefined when file is too small to split', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			// stdChunkSize will be at least 1MB when enabled
-			expect(splitChunks(500 * KB, setting, 1, [])).toBeUndefined();
-			expect(splitChunks(1 * MB, setting, 1, [])).toBeUndefined();
+			// StdChunkSize will be at least 1MB when enabled
+			expect(
+				splitChunks({ cache: [], multiplex: 1, setting, total: 500 * KB }),
+			).toBeUndefined();
+			expect(splitChunks({ cache: [], multiplex: 1, setting, total: MB })).toBeUndefined();
 		});
 
 		it('splits large file into multiple chunks when cache is empty', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const result = splitChunks(25 * MB, setting, 1, []);
+			const result = splitChunks({ cache: [], multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			expect(Array.isArray(result)).toBe(true);
@@ -43,7 +45,7 @@ describe('splitChunks (Public API)', () => {
 
 		it('groups chunks into concurrent batches when enabled and multiplex > 1', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const result = splitChunks(25 * MB, setting, 3, []);
+			const result = splitChunks({ cache: [], multiplex: 3, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			// Should be grouped: if we have N chunks, we get ceil(N/3) groups
@@ -53,7 +55,7 @@ describe('splitChunks (Public API)', () => {
 
 		it('returns single ungrouped array when setting is disabled', () => {
 			const setting: ToggleNumericSettingsField = { enabled: false, value: 1 };
-			const result = splitChunks(100 * MB, setting, 5, []);
+			const result = splitChunks({ cache: [], multiplex: 5, setting, total: 100 * MB });
 
 			expect(result).toBeDefined();
 			expect(result!).toHaveLength(1); // Single group containing all chunks
@@ -68,8 +70,8 @@ describe('splitChunks (Public API)', () => {
 	describe('Resumable download with cache', () => {
 		it('skips cached prefix and chunks remaining suffix', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 0, end: 4 * MB - 1, key: 'prefix' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [{ end: 4 * MB - 1, key: 'prefix', start: 0 }];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -84,8 +86,10 @@ describe('splitChunks (Public API)', () => {
 
 		it('skips cached suffix and chunks remaining prefix', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 20 * MB, end: 24 * MB - 1, key: 'suffix' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [
+				{ end: 24 * MB - 1, key: 'suffix', start: 20 * MB },
+			];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -97,8 +101,10 @@ describe('splitChunks (Public API)', () => {
 
 		it('handles middle cached region, chunks both sides', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 6 * MB };
-			const cache: FileChunkKey[] = [{ start: 10 * MB, end: 14 * MB - 1, key: 'middle' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [
+				{ end: 14 * MB - 1, key: 'middle', start: 10 * MB },
+			];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -115,12 +121,12 @@ describe('splitChunks (Public API)', () => {
 
 		it('merges overlapping cache entries and chunks remaining gaps', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 5 * MB };
-			const cache: FileChunkKey[] = [
-				{ start: 0, end: 2 * MB - 1, key: 'a' },
-				{ start: 1 * MB, end: 4 * MB - 1, key: 'b' }, // overlaps with 'a'
-				{ start: 10 * MB, end: 12 * MB - 1, key: 'c' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 2 * MB - 1, key: 'a', start: 0 },
+				{ end: 4 * MB - 1, key: 'b', start: MB }, // Overlaps with 'a'
+				{ end: 12 * MB - 1, key: 'c', start: 10 * MB },
 			];
-			const result = splitChunks(20 * MB, setting, 2, cache);
+			const result = splitChunks({ cache, multiplex: 2, setting, total: 20 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -136,9 +142,9 @@ describe('splitChunks (Public API)', () => {
 
 		it('returns undefined when cache fully covers the file', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 0, end: 24 * MB - 1, key: 'full' }];
+			const cache: Array<FileChunkKey> = [{ end: 24 * MB - 1, key: 'full', start: 0 }];
 
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 			// File not fully covered (25MB vs 24MB cached), so should still return chunks
 			expect(result).toBeDefined();
 			expect(result!.flat()[0].start).toBe(24 * MB);
@@ -146,11 +152,11 @@ describe('splitChunks (Public API)', () => {
 
 		it('returns undefined when total <= stdChunkSize even with partial cache', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			// stdChunkSize = min(max(1MB, 10MB/1), 50MB) = 10MB
-			// total=10MB <= stdChunkSize -> undefined regardless of cache
-			const cache: FileChunkKey[] = [{ start: 0, end: 4 * MB - 1, key: 'partial' }];
+			// StdChunkSize = min(max(1MB, 10MB/1), 50MB) = 10MB
+			// Total=10MB <= stdChunkSize -> undefined regardless of cache
+			const cache: Array<FileChunkKey> = [{ end: 4 * MB - 1, key: 'partial', start: 0 }];
 
-			expect(splitChunks(10 * MB, setting, 1, cache)).toBeUndefined();
+			expect(splitChunks({ cache, multiplex: 1, setting, total: 10 * MB })).toBeUndefined();
 		});
 	});
 
@@ -161,30 +167,29 @@ describe('splitChunks (Public API)', () => {
 	describe('Concurrent group batching', () => {
 		it('respects multiplex limit when grouping chunks', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 5 * MB };
-			const result = splitChunks(30 * MB, setting, 4, []);
+			const result = splitChunks({ cache: [], multiplex: 4, setting, total: 30 * MB });
 
 			expect(result).toBeDefined();
-			// stdChunkSize = floor(5MB/4) clamped to 1MB min = 1.25MB -> chunks of ~1.25MB
+			// StdChunkSize = floor(5MB/4) clamped to 1MB min = 1.25MB -> chunks of ~1.25MB
 			// 30MB / ~1.25MB ≈ 24 chunks, grouped by 4 -> 6 groups
 			expect(result!.every((group) => group.length <= 4)).toBe(true);
 		});
 
 		it('preserves sequential order within and across groups', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const result = splitChunks(25 * MB, setting, 2, []);
+			const result = splitChunks({ cache: [], multiplex: 2, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const flattened = result!.flat();
 
 			// Chunks should be in ascending order by start position
-			for (let i = 1; i < flattened.length; i++) {
+			for (let i = 1; i < flattened.length; i++)
 				expect(flattened[i].start).toBeGreaterThan(flattened[i - 1].end);
-			}
 		});
 
 		it('handles multiplex=1 as single group per chunk', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const result = splitChunks(25 * MB, setting, 1, []);
+			const result = splitChunks({ cache: [], multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			// Each chunk in its own group when multiplex=1
@@ -199,7 +204,7 @@ describe('splitChunks (Public API)', () => {
 	describe('Edge cases and input validation', () => {
 		it('handles empty cache array', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const result = splitChunks(20 * MB, setting, 2, []);
+			const result = splitChunks({ cache: [], multiplex: 2, setting, total: 20 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -209,8 +214,8 @@ describe('splitChunks (Public API)', () => {
 
 		it('normalizes cache entries with negative start values', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: -1000, end: 4 * MB - 1, key: 'neg' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [{ end: 4 * MB - 1, key: 'neg', start: -1000 }];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -220,8 +225,8 @@ describe('splitChunks (Public API)', () => {
 
 		it('normalizes cache entries exceeding total file size', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 20 * MB, end: 100 * MB, key: 'overflow' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [{ end: 100 * MB, key: 'overflow', start: 20 * MB }];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -232,11 +237,11 @@ describe('splitChunks (Public API)', () => {
 
 		it('filters invalid cache entries where start > end', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [
-				{ start: 100, end: 50, key: 'invalid' },
-				{ start: 5 * MB, end: 10 * MB - 1, key: 'valid' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 50, key: 'invalid', start: 100 },
+				{ end: 10 * MB - 1, key: 'valid', start: 5 * MB },
 			];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
@@ -247,14 +252,16 @@ describe('splitChunks (Public API)', () => {
 
 		it('handles very small remaining fragments after cache', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 0, end: 24 * MB + 999900, key: 'almost' }];
-			const result = splitChunks(25 * MB, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [
+				{ end: 24 * MB + 999_900, key: 'almost', start: 0 },
+			];
+			const result = splitChunks({ cache, multiplex: 1, setting, total: 25 * MB });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
 			// Remaining ~100 bytes should still be chunked
 			expect(allChunks).toHaveLength(1);
-			expect(allChunks[0].start).toBe(24 * MB + 999901);
+			expect(allChunks[0].start).toBe(24 * MB + 999_901);
 			expect(allChunks[0].end).toBe(25 * MB - 1);
 		});
 	});
@@ -267,11 +274,11 @@ describe('splitChunks (Public API)', () => {
 		it('all chunks have valid non-negative ranges within file bounds', () => {
 			const total = 50 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 8 * MB };
-			const cache: FileChunkKey[] = [
-				{ start: 5 * MB, end: 10 * MB - 1, key: 'a' },
-				{ start: 30 * MB, end: 35 * MB - 1, key: 'b' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 10 * MB - 1, key: 'a', start: 5 * MB },
+				{ end: 35 * MB - 1, key: 'b', start: 30 * MB },
 			];
-			const result = splitChunks(total, setting, 3, cache);
+			const result = splitChunks({ cache, multiplex: 3, setting, total });
 
 			expect(result).toBeDefined();
 			for (const chunk of result!.flat()) {
@@ -284,12 +291,12 @@ describe('splitChunks (Public API)', () => {
 		it('chunks never overlap with cached regions', () => {
 			const total = 30 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 6 * MB };
-			const cache: FileChunkKey[] = [
-				{ start: 0, end: 4 * MB - 1, key: 'start' },
-				{ start: 15 * MB, end: 19 * MB - 1, key: 'mid' },
-				{ start: 25 * MB, end: 29 * MB - 1, key: 'end' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 4 * MB - 1, key: 'start', start: 0 },
+				{ end: 19 * MB - 1, key: 'mid', start: 15 * MB },
+				{ end: 29 * MB - 1, key: 'end', start: 25 * MB },
 			];
-			const result = splitChunks(total, setting, 2, cache);
+			const result = splitChunks({ cache, multiplex: 2, setting, total });
 
 			expect(result).toBeDefined();
 			for (const chunk of result!.flat()) {
@@ -299,13 +306,13 @@ describe('splitChunks (Public API)', () => {
 		});
 
 		it('total bytes covered by chunks + cache equals file size', () => {
-			const total = 12345678; // Non-aligned size for thoroughness
+			const total = 12_345_678; // Non-aligned size for thoroughness
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 3 * MB };
-			const cache: FileChunkKey[] = [
-				{ start: 100000, end: 500000, key: 'a' },
-				{ start: 5000000, end: 7000000, key: 'b' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 500_000, key: 'a', start: 100_000 },
+				{ end: 7_000_000, key: 'b', start: 5_000_000 },
 			];
-			const result = splitChunks(total, setting, 4, cache);
+			const result = splitChunks({ cache, multiplex: 4, setting, total });
 
 			expect(result).toBeDefined();
 
@@ -322,8 +329,8 @@ describe('splitChunks (Public API)', () => {
 		it('chunks within result are contiguous with no internal gaps', () => {
 			const total = 40 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
-			const cache: FileChunkKey[] = [{ start: 10 * MB, end: 19 * MB - 1, key: 'gap' }];
-			const result = splitChunks(total, setting, 1, cache);
+			const cache: Array<FileChunkKey> = [{ end: 19 * MB - 1, key: 'gap', start: 10 * MB }];
+			const result = splitChunks({ cache, multiplex: 1, setting, total });
 
 			expect(result).toBeDefined();
 			const chunks = result!.flat();
@@ -332,7 +339,7 @@ describe('splitChunks (Public API)', () => {
 			const beforeCache = chunks.filter((c) => c.end < 10 * MB);
 			const afterCache = chunks.filter((c) => c.start >= 20 * MB);
 
-			for (const region of [beforeCache, afterCache]) {
+			for (const region of [beforeCache, afterCache])
 				if (region.length > 0) {
 					let cursor = region[0].start;
 					for (const c of region) {
@@ -340,7 +347,6 @@ describe('splitChunks (Public API)', () => {
 						cursor = c.end + 1;
 					}
 				}
-			}
 		});
 	});
 
@@ -355,31 +361,30 @@ describe('splitChunks (Public API)', () => {
 			const multiplex = 3;
 
 			// Session 1: downloaded chunks at start and middle
-			let cache: FileChunkKey[] = [
-				{ start: 0, end: 4 * MB - 1, key: 's1a' },
-				{ start: 30 * MB, end: 34 * MB - 1, key: 's1b' },
+			let cache: Array<FileChunkKey> = [
+				{ end: 4 * MB - 1, key: 's1a', start: 0 },
+				{ end: 34 * MB - 1, key: 's1b', start: 30 * MB },
 			];
-			let result = splitChunks(total, setting, multiplex, cache);
+			let result = splitChunks({ cache, multiplex, setting, total });
 			expect(result).toBeDefined();
 			expect(result!.flat()[0].start).toBe(4 * MB);
 
 			// Session 2: more chunks downloaded
 			cache = [
 				...cache,
-				{ start: 10 * MB, end: 14 * MB - 1, key: 's2a' },
-				{ start: 70 * MB, end: 79 * MB - 1, key: 's2b' },
+				{ end: 14 * MB - 1, key: 's2a', start: 10 * MB },
+				{ end: 79 * MB - 1, key: 's2b', start: 70 * MB },
 			];
-			result = splitChunks(total, setting, multiplex, cache);
+			result = splitChunks({ cache, multiplex, setting, total });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
 
 			// Verify no overlap with any cached region
-			for (const c of cache) {
+			for (const c of cache)
 				expect(allChunks.every((chunk) => chunk.end < c.start || chunk.start > c.end)).toBe(
 					true,
 				);
-			}
 
 			// Verify coverage invariant still holds
 			const chunkBytes = allChunks.reduce((s, c) => s + c.end - c.start + 1, 0);
@@ -391,23 +396,21 @@ describe('splitChunks (Public API)', () => {
 			const total = 50 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 5 * MB };
 			// Simulate 10 small cached regions scattered across file
-			const cache: FileChunkKey[] = Array.from({ length: 10 }, (_, i) => ({
-				start: i * 5 * MB,
+			const cache: Array<FileChunkKey> = Array.from({ length: 10 }, (_, i) => ({
 				end: i * 5 * MB + 100 * KB - 1,
 				key: `small-${i}`,
+				start: i * 5 * MB,
 			}));
 
-			const result = splitChunks(total, setting, 2, cache);
+			const result = splitChunks({ cache, multiplex: 2, setting, total });
 
 			expect(result).toBeDefined();
 			const allChunks = result!.flat();
 
 			// All chunks should avoid the small cached regions
-			for (const cached of cache) {
-				for (const chunk of allChunks) {
+			for (const cached of cache)
+				for (const chunk of allChunks)
 					expect(chunk.end < cached.start || chunk.start > cached.end).toBe(true);
-				}
-			}
 
 			// Should still produce reasonable number of chunks
 			expect(allChunks.length).toBeGreaterThan(0);
@@ -417,30 +420,30 @@ describe('splitChunks (Public API)', () => {
 		it('works correctly with disabled setting regardless of cache complexity', () => {
 			const total = 80 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: false, value: 1 };
-			const cache: FileChunkKey[] = [
-				{ start: 0, end: 9 * MB - 1, key: 'a' },
-				{ start: 20 * MB, end: 29 * MB - 1, key: 'b' },
-				{ start: 50 * MB, end: 54 * MB - 1, key: 'c' },
-				{ start: 70 * MB, end: 79 * MB - 1, key: 'd' },
+			const cache: Array<FileChunkKey> = [
+				{ end: 9 * MB - 1, key: 'a', start: 0 },
+				{ end: 29 * MB - 1, key: 'b', start: 20 * MB },
+				{ end: 54 * MB - 1, key: 'c', start: 50 * MB },
+				{ end: 79 * MB - 1, key: 'd', start: 70 * MB },
 			];
 
-			const result = splitChunks(total, setting, 10, cache);
+			const result = splitChunks({ cache, multiplex: 10, setting, total });
 
 			expect(result).toBeDefined();
 			// Should return single group (no concurrency splitting when disabled)
 			expect(result!).toHaveLength(1);
 
 			const chunks = result![0];
-			// stdChunkSize = 50MB when disabled
+			// StdChunkSize = 50MB when disabled
 			// Remaining regions: 10-20MB (10MB), 30-50MB (20MB), 55-70MB (15MB)
 			// Each becomes a single chunk -> 4 chunks total
 			expect(chunks).toHaveLength(4);
 
 			// Verify boundaries
-			expect(chunks[0]).toEqual({ start: 9 * MB, end: 20 * MB - 1 });
-			expect(chunks[1]).toEqual({ start: 29 * MB, end: 50 * MB - 1 });
-			expect(chunks[2]).toEqual({ start: 54 * MB, end: 70 * MB - 1 });
-			expect(chunks[3]).toEqual({ start: 79 * MB, end: 80 * MB - 1 });
+			expect(chunks[0]).toEqual({ end: 20 * MB - 1, start: 9 * MB });
+			expect(chunks[1]).toEqual({ end: 50 * MB - 1, start: 29 * MB });
+			expect(chunks[2]).toEqual({ end: 70 * MB - 1, start: 54 * MB });
+			expect(chunks[3]).toEqual({ end: 80 * MB - 1, start: 79 * MB });
 		});
 	});
 });

@@ -1,5 +1,5 @@
 export class SyncCancelledError extends Error {
-	constructor(message: string = 'Sync cancelled') {
+	constructor(message = 'Sync cancelled') {
 		super(message);
 		this.name = 'SyncCancelledError';
 	}
@@ -7,7 +7,7 @@ export class SyncCancelledError extends Error {
 
 export class SyncRetryExhaustedError extends Error {
 	constructor(
-		message: string = 'WebDAV connection failed after retries',
+		message = 'WebDAV connection failed after retries',
 		readonly cause?: Error,
 	) {
 		super(message);

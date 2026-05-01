@@ -1,12 +1,12 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import { type BaseTask } from '~/sync/tasks/task.interface';
 
-export interface FileTreeNode {
+export type FileTreeNode = {
 	id: string;
 	name: string;
 	path: string;
 	depth: number;
 	parentId?: string;
-	childIds: string[];
+	childIds: Array<string>;
 	task?: BaseTask;
 	compressedLabel: string;
 	isStructural: boolean;
@@ -14,19 +14,19 @@ export interface FileTreeNode {
 	isFolderTask: boolean;
 	isCreateFolderTask: boolean;
 	isDeleteFolderTask: boolean;
-	selectableDescendantTaskIds: string[];
-	ancestorTaskIds: string[];
-	ancestorCreateFolderTaskIds: string[];
-	ancestorDeleteFolderTaskIds: string[];
-}
+	selectableDescendantTaskIds: Array<string>;
+	ancestorTaskIds: Array<string>;
+	ancestorCreateFolderTaskIds: Array<string>;
+	ancestorDeleteFolderTaskIds: Array<string>;
+};
 
-export interface FileTreeData {
-	orderedNodeIds: string[];
+export type FileTreeData = {
+	orderedNodeIds: Array<string>;
 	nodes: Record<string, FileTreeNode>;
-	taskNodeIds: string[];
-}
+	taskNodeIds: Array<string>;
+};
 
-export interface FileTreeSelectionSnapshot {
-	selectedTasks: BaseTask[];
-	unselectedTasks: BaseTask[];
-}
+export type FileTreeSelectionSnapshot = {
+	selectedTasks: Array<BaseTask>;
+	unselectedTasks: Array<BaseTask>;
+};

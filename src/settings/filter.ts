@@ -16,13 +16,13 @@ export default class FilterSettings extends BaseSettings {
 				button.setButtonText(t('settings.filters.edit')).onClick(() => {
 					new FilterEditorModal(
 						this.plugin,
-						this.plugin.settings.filterRules.inclusionRules,
 						(filters) => {
 							this.plugin.settings.filterRules.inclusionRules = filters;
 							this.display();
 							void this.plugin.saveSettings();
 						},
 						FilterEditorModal.FilterType.Include,
+						this.plugin.settings.filterRules.inclusionRules,
 					).open();
 				});
 			});
@@ -35,13 +35,13 @@ export default class FilterSettings extends BaseSettings {
 				button.setButtonText(t('settings.filters.edit')).onClick(() => {
 					new FilterEditorModal(
 						this.plugin,
-						this.plugin.settings.filterRules.exclusionRules,
 						(filters) => {
 							this.plugin.settings.filterRules.exclusionRules = filters;
 							this.display();
 							void this.plugin.saveSettings();
 						},
 						FilterEditorModal.FilterType.Exclude,
+						this.plugin.settings.filterRules.exclusionRules,
 					).open();
 				});
 			});

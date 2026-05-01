@@ -1,10 +1,10 @@
 import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
 import t from '~/i18n';
-import { launchManualSync } from '~/services/manual-sync.service';
+import launchManualSync from '~/services/manual-sync.service';
 
 export default class SyncConfirmModal extends Modal {
-	constructor(private plugin: WebDAVSyncPlugin) {
+	constructor(private readonly plugin: WebDAVSyncPlugin) {
 		super(plugin.app);
 	}
 
@@ -26,8 +26,8 @@ export default class SyncConfirmModal extends Modal {
 			}),
 		});
 		contentEl.createEl('p', {
-			text: t('sync.confirmModal.message'),
 			cls: 'whitespace-pre-line',
+			text: t('sync.confirmModal.message'),
 		});
 
 		new Setting(contentEl)

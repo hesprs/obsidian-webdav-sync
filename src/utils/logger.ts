@@ -1,16 +1,17 @@
 import { IN_DEV, VERSION } from '~/consts';
-import { formatDateTime } from '~/utils/format-date';
+import formatDateTime from '~/utils/format-date';
+import { isNil } from './fns';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
-interface LogContext {
+type LogContext = {
 	runId?: string;
 	category?: string;
-}
+};
 
-type LogValue = string | number | boolean | null | LogValue[] | { [key: string]: LogValue };
+type LogValue = string | number | boolean | null | Array<LogValue> | { [key: string]: LogValue };
 
-export interface LogEntry {
+export type LogEntry = {
 	timestamp: string;
 	timestampMs: number;
 	level: LogLevel;
@@ -18,14 +19,14 @@ export interface LogEntry {
 	message: string;
 	runId?: string;
 	metadata?: LogValue;
-}
+};
 
-interface RunReportSummary {
+type RunReportSummary = {
 	trigger?: string;
 	mode?: string;
 	runKind?: string;
 	stage?: string;
-	sources?: string[];
+	sources?: Array<string>;
 	queuedAt?: number;
 	planningStartedAt?: number;
 	executionStartedAt?: number;
@@ -49,7 +50,7 @@ interface RunReportSummary {
 		message?: string;
 		name?: string;
 	};
-}
+};
 
 const MAX_LOG_ENTRIES = 1000;
 
@@ -57,19 +58,16 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function sanitizeLogValue(value: unknown, depth: number = 0): LogValue | undefined {
-	if (value === undefined) return undefined;
-	if (value === null) return null;
-	if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+function sanitizeLogValue(value: unknown, depth = 0): LogValue | undefined {
+	if (isNil(value)) return;
+	if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
 		return value;
-	}
 
-	if (value instanceof Error) {
+	if (value instanceof Error)
 		return sanitizeLogValue(
-			{ name: value.name, message: value.message, stack: value.stack },
+			{ message: value.message, name: value.name, stack: value.stack },
 			depth + 1,
 		);
-	}
 
 	if (Array.isArray(value)) {
 		if (depth >= 4) return value.map((item) => String(item));
@@ -83,9 +81,7 @@ function sanitizeLogValue(value: unknown, depth: number = 0): LogValue | undefin
 		const sanitizedObject: Record<string, LogValue> = {};
 		for (const [key, entryValue] of Object.entries(value)) {
 			const sanitizedValue = sanitizeLogValue(entryValue, depth + 1);
-			if (sanitizedValue !== undefined) {
-				sanitizedObject[key] = sanitizedValue;
-			}
+			if (sanitizedValue !== undefined) sanitizedObject[key] = sanitizedValue;
 		}
 		return sanitizedObject;
 	}
@@ -101,8 +97,8 @@ function formatMode(mode?: string): string | undefined {
 function formatDuration(durationMs?: number): string | undefined {
 	if (durationMs === undefined) return undefined;
 	if (durationMs < 1000) return `${durationMs}ms`;
-	if (durationMs < 60000) return `${(durationMs / 1000).toFixed(1)}s`;
-	return `${(durationMs / 60000).toFixed(1)}m`;
+	if (durationMs < 60_000) return `${(durationMs / 1000).toFixed(1)}s`;
+	return `${(durationMs / 60_000).toFixed(1)}m`;
 }
 
 function formatTimestamp(timestamp?: number): string | undefined {
@@ -111,8 +107,8 @@ function formatTimestamp(timestamp?: number): string | undefined {
 }
 
 class Logger {
-	private logs: LogEntry[] = [];
-	private contextStack: LogContext[] = [];
+	private logs: Array<LogEntry> = [];
+	private readonly contextStack: Array<LogContext> = [];
 
 	pushContext(context: LogContext) {
 		const current = this.getCurrentContext();
@@ -127,27 +123,27 @@ class Logger {
 	}
 
 	info(message: string, metadata?: unknown, context?: LogContext) {
-		this.write('info', message, metadata, context);
+		this.write({ context, level: 'info', message, metadata });
 	}
 
 	warn(message: string, metadata?: unknown, context?: LogContext) {
-		this.write('warn', message, metadata, context);
+		this.write({ context, level: 'warn', message, metadata });
 	}
 
 	error(message: string, metadata?: unknown, context?: LogContext) {
-		this.write('error', message, metadata, context);
+		this.write({ context, level: 'error', message, metadata });
 	}
 
 	debug(message: string, metadata?: unknown, context?: LogContext) {
 		if (!IN_DEV) return;
-		this.write('debug', message, metadata, context);
+		this.write({ context, level: 'debug', message, metadata });
 	}
 
 	clear() {
 		this.logs = [];
 	}
 
-	getEntries(): LogEntry[] {
+	getEntries(): Array<LogEntry> {
 		return [...this.logs];
 	}
 
@@ -163,8 +159,8 @@ class Logger {
 	}
 
 	exportMarkdownReport(): string {
-		const runGroups = new Map<string, LogEntry[]>();
-		const generalLogs: LogEntry[] = [];
+		const runGroups = new Map<string, Array<LogEntry>>();
+		const generalLogs: Array<LogEntry> = [];
 
 		for (const log of this.logs) {
 			if (!log.runId) {
@@ -177,7 +173,7 @@ class Logger {
 			runGroups.set(log.runId, group);
 		}
 
-		const lines: string[] = [
+		const lines: Array<string> = [
 			'# WebDAV Sync Support Report',
 			'',
 			`Generated at: ${formatDateTime(Date.now())}`,
@@ -188,21 +184,19 @@ class Logger {
 		if (runGroups.size === 0) lines.push('## Sync runs', '', 'No sync runs recorded.', '');
 		else {
 			lines.push('## Sync runs', '');
-			const sortedRuns = Array.from(runGroups.entries()).sort(([, left], [, right]) => {
+			const sortedRuns = [...runGroups.entries()].sort(([, left], [, right]) => {
 				const leftTime = left[0]?.timestampMs ?? 0;
 				const rightTime = right[0]?.timestampMs ?? 0;
 				return rightTime - leftTime;
 			});
 
-			for (const [runId, entries] of sortedRuns) {
+			for (const [runId, entries] of sortedRuns)
 				lines.push(...this.buildRunReport(runId, entries));
-			}
 		}
 
 		lines.push('## General logs', '');
-		if (generalLogs.length === 0) {
-			lines.push('No general logs recorded.', '');
-		} else {
+		if (generalLogs.length === 0) lines.push('No general logs recorded.', '');
+		else {
 			for (const entry of generalLogs) lines.push(this.formatTimelineLine(entry));
 			lines.push('');
 		}
@@ -210,9 +204,9 @@ class Logger {
 		return lines.join('\n');
 	}
 
-	private buildRunReport(runId: string, entries: LogEntry[]): string[] {
+	private buildRunReport(runId: string, entries: Array<LogEntry>): Array<string> {
 		const summary = this.extractRunSummary(entries);
-		const lines: string[] = [`### Run ${runId}`, ''];
+		const lines: Array<string> = [`### Run ${runId}`, ''];
 
 		lines.push(`- Trigger: ${summary.trigger ?? 'unknown'}`);
 		lines.push(`- Mode: ${formatMode(summary.mode) ?? 'unknown'}`);
@@ -256,20 +250,18 @@ class Logger {
 			lines.push('');
 		}
 
-		if (summary.errorSummary?.message) {
+		if (summary.errorSummary?.message)
 			lines.push('#### Terminal error', '', `- ${summary.errorSummary.message}`, '');
-		}
 
 		lines.push('#### Timeline', '');
-		for (const entry of entries) {
-			lines.push(this.formatTimelineLine(entry));
-		}
+		for (const entry of entries) lines.push(this.formatTimelineLine(entry));
+
 		lines.push('');
 
 		return lines;
 	}
 
-	private extractRunSummary(entries: LogEntry[]): RunReportSummary {
+	private extractRunSummary(entries: Array<LogEntry>): RunReportSummary {
 		const summary: RunReportSummary = {};
 
 		for (const entry of entries) {
@@ -332,17 +324,17 @@ class Logger {
 			? value.failed
 					.filter((failure): failure is Record<string, unknown> => isPlainObject(failure))
 					.map((failure) => ({
-						taskName: this.readString(failure.taskName),
-						localPath: this.readString(failure.localPath),
 						errorMessage: this.readString(failure.errorMessage),
+						localPath: this.readString(failure.localPath),
+						taskName: this.readString(failure.taskName),
 					}))
 			: undefined;
 
 		return {
-			totalTasks: this.readNumber(value.totalTasks) ?? 0,
-			succeededTasks: this.readNumber(value.succeededTasks) ?? 0,
-			failedTasks: this.readNumber(value.failedTasks) ?? 0,
 			failed,
+			failedTasks: this.readNumber(value.failedTasks) ?? 0,
+			succeededTasks: this.readNumber(value.succeededTasks) ?? 0,
+			totalTasks: this.readNumber(value.totalTasks) ?? 0,
 		};
 	}
 
@@ -362,7 +354,7 @@ class Logger {
 		return typeof value === 'number' ? value : undefined;
 	}
 
-	private readStringArray(value: unknown): string[] | undefined {
+	private readStringArray(value: unknown): Array<string> | undefined {
 		if (!Array.isArray(value)) return undefined;
 		return value.filter((item): item is string => typeof item === 'string');
 	}
@@ -378,7 +370,17 @@ class Logger {
 		return parts.join(' ');
 	}
 
-	private write(level: LogLevel, message: string, metadata?: unknown, context?: LogContext) {
+	private write({
+		level,
+		message,
+		metadata,
+		context,
+	}: {
+		level: LogLevel;
+		message: string;
+		metadata?: unknown;
+		context?: LogContext;
+	}) {
 		const timestampMs = Date.now();
 		const mergedContext = {
 			category: 'app',
@@ -386,13 +388,13 @@ class Logger {
 			...context,
 		};
 		const entry: LogEntry = {
+			category: mergedContext.category ?? 'app',
+			level,
+			message,
+			metadata: sanitizeLogValue(metadata),
+			runId: mergedContext.runId,
 			timestamp: formatDateTime(timestampMs),
 			timestampMs,
-			level,
-			category: mergedContext.category ?? 'app',
-			message,
-			runId: mergedContext.runId,
-			metadata: sanitizeLogValue(metadata),
 		};
 
 		this.logs.push(entry);
@@ -405,4 +407,5 @@ class Logger {
 	}
 }
 
-export default new Logger();
+const logger = new Logger();
+export default logger;

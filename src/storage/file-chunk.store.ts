@@ -1,26 +1,21 @@
 import localspace, { ttlPlugin } from 'localspace';
-import { isSub } from '~/utils/is-sub';
+import isSub from '~/utils/is-sub';
 import logger from '~/utils/logger';
+import { type FileChunkKey } from '.';
 import {
 	FILE_CHUNK_STORE_NAME,
-	createStorageUnavailableError,
 	STORAGE_NAME,
+	createStorageUnavailableError,
 } from './store.interface';
 
-export type FileChunkKey = {
-	start: number;
-	end: number;
-	key: string;
-};
-
-export class IndexedDbFileChunkStore {
+export default class IndexedDbFileChunkStore {
 	private initPromise: Promise<void> | undefined;
 	private readonly store = localspace.createInstance({
-		name: STORAGE_NAME,
-		storeName: FILE_CHUNK_STORE_NAME,
-		driver: [localspace.INDEXEDDB],
 		coalesceWrites: false,
+		driver: [localspace.INDEXEDDB],
+		name: STORAGE_NAME,
 		plugins: [ttlPlugin({ defaultTTL: 60 * 1000 * 60 * 10 })],
+		storeName: FILE_CHUNK_STORE_NAME,
 	});
 
 	async initialize() {
@@ -62,7 +57,7 @@ export class IndexedDbFileChunkStore {
 		namespace: string;
 		path: string;
 		size: number;
-	}): Promise<FileChunkKey[]> {
+	}): Promise<Array<FileChunkKey>> {
 		return await this.run('get file chunk keys', async () => {
 			const keysToDelete: Array<string> = [];
 			const keysToReturn: Array<FileChunkKey> = [];
@@ -74,7 +69,7 @@ export class IndexedDbFileChunkStore {
 				.forEach((key) => {
 					const { start, end, size: s } = this.parseKey(key);
 					if (s !== size) keysToDelete.push(key);
-					else keysToReturn.push({ start, end, key });
+					else keysToReturn.push({ end, key, start });
 				});
 			await this.store.removeItems(keysToDelete);
 			return keysToReturn;
@@ -92,7 +87,7 @@ export class IndexedDbFileChunkStore {
 		},
 	): Promise<void> {
 		await this.run('set file chunk', async () => {
-			await this.store.setItem<ArrayBuffer>(this.getKey(options), chunk);
+			await this.store.setItem(this.getKey(options), chunk);
 		});
 	}
 
@@ -161,11 +156,11 @@ export class IndexedDbFileChunkStore {
 		const m = key.indexOf(':', l + 1);
 
 		return {
+			end: Number(key.slice(l + 1, m)),
 			namespace: key.slice(i + 1, j),
+			path: key.slice(m + 1),
 			size: Number(key.slice(j + 1, k)),
 			start: Number(key.slice(k + 1, l)),
-			end: Number(key.slice(l + 1, m)),
-			path: key.slice(m + 1),
 		};
 	}
 }

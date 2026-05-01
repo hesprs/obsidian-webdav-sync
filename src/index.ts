@@ -1,10 +1,9 @@
-import './webdav-patch';
 import './assets/global.css';
 import { Plugin } from 'obsidian';
-import { SyncRibbonManager } from './components/SyncRibbonManager';
+import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
-import { setupCommands } from './services/command.setup';
+import setupCommands from './services/command.setup';
 import ObservabilityService from './services/observability.service';
 import RealtimeSyncService from './services/realtime-sync.service';
 import ScheduledSyncService from './services/scheduled-sync.service';
@@ -13,19 +12,20 @@ import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import {
 	type PluginSettings,
+	type GlobMatchOptions,
 	SyncSettingTab,
 	setPluginInstance,
 	ConflictStrategy,
 	UnmergeableStrategy,
-	type GlobMatchOptions,
 } from './settings';
-import { processSettings } from './settings/process';
+import processSettings from './settings/process';
 import {
 	IndexedDbBaseTextStore,
-	IndexedDbSyncStateStore,
 	IndexedDbFileChunkStore,
+	IndexedDbSyncStateStore,
 } from './storage';
-import { getCredential } from './utils/get-credential';
+import getCredential from './utils/get-credential';
+import patchWebDav from './webdav-patch';
 
 function createGlobMatchOptions(expr: string) {
 	return {
@@ -37,19 +37,14 @@ function createGlobMatchOptions(expr: string) {
 }
 
 export default class WebDAVSyncPlugin extends Plugin {
-	public isSyncing: boolean = false;
+	public isSyncing = false;
 	public settings: PluginSettings = {
-		serverUrl: '',
 		account: '',
-		token: '',
-		exhaustiveRemoteTraversal: false,
-		remoteDir: normalizeBaseDir(this.app.vault.getName()),
-		showSyncStatusInNotificationOnMobile: true,
-		useGitStyle: false,
-		conflictStrategy: ConflictStrategy.DiffMatchPatch,
-		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
-		confirmBeforeSync: true,
 		confirmBeforeDeleteInAutoSync: true,
+		confirmBeforeSync: true,
+		conflictStrategy: ConflictStrategy.DiffMatchPatch,
+		exhaustiveRemoteTraversal: false,
+		fastRealtimeSync: true,
 		filterRules: {
 			exclusionRules: [
 				'**/.git',
@@ -72,19 +67,15 @@ export default class WebDAVSyncPlugin extends Plugin {
 			].map(createGlobMatchOptions),
 			inclusionRules: [],
 		},
-		skipLargeFiles: {
-			enabled: false,
-			value: 31457280,
-		},
-		realtimeSync: {
-			enabled: false,
-			value: 5000,
-		},
-		maxWebDAVConcurrency: {
+		maxSyncTaskConcurrency: {
 			enabled: true,
 			value: 100,
 		},
-		maxSyncTaskConcurrency: {
+		maxThroughputConcurrency: {
+			enabled: true,
+			value: 52_428_800,
+		},
+		maxWebDAVConcurrency: {
 			enabled: true,
 			value: 100,
 		},
@@ -92,19 +83,28 @@ export default class WebDAVSyncPlugin extends Plugin {
 			enabled: false,
 			value: 0,
 		},
-		startupSync: {
+		realtimeSync: {
 			enabled: false,
-			value: 0,
+			value: 5000,
 		},
+		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		scheduledSync: {
 			enabled: false,
 			value: 600,
 		},
-		maxThroughputConcurrency: {
-			enabled: true,
-			value: 52_428_800,
+		serverUrl: '',
+		showSyncStatusInNotificationOnMobile: true,
+		skipLargeFiles: {
+			enabled: false,
+			value: 31_457_280,
 		},
-		fastRealtimeSync: true,
+		startupSync: {
+			enabled: false,
+			value: 0,
+		},
+		token: '',
+		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
+		useGitStyle: false,
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
@@ -127,10 +127,11 @@ export default class WebDAVSyncPlugin extends Plugin {
 		setPluginInstance(this);
 		setupCommands(this);
 		this.scheduledSyncService.start();
+		patchWebDav();
 	}
 
 	onunload() {
-		setPluginInstance(null);
+		setPluginInstance();
 		void this.syncStateStore.unload();
 		void this.baseTextStore.unload();
 		void this.fileChunkStore.unload();
@@ -163,13 +164,13 @@ export default class WebDAVSyncPlugin extends Plugin {
 	 */
 	isAccountConfigured(): boolean {
 		return (
-			!!this.settings.serverUrl &&
+			Boolean(this.settings.serverUrl) &&
 			this.settings.serverUrl.trim() !== '' &&
-			!!this.settings.account &&
+			Boolean(this.settings.account) &&
 			this.settings.account.trim() !== '' &&
-			!!this.settings.token &&
+			Boolean(this.settings.token) &&
 			this.settings.token.trim() !== '' &&
-			!!this.app.secretStorage.getSecret(this.settings.token)
+			Boolean(this.app.secretStorage.getSecret(this.settings.token))
 		);
 	}
 }

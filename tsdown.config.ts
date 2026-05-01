@@ -9,14 +9,25 @@ const dev = mode === 'dev';
 const inspect = mode === 'inspect';
 
 export default defineConfig({
-	entry: 'src/index.ts',
-	platform: 'browser',
-	minify: !dev,
+	clean: !dev && !inspect,
+	copy: [
+		{
+			from: 'manifest.json',
+			to: 'dist',
+		},
+	],
+	css: {
+		fileName: 'styles.css',
+		minify: !dev,
+		postcss: {
+			plugins: [UnoCSS(), postcssMergeRules()],
+		},
+		transformer: 'postcss',
+	},
 	define: {
 		'process.env.MODE': JSON.stringify(mode) ?? '"prod"',
 		'process.env.VERSION': JSON.stringify(pkg.version),
 	},
-	plugins: [solid()],
 	deps: {
 		neverBundle: [
 			'obsidian',
@@ -32,37 +43,25 @@ export default defineConfig({
 		],
 		onlyBundle: false,
 	},
-	outputOptions: {
-		file: 'dist/main.js',
-		codeSplitting: false,
-	},
+	devtools: inspect,
+	entry: 'src/index.ts',
 	format: 'cjs',
-	copy: [
-		{
-			from: 'manifest.json',
-			to: 'dist',
-		},
-	],
-	//logLevel: 'error',
-	target: 'es2018',
 	inputOptions: {
 		resolve: {
 			// Obsidian plugins run in Electron with a DOM, but CJS resolution can still
-			// select Solid's server runtime. Force the browser runtime explicitly.
+			// Select Solid's server runtime. Force the browser runtime explicitly.
 			alias: {
 				'solid-js/web': 'solid-js/web/dist/web.js',
 			},
 			conditionNames: ['browser', 'import', 'module', 'default'],
 		},
 	},
-	css: {
-		postcss: {
-			plugins: [UnoCSS(), postcssMergeRules()],
-		},
-		transformer: 'postcss',
-		minify: !dev,
-		fileName: 'styles.css',
+	minify: !dev,
+	outputOptions: {
+		codeSplitting: false,
+		file: 'dist/main.js',
 	},
-	clean: !dev && !inspect,
-	devtools: inspect,
+	platform: 'browser',
+	plugins: [solid()],
+	target: 'es2018',
 });

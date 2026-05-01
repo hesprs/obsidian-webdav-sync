@@ -1,33 +1,30 @@
-import { exec } from 'child_process';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { join } from 'path';
+// oxlint-disable import/no-nodejs-modules
+import { exec } from 'node:child_process';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 const CHANGELOG_PATH = join(process.cwd(), 'CHANGELOG.md');
 const OUTPUT_PATH = join(process.cwd(), 'release-notes.md');
 
 function getSemVer(version: string): string {
-	const match = version.match(/(\d+\.\d+\.\d+)/);
-	if (!match) {
+	const match = /(\d+\.\d+\.\d+)/.exec(version);
+	if (!match)
 		throw new Error(`Invalid version format: ${version}. Expected semver (e.g., 1.0.0).`);
-	}
+
 	return match[1];
 }
 
 function extractNotes(version: string): string {
-	if (!existsSync(CHANGELOG_PATH)) {
-		throw new Error(`CHANGELOG.md not found at ${CHANGELOG_PATH}`);
-	}
+	if (!existsSync(CHANGELOG_PATH)) throw new Error(`CHANGELOG.md not found at ${CHANGELOG_PATH}`);
 
-	const content = readFileSync(CHANGELOG_PATH, 'utf-8');
+	const content = readFileSync(CHANGELOG_PATH, 'utf8');
 	const lines = content.split('\n');
 	const targetSemVer = getSemVer(version);
 
 	let found = false;
-	const notes: string[] = [];
+	const notes: Array<string> = [];
 
-	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i];
-
+	for (const line of lines) {
 		// Check for version header: ## ... v1.2.3 ...
 		if (line.startsWith('## ')) {
 			if (found) break;
@@ -50,11 +47,10 @@ function extractNotes(version: string): string {
 try {
 	const versionTag = process.argv[2];
 
-	if (!versionTag) {
+	if (!versionTag)
 		throw new Error(
 			'Missing version argument. Usage: tsx scripts/extract-release-notes.ts <version>',
 		);
-	}
 
 	console.log(`Extracting release notes for ${versionTag}...`);
 	const notes = versionTag.includes('-')

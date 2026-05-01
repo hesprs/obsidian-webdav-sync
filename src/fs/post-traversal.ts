@@ -1,6 +1,6 @@
-import type { GlobMatchOptions } from '~/settings';
-import type { StatsMap } from '~/types';
 import { vaultDirname } from '~/platform/path';
+import { type GlobMatchOptions } from '~/settings';
+import { type StatsMap } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import logger from '~/utils/logger';
 
@@ -8,8 +8,8 @@ import logger from '~/utils/logger';
 export default function postTraversal(
 	stats: StatsMap,
 	filterRules?: {
-		exclusionRules?: GlobMatchOptions[];
-		inclusionRules?: GlobMatchOptions[];
+		exclusionRules?: Array<GlobMatchOptions>;
+		inclusionRules?: Array<GlobMatchOptions>;
 	},
 	maxSize?: number,
 ) {

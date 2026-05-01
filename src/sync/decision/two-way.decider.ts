@@ -1,25 +1,11 @@
-import type { ProgressPatch } from '~/events';
-import type { SyncRecord } from '~/storage';
-import type { RecordStatsMap, StatsMap } from '~/types';
+import { type ProgressPatch } from '~/events';
 import postTraversal from '~/fs/post-traversal';
-import { traverse as traverseVault } from '~/fs/vault';
-import { traverse as traverseWebDAV } from '~/fs/webdav';
+import { traverseVault } from '~/fs/vault';
+import { traverseWebDAV } from '~/fs/webdav';
 import { useSettings } from '~/settings';
-import { SyncRunKind } from '~/types';
-import type { SyncEngine } from '..';
-import type {
-	OptionsWithBothFileStats,
-	OptionsWithBothStats,
-	OptionsWithLocalFileStat,
-	OptionsWithLocalFolderStat,
-	OptionsWithLocalStat,
-	OptionsWithRemoteFileStat,
-	OptionsWithRemoteFolderStat,
-	OptionsWithRemoteStat,
-	SyncDecisionInput,
-	TaskFactory,
-	TaskOptions,
-} from './sync-decision.interface';
+import { type SyncRecord } from '~/storage';
+import { type RecordStatsMap, type StatsMap, SyncRunKind } from '~/types';
+import { type SyncEngine } from '..';
 import AddRecordTask from '../tasks/add-record.task';
 import CleanRecordTask from '../tasks/clean-record.task';
 import MergeTask from '../tasks/merge.task';
@@ -29,14 +15,27 @@ import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
-import { BaseTask } from '../tasks/task.interface';
-import { twoWayDecider } from './two-way.decider.function';
+import { type BaseTask } from '../tasks/task.interface';
+import {
+	type OptionsWithBothFileStats,
+	type OptionsWithBothStats,
+	type OptionsWithLocalFileStat,
+	type OptionsWithLocalFolderStat,
+	type OptionsWithLocalStat,
+	type OptionsWithRemoteFileStat,
+	type OptionsWithRemoteFolderStat,
+	type OptionsWithRemoteStat,
+	type SyncDecisionInput,
+	type TaskFactory,
+	type TaskOptions,
+} from './sync-decision.interface';
+import twoWayDecider from './two-way.decider.function';
 
 export default class TwoWaySyncDecider {
 	constructor(
-		private sync: SyncEngine,
-		private token: string,
-		private syncRecordStorage: SyncRecord,
+		private readonly sync: SyncEngine,
+		private readonly token: string,
+		private readonly syncRecordStorage: SyncRecord,
 	) {}
 
 	get webdav() {
@@ -54,7 +53,7 @@ export default class TwoWaySyncDecider {
 	async decide(options?: {
 		onProgress?: (progress: ProgressPatch) => void;
 		throwIfCancelled?: () => void;
-	}): Promise<BaseTask[]> {
+	}): Promise<Array<BaseTask>> {
 		const onProgress = (progress: ProgressPatch) => options?.onProgress?.(progress);
 
 		const records = await this.syncRecordStorage.getRecords();
@@ -62,12 +61,12 @@ export default class TwoWaySyncDecider {
 		const currentLocalStats = await traverseVault({ vault: this.vault });
 
 		onProgress({
-			stage: 'walking_remote',
 			remoteWalkSummary: {
-				totalItems: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
 				completedItems: 0,
 				currentItem: this.remoteBaseDir,
+				totalItems: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
 			},
+			stage: 'walking_remote',
 		});
 		const currentRemoteStats =
 			this.sync.runKind === SyncRunKind.fast
@@ -75,54 +74,54 @@ export default class TwoWaySyncDecider {
 				: await traverseWebDAV({
 						onProgress: (progress) =>
 							onProgress({
-								stage: 'walking_remote',
 								remoteWalkSummary: {
-									totalItems: progress.totalDirectories,
 									completedItems: progress.processedDirectories,
 									currentItem: progress.currentDirectory ?? this.remoteBaseDir,
+									totalItems: progress.totalDirectories,
 								},
+								stage: 'walking_remote',
 							}),
-						token: this.token,
 						throwIfCancelled: options?.throwIfCancelled,
+						token: this.token,
 					});
 
 		const commonTaskOptions = {
-			webdav: this.webdav,
-			vault: this.vault,
 			remoteBaseDir: this.remoteBaseDir,
 			syncRecord: this.syncRecordStorage,
+			vault: this.vault,
+			webdav: this.webdav,
 		};
 
 		const taskFactory: TaskFactory = {
-			createPullTask: (options: OptionsWithRemoteFileStat) =>
-				new PullTask({ ...commonTaskOptions, ...options }),
-			createPushTask: (options: OptionsWithLocalFileStat) =>
-				new PushTask({ ...commonTaskOptions, ...options }),
-			createMergeTask: (options: OptionsWithBothFileStats) =>
-				new MergeTask({ ...commonTaskOptions, ...options }),
-			createRemoveLocalTask: (options: OptionsWithLocalStat) =>
-				new RemoveLocalTask({ ...commonTaskOptions, ...options }),
-			createRemoveRemoteTask: (options: OptionsWithRemoteStat) =>
-				new RemoveRemoteTask({ ...commonTaskOptions, ...options }),
-			createMkdirLocalTask: (options: OptionsWithRemoteFolderStat) =>
-				new MkdirLocalTask({ ...commonTaskOptions, ...options }),
-			createMkdirRemoteTask: (options: OptionsWithLocalFolderStat) =>
-				new MkdirRemoteTask({ ...commonTaskOptions, ...options }),
-			createCleanRecordTask: (options: TaskOptions) =>
-				new CleanRecordTask({ ...commonTaskOptions, ...options }),
-			createAddRecordTask: (options: OptionsWithBothStats) =>
-				new AddRecordTask({ ...commonTaskOptions, ...options }),
+			createAddRecordTask: (opts: OptionsWithBothStats) =>
+				new AddRecordTask({ ...commonTaskOptions, ...opts }),
+			createCleanRecordTask: (opts: TaskOptions) =>
+				new CleanRecordTask({ ...commonTaskOptions, ...opts }),
+			createMergeTask: (opts: OptionsWithBothFileStats) =>
+				new MergeTask({ ...commonTaskOptions, ...opts }),
+			createMkdirLocalTask: (opts: OptionsWithRemoteFolderStat) =>
+				new MkdirLocalTask({ ...commonTaskOptions, ...opts }),
+			createMkdirRemoteTask: (opts: OptionsWithLocalFolderStat) =>
+				new MkdirRemoteTask({ ...commonTaskOptions, ...opts }),
+			createPullTask: (opts: OptionsWithRemoteFileStat) =>
+				new PullTask({ ...commonTaskOptions, ...opts }),
+			createPushTask: (opts: OptionsWithLocalFileStat) =>
+				new PushTask({ ...commonTaskOptions, ...opts }),
+			createRemoveLocalTask: (opts: OptionsWithLocalStat) =>
+				new RemoveLocalTask({ ...commonTaskOptions, ...opts }),
+			createRemoveRemoteTask: (opts: OptionsWithRemoteStat) =>
+				new RemoveRemoteTask({ ...commonTaskOptions, ...opts }),
 		};
 
 		const decisionInput: SyncDecisionInput = {
-			settings: {
-				conflictStrategy: this.sync.settings.conflictStrategy,
-				unmergeableStrategy: this.sync.settings.unmergeableStrategy,
-			},
 			currentLocalStats,
 			currentRemoteStats,
 			records,
 			remoteBaseDir: this.remoteBaseDir,
+			settings: {
+				conflictStrategy: this.sync.settings.conflictStrategy,
+				unmergeableStrategy: this.sync.settings.unmergeableStrategy,
+			},
 			taskFactory,
 		};
 

@@ -1,16 +1,16 @@
-import { Vault } from 'obsidian';
-import type { StatsMap } from '~/types';
+import { type Vault } from 'obsidian';
 import { normalizeVaultPath } from '~/platform/path';
 import { useSettings } from '~/settings';
+import { type StatsMap } from '~/types';
 import logger from '~/utils/logger';
 import postTraversal from '../post-traversal';
 import { toStatModel } from './utils';
 
-interface TraverseVaultOptions {
+type TraverseVaultOptions = {
 	vault: Vault;
-}
+};
 
-export async function traverse({ vault }: TraverseVaultOptions) {
+export default async function traverse({ vault }: TraverseVaultOptions) {
 	const { filterRules, skipLargeFiles } = await useSettings();
 	const queue = [vault.getRoot().path];
 	const result: StatsMap = new Map();
@@ -25,17 +25,17 @@ export async function traverse({ vault }: TraverseVaultOptions) {
 
 					await Promise.all(
 						[...resultItems.files, ...resultItems.folders].map(async (_path) => {
-							const _stat = await vault.adapter.stat(_path);
-							if (!_stat) throw new Error(`Stat of ${_path} not found!`);
+							const stat = await vault.adapter.stat(_path);
+							if (!stat) throw new Error(`Stat of ${_path} not found!`);
 							const path = normalizeVaultPath(_path);
-							const stat = toStatModel(_stat, path);
-							result.set(path, stat);
+							const processedStat = toStatModel(stat, path);
+							result.set(path, processedStat);
 						}),
 					);
 					queue.push(...resultItems.folders);
-				} catch (err) {
-					logger.error(`Error processing ${currentPath}`, err);
-					throw err;
+				} catch (error) {
+					logger.error(`Error processing ${currentPath}`, error);
+					throw error;
 				}
 			}),
 		);

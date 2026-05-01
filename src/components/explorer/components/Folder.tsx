@@ -1,8 +1,8 @@
-export interface FolderProps {
+export type FolderProps = {
 	name: string;
 	path: string;
 	onClick: (path: string) => void;
-}
+};
 
 function Folder(props: FolderProps) {
 	return (

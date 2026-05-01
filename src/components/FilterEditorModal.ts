@@ -1,7 +1,7 @@
+import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
-import WebDAVSyncPlugin from '~';
-import type { GlobMatchOptions } from '~/settings';
 import t from '~/i18n';
+import { type GlobMatchOptions } from '~/settings';
 
 enum FilterType {
 	Include = 'include',
@@ -11,13 +11,13 @@ enum FilterType {
 export default class FilterEditorModal extends Modal {
 	static readonly FilterType = FilterType;
 
-	filters: GlobMatchOptions[];
+	filters: Array<GlobMatchOptions>;
 
 	constructor(
 		plugin: WebDAVSyncPlugin,
-		filters: GlobMatchOptions[] = [],
-		private onSave: (filters: GlobMatchOptions[]) => void,
-		private filterType: FilterType = FilterType.Exclude,
+		private readonly onSave: (filters: Array<GlobMatchOptions>) => void,
+		private readonly filterType: FilterType = FilterType.Exclude,
+		filters: Array<GlobMatchOptions> = [],
 	) {
 		super(plugin.app);
 		this.filters = structuredClone(filters);
@@ -38,8 +38,8 @@ export default class FilterEditorModal extends Modal {
 
 		contentEl.createEl('h2', { text: t(titleKey) });
 		contentEl.createEl('p', {
-			text: t(descKey),
 			cls: 'setting-item-description',
+			text: t(descKey),
 		});
 
 		const listContainer = contentEl.createDiv({
@@ -53,9 +53,9 @@ export default class FilterEditorModal extends Modal {
 					cls: 'flex gap-2',
 				});
 				const input = listContainer.createEl('input', {
-					type: 'text',
 					cls: 'flex-1',
 					placeholder: t('settings.filters.placeholder'),
+					type: 'text',
 					value: filter.expr,
 				});
 				input.spellcheck = false;
@@ -64,8 +64,8 @@ export default class FilterEditorModal extends Modal {
 					this.filters[index] = filter;
 				});
 				const forceCaseBtn = listContainer.createEl('button', {
-					text: 'Aa',
 					cls: 'shadow-none!',
+					text: 'Aa',
 				});
 				function updateButtonStatus() {
 					const activeCls = ['bg-[var(--interactive-accent)]!'];

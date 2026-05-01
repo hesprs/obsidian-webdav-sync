@@ -17,10 +17,10 @@ export enum SyncRunKind {
 	fast = 'fast',
 }
 
-export interface RecordStatModel {
+export type RecordStatModel = {
 	local: StatModel;
 	remote: StatModel;
-}
+};
 
 export type StatsMap = Map<string, StatModel>;
 export type RecordStatsMap = Map<string, RecordStatModel>;

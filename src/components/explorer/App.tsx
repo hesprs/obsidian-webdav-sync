@@ -1,36 +1,36 @@
 import { Notice } from 'obsidian';
-import { createSignal, Show } from 'solid-js';
+import { Show, createSignal } from 'solid-js';
 import t from '~/i18n';
 import { normalizeRemotePath } from '~/platform/path';
-import { createFileList, type FileStat } from './components/FileList';
+import { type FileStat, createFileList } from './components/FileList';
 import NewFolder from './components/NewFolder';
 
-function joinRemotePath(...parts: string[]): `/${string}` {
+function joinRemotePath(...parts: Array<string>): `/${string}` {
 	return normalizeRemotePath(parts.join('/')) as `/${string}`;
 }
 
-export interface fs {
-	ls: (path: string) => Promise<FileStat[]> | FileStat[];
+export type fs = {
+	ls: (path: string) => Promise<Array<FileStat>> | Array<FileStat>;
 	mkdirs: (path: string) => Promise<void> | void;
-}
+};
 
-export interface AppProps {
+export type AppProps = {
 	fs: fs;
 	onConfirm: (path: string) => void;
 	onClose: () => void;
-}
+};
 
 function App(props: AppProps) {
-	const [stack, setStack] = createSignal<string[]>(['/']);
+	const [stack, setStack] = createSignal(['/']);
 	const [showNewFolder, setShowNewFolder] = createSignal(false);
 	const cwd = () => stack().at(-1);
 
 	function enter(path: string) {
-		setStack((stack) => [...stack, path]);
+		setStack((newStack) => [...newStack, path]);
 	}
 
 	function pop() {
-		setStack((stack) => (stack.length > 1 ? stack.slice(0, stack.length - 1) : stack));
+		setStack((newStack) => (newStack.length > 1 ? newStack.slice(0, -1) : newStack));
 	}
 
 	async function createFolder(name: string, refresh: () => void) {
@@ -40,9 +40,7 @@ function App(props: AppProps) {
 			setShowNewFolder(false);
 			refresh();
 		} catch (error) {
-			if (error instanceof Error) {
-				new Notice(error.message);
-			}
+			if (error instanceof Error) new Notice(error.message);
 		}
 	}
 
@@ -53,7 +51,9 @@ function App(props: AppProps) {
 				<Show when={showNewFolder()}>
 					<NewFolder
 						class="mt-1"
-						onCancel={() => setShowNewFolder(false)}
+						onCancel={() => {
+							setShowNewFolder(false);
+						}}
 						onConfirm={(name) => void createFolder(name, list.refresh)}
 					/>
 				</Show>
@@ -73,7 +73,7 @@ function App(props: AppProps) {
 				<a class="no-underline" onClick={() => setShowNewFolder(true)}>
 					{t('dirSelector.newFolder')}
 				</a>
-				<div class="flex-1"></div>
+				<div class="flex-1" />
 				<button onClick={props.onClose}>{t('dirSelector.cancel')}</button>
 				<button onclick={() => props.onConfirm(cwd() ?? '/')}>
 					{t('dirSelector.confirm')}

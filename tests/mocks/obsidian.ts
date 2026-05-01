@@ -1,8 +1,11 @@
+// oxlint-disable no-useless-constructor
+// oxlint-disable typescript/no-extraneous-class
+
 export async function requestUrl() {
 	return {
+		headers: {},
 		status: 200,
 		text: '',
-		headers: {},
 	};
 }
 

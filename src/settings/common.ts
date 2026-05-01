@@ -139,33 +139,33 @@ export default class CommonSettings extends BaseSettings {
 
 		generateSettingEntry({
 			container: this.containerEl,
-			name: t('settings.realtimeSync.name'),
 			desc: t('settings.realtimeSync.desc'),
-			placeholder: t('settings.realtimeSync.placeholder'),
 			field: this.plugin.settings.realtimeSync,
-			type: UserInputType.Time,
+			name: t('settings.realtimeSync.name'),
+			placeholder: t('settings.realtimeSync.placeholder'),
 			saveSettings: this.plugin.saveSettings,
+			type: UserInputType.Time,
 		});
 
 		generateSettingEntry({
 			container: this.containerEl,
-			name: t('settings.startupSync.name'),
 			desc: t('settings.startupSync.desc'),
-			placeholder: t('settings.startupSync.placeholder'),
 			field: this.plugin.settings.startupSync,
-			type: UserInputType.Time,
+			name: t('settings.startupSync.name'),
+			placeholder: t('settings.startupSync.placeholder'),
 			saveSettings: this.plugin.saveSettings,
+			type: UserInputType.Time,
 		});
 
 		generateSettingEntry({
 			container: this.containerEl,
-			name: t('settings.scheduledSync.name'),
 			desc: t('settings.scheduledSync.desc'),
-			placeholder: t('settings.scheduledSync.placeholder'),
 			field: this.plugin.settings.scheduledSync,
-			type: UserInputType.Time,
-			saveSettings: this.plugin.saveSettings,
+			name: t('settings.scheduledSync.name'),
+			placeholder: t('settings.scheduledSync.placeholder'),
 			rejectZero: true,
+			saveSettings: this.plugin.saveSettings,
+			type: UserInputType.Time,
 		});
 	}
 }

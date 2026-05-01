@@ -1,6 +1,6 @@
-import type { GeneralArray, Hook } from '~/events';
+import { type GeneralArray, type Hook } from '~/events';
 
-export default function <T extends GeneralArray>(ob: Hook<T>, ms: number) {
+export default function breakableSleep<T extends GeneralArray>(ob: Hook<T>, ms: number) {
 	return new Promise<void>((resolve) => {
 		const unsubscribe = ob.subscribe(finish);
 

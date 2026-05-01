@@ -1,16 +1,28 @@
-import type { TextComponent } from 'obsidian';
-import type { PluginSettings } from '~/settings';
+import { type TextComponent, Notice } from 'obsidian';
+import t from '~/i18n';
+import { type PluginSettings } from '~/settings';
 import type WebDAVSyncPlugin from '..';
 
-export default function handleInput(
-	text: TextComponent,
-	plugin: WebDAVSyncPlugin,
-	field: keyof PluginSettings,
-	processValue: (value: string) => unknown = (value) => value,
-) {
-	const value = processValue(text.getValue().trim());
-	if (plugin.settings[field] !== value) {
-		plugin.settings[field] = value as never;
-		void plugin.saveSettings();
-	}
+export default function handleInput<T extends keyof PluginSettings>({
+	text,
+	plugin,
+	field,
+	processValue,
+	stringify = (value: PluginSettings[T]) => value.toString(),
+}: {
+	text: TextComponent;
+	plugin: WebDAVSyncPlugin;
+	field: T;
+	processValue: (value: string) => PluginSettings[T] | false;
+	stringify?: (value: PluginSettings[T]) => string;
+}) {
+	text.inputEl.addEventListener('blur', () => {
+		const value = processValue(text.getValue());
+		if (value === false) new Notice(t('settings.invalidValue'));
+		else if (plugin.settings[field] !== value) {
+			plugin.settings[field] = value;
+			void plugin.saveSettings();
+		}
+		text.setValue(stringify(plugin.settings[field]));
+	});
 }

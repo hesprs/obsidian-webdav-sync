@@ -1,33 +1,33 @@
-import type { WebDAVClient } from 'webdav';
-import { Vault } from 'obsidian';
-import type { SyncExecutionRequest } from '~/services/sync-executor.service';
+import { type Vault } from 'obsidian';
+import { type WebDAVClient } from 'webdav';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import {
-	syncRun,
-	syncCancel,
 	type SyncFailedTaskInfo,
 	type SyncProgressSummary,
 	type SyncRunSnapshot,
-	updateSyncRunSnapshot,
 	type ProgressPatch,
 	type SyncPlanSummary,
+	syncRun,
+	syncCancel,
+	updateSyncRunSnapshot,
 } from '~/events';
-import { finalizeSyncRun } from '~/events/sync-terminate';
+import finalizeSyncRun from '~/events/sync-terminate';
 import { statItem } from '~/fs/vault';
 import t from '~/i18n';
+import { type SyncExecutionRequest } from '~/services/sync-executor.service';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import getTaskName from '~/utils/get-task-name';
-import { isRetryableError } from '~/utils/is-retryable-error';
+import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
-import WebDAVSyncPlugin from '..';
+import type WebDAVSyncPlugin from '..';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import {
-	isSyncCancelledError,
 	SyncCancelledError,
 	SyncRetryExhaustedError,
+	isSyncCancelledError,
 	toError,
 } from './errors';
 import AddRecordTask from './tasks/add-record.task';
@@ -35,29 +35,29 @@ import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
-import { BaseTask, TaskError, type TaskResult } from './tasks/task.interface';
-import { optimizeTasks } from './utils/optimize-tasks';
+import { type BaseTask, type TaskResult, TaskError } from './tasks/task.interface';
+import optimizeTasks from './utils/optimize-tasks';
 
 export enum SyncStartMode {
 	MANUAL_SYNC = 'manual_sync',
 	AUTO_SYNC = 'auto_sync',
 }
 
-interface SyncResultSummary {
+type SyncResultSummary = {
 	totalTasks: number;
 	succeededTasks: number;
 	failedTasks: number;
-	failed: SyncFailedTaskInfo[];
-}
+	failed: Array<SyncFailedTaskInfo>;
+};
 
 export class SyncEngine {
-	isCancelled: boolean = false;
+	isCancelled = false;
 
-	private unsubscribeSyncCancel: () => void;
+	private readonly unsubscribeSyncCancel: () => void;
 
 	constructor(
-		private plugin: WebDAVSyncPlugin,
-		private options: {
+		private readonly plugin: WebDAVSyncPlugin,
+		private readonly options: {
 			vault: Vault;
 			webdav: WebDAVClient;
 			token: string;
@@ -72,7 +72,7 @@ export class SyncEngine {
 	async preparePlan(
 		runKind: SyncRunKind = SyncRunKind.normal,
 		onProgress?: (progress: ProgressPatch) => void,
-	): Promise<BaseTask[]> {
+	): Promise<Array<BaseTask>> {
 		this.runKind = runKind;
 		const syncRecord = this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
@@ -93,7 +93,7 @@ export class SyncEngine {
 		run,
 	}: {
 		request: SyncExecutionRequest;
-		tasks: BaseTask[];
+		tasks: Array<BaseTask>;
 		run: SyncRunSnapshot;
 	}): Promise<SyncRunSnapshot> {
 		try {
@@ -108,34 +108,34 @@ export class SyncEngine {
 				'Execution started',
 				{
 					event: 'execution_started',
-					trigger: currentRun.trigger,
-					sources: currentRun.sources,
 					mode: currentRun.mode,
-					runKind: currentRun.runKind,
 					planSummary: currentRun.planSummary,
 					progressSummary: currentRun.progressSummary,
+					runKind: currentRun.runKind,
+					sources: currentRun.sources,
 					timestamps: currentRun.timestamps,
+					trigger: currentRun.trigger,
 				},
 				{ category: 'sync.lifecycle' },
 			);
 
 			if (tasks.length === 0) {
 				currentRun = finalizeSyncRun(currentRun, {
-					stage: 'completed_noop',
 					patch: {
 						resultSummary: {
-							totalTasks: 0,
-							succeededTasks: 0,
-							failedTasks: 0,
 							failed: [],
+							failedTasks: 0,
+							succeededTasks: 0,
+							totalTasks: 0,
 						},
 					},
+					stage: 'completed_noop',
 				});
 				return currentRun;
 			}
 
-			const displayableTasks = tasks.filter((t) => this.isDisplayableTask(t));
-			const notDisplayableTasks = tasks.filter((t) => !this.isDisplayableTask(t));
+			const displayableTasks = tasks.filter((task) => this.isDisplayableTask(task));
+			const notDisplayableTasks = tasks.filter((task) => !this.isDisplayableTask(task));
 
 			if (this.isCancelled) {
 				currentRun = finalizeSyncRun(currentRun, { stage: 'cancelled' });
@@ -148,11 +148,11 @@ export class SyncEngine {
 				displayableTasks.length > 0
 			) {
 				currentRun = updateSyncRunSnapshot(currentRun, {
-					stage: 'awaiting_confirmation',
 					planSummary: {
 						...this.summarizePlan(tasks),
 						requiresConfirmation: true,
 					},
+					stage: 'awaiting_confirmation',
 					timestamps: {
 						confirmationStartedAt: Date.now(),
 					},
@@ -173,11 +173,10 @@ export class SyncEngine {
 				request.mode === SyncStartMode.AUTO_SYNC &&
 				settings.confirmBeforeDeleteInAutoSync
 			) {
-				const removeLocalTasks = tasks.filter((t) => t instanceof RemoveLocalTask);
-				const otherTasks = tasks.filter((t) => !(t instanceof RemoveLocalTask));
+				const removeLocalTasks = tasks.filter((task) => task instanceof RemoveLocalTask);
+				const otherTasks = tasks.filter((task) => !(task instanceof RemoveLocalTask));
 				if (removeLocalTasks.length > 0) {
 					currentRun = updateSyncRunSnapshot(currentRun, {
-						stage: 'awaiting_confirmation',
 						planSummary: {
 							...this.summarizePlan(tasks),
 							requiresDeleteConfirmation: true,
@@ -188,6 +187,7 @@ export class SyncEngine {
 								},
 							],
 						},
+						stage: 'awaiting_confirmation',
 						timestamps: {
 							confirmationStartedAt:
 								currentRun.timestamps.confirmationStartedAt ?? Date.now(),
@@ -211,21 +211,21 @@ export class SyncEngine {
 				settings.maxThroughputConcurrency,
 			);
 			const optimizedTasks = optimizedTaskGroups.flat();
-			const allTasksResult: TaskResult[] = [];
+			const allTasksResult: Array<TaskResult> = [];
 
 			const totalDisplayableTasks = optimizedTasks.filter((task) =>
 				this.isDisplayableTask(task),
 			);
 
 			// Track all completed tasks across all batches
-			const allCompletedTasks: BaseTask[] = [];
+			const allCompletedTasks: Array<BaseTask> = [];
 			currentRun = updateSyncRunSnapshot(currentRun, {
-				stage: 'executing',
 				planSummary: this.summarizePlan(optimizedTasks),
 				progressSummary: this.createProgressSummary(
 					totalDisplayableTasks,
 					allCompletedTasks,
 				),
+				stage: 'executing',
 				timestamps: { executionStartedAt: Date.now() },
 			});
 			syncRun(currentRun);
@@ -246,26 +246,26 @@ export class SyncEngine {
 			const resultSummary = this.createResultSummary(allTasksResult);
 			const failedCount = resultSummary.failedTasks;
 			currentRun = finalizeSyncRun(currentRun, {
-				stage: this.isCancelled ? 'cancelled' : failedCount > 0 ? 'failed' : 'completed',
 				patch: {
-					progressSummary: this.createProgressSummary(
-						totalDisplayableTasks,
-						allCompletedTasks,
-					),
-					resultSummary,
 					errorSummary:
 						failedCount > 0
 							? {
 									message: t('sync.completeWithFailed', { failedCount }),
 								}
 							: undefined,
+					progressSummary: this.createProgressSummary(
+						totalDisplayableTasks,
+						allCompletedTasks,
+					),
+					resultSummary,
 				},
+				stage: this.isCancelled ? 'cancelled' : failedCount > 0 ? 'failed' : 'completed',
 			});
 			return currentRun;
 		} catch (error) {
 			const failedRun = finalizeSyncRun(run, {
-				stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
 				error,
+				stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
 			});
 			return failedRun;
 		} finally {
@@ -273,17 +273,17 @@ export class SyncEngine {
 		}
 	}
 
-	summarizePlan(tasks: BaseTask[]): SyncPlanSummary {
+	summarizePlan(tasks: Array<BaseTask>): SyncPlanSummary {
 		return {
-			totalTasks: tasks.length,
 			requiresConfirmation: false,
 			requiresDeleteConfirmation: false,
+			totalTasks: tasks.length,
 			warnings: [],
 		};
 	}
 
-	private async convertDeleteToUpload(tasks: RemoveLocalTask[]) {
-		const final: (PushTask | MkdirRemoteTask)[] = [];
+	private async convertDeleteToUpload(tasks: Array<RemoveLocalTask>) {
+		const final: Array<PushTask | MkdirRemoteTask> = [];
 		for (const task of tasks) {
 			const options = task.options;
 			const local = await statItem(this.vault, options.localPath);
@@ -329,6 +329,7 @@ export class SyncEngine {
 				if (isRetryableError(error)) {
 					await breakableSleep(syncCancel, 5000);
 					this.throwIfCancelled();
+					// oxlint-disable-next-line no-useless-assignment
 					remoteBaseDirExists = await this.retryWebDAVCall(() =>
 						webdav.exists(remoteBaseDir),
 					);
@@ -341,9 +342,9 @@ export class SyncEngine {
 
 	private async execTaskGroup(
 		run: SyncRunSnapshot,
-		tasks: BaseTask[],
-		totalDisplayableTasks: BaseTask[],
-		allCompletedTasks: BaseTask[],
+		tasks: Array<BaseTask>,
+		totalDisplayableTasks: Array<BaseTask>,
+		allCompletedTasks: Array<BaseTask>,
 	) {
 		let currentRun = run;
 		const tasksToDisplay = tasks.filter((task) => this.isDisplayableTask(task));
@@ -363,16 +364,16 @@ export class SyncEngine {
 				return result;
 			}),
 		);
-		const results: TaskResult[] = settledResults.map((result, index) => {
+		const results: Array<TaskResult> = settledResults.map((result, index) => {
 			if (result.status === 'fulfilled') return result.value;
 			const reason = result.reason;
 			return {
-				success: false,
 				error: new TaskError(
 					reason instanceof Error ? reason.message : String(reason),
 					tasks[index],
 					reason instanceof Error ? reason : undefined,
 				),
+				success: false,
 			};
 		});
 
@@ -380,55 +381,53 @@ export class SyncEngine {
 			const task = tasks[i];
 			const taskResult = results[i];
 			const taskName = task.toJSON().taskName;
-			if (!taskResult.success) {
+			if (!taskResult.success)
 				logger.warn(
 					'Task execution failed',
 					{
+						error: taskResult.error,
 						index: i + 1,
-						totalTasks: tasksToDisplay.length,
-						taskName,
 						localPath: task.localPath,
 						remotePath: task.remotePath,
-						error: taskResult.error,
+						taskName,
+						totalTasks: tasksToDisplay.length,
 					},
 					{ category: 'sync.task' },
 				);
-			}
 		}
 
-		return { run: currentRun, results };
+		return { results, run: currentRun };
 	}
 
 	private createProgressSummary(
-		totalDisplayableTasks: BaseTask[],
-		allCompletedTasks: BaseTask[],
+		totalDisplayableTasks: Array<BaseTask>,
+		allCompletedTasks: Array<BaseTask>,
 	): SyncProgressSummary {
 		return {
-			totalTasks: totalDisplayableTasks.length,
-			completedTasks: allCompletedTasks.length,
 			completed: allCompletedTasks.map((task) => task.toJSON()),
+			completedTasks: allCompletedTasks.length,
+			totalTasks: totalDisplayableTasks.length,
 		};
 	}
 
-	private createResultSummary(results: TaskResult[]): SyncResultSummary {
-		const failed: SyncFailedTaskInfo[] = [];
+	private createResultSummary(results: Array<TaskResult>): SyncResultSummary {
+		const failed: Array<SyncFailedTaskInfo> = [];
 
-		for (const result of results) {
+		for (const result of results)
 			if (!result.success && result.error) {
 				const task = result.error.task;
 				failed.push({
-					taskName: getTaskName(task),
-					localPath: task.options.localPath,
 					errorMessage: result.error.message,
+					localPath: task.options.localPath,
+					taskName: getTaskName(task),
 				});
 			}
-		}
 
 		return {
-			totalTasks: results.length,
-			succeededTasks: results.filter((result) => result.success).length,
-			failedTasks: failed.length,
 			failed,
+			failedTasks: failed.length,
+			succeededTasks: results.filter((result) => result.success).length,
+			totalTasks: results.length,
 		};
 	}
 
@@ -438,12 +437,12 @@ export class SyncEngine {
 	private async executeWithRetry(task: BaseTask): Promise<TaskResult> {
 		let attempt = 0;
 		while (true) {
-			if (this.isCancelled) {
+			if (this.isCancelled)
 				return {
-					success: false,
 					error: new TaskError(t('sync.cancelled'), task),
+					success: false,
 				};
-			}
+
 			const taskResult = await task.exec();
 			if (!taskResult.success && isRetryableError(taskResult.error)) {
 				attempt++;
@@ -451,20 +450,20 @@ export class SyncEngine {
 					'Retrying task after transient error',
 					{
 						attempt,
-						taskName: getTaskName(task),
+						error: taskResult.error,
 						localPath: task.localPath,
 						remotePath: task.remotePath,
-						error: taskResult.error,
+						taskName: getTaskName(task),
 					},
 					{ category: 'sync.retry' },
 				);
 				await breakableSleep(syncCancel, 5000);
-				if (this.isCancelled) {
+				if (this.isCancelled)
 					return {
-						success: false,
 						error: new TaskError(t('sync.cancelled'), task),
+						success: false,
 					};
-				}
+
 				continue;
 			}
 			return taskResult;
@@ -489,7 +488,7 @@ export class SyncEngine {
 				if (retryCount >= 3) {
 					logger.error(
 						'WebDAV connection failed after retries',
-						{ retryCount, error: retryError },
+						{ error: retryError, retryCount },
 						{ category: 'sync.retry' },
 					);
 					throw new SyncRetryExhaustedError(undefined, retryError);
@@ -497,7 +496,7 @@ export class SyncEngine {
 
 				logger.warn(
 					'Retrying WebDAV operation after transient error',
-					{ retryCount, error: retryError },
+					{ error: retryError, retryCount },
 					{ category: 'sync.retry' },
 				);
 				await breakableSleep(syncCancel, 5000);
@@ -506,7 +505,7 @@ export class SyncEngine {
 		}
 	}
 
-	private throwIfCancelled = () => {
+	private readonly throwIfCancelled = () => {
 		if (!this.isCancelled) return;
 		logger.warn('WebDAV operation cancelled', undefined, {
 			category: 'sync.retry',
@@ -536,10 +535,10 @@ export class SyncEngine {
 
 	private getStateKey() {
 		return getSyncStateKey({
-			vaultName: this.vault.getName(),
+			account: this.settings.account,
 			remoteBaseDir: this.remoteBaseDir,
 			serverUrl: this.settings.serverUrl,
-			account: this.settings.account,
+			vaultName: this.vault.getName(),
 		});
 	}
 }

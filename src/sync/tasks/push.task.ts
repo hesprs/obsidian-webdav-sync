@@ -1,9 +1,9 @@
-import type { OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.interface';
 import { getContent } from '~/fs/vault';
 import { statItem } from '~/fs/webdav';
 import { arrayBufferToText } from '~/platform/binary';
+import { type OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
-import { isMergeablePath } from '../utils/is-mergeable-path';
+import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
@@ -15,7 +15,7 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 			try {
 				localContent = await getContent(this.vault, this.localPath);
 			} catch {
-				// ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
+				// Ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
 				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
 				return { success: true } as const;
 			}
@@ -30,21 +30,21 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
 
 			await this.syncRecord.upsertRecords({
-				key: this.localPath,
-				local: this.local,
-				remote,
 				baseText: isMergeablePath(this.localPath)
 					? await arrayBufferToText(localContent)
 					: undefined,
+				key: this.localPath,
+				local: this.local,
+				remote,
 			});
 
 			return { success: true } as const;
-		} catch (e) {
+		} catch (error) {
 			logger.error(
 				`Failed to push local file ${this.localPath} to remote path ${this.remotePath}`,
-				e,
+				error,
 			);
-			return { success: false, error: toTaskError(e, this) };
+			return { error: toTaskError(error, this), success: false };
 		}
 	}
 }

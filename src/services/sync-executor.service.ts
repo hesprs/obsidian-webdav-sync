@@ -1,66 +1,66 @@
 import type WebDAVSyncPlugin from '~';
-import type { BaseTask } from '~/sync/tasks/task.interface';
 import {
-	createQueuedSyncRunSnapshot,
-	syncRun,
 	type SyncRunMode,
 	type SyncRunSnapshot,
 	type SyncTrigger,
+	createQueuedSyncRunSnapshot,
+	syncRun,
 	updateSyncRunSnapshot,
 } from '~/events';
-import { finalizeSyncRun } from '~/events/sync-terminate';
+import finalizeSyncRun from '~/events/sync-terminate';
 import { SyncEngine, SyncStartMode } from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
-import { SyncRunKind } from '~/types';
+import { type BaseTask } from '~/sync/tasks/task.interface';
+import { type SyncRunKind } from '~/types';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 
-export interface SyncOptions {
+export type SyncOptions = {
 	mode: SyncStartMode;
 	runKind: SyncRunKind;
-}
+};
 
-export interface SyncExecutionRequest extends SyncOptions {
+export type SyncExecutionRequest = {
 	runId: string;
 	trigger: SyncTrigger;
-	sources: SyncTrigger[];
+	sources: Array<SyncTrigger>;
 	queuedAt: number;
-}
+} & SyncOptions;
 
-export interface SyncExecutionResult {
+export type SyncExecutionResult = {
 	executed: boolean;
-	run: SyncRunSnapshot | null;
-}
+	run?: SyncRunSnapshot;
+};
 
 export default class SyncExecutorService {
-	constructor(private plugin: WebDAVSyncPlugin) {}
+	constructor(private readonly plugin: WebDAVSyncPlugin) {}
 
 	async executeSync(request: SyncExecutionRequest): Promise<SyncExecutionResult> {
-		if (this.plugin.isSyncing) return { executed: false, run: null };
+		if (this.plugin.isSyncing) return { executed: false };
 
-		if (!this.plugin.isAccountConfigured()) return { executed: false, run: null };
+		if (!this.plugin.isAccountConfigured()) return { executed: false };
 
-		await waitUntil(() => this.plugin.isSyncing === false, 500);
+		await waitUntil(() => !this.plugin.isSyncing, 500);
 
 		logger.pushContext({
-			runId: request.runId,
 			category: 'sync',
+			runId: request.runId,
 		});
 
 		try {
 			const sync = new SyncEngine(this.plugin, {
-				vault: this.plugin.app.vault,
 				token: this.plugin.getToken(),
+				vault: this.plugin.app.vault,
 				webdav: this.plugin.webDAVService.createWebDAVClient(),
 			});
 
 			let run = createQueuedSyncRunSnapshot({
-				runId: request.runId,
-				trigger: request.trigger,
-				sources: request.sources,
 				mode: this.toRunMode(request.mode),
-				runKind: request.runKind,
 				queuedAt: request.queuedAt,
+				runId: request.runId,
+				runKind: request.runKind,
+				sources: request.sources,
+				trigger: request.trigger,
 			});
 			run = updateSyncRunSnapshot(run, {
 				stage: 'pre_connecting',
@@ -72,17 +72,17 @@ export default class SyncExecutorService {
 				'Planning started',
 				{
 					event: 'planning_started',
-					trigger: run.trigger,
-					sources: run.sources,
 					mode: run.mode,
-					runKind: run.runKind,
-					queuedAt: run.timestamps.queuedAt,
 					planningStartedAt: run.timestamps.planningStartedAt,
+					queuedAt: run.timestamps.queuedAt,
+					runKind: run.runKind,
+					sources: run.sources,
+					trigger: run.trigger,
 				},
 				{ category: 'sync.lifecycle' },
 			);
 
-			let tasks: BaseTask[] | null = null;
+			let tasks: Array<BaseTask> | undefined;
 			try {
 				tasks = await sync.preparePlan(request.runKind, (patch) => {
 					run = updateSyncRunSnapshot(run, patch);
@@ -90,8 +90,8 @@ export default class SyncExecutorService {
 				});
 			} catch (error) {
 				run = finalizeSyncRun(run, {
-					stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
 					error,
+					stage: isSyncCancelledError(error) ? 'cancelled' : 'failed',
 				});
 				return { executed: true, run };
 			}
@@ -104,19 +104,19 @@ export default class SyncExecutorService {
 				'Planning finished',
 				{
 					event: 'planning_finished',
-					trigger: run.trigger,
-					sources: run.sources,
 					mode: run.mode,
-					runKind: run.runKind,
 					planSummary: run.planSummary,
+					runKind: run.runKind,
+					sources: run.sources,
+					trigger: run.trigger,
 				},
 				{ category: 'sync.lifecycle' },
 			);
 
 			run = await sync.start({
 				request,
-				tasks,
 				run,
+				tasks,
 			});
 
 			return { executed: true, run };

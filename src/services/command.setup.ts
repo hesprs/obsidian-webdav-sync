@@ -1,24 +1,21 @@
-import WebDAVSyncPlugin from '~';
+import type WebDAVSyncPlugin from '~';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
-import { launchManualSync } from './manual-sync.service';
+import launchManualSync from './manual-sync.service';
 
-export function setupCommands(plugin: WebDAVSyncPlugin) {
+export default function setupCommands(plugin: WebDAVSyncPlugin) {
 	plugin.addCommand({
-		id: 'start-sync',
-		name: t('sync.startButton'),
-		icon: 'refresh-cw',
 		checkCallback: (checking) => {
 			if (plugin.isSyncing) return false;
 			if (checking) return true;
 			launchManualSync(plugin);
 		},
+		icon: 'refresh-cw',
+		id: 'start-sync',
+		name: t('sync.startButton'),
 	});
 
 	plugin.addCommand({
-		id: 'stop-sync',
-		icon: 'x-circle',
-		name: t('sync.stopButton'),
 		checkCallback: (checking) => {
 			if (plugin.isSyncing) {
 				if (!checking) syncCancel();
@@ -26,12 +23,15 @@ export function setupCommands(plugin: WebDAVSyncPlugin) {
 			}
 			return false;
 		},
+		icon: 'x-circle',
+		id: 'stop-sync',
+		name: t('sync.stopButton'),
 	});
 
 	plugin.addCommand({
-		id: 'show-sync-progress',
-		icon: 'activity',
-		name: t('sync.showProgressButton'),
 		callback: () => plugin.observabilityService.showProgressModal(),
+		icon: 'activity',
+		id: 'show-sync-progress',
+		name: t('sync.showProgressButton'),
 	});
 }

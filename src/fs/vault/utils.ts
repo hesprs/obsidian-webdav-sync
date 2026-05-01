@@ -1,5 +1,5 @@
-import type { Stat, Vault } from 'obsidian';
-import type { StatModel } from '~/types';
+import { type Stat, type Vault } from 'obsidian';
+import { type StatModel } from '~/types';
 
 export async function statItem(vault: Vault, path: string) {
 	const file = await vault.adapter.stat(path);
@@ -8,9 +8,9 @@ export async function statItem(vault: Vault, path: string) {
 }
 
 export function toStatModel(file: Stat, path: string): StatModel {
-	if (file.type === 'file') {
-		return { path, isDir: false, mtime: file.mtime, size: file.size };
-	} else return { path, isDir: true };
+	return file.type === 'file'
+		? { isDir: false, mtime: file.mtime, path, size: file.size }
+		: { isDir: true, path };
 }
 
 export async function getContent(vault: Vault, path: string) {

@@ -1,12 +1,12 @@
 import { hash } from '~/platform/crypto';
 import { normalizeBaseDir } from '~/platform/path';
 
-export interface SyncStateIdentity {
+export type SyncStateIdentity = {
 	vaultName: string;
 	remoteBaseDir: string;
 	serverUrl?: string;
 	account?: string;
-}
+};
 
 export function getSyncStateKey({
 	vaultName,
@@ -15,9 +15,9 @@ export function getSyncStateKey({
 	account,
 }: SyncStateIdentity) {
 	return hash({
-		vaultName,
+		account: account?.trim() || '',
 		remoteBaseDir: normalizeBaseDir(remoteBaseDir),
 		serverUrl: serverUrl?.trim().replace(/\/+$/, '') || '',
-		account: account?.trim() || '',
+		vaultName,
 	});
 }

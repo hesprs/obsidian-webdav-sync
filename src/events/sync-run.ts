@@ -1,5 +1,5 @@
-import { SyncRunKind } from '~/types';
-import { ref } from '.';
+import { type SyncRunKind } from '~/types';
+import { hook, ref } from '.';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
 export type SyncRunMode = 'manual' | 'auto';
@@ -14,52 +14,52 @@ export type SyncRunStage =
 	| 'cancelled'
 	| 'failed';
 
-export interface SyncRunWarning {
+export type SyncRunWarning = {
 	code: 'delete_confirmation';
 	messageKey: 'deleteConfirm.warningNotice';
-}
+};
 
-export interface SyncPlanSummary {
+export type SyncPlanSummary = {
 	totalTasks: number;
 	requiresConfirmation: boolean;
 	requiresDeleteConfirmation: boolean;
-	warnings: SyncRunWarning[];
-}
+	warnings: Array<SyncRunWarning>;
+};
 
-export interface RemoteWalkSummary {
+export type RemoteWalkSummary = {
 	totalItems: number;
 	completedItems: number;
 	currentItem: string;
-}
+};
 
-export interface SyncProgressSummary {
+export type SyncProgressSummary = {
 	totalTasks: number;
 	completedTasks: number;
 	completed: Array<{
 		taskName: string;
 		path: string;
 	}>;
-}
+};
 
-export interface SyncFailedTaskInfo {
+export type SyncFailedTaskInfo = {
 	taskName: string;
 	localPath: string;
 	errorMessage: string;
-}
+};
 
-export interface SyncResultSummary {
+export type SyncResultSummary = {
 	totalTasks: number;
 	succeededTasks: number;
 	failedTasks: number;
-	failed: SyncFailedTaskInfo[];
-}
+	failed: Array<SyncFailedTaskInfo>;
+};
 
-export interface SyncErrorSummary {
+export type SyncErrorSummary = {
 	message: string;
 	name?: string;
-}
+};
 
-export interface SyncRunTimestamps {
+export type SyncRunTimestamps = {
 	queuedAt: number;
 	planningStartedAt?: number;
 	confirmationStartedAt?: number;
@@ -67,12 +67,12 @@ export interface SyncRunTimestamps {
 	endedAt?: number;
 	updatedAt: number;
 	durationMs?: number;
-}
+};
 
-export interface SyncRunSnapshot {
+export type SyncRunSnapshot = {
 	runId: string;
 	trigger: SyncTrigger;
-	sources: SyncTrigger[];
+	sources: Array<SyncTrigger>;
 	mode: SyncRunMode;
 	runKind: SyncRunKind;
 	stage: SyncRunStage;
@@ -82,35 +82,35 @@ export interface SyncRunSnapshot {
 	progressSummary: SyncProgressSummary;
 	resultSummary?: SyncResultSummary;
 	errorSummary?: SyncErrorSummary;
-}
+};
 
-export const syncRun = ref<SyncRunSnapshot | null>(null);
+export const syncRun = ref<SyncRunSnapshot | undefined>(undefined);
 
 export function createQueuedSyncRunSnapshot(input: {
 	runId: string;
 	trigger: SyncTrigger;
-	sources: SyncTrigger[];
+	sources: Array<SyncTrigger>;
 	mode: SyncRunMode;
 	runKind: SyncRunKind;
 	queuedAt?: number;
 }): SyncRunSnapshot {
 	const queuedAt = input.queuedAt ?? Date.now();
 	return {
-		runId: input.runId,
-		trigger: input.trigger,
-		sources: input.sources,
 		mode: input.mode,
+		progressSummary: {
+			completed: [],
+			completedTasks: 0,
+			totalTasks: 0,
+		},
+		runId: input.runId,
 		runKind: input.runKind,
+		sources: input.sources,
 		stage: 'queued',
 		timestamps: {
 			queuedAt,
 			updatedAt: queuedAt,
 		},
-		progressSummary: {
-			totalTasks: 0,
-			completedTasks: 0,
-			completed: [],
-		},
+		trigger: input.trigger,
 	};
 }
 
@@ -138,3 +138,5 @@ export function updateSyncRunSnapshot(
 		timestamps,
 	};
 }
+
+export const syncCancel = hook();

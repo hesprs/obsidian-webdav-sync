@@ -1,11 +1,11 @@
 import logger from '~/utils/logger';
 import {
 	syncRun,
+	updateSyncRunSnapshot,
 	type SyncErrorSummary,
 	type SyncRunSnapshot,
 	type SyncRunStage,
 	type SyncRunTimestamps,
-	updateSyncRunSnapshot,
 } from '.';
 
 type SyncTerminalStage = Extract<
@@ -13,23 +13,23 @@ type SyncTerminalStage = Extract<
 	'completed' | 'completed_noop' | 'cancelled' | 'failed'
 >;
 
-interface FinalizeSyncRunOptions {
+type FinalizeSyncRunOptions = {
 	stage: SyncTerminalStage;
 	error?: unknown;
 	patch?: Partial<Omit<SyncRunSnapshot, 'timestamps'>> & {
 		timestamps?: Partial<SyncRunTimestamps>;
 	};
-}
+};
 
-export function finalizeSyncRun(
+export default function finalizeSyncRun(
 	run: SyncRunSnapshot,
 	{ stage, error, patch }: FinalizeSyncRunOptions,
 ): SyncRunSnapshot {
 	const normalizedError = error instanceof Error ? error : undefined;
 	const nextRun = updateSyncRunSnapshot(run, {
 		...patch,
-		stage,
 		errorSummary: createSyncErrorSummary(normalizedError, patch?.errorSummary),
+		stage,
 		timestamps: {
 			...patch?.timestamps,
 			endedAt: patch?.timestamps?.endedAt ?? Date.now(),
@@ -54,18 +54,18 @@ function createSyncErrorSummary(
 
 function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 	const metadata = {
+		error,
+		errorSummary: run.errorSummary,
 		event: 'terminal_outcome',
-		trigger: run.trigger,
-		sources: run.sources,
 		mode: run.mode,
+		progressSummary: run.progressSummary,
+		remoteWalkSummary: run.remoteWalkSummary,
+		resultSummary: run.resultSummary,
 		runKind: run.runKind,
+		sources: run.sources,
 		stage: run.stage,
 		timestamps: run.timestamps,
-		remoteWalkSummary: run.remoteWalkSummary,
-		progressSummary: run.progressSummary,
-		resultSummary: run.resultSummary,
-		errorSummary: run.errorSummary,
-		error,
+		trigger: run.trigger,
 	};
 
 	if (run.stage === 'failed')

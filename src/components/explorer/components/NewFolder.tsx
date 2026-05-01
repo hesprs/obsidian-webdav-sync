@@ -1,11 +1,11 @@
 import { createSignal } from 'solid-js';
 import t from '~/i18n';
 
-interface NewFolderProps {
+type NewFolderProps = {
 	class?: string;
 	onConfirm: (name: string) => void;
 	onCancel: () => void;
-}
+};
 
 function NewFolder(props: NewFolderProps) {
 	const [name, setName] = createSignal('');
@@ -14,7 +14,7 @@ function NewFolder(props: NewFolderProps) {
 
 	return (
 		<div class={className()}>
-			<div class="i-custom:folder size-10"></div>
+			<div class="i-custom:folder size-10" />
 			<input
 				type="text"
 				class="flex-1"

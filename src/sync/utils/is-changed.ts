@@ -1,9 +1,9 @@
-import type { StatModel, StatsMap } from '~/types';
-import { isSub } from '~/utils/is-sub';
-import type { BaseTask } from '../tasks/task.interface';
+import { type StatModel, type StatsMap } from '~/types';
+import isSub from '~/utils/is-sub';
 import MergeTask from '../tasks/merge.task';
 import PushTask from '../tasks/push.task';
-import { isSameTime } from './is-same-time';
+import { type BaseTask } from '../tasks/task.interface';
+import isSameTime from './is-same-time';
 
 export default function isChanged({
 	path,
@@ -16,19 +16,19 @@ export default function isChanged({
 	source: 'local' | 'remote';
 	records: Map<string, { local: StatModel; remote: StatModel }>;
 	currentStats: StatsMap;
-	tasks?: BaseTask[];
+	tasks?: Array<BaseTask>;
 }) {
 	const thisRecord = records.get(path)?.[source];
 	const target = currentStats.get(path);
 	if (!thisRecord || !target) return true;
-	// unable to compare between directories and files
+	// Unable to compare between directories and files
 	if (target.isDir !== thisRecord.isDir) return true;
-	// compare files
+	// Compare files
 	if (!target.isDir && !thisRecord.isDir) return !isSameTime(target.mtime, thisRecord.mtime);
 	else {
-		// compare folders
+		// Compare folders
 		if (tasks)
-			// reuse tracked file changes
+			// Reuse tracked file changes
 			for (const task of tasks)
 				if (
 					(task instanceof MergeTask || task instanceof PushTask) &&
@@ -36,7 +36,7 @@ export default function isChanged({
 				)
 					return true;
 		for (const [subPath, stats] of currentStats) {
-			// check for subfolder changes
+			// Check for subfolder changes
 			if (!stats.isDir || !isSub(path, subPath)) continue;
 			const recorded = records.get(subPath)?.[source];
 			if (!recorded) return true;

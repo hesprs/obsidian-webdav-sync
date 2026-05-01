@@ -21,7 +21,7 @@ const RETRYABLE_MESSAGE_PATTERNS = [
 	/\btimed out\b/i,
 ];
 
-interface ErrorLike {
+type ErrorLike = {
 	message?: unknown;
 	status?: unknown;
 	res?: {
@@ -32,22 +32,19 @@ interface ErrorLike {
 	};
 	cause?: unknown;
 	error?: unknown;
-}
+};
 
-function getStatusCode(error: ErrorLike): number | null {
+function getStatusCode(error: ErrorLike): number | undefined {
 	const candidates = [error.status, error.res?.status, error.response?.status];
-	for (const candidate of candidates) {
-		if (typeof candidate === 'number') return candidate;
-	}
-	return null;
+	for (const candidate of candidates) if (typeof candidate === 'number') return candidate;
 }
 
 function hasRetryableMessage(message: string): boolean {
 	return RETRYABLE_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
 }
 
-export function isRetryableError(error: unknown): boolean {
-	const queue: unknown[] = [error];
+export default function isRetryableError(error: unknown): boolean {
+	const queue: Array<unknown> = [error];
 	const visited = new Set<object>();
 
 	while (queue.length > 0) {
@@ -65,11 +62,10 @@ export function isRetryableError(error: unknown): boolean {
 
 		const errorLike = current as ErrorLike;
 		const statusCode = getStatusCode(errorLike);
-		if (statusCode !== null && RETRYABLE_STATUS_CODES.has(statusCode)) return true;
+		if (statusCode && RETRYABLE_STATUS_CODES.has(statusCode)) return true;
 
-		if (typeof errorLike.message === 'string') {
+		if (typeof errorLike.message === 'string')
 			if (hasRetryableMessage(errorLike.message)) return true;
-		}
 
 		if (errorLike.cause) queue.push(errorLike.cause);
 		if (errorLike.error) queue.push(errorLike.error);

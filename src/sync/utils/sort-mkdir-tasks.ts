@@ -1,7 +1,7 @@
-import type { BaseTask } from '../tasks/task.interface';
+import { type BaseTask } from '../tasks/task.interface';
 
-export function sortMkdirTasks<T extends BaseTask>(tasks: T[]): T[][] {
-	const levels: Record<number, T[]> = {};
+export default function sortMkdirTasks<T extends BaseTask>(tasks: Array<T>): Array<Array<T>> {
+	const levels: Record<number, Array<T>> = {};
 	for (const task of tasks) {
 		const depth = task.localPath.split('/').length;
 		if (!levels[depth]) levels[depth] = [];

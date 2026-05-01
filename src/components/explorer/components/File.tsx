@@ -1,6 +1,6 @@
-export interface FolderProps {
+export type FolderProps = {
 	name: string;
-}
+};
 
 function File(props: FolderProps) {
 	return (

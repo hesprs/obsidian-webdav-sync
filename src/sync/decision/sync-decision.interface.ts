@@ -1,49 +1,55 @@
-import type { ConflictStrategy, UnmergeableStrategy } from '~/settings';
-import type { RecordStatsMap, StatsMap, StatModel, FileStatModel, FolderStatModel } from '~/types';
-import { BaseTask } from '../tasks/task.interface';
+import { type ConflictStrategy, type UnmergeableStrategy } from '~/settings';
+import {
+	type FileStatModel,
+	type FolderStatModel,
+	type RecordStatsMap,
+	type StatModel,
+	type StatsMap,
+} from '~/types';
+import { type BaseTask } from '../tasks/task.interface';
 
-export interface TaskOptions {
+export type TaskOptions = {
 	remotePath: string;
 	localPath: string;
 	remote?: StatModel;
 	local?: StatModel;
-}
+};
 
-export interface OptionsWithRemoteFileStat extends TaskOptions {
+export type OptionsWithRemoteFileStat = {
 	remote: FileStatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithLocalFileStat extends TaskOptions {
+export type OptionsWithLocalFileStat = {
 	local: FileStatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithRemoteFolderStat extends TaskOptions {
+export type OptionsWithRemoteFolderStat = {
 	remote: FolderStatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithLocalFolderStat extends TaskOptions {
+export type OptionsWithLocalFolderStat = {
 	local: FolderStatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithLocalStat extends TaskOptions {
+export type OptionsWithLocalStat = {
 	local: StatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithRemoteStat extends TaskOptions {
+export type OptionsWithRemoteStat = {
 	remote: StatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithBothStats extends TaskOptions {
+export type OptionsWithBothStats = {
 	local: StatModel;
 	remote: StatModel;
-}
+} & TaskOptions;
 
-export interface OptionsWithBothFileStats extends TaskOptions {
+export type OptionsWithBothFileStats = {
 	local: FileStatModel;
 	remote: FileStatModel;
-}
+} & TaskOptions;
 
-export interface TaskFactory {
+export type TaskFactory = {
 	createPullTask(options: OptionsWithRemoteFileStat): BaseTask<OptionsWithRemoteFileStat>;
 	createPushTask(options: OptionsWithLocalFileStat): BaseTask<OptionsWithLocalFileStat>;
 	createMergeTask(options: OptionsWithBothFileStats): BaseTask<OptionsWithBothFileStats>;
@@ -57,9 +63,9 @@ export interface TaskFactory {
 	): BaseTask<OptionsWithLocalFolderStat>;
 	createCleanRecordTask(options: TaskOptions): BaseTask;
 	createAddRecordTask(options: OptionsWithBothStats): BaseTask<OptionsWithBothStats>;
-}
+};
 
-export interface SyncDecisionInput {
+export type SyncDecisionInput = {
 	currentLocalStats: StatsMap;
 	currentRemoteStats: StatsMap;
 	records: RecordStatsMap;
@@ -69,4 +75,4 @@ export interface SyncDecisionInput {
 		conflictStrategy: ConflictStrategy;
 		unmergeableStrategy: UnmergeableStrategy;
 	};
-}
+};

@@ -1,14 +1,14 @@
-import { isSub } from '~/utils/is-sub';
+import isSub from '~/utils/is-sub';
+import type RemoveLocalTask from '../tasks/remove-local.task';
+import type RemoveRemoteTask from '../tasks/remove-remote.task';
 import RemoveLocalRecursivelyTask from '../tasks/remove-local-recursively.task';
-import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
-import RemoveRemoteTask from '../tasks/remove-remote.task';
-import { BaseTask } from '../tasks/task.interface';
+import { type BaseTask } from '../tasks/task.interface';
 
-export function mergeRemoveTasks<T extends 'remote' | 'local'>(
-	tasks: T extends 'remote' ? RemoveRemoteTask[] : RemoveLocalTask[],
+export default function mergeRemoveTasks<T extends 'remote' | 'local'>(
+	tasks: T extends 'remote' ? Array<RemoveRemoteTask> : Array<RemoveLocalTask>,
 	source: T,
-): BaseTask[] {
+): Array<BaseTask> {
 	if (tasks.length === 0) return [];
 
 	// 过滤掉空路径或无效任务
@@ -25,8 +25,8 @@ export function mergeRemoveTasks<T extends 'remote' | 'local'>(
 		return a.localPath.localeCompare(b.localPath);
 	});
 
-	const result: BaseTask[] = [];
-	const selectedPaths: string[] = [];
+	const result: Array<BaseTask> = [];
+	const selectedPaths: Array<string> = [];
 
 	for (const task of sortedTasks) {
 		const path = task.localPath;

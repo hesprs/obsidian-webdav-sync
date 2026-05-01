@@ -1,4 +1,4 @@
-import { Notice, SecretComponent, Setting, TextComponent } from 'obsidian';
+import { type TextComponent, Notice, SecretComponent, Setting } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
@@ -6,19 +6,6 @@ import handleInput from '~/utils/handle-input';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
-	private getNormalizedServerUrl(): string | null {
-		const serverUrl = this.plugin.settings.serverUrl.trim().replace(/\/+$/, '');
-		if (!serverUrl) return null;
-
-		try {
-			const parsedUrl = new URL(serverUrl);
-			if (!['http:', 'https:'].includes(parsedUrl.protocol)) return null;
-			return parsedUrl.toString().replace(/\/+$/, '');
-		} catch {
-			return null;
-		}
-	}
-
 	display() {
 		let remoteBaseDirText: TextComponent | undefined;
 		this.containerEl.empty();
@@ -34,9 +21,21 @@ export default class AccountSettings extends BaseSettings {
 				text.setPlaceholder(t('settings.serverUrl.placeholder')).setValue(
 					this.plugin.settings.serverUrl,
 				);
-				text.inputEl.addEventListener('blur', () =>
-					handleInput(text, this.plugin, 'serverUrl'),
-				);
+				handleInput({
+					field: 'serverUrl',
+					plugin: this.plugin,
+					processValue: (value) => {
+						let parsedUrl: URL;
+						try {
+							parsedUrl = new URL(value);
+						} catch {
+							return false;
+						}
+						if (!['http:', 'https:'].includes(parsedUrl.protocol)) return false;
+						return parsedUrl.toString().replace(/\/+$/, '');
+					},
+					text,
+				});
 			});
 
 		new Setting(this.containerEl)
@@ -46,9 +45,12 @@ export default class AccountSettings extends BaseSettings {
 				text.setPlaceholder(t('settings.account.placeholder')).setValue(
 					this.plugin.settings.account,
 				);
-				text.inputEl.addEventListener('blur', () =>
-					handleInput(text, this.plugin, 'account'),
-				);
+				handleInput({
+					field: 'account',
+					plugin: this.plugin,
+					processValue: (value) => value.trim(),
+					text,
+				});
 			});
 
 		new Setting(this.containerEl)
@@ -75,11 +77,11 @@ export default class AccountSettings extends BaseSettings {
 				text.setPlaceholder(t('settings.remoteDir.placeholder')).setValue(
 					this.plugin.settings.remoteDir,
 				);
-				text.inputEl.addEventListener('blur', () => {
-					handleInput(text, this.plugin, 'remoteDir', (original) =>
-						normalizeBaseDir(original),
-					);
-					text.setValue(this.plugin.settings.remoteDir);
+				handleInput({
+					field: 'remoteDir',
+					plugin: this.plugin,
+					processValue: (original) => normalizeBaseDir(original.trim()),
+					text,
 				});
 			})
 			.addButton((button) => {
@@ -112,15 +114,6 @@ export default class AccountSettings extends BaseSettings {
 	}
 
 	private async checkConnection(buttonEl: HTMLElement) {
-		const normalizedUrl = this.getNormalizedServerUrl();
-		if (!normalizedUrl) {
-			new Notice(t('settings.serverUrl.invalid'));
-			return;
-		}
-
-		this.plugin.settings.serverUrl = normalizedUrl;
-		await this.plugin.saveSettings();
-
 		buttonEl.classList.add('connection-button', 'loading');
 		buttonEl.classList.remove('success', 'error');
 		buttonEl.textContent = t('settings.checkConnection.name');

@@ -1,19 +1,19 @@
-import type { RecordStatModel, RecordStatsMap } from '~/types';
+import { type RecordStatModel, type RecordStatsMap } from '~/types';
 import { isNil } from '~/utils/fns';
-import { BaseStore, parseKey, SYNC_STATE_STORE_NAME } from './store.interface';
+import { BaseStore, SYNC_STATE_STORE_NAME, parseKey } from './store.interface';
 
-export class IndexedDbSyncStateStore extends BaseStore {
+export default class IndexedDbSyncStateStore extends BaseStore {
 	constructor() {
 		super(SYNC_STATE_STORE_NAME);
 	}
 
 	async get(namespace: string, path: string): Promise<RecordStatModel | undefined> {
-		return await this.run('read record', async () => {
-			return (
+		return await this.run(
+			'read record',
+			async () =>
 				(await this.store.getItem<RecordStatModel>(this.getKey(namespace, path))) ??
-				undefined
-			);
-		});
+				undefined,
+		);
 	}
 
 	async getAll(_namespace: string): Promise<RecordStatsMap> {

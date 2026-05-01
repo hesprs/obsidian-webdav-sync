@@ -9,9 +9,9 @@ export default class RemoveRemoteRecursivelyTask extends BaseTask {
 			await this.webdav.deleteFile(this.remotePath);
 			await this.syncRecord.removeRecordSubtree(this.localPath);
 			return { success: true } as const;
-		} catch (e) {
-			logger.error(`Failed to remove remote directory ${this.remotePath} recursively`, e);
-			return { success: false, error: toTaskError(e, this) };
+		} catch (error) {
+			logger.error(`Failed to remove remote directory ${this.remotePath} recursively`, error);
+			return { error: toTaskError(error, this), success: false };
 		}
 	}
 }

@@ -1,36 +1,40 @@
 import GlobToRegExp from 'glob-to-regexp';
 
-export interface UserOptions {
+export type UserOptions = {
 	caseSensitive?: boolean;
-}
+};
 
-function normalizePath(path: string): { normalized: string; segments: string[]; isDir: boolean } {
+function normalizePath(path: string): {
+	normalized: string;
+	segments: Array<string>;
+	isDir: boolean;
+} {
 	const withSlashes = path.replace(/\\/g, '/');
 	const isDir = withSlashes.endsWith('/');
-	const segments: string[] = [];
+	const segments: Array<string> = [];
 	for (const seg of withSlashes.split('/')) {
 		if (!seg || seg === '.') continue;
 		if (seg === '..') segments.pop();
 		else segments.push(seg);
 	}
-	return { normalized: segments.join('/'), segments, isDir };
+	return { isDir, normalized: segments.join('/'), segments };
 }
 
 function buildRegExp(expr: string, opts: UserOptions): RegExp | undefined {
 	return GlobToRegExp(expr, {
-		flags: opts.caseSensitive ? '' : 'i',
 		extended: true,
+		flags: opts.caseSensitive ? '' : 'i',
 		globstar: true,
 	});
 }
 
 export default class GlobMatch {
-	private regex?: RegExp;
-	private anchored: boolean;
-	private dirOnly: boolean;
-	private hasSlash: boolean;
-	private hasWildcards: boolean;
-	private body: string;
+	private readonly regex?: RegExp;
+	private readonly anchored: boolean;
+	private readonly dirOnly: boolean;
+	private readonly hasSlash: boolean;
+	private readonly hasWildcards: boolean;
+	private readonly body: string;
 
 	constructor(
 		public expr: string,
@@ -45,7 +49,11 @@ export default class GlobMatch {
 		if (this.body) this.regex = buildRegExp(this.body, options);
 	}
 
-	private matchesNormalizedPath(normalized: string, segments: string[], isDir: boolean): boolean {
+	private matchesNormalizedPath(
+		normalized: string,
+		segments: Array<string>,
+		isDir: boolean,
+	): boolean {
 		if (!this.regex) return false;
 		const matchesAnySegment = (): boolean =>
 			segments.some((segment) => this.regex?.test(segment) ?? false);
@@ -57,12 +65,11 @@ export default class GlobMatch {
 				return true;
 			}
 
-			if (this.dirOnly) {
+			if (this.dirOnly)
 				return segments.some(
 					(segment, index) =>
 						segment === this.body && (index < segments.length - 1 || isDir),
 				);
-			}
 
 			return matchesAnySegment();
 		}

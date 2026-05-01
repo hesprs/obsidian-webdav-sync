@@ -1,4 +1,3 @@
-export * from './sync-cancel';
 export * from './sync-run';
 
 type RefMatchingFunc<T> = (newValue: T, oldValue: T) => void;
@@ -26,7 +25,9 @@ export function ref<T>(initial: T): Ref<T> {
 		result.subs.add(callback);
 		return () => result.unsubscribe(callback);
 	};
-	result.unsubscribe = (callback: RefMatchingFunc<T>) => result.subs.delete(callback);
+	result.unsubscribe = (callback: RefMatchingFunc<T>) => {
+		result.subs.delete(callback);
+	};
 	return result;
 }
 
@@ -40,6 +41,7 @@ export type Hook<Args extends GeneralArray = []> = {
 };
 
 export function hook<Args extends GeneralArray = []>(): Hook<Args> {
+	// oxlint-disable-next-line unicorn/consistent-function-scoping
 	const result: Hook<Args> = (...args: Args) => {
 		for (const callback of result.subs) callback(...args);
 	};
@@ -48,6 +50,8 @@ export function hook<Args extends GeneralArray = []>(): Hook<Args> {
 		result.subs.add(callback);
 		return () => result.unsubscribe(callback);
 	};
-	result.unsubscribe = (callback: HookMatchingFunc<Args>) => result.subs.delete(callback);
+	result.unsubscribe = (callback: HookMatchingFunc<Args>) => {
+		result.subs.delete(callback);
+	};
 	return result;
 }
