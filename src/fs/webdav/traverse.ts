@@ -1,8 +1,8 @@
 import type { StatsMap } from '~/types';
 import { getDirectoryContents } from '~/api';
+import { apiLimiter } from '~/composable/api-limiter';
 import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
-import { apiLimiter } from '~/utils/api-limiter';
 import { isRetryableError } from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';

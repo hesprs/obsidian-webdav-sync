@@ -18,3 +18,9 @@ export async function getContent(webdav: WebDAVClient, path: string) {
 	const content = (await webdav.getFileContents(path)) as BinaryLike;
 	return toArrayBuffer(content);
 }
+
+export function mkdirsWebDAV(client: WebDAVClient, path: string) {
+	return client.createDirectory(path, {
+		recursive: true,
+	});
+}

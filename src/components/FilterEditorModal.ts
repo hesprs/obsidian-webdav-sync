@@ -1,7 +1,7 @@
 import { Modal, Setting } from 'obsidian';
 import WebDAVSyncPlugin from '~';
+import type { GlobMatchOptions } from '~/settings';
 import t from '~/i18n';
-import { getUserOptions, type GlobMatchOptions } from '~/utils/glob-match';
 
 enum FilterType {
 	Include = 'include',
@@ -68,10 +68,9 @@ export default class FilterEditorModal extends Modal {
 					cls: 'shadow-none!',
 				});
 				function updateButtonStatus() {
-					const opt = getUserOptions(filter);
 					const activeCls = ['bg-[var(--interactive-accent)]!'];
 					const inactiveCls = ['background-none!', 'hover:bg-[--interactive-normal]!'];
-					if (opt.caseSensitive) {
+					if (filter.options.caseSensitive) {
 						forceCaseBtn.classList.add(...activeCls);
 						forceCaseBtn.classList.remove(...inactiveCls);
 					} else {

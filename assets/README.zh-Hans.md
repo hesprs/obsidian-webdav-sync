@@ -22,7 +22,7 @@
         <strong>English</strong>
     </a> • 
     <a href="#正在进行的投票">
-        <strong>正在进行的投票</strong>
+        <strong>投票</strong>
     </a> • 
     <a href="#常见问题">
         <strong>Q&A</strong>

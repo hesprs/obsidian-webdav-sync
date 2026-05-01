@@ -1,6 +1,6 @@
 import { createClient, type WebDAVClient } from 'webdav';
 import WebDAVSyncPlugin from '~';
-import { apiLimiter } from '~/utils/api-limiter';
+import { apiLimiter } from '~/composable/api-limiter';
 import { getCredential } from '~/utils/get-credential';
 
 export function createRateLimitedWebDAVClient(client: WebDAVClient): WebDAVClient {

@@ -1,7 +1,7 @@
 import type WebDAVSyncPlugin from '~';
 import { App, PluginSettingTab } from 'obsidian';
+import type { UserOptions } from '~/composable/glob-match';
 import type { ToggleNumericSettingsField } from '~/types';
-import type { GlobMatchOptions } from '~/utils/glob-match';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
@@ -22,6 +22,11 @@ export enum UnmergeableStrategy {
 	KeepLocal = 'keepLocal',
 	KeepRemote = 'keepRemote',
 	Skip = 'skip',
+}
+
+export interface GlobMatchOptions {
+	expr: string;
+	options: UserOptions;
 }
 
 export interface PluginSettings {

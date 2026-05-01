@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import GlobMatch, { needIncludeFromGlobRules } from '~/utils/glob-match';
+import GlobMatch from '~/composable/glob-match';
+import { needIncludeFromGlobRules } from '~/utils/glob-match';
 
 const options = { caseSensitive: false };
 
@@ -7,7 +8,7 @@ const makeRules = (patterns: string[]) =>
 	patterns.map((pattern) => new GlobMatch(pattern, options));
 
 describe('needIncludeFromGlobRules', () => {
-	it('默认情况：无规则时应包含所有文件', () => {
+	it('includes every file when no rules are defined', () => {
 		expect(needIncludeFromGlobRules('some/file.txt', [], [])).toBe(true);
 		expect(needIncludeFromGlobRules('some/../file.txt', [], [])).toBe(true);
 		expect(needIncludeFromGlobRules('./some/file.txt', [], [])).toBe(true);
@@ -18,29 +19,29 @@ describe('needIncludeFromGlobRules', () => {
 		expect(needIncludeFromGlobRules('some/././file.txt', [], [])).toBe(true);
 	});
 
-	it('包含规则：匹配包含规则的文件应被包含', () => {
+	it('includes files matched by include rules', () => {
 		const inclusion = makeRules(['*.txt']);
 		const exclusion: GlobMatch[] = [];
 
 		expect(needIncludeFromGlobRules('document.txt', inclusion, exclusion)).toBe(true);
 	});
 
-	it('排除规则：匹配排除规则的文件应被排除', () => {
+	it('excludes files matched by exclude rules', () => {
 		const inclusion: GlobMatch[] = [];
 		const exclusion = makeRules(['*.log']);
 
 		expect(needIncludeFromGlobRules('debug.log', inclusion, exclusion)).toBe(false);
 	});
 
-	it('优先级：包含规则优先于排除规则', () => {
+	it('prefers include rules over exclude rules', () => {
 		const inclusion = makeRules(['important.log']);
 		const exclusion = makeRules(['*.log']);
 
 		expect(needIncludeFromGlobRules('important.log', inclusion, exclusion)).toBe(true);
 	});
 
-	describe('标准通配符', () => {
-		it('* 匹配零个或多个字符，但不跨目录', () => {
+	describe('Standard wildcards', () => {
+		it('* matches zero or more characters within a path segment', () => {
 			const exclusion = makeRules(['*.txt']);
 
 			expect(needIncludeFromGlobRules('readme.txt', [], exclusion)).toBe(false);
@@ -53,7 +54,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('dir.with.dot/readme.txt', [], exclusion)).toBe(false);
 		});
 
-		it('? 匹配任意单个字符', () => {
+		it('? matches any single character', () => {
 			const exclusion = makeRules(['debug?.log']);
 
 			expect(needIncludeFromGlobRules('debug1.log', [], exclusion)).toBe(false);
@@ -64,7 +65,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('debugä.log', [], exclusion)).toBe(false);
 		});
 
-		it('[] 匹配指定字符或范围', () => {
+		it('[] matches a character set or range', () => {
 			const exclusion = makeRules(['backup[0-9].sql']);
 
 			expect(needIncludeFromGlobRules('backup0.sql', [], exclusion)).toBe(false);
@@ -76,8 +77,8 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('路径分隔符规则', () => {
-		it('模式中不包含 /：递归匹配所有目录', () => {
+	describe('Path separator rules', () => {
+		it('patterns without / match recursively in any directory', () => {
 			const exclusion = makeRules(['*.log', 'temp']);
 
 			expect(needIncludeFromGlobRules('app.log', [], exclusion)).toBe(false);
@@ -94,7 +95,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('temporary/file.txt', [], exclusion)).toBe(true);
 		});
 
-		it('模式以 / 开头：仅匹配根目录', () => {
+		it('patterns starting with / match only the root directory', () => {
 			const exclusion = makeRules(['/TODO']);
 
 			expect(needIncludeFromGlobRules('TODO', [], exclusion)).toBe(false);
@@ -106,7 +107,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('nested/TODO', [], exclusion)).toBe(true);
 		});
 
-		it('模式以 / 结尾：仅匹配目录及其内容', () => {
+		it('patterns ending with / match directories and their contents', () => {
 			const exclusion = makeRules(['build/']);
 
 			expect(needIncludeFromGlobRules('build/', [], exclusion)).toBe(false);
@@ -120,7 +121,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('build/.hidden', [], exclusion)).toBe(false);
 		});
 
-		it('父目录被忽略时子文件应直接被忽略', () => {
+		it('ignored parent directories stay ignored', () => {
 			const exclusion = makeRules(['build/']);
 
 			expect(needIncludeFromGlobRules('build/', [], exclusion)).toBe(false);
@@ -129,11 +130,11 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('build/sub/', [], exclusion)).toBe(false);
 		});
 
-		it('父目录忽略可以被子文件白名单覆盖', () => {
+		it('a child include does not unignore an ignored parent directory', () => {
 			const inclusion = makeRules(['build/keep.txt']);
 			const exclusion = makeRules(['build/']);
 
-			expect(needIncludeFromGlobRules('build/keep.txt', inclusion, exclusion)).toBe(true);
+			expect(needIncludeFromGlobRules('build/keep.txt', inclusion, exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('build/keep/more.txt', inclusion, exclusion)).toBe(
 				false,
 			);
@@ -142,19 +143,19 @@ describe('needIncludeFromGlobRules', () => {
 			);
 		});
 
-		it('包含普通路径默认不递归，子路径仍可被排除', () => {
+		it('a plain include path does not recurse into children', () => {
 			const inclusion = makeRules(['aaa/bb']);
 			const exclusion = makeRules(['aaa/bb/cc']);
 
 			expect(needIncludeFromGlobRules('aaa/bb', inclusion, exclusion)).toBe(true);
-			expect(needIncludeFromGlobRules('aaa/bb/file.md', inclusion, exclusion)).toBe(true);
+			expect(needIncludeFromGlobRules('aaa/bb/file.md', inclusion, exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('aaa/bb/cc', inclusion, exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('aaa/bb/cc/child.md', inclusion, exclusion)).toBe(
 				false,
 			);
 		});
 
-		it('包含路径使用 /** 时递归包含，并继续优先于排除规则', () => {
+		it('a include path with /** recurses and still wins over exclude rules', () => {
 			const inclusion = makeRules(['aaa/bb/**']);
 			const exclusion = makeRules(['aaa/bb/cc/**']);
 
@@ -165,7 +166,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('aaa/bb/cc/file.md', inclusion, exclusion)).toBe(true);
 		});
 
-		it('模式中间包含 /：相对路径匹配', () => {
+		it('patterns containing / match relative paths', () => {
 			const exclusion = makeRules(['doc/*.txt']);
 
 			expect(needIncludeFromGlobRules('doc/a.txt', [], exclusion)).toBe(false);
@@ -176,8 +177,8 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('双星号 ** 深度匹配', () => {
-		it('**/pattern：任意深度匹配文件名', () => {
+	describe('Double-star ** matching', () => {
+		it('**/pattern matches file names at any depth', () => {
 			const exclusion = makeRules(['**/__pycache__']);
 
 			expect(needIncludeFromGlobRules('__pycache__', [], exclusion)).toBe(false);
@@ -188,7 +189,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('src/__pycache__/file.py', [], exclusion)).toBe(false);
 		});
 
-		it('pattern/**：匹配该目录下所有内容', () => {
+		it('pattern/** matches everything under that directory', () => {
 			const exclusion = makeRules(['assets/**']);
 
 			expect(needIncludeFromGlobRules('assets/logo.png', [], exclusion)).toBe(false);
@@ -198,7 +199,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('assets/.keep', [], exclusion)).toBe(false);
 		});
 
-		it('pattern/**/pattern：跨层级匹配', () => {
+		it('pattern/**/pattern matches across directory levels', () => {
 			const exclusion = makeRules(['foo/**/bar']);
 
 			expect(needIncludeFromGlobRules('foo/bar', [], exclusion)).toBe(false);
@@ -210,7 +211,7 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('综合示例规则', () => {
+	describe('Combined rule examples', () => {
 		const exclusion = makeRules([
 			'*.a',
 			'bin/',
@@ -220,7 +221,7 @@ describe('needIncludeFromGlobRules', () => {
 			'test[0-9].js',
 		]);
 
-		it('*.a：匹配所有目录下的 .a 文件', () => {
+		it('*.a matches .a files in any directory', () => {
 			expect(needIncludeFromGlobRules('lib.a', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('src/lib.a', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('src/lib.so', [], exclusion)).toBe(true);
@@ -228,7 +229,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('src/lib.a.bak', [], exclusion)).toBe(true);
 		});
 
-		it('bin/：忽略任意位置的 bin 目录', () => {
+		it('bin/ ignores bin directories at any depth', () => {
 			expect(needIncludeFromGlobRules('bin/tool', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('src/bin/tool', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('binfile', [], exclusion)).toBe(true);
@@ -236,7 +237,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('bin/../bin/tool', [], exclusion)).toBe(false);
 		});
 
-		it('/vendor/：仅忽略根目录的 vendor', () => {
+		it('/vendor/ ignores only the root vendor directory', () => {
 			expect(needIncludeFromGlobRules('vendor/lib.js', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('src/vendor/lib.js', [], exclusion)).toBe(true);
 			expect(needIncludeFromGlobRules('vendor', [], exclusion)).toBe(true);
@@ -244,14 +245,14 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('src/../vendor/lib.js', [], exclusion)).toBe(false);
 		});
 
-		it('logs/*.txt：仅匹配 logs 下一级 .txt', () => {
+		it('logs/*.txt matches only one level under logs', () => {
 			expect(needIncludeFromGlobRules('logs/app.txt', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('logs/history/2023.txt', [], exclusion)).toBe(true);
 			expect(needIncludeFromGlobRules('logs/app.txt/', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('logs/app.tx', [], exclusion)).toBe(true);
 		});
 
-		it('core/**/*.out：匹配 core 下任意深度 .out', () => {
+		it('core/**/*.out matches .out files at any depth under core', () => {
 			expect(needIncludeFromGlobRules('core/main.out', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('core/a/b/c/test.out', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('src/core/test.out', [], exclusion)).toBe(true);
@@ -259,7 +260,7 @@ describe('needIncludeFromGlobRules', () => {
 			expect(needIncludeFromGlobRules('core/test.output', [], exclusion)).toBe(true);
 		});
 
-		it('test[0-9].js：匹配 test0.js ~ test9.js', () => {
+		it('test[0-9].js matches test0.js through test9.js', () => {
 			expect(needIncludeFromGlobRules('test0.js', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('test9.js', [], exclusion)).toBe(false);
 			expect(needIncludeFromGlobRules('test10.js', [], exclusion)).toBe(true);

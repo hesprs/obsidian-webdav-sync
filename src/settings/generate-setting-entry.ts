@@ -1,4 +1,4 @@
-import { Notice, Setting, TextComponent } from 'obsidian';
+import { Notice, Setting } from 'obsidian';
 import type { ToggleNumericSettingsField } from '~/types';
 import t from '~/i18n';
 import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/input-converters';
@@ -20,6 +20,7 @@ export default function generateSettingEntry({
 	type,
 	saveSettings,
 	rejectZero,
+	onChange,
 }: {
 	container: HTMLElement;
 	name: string;
@@ -29,14 +30,13 @@ export default function generateSettingEntry({
 	type: UserInputType;
 	saveSettings: () => Promise<void>;
 	rejectZero?: boolean;
+	onChange?: (value: number) => void;
 }) {
-	let textComponent: TextComponent;
 	new Setting(container)
 		.setClass('numeric-toggle')
 		.setName(name)
 		.setDesc(desc)
 		.addText((text) => {
-			textComponent = text;
 			text.setPlaceholder(placeholder).setValue(format(field.value, type));
 			text.inputEl.addEventListener('blur', () => {
 				const value = parse(text.inputEl.value, type);
@@ -53,11 +53,11 @@ export default function generateSettingEntry({
 				}
 				if (value !== field.value) {
 					field.value = value;
+					onChange?.(value);
 					void saveSettings();
 				}
 				text.inputEl.value = format(field.value, type);
 			});
-			text.setDisabled(!field.enabled);
 		})
 		.addToggle((toggle) => {
 			toggle.setValue(field.enabled);
@@ -65,7 +65,6 @@ export default function generateSettingEntry({
 				if (value !== field.enabled) {
 					field.enabled = value;
 					void saveSettings();
-					textComponent.setDisabled(!field.enabled);
 				}
 			});
 		});

@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { parseXML } from '~/utils/parse-xml';
+import { parseXML } from '~/composable/parse-xml';
 import requestUrl from '~/utils/request-url';
 
 vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
 }));
-vi.mock('~/utils/parse-xml', () => ({
+vi.mock('~/composable/parse-xml', () => ({
 	parseXML: vi.fn(),
 }));
 vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));

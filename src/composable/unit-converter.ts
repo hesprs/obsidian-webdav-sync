@@ -1,0 +1,33 @@
+type UnitMap = Record<string, number>;
+type UnitConfig<T extends UnitMap> = {
+	units: T;
+	defaultUnit: keyof T;
+};
+
+function round(value: number, precision: number): number {
+	return Math.round(value * precision) / precision;
+}
+
+export default function createUnitConverter<T extends UnitMap>({
+	units,
+	defaultUnit,
+}: UnitConfig<T>) {
+	const entries = Object.entries(units);
+	const unitMap: Record<string, number> = {};
+	entries.forEach(([u, multiplier]) => (unitMap[u.toLowerCase()] = multiplier));
+	return {
+		parse: (input: string): number | undefined => {
+			const match = input.trim().match(/^(-?\d+(?:\.\d+)?)\s*([a-z]*)$/i);
+			if (!match) return undefined;
+			const num = parseFloat(match[1]);
+			if (!Number.isFinite(num) || num < 0) return undefined;
+			const rawUnit = (match[2] || (defaultUnit as string)).toLowerCase();
+			return rawUnit in unitMap ? num * unitMap[rawUnit] : undefined;
+		},
+		format: (value: number): string => {
+			const entry = entries[entries.findLastIndex(([, v]) => value >= v)] || entries[0];
+			const scaled = value / entry[1];
+			return `${round(scaled, 2)} ${entry[0]}`;
+		},
+	};
+}
