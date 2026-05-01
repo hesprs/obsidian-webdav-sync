@@ -44,10 +44,8 @@ describe('WebDAVTraversal', () => {
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{
-					basename: 'webdav-sync',
 					filename: '/test/webdav-sync/',
 					lastmod: 'Mon, 01 Jan 2024 00:00:00 GMT',
-					mime: undefined,
 					size: 0,
 					type: 'directory',
 				},
@@ -76,10 +74,8 @@ describe('WebDAVTraversal', () => {
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{
-					basename: 'missing',
 					filename: '/test/missing/',
 					lastmod: 'Mon, 01 Jan 2024 00:00:00 GMT',
-					mime: undefined,
 					size: 0,
 					type: 'directory',
 				},

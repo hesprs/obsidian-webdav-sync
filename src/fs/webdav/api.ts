@@ -1,11 +1,10 @@
-import { type FileStat } from 'webdav';
-import parseXML from '../../composable/parse-xml';
-import { normalizeRemotePath, remoteBasename } from '../../platform/path';
-import { isNil } from '../../utils/fns';
-import isRetryableError from '../../utils/is-retryable-error';
-import logger from '../../utils/logger';
-import requestUrl from '../../utils/request-url';
-import sleep from '../../utils/sleep';
+import parseXML from '~/composable/parse-xml';
+import { normalizeRemotePath } from '~/platform/path';
+import { isNil } from '~/utils/fns';
+import isRetryableError from '~/utils/is-retryable-error';
+import logger from '~/utils/logger';
+import requestUrl from '~/utils/request-url';
+import sleep from '~/utils/sleep';
 
 type WebDAVProp = {
 	displayname?: string;
@@ -29,6 +28,13 @@ type WebDAVResponse = {
 	multistatus: {
 		response: WebDAVResponseItem | Array<WebDAVResponseItem>;
 	};
+};
+
+export type FileStat = {
+	filename: string;
+	lastmod: string;
+	size: number;
+	type: 'directory' | 'file';
 };
 
 function isSuccessStatus(status?: string): boolean {
@@ -105,10 +111,8 @@ function convertToFileStat(
 	const filename = isDir ? `${path}/` : path;
 
 	return {
-		basename: remoteBasename(filename),
 		filename,
 		lastmod: props.getlastmodified || '',
-		mime: props.getcontenttype,
 		size: props.getcontentlength ? parseInt(props.getcontentlength, 10) : 0,
 		type: isDir ? 'directory' : 'file',
 	};
@@ -119,11 +123,11 @@ export default async function getDirectoryContents(
 	token: string,
 	path: string,
 	infinity = false,
-): Promise<Array<Omit<FileStat, 'etag'>>> {
+): Promise<Array<FileStat>> {
 	const endpoint = serverUrl.trim().replace(/\/+$/, '');
 	if (!endpoint) throw new Error('WebDAV server URL is not configured');
 
-	const contents: Array<Omit<FileStat, 'etag'>> = [];
+	const contents: Array<FileStat> = [];
 	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 	let currentUrl = buildDirectoryUrl(endpoint, path);
 

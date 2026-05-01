@@ -1,6 +1,7 @@
-import { type FileStat, type WebDAVClient } from 'webdav';
+import { type WebDAVClient } from 'webdav';
 import { type BinaryLike, toArrayBuffer } from '~/platform/binary';
 import { type StatModel } from '~/types';
+import { type FileStat } from './api';
 
 export async function statItem(client: WebDAVClient, path: string) {
 	const stat = (await client.stat(path, { details: false })) as FileStat;
