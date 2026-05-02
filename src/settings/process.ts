@@ -123,7 +123,7 @@ export default function processSettings(plugin: WebDAVSyncPlugin): void {
 		delete settings.useFastSyncOnLocalChange;
 		changed = true;
 	}
-	
+
 	const UrlError = new Error('Invalid server URL, please check your settings');
 	let parsedUrl: URL;
 	try {

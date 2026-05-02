@@ -6,8 +6,11 @@ The plugin unloads files encrypted to remote, download and decrypt back to local
 
 - IV = Initialization Vector = Nonce
 - B = Byte
+- b = bit
 - KB = KiB = 1024B
-- _Master key_: the generated deterministic strong key from user password and WebDAV info
+- _Master key_: the generated deterministic 32B strong key from user password and WebDAV info
+- _AES key_: 32B key derived from master key used to perform `AES-GCM-256`
+- _Nonce key_: 32B key derived from master key used to generate nonce deterministically for file and folder names
 - File nonce: the generated random 8B number used to concatenate chunk counter to generate _chunk nonce_
 
 ## Enabling and Disabling
@@ -22,21 +25,22 @@ The plugin unloads files encrypted to remote, download and decrypt back to local
 - If the the above step returns false:
   - get the object hash of server URL + account name + remote base directory (should already be obtained)
   - derive a deterministic salt from the hash
-  - apply `PBKDF2` to the user's password with the salt by 600k iterations (asynchronous) to obtain _master key_
+  - apply `PBKDF2` to the user's password with the salt by 600k iterations (asynchronous) to obtain 32B (256b) _master key_
   - convert the _master key_ to _Base64URL_ string, and save to secret `webdav-sync-e2ee-key` as `<Base64URL>.<object hash>`.
-  - pass _master key_ down to the sync logic
 - If returns true:
   - _Base64URL_ decode `split('.')[0]` and convert to binary as _master key_
-  - pass _master key_ down to the sync logic
+- After obtaining the master key:
+  - derive _AES key_ and _nonce key_ using `HKDF`
+  - pass _AES key_ and _nonce key_ down to the sync logic
 
 ## File Encryption
 
 - Input raw file
-- Generate random 8B _file nonce_
+- Generate random 8B _file nonce_ via `CSPRNG`
 - Splice the file content into 128KB chunks, special size for the last chunk, for each chunk:
   - generate get chunk index starting from 0 represented in 4B
   - calculate _chunk nonce_ as _file nonce_ concatenated by 4B chunk index
-  - encrypt the 128KB with _master key_ and _chunk nonce_ using `AES-GCM-256`
+  - encrypt the 128KB with _AES key_ and _chunk nonce_ using `AES-GCM-256`
   - each chunk = chunk index (4B) + ciphertext (128KB = 131,072B) + auth tag (16B) = 131,092B
 - Concatenate the file as: _file nonce_ + all chunks
 - Upload encrypted file
@@ -45,8 +49,8 @@ The plugin unloads files encrypted to remote, download and decrypt back to local
 
 - All names should be normalized to Unicode NFC (current plugin logic already ensures this)
 - Cascade and encrypt the whole path chain, for each chain node:
-  - generate deterministic random 12B nonce from the node's full path
-  - use `AES-GCM-256` to encrypt to ciphertext with nonce + _master key_
+  - generate deterministic 12B nonce from the node's full path by using `HMAC-SHA256` + _nonce key_
+  - use `AES-GCM-256` to encrypt to ciphertext with _nonce_ + _AES key_
   - the new file name = `<base64URL(nonce + ciphertext + authTag)>.sync-enc` (same name for folders, although a bit weird to add an extension to folders)
 - For example, when encrypting the full path of `foo/bar/a.md`, first generate nonce from `foo` to encrypt folder `foo`, then `foo/bar` for `bar` folder, and `foo/bar/a.md` for `a.md`.
 - Use a global in-memory cache to accelerate file path encryption for identical paths, limited to 10K entries.
@@ -61,7 +65,7 @@ The plugin unloads files encrypted to remote, download and decrypt back to local
   - verify if _chunk index_ is in the correct ascending order, if not, throw file corrupted error
   - splice and obtain ciphertext and auth tag
   - concatenate _file nonce_ with _chunk index_ to obtain _chunk nonce_
-  - decrypt the chunk with _chunk nonce_ + _master key_ with `AES-GCM-256`, throw `data corrupted` or `wrong password` and skip the file if auth tag mismatch
+  - decrypt the chunk with _chunk nonce_ + _AES key_ with `AES-GCM-256`, throw `data corrupted or wrong password` and skip the file if auth tag mismatch
 - Concatenate chunks
 - Save file
 
@@ -84,12 +88,12 @@ The plugin unloads files encrypted to remote, download and decrypt back to local
 - Input file name `Base64URL`
 - Parse to raw bytes
 - Strip first 12B as nonce
-- Decrypt the rest of the file name using `AES-GCM-256` with nonce and _master key_ (and use the cache if possible)
+- Decrypt the rest of the file name using `AES-GCM-256` with nonce and _AES key_ (use the cache if possible)
 - Return the decrypted file name
 
 ## Implementation
 
-- The implementation should only use Web Crypto API, use of any external library or Node modules is forbidden
+- The implementation should only use Web Crypto API, use of any external library or Node modules is forbidden.
 - Helpers and exports should be encapsulated in `src/composable/encryption.ts`. The implementation should be context-agnostic and reusable across similar projects
 - Encryption should be isolated at the end site, directly in the push task and mkdir task
 - Decryption should happen immediately when the encrypted file touches local machine, directly during remote traversal, pull task, and `getRemoteContent`.
