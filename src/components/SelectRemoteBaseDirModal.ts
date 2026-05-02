@@ -1,5 +1,6 @@
+import type { App } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
-import { type App, Modal } from 'obsidian';
+import { Modal } from 'obsidian';
 import getDirectoryContents from '~/fs/webdav/api';
 import { mkdirsWebDAV } from '~/fs/webdav/utils';
 import { normalizeBaseDir, normalizePathToAbsolute, remoteBasename } from '~/platform/path';

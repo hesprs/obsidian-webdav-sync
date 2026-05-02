@@ -1,11 +1,11 @@
 import type WebDAVSyncPlugin from '~';
-import { type SyncTrigger } from '~/events';
+import type { SyncTrigger } from '~/events';
 import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
-import {
-	type default as SyncExecutorService,
-	type SyncExecutionRequest,
-	type SyncOptions,
+import type {
+	default as SyncExecutorService,
+	SyncExecutionRequest,
+	SyncOptions,
 } from './sync-executor.service';
 
 const SYNC_IDLE_POLL_MS = 500;

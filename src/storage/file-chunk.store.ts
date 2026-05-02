@@ -1,7 +1,7 @@
 import localspace, { ttlPlugin } from 'localspace';
 import isSub from '~/utils/is-sub';
 import logger from '~/utils/logger';
-import { type FileChunkKey } from '.';
+import type { FileChunkKey } from '.';
 import {
 	FILE_CHUNK_STORE_NAME,
 	STORAGE_NAME,

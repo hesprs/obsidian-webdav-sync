@@ -1,5 +1,5 @@
+import type { TAbstractFile } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
-import { type TAbstractFile } from 'obsidian';
 import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
 import { SyncStartMode } from '~/sync';

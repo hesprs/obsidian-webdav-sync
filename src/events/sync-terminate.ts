@@ -1,12 +1,6 @@
 import logger from '~/utils/logger';
-import {
-	syncRun,
-	updateSyncRunSnapshot,
-	type SyncErrorSummary,
-	type SyncRunSnapshot,
-	type SyncRunStage,
-	type SyncRunTimestamps,
-} from '.';
+import type { SyncErrorSummary, SyncRunSnapshot, SyncRunStage, SyncRunTimestamps } from '.';
+import { syncRun, updateSyncRunSnapshot } from '.';
 
 type SyncTerminalStage = Extract<
 	SyncRunStage,

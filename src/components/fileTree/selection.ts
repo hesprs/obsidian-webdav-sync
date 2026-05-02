@@ -1,5 +1,5 @@
-import { type BaseTask } from '~/sync/tasks/task.interface';
-import { type FileTreeData, type FileTreeSelectionSnapshot } from './types';
+import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { FileTreeData, FileTreeSelectionSnapshot } from './types';
 
 export default class FileTreeSelectionController {
 	private readonly selectedTaskIds = new Set<string>();

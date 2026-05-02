@@ -1,4 +1,4 @@
-import { type SyncRunKind } from '~/types';
+import type { SyncRunKind } from '~/types';
 import { hook, ref } from '.';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';

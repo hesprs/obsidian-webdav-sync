@@ -1,6 +1,7 @@
-import { type TextComponent, Notice } from 'obsidian';
+import type { TextComponent } from 'obsidian';
+import { Notice } from 'obsidian';
+import type { PluginSettings } from '~/settings';
 import t from '~/i18n';
-import { type PluginSettings } from '~/settings';
 import type WebDAVSyncPlugin from '..';
 
 export default function handleInput<T extends keyof PluginSettings>({

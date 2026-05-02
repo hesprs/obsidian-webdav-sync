@@ -1,10 +1,10 @@
-import { type Vault } from 'obsidian';
-import { type WebDAVClient } from 'webdav';
-import { type TranslationShape } from '~/i18n';
-import { type SyncRecord } from '~/storage';
-import { type MaybePromise } from '~/types';
+import type { Vault } from 'obsidian';
+import type { WebDAVClient } from 'webdav';
+import type { TranslationShape } from '~/i18n';
+import type { SyncRecord } from '~/storage';
+import type { MaybePromise } from '~/types';
 import getTaskName from '~/utils/get-task-name';
-import { type TaskOptions } from '../decision/sync-decision.interface';
+import type { TaskOptions } from '../decision/sync-decision.interface';
 
 export type BaseTaskOptions = {
 	vault: Vault;

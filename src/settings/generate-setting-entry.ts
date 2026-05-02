@@ -1,6 +1,6 @@
 import { Notice, Setting } from 'obsidian';
+import type { ToggleNumericSettingsField } from '~/types';
 import t from '~/i18n';
-import { type ToggleNumericSettingsField } from '~/types';
 import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/input-converters';
 
 export enum UserInputType {

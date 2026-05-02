@@ -2,7 +2,8 @@ import { Notice } from 'obsidian';
 import { Show, createSignal } from 'solid-js';
 import t from '~/i18n';
 import { normalizeRemotePath } from '~/platform/path';
-import { type FileStat, createFileList } from './components/FileList';
+import type { FileStat } from './components/FileList';
+import { createFileList } from './components/FileList';
 import NewFolder from './components/NewFolder';
 
 function joinRemotePath(...parts: Array<string>): `/${string}` {

@@ -1,12 +1,6 @@
-import { type ConflictStrategy, type UnmergeableStrategy } from '~/settings';
-import {
-	type FileStatModel,
-	type FolderStatModel,
-	type RecordStatsMap,
-	type StatModel,
-	type StatsMap,
-} from '~/types';
-import { type BaseTask } from '../tasks/task.interface';
+import type { ConflictStrategy, UnmergeableStrategy } from '~/settings';
+import type { FileStatModel, FolderStatModel, RecordStatsMap, StatModel, StatsMap } from '~/types';
+import type { BaseTask } from '../tasks/task.interface';
 
 export type TaskOptions = {
 	remotePath: string;

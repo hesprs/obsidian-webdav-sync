@@ -1,11 +1,11 @@
+import type { StatsMap } from '~/types';
 import apiLimiter from '~/composable/api-limiter';
 import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
-import { type StatsMap } from '~/types';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
-import { type OnProgress } from '../fs.interface';
+import type { OnProgress } from '../fs.interface';
 import postTraversal from '../post-traversal';
 import getDirectoryContents from './api';
 import { toStatModel } from './utils';

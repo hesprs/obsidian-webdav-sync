@@ -1,4 +1,4 @@
-import { type BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync/tasks/task.interface';
 
 const RED_COLOR = 'var(--color-red)';
 const BLUE_COLOR = 'var(--color-blue)';

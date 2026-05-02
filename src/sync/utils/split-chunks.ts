@@ -1,5 +1,5 @@
-import { type FileChunkKey } from '~/storage';
-import { type ToggleNumericSettingsField } from '~/types';
+import type { FileChunkKey } from '~/storage';
+import type { ToggleNumericSettingsField } from '~/types';
 import { chunk } from '~/utils/fns';
 
 type Fragment = {

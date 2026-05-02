@@ -1,4 +1,4 @@
-import { type RecordStatModel, type RecordStatsMap } from '~/types';
+import type { RecordStatModel, RecordStatsMap } from '~/types';
 import { isNil } from '~/utils/fns';
 import { BaseStore, SYNC_STATE_STORE_NAME, parseKey } from './store.interface';
 

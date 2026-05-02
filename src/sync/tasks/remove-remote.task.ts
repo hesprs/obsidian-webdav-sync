@@ -1,4 +1,4 @@
-import { type OptionsWithRemoteStat } from '~/sync/decision/sync-decision.interface';
+import type { OptionsWithRemoteStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 

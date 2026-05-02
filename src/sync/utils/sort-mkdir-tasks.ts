@@ -1,4 +1,4 @@
-import { type BaseTask } from '../tasks/task.interface';
+import type { BaseTask } from '../tasks/task.interface';
 
 export default function sortMkdirTasks<T extends BaseTask>(tasks: Array<T>): Array<Array<T>> {
 	const levels: Record<number, Array<T>> = {};

@@ -1,4 +1,5 @@
-import localspace, { type LocalSpaceInstance } from 'localspace';
+import type { LocalSpaceInstance } from 'localspace';
+import localspace from 'localspace';
 import isSub from '~/utils/is-sub';
 import logger from '~/utils/logger';
 

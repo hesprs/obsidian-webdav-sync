@@ -1,6 +1,8 @@
-import { type App, Modal, Setting } from 'obsidian';
+import type { App } from 'obsidian';
+import { Modal, Setting } from 'obsidian';
+import type { FileTreeSelectionController } from '~/components/fileTree';
 import type RemoveLocalTask from '~/sync/tasks/remove-local.task';
-import { type FileTreeSelectionController, mount as mountFileTree } from '~/components/fileTree';
+import { mount as mountFileTree } from '~/components/fileTree';
 import t from '~/i18n';
 
 export default class DeleteConfirmModal extends Modal {

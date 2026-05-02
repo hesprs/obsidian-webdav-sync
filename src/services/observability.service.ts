@@ -1,10 +1,11 @@
 import type WebDAVSyncPlugin from '~';
 import { Notice, Platform } from 'obsidian';
+import type { SyncRunSnapshot, SyncRunStage, SyncRunWarning } from '~/events';
+import type { BaseTask } from '~/sync/tasks/task.interface';
 import FailedTasksModal from '~/components/FailedTasksModal';
 import SyncProgressModal from '~/components/SyncProgressModal';
-import { type SyncRunSnapshot, type SyncRunStage, type SyncRunWarning, syncRun } from '~/events';
+import { syncRun } from '~/events';
 import t from '~/i18n';
-import { type BaseTask } from '~/sync/tasks/task.interface';
 import formatRelativeTime from '~/utils/format-relative-time';
 
 export const TERMINAL_STAGES: Array<SyncRunStage> = [

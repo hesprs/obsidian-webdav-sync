@@ -1,12 +1,12 @@
-import { type ToggleNumericSettingsField } from '~/types';
+import type { ToggleNumericSettingsField } from '~/types';
 import { chunk, zipMerge } from '~/utils/fns';
+import type { BaseTask } from '../tasks/task.interface';
 import MkdirLocalTask from '../tasks/mkdir-local.task';
 import MkdirRemoteTask from '../tasks/mkdir-remote.task';
 import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
-import { type BaseTask } from '../tasks/task.interface';
 import limitPushPullTasks from './limit-push-pull-tasks';
 import mergeRemoveTasks from './merge-remove-tasks';
 import sortMkdirTasks from './sort-mkdir-tasks';

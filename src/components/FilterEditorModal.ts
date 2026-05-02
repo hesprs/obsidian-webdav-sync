@@ -1,7 +1,7 @@
 import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
+import type { GlobMatchOptions } from '~/settings';
 import t from '~/i18n';
-import { type GlobMatchOptions } from '~/settings';
 
 enum FilterType {
 	Include = 'include',
