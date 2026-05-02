@@ -1,8 +1,8 @@
 // oxlint-disable typescript/no-non-null-assertion
 import { describe, expect, it } from 'vitest';
-import { type FileChunkKey } from '~/storage';
+import type { FileChunkKey } from '~/storage';
+import type { ToggleNumericSettingsField } from '~/types';
 import { splitChunks } from '~/sync/utils/split-chunks';
-import { type ToggleNumericSettingsField } from '~/types';
 
 // Byte constants for precise testing
 const KB = 1024;

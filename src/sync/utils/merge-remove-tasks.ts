@@ -1,9 +1,9 @@
 import isSub from '~/utils/is-sub';
 import type RemoveLocalTask from '../tasks/remove-local.task';
 import type RemoveRemoteTask from '../tasks/remove-remote.task';
+import type { BaseTask } from '../tasks/task.interface';
 import RemoveLocalRecursivelyTask from '../tasks/remove-local-recursively.task';
 import RemoveRemoteRecursivelyTask from '../tasks/remove-remote-recursively.task';
-import { type BaseTask } from '../tasks/task.interface';
 
 export default function mergeRemoveTasks<T extends 'remote' | 'local'>(
 	tasks: T extends 'remote' ? Array<RemoveRemoteTask> : Array<RemoveLocalTask>,

@@ -1,4 +1,5 @@
-import { type RequestUrlParam, type RequestUrlResponse, requestUrl as req } from 'obsidian';
+import type { RequestUrlParam, RequestUrlResponse } from 'obsidian';
+import { requestUrl as req } from 'obsidian';
 import logger from './logger';
 
 class RequestUrlError extends Error {

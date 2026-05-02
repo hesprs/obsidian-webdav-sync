@@ -1,10 +1,10 @@
+import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
+import type { StatModel } from '~/types';
 import { getContent as getLocalContent, statItem as statVaultItem } from '~/fs/vault';
 import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs/webdav';
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
-import { type OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
-import { type StatModel } from '~/types';
 import logger from '~/utils/logger';
 import mergeDigIn from '~/utils/merge-dig-in';
 import { resolveByIntelligentMerge } from '../utils/merge';

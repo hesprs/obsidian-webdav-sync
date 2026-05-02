@@ -1,8 +1,8 @@
-import { type StatModel, type StatsMap } from '~/types';
+import type { StatModel, StatsMap } from '~/types';
 import isSub from '~/utils/is-sub';
+import type { BaseTask } from '../tasks/task.interface';
 import MergeTask from '../tasks/merge.task';
 import PushTask from '../tasks/push.task';
-import { type BaseTask } from '../tasks/task.interface';
 import isSameTime from './is-same-time';
 
 export default function isChanged({

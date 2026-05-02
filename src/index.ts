@@ -1,5 +1,6 @@
 import './assets/global.css';
 import { Plugin } from 'obsidian';
+import type { PluginSettings, GlobMatchOptions } from './settings';
 import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
@@ -11,8 +12,6 @@ import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
 import {
-	type PluginSettings,
-	type GlobMatchOptions,
 	SyncSettingTab,
 	setPluginInstance,
 	ConflictStrategy,

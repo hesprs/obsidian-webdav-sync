@@ -1,5 +1,6 @@
+import type { WebDAVClient } from 'webdav';
 import type WebDAVSyncPlugin from '~';
-import { type WebDAVClient, createClient } from 'webdav';
+import { createClient } from 'webdav';
 import apiLimiter from '~/composable/api-limiter';
 import getCredential from '~/utils/get-credential';
 

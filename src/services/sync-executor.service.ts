@@ -1,17 +1,11 @@
 import type WebDAVSyncPlugin from '~';
-import {
-	type SyncRunMode,
-	type SyncRunSnapshot,
-	type SyncTrigger,
-	createQueuedSyncRunSnapshot,
-	syncRun,
-	updateSyncRunSnapshot,
-} from '~/events';
+import type { SyncRunMode, SyncRunSnapshot, SyncTrigger } from '~/events';
+import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { SyncRunKind } from '~/types';
+import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
 import { SyncEngine, SyncStartMode } from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
-import { type BaseTask } from '~/sync/tasks/task.interface';
-import { type SyncRunKind } from '~/types';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 

@@ -1,4 +1,4 @@
-import { type BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync/tasks/task.interface';
 
 export type FileTreeNode = {
 	id: string;

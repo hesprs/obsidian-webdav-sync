@@ -1,20 +1,18 @@
-import { type Vault } from 'obsidian';
-import { type WebDAVClient } from 'webdav';
-import DeleteConfirmModal from '~/components/DeleteConfirmModal';
-import {
-	type SyncFailedTaskInfo,
-	type SyncProgressSummary,
-	type SyncRunSnapshot,
-	type ProgressPatch,
-	type SyncPlanSummary,
-	syncRun,
-	syncCancel,
-	updateSyncRunSnapshot,
+import type { Vault } from 'obsidian';
+import type { WebDAVClient } from 'webdav';
+import type {
+	SyncFailedTaskInfo,
+	SyncProgressSummary,
+	SyncRunSnapshot,
+	ProgressPatch,
+	SyncPlanSummary,
 } from '~/events';
+import type { SyncExecutionRequest } from '~/services/sync-executor.service';
+import DeleteConfirmModal from '~/components/DeleteConfirmModal';
+import { syncRun, syncCancel, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
 import { statItem } from '~/fs/vault';
 import t from '~/i18n';
-import { type SyncExecutionRequest } from '~/services/sync-executor.service';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
@@ -23,6 +21,7 @@ import getTaskName from '~/utils/get-task-name';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
+import type { BaseTask, TaskResult } from './tasks/task.interface';
 import TwoWaySyncDecider from './decision/two-way.decider';
 import {
 	SyncCancelledError,
@@ -35,7 +34,7 @@ import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
 import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
-import { type BaseTask, type TaskResult, TaskError } from './tasks/task.interface';
+import { TaskError } from './tasks/task.interface';
 import optimizeTasks from './utils/optimize-tasks';
 
 export enum SyncStartMode {

@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest';
+import type { IntelligentMergeParams, LatestTimestampParams } from '~/sync/utils/merge';
 import { arrayBufferEquals } from '~/platform/binary';
 import {
-	type IntelligentMergeParams,
-	type LatestTimestampParams,
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
 	resolveByLatestTimestamp,

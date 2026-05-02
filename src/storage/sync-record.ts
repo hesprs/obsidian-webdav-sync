@@ -1,4 +1,4 @@
-import { type RecordStatsMap, type StatModel } from '~/types';
+import type { RecordStatsMap, StatModel } from '~/types';
 import type IndexedDbFileChunkStore from './file-chunk.store';
 import type IndexedDbSyncStateStore from './sync-record.store';
 import IndexedDbBaseTextStore from './base-text.store';

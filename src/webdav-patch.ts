@@ -1,10 +1,11 @@
-import { type RequestUrlParam } from 'obsidian';
+import type { RequestUrlParam } from 'obsidian';
+import type { RequestOptionsWithState } from 'webdav';
 /**
  * Patch webdav request to use obsidian's requestUrl
  *
  * reference: https://github.com/remotely-save/remotely-save/blob/34db181af002f8d71ea0a87e7965abc57b294914/src/fsWebdav.ts#L25
  */
-import { type RequestOptionsWithState, getPatcher } from 'webdav';
+import { getPatcher } from 'webdav';
 import { VALID_REQURL } from '~/consts';
 import requestUrl from './utils/request-url';
 

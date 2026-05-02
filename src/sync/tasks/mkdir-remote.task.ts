@@ -1,5 +1,5 @@
+import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import { statItem } from '~/fs/webdav';
-import { type OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 

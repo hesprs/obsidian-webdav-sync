@@ -1,13 +1,13 @@
+import type { FileStatModel, FolderStatModel, StatModel } from '~/types';
 import t from '~/i18n';
 import { normalizePathToAbsolute } from '~/platform/path';
 import { ConflictStrategy, UnmergeableStrategy } from '~/settings';
-import { type FileStatModel, type FolderStatModel, type StatModel } from '~/types';
 import { hasInvalidChar } from '~/utils/has-invalid-char';
 import logger from '~/utils/logger';
-import { type BaseTask } from '../tasks/task.interface';
+import type { BaseTask } from '../tasks/task.interface';
+import type { SyncDecisionInput } from './sync-decision.interface';
 import isChanged from '../utils/is-changed';
 import isMergeablePath from '../utils/is-mergeable-path';
-import { type SyncDecisionInput } from './sync-decision.interface';
 
 export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask> {
 	const {

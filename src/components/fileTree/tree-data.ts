@@ -1,5 +1,5 @@
-import { type BaseTask } from '~/sync/tasks/task.interface';
-import { type FileTreeData, type FileTreeNode } from './types';
+import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { FileTreeData, FileTreeNode } from './types';
 
 type MutableNode = {
 	selectableDescendantTaskIds: Array<string>;

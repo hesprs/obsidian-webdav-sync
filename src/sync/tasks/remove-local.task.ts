@@ -1,5 +1,5 @@
+import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
 import { trashFile } from '~/fs/vault';
-import { type OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 

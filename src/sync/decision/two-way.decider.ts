@@ -1,11 +1,26 @@
-import { type ProgressPatch } from '~/events';
+import type { ProgressPatch } from '~/events';
+import type { SyncRecord } from '~/storage';
+import type { RecordStatsMap, StatsMap } from '~/types';
 import postTraversal from '~/fs/post-traversal';
 import { traverseVault } from '~/fs/vault';
 import { traverseWebDAV } from '~/fs/webdav';
 import { useSettings } from '~/settings';
-import { type SyncRecord } from '~/storage';
-import { type RecordStatsMap, type StatsMap, SyncRunKind } from '~/types';
-import { type SyncEngine } from '..';
+import { SyncRunKind } from '~/types';
+import type { SyncEngine } from '..';
+import type { BaseTask } from '../tasks/task.interface';
+import type {
+	OptionsWithBothFileStats,
+	OptionsWithBothStats,
+	OptionsWithLocalFileStat,
+	OptionsWithLocalFolderStat,
+	OptionsWithLocalStat,
+	OptionsWithRemoteFileStat,
+	OptionsWithRemoteFolderStat,
+	OptionsWithRemoteStat,
+	SyncDecisionInput,
+	TaskFactory,
+	TaskOptions,
+} from './sync-decision.interface';
 import AddRecordTask from '../tasks/add-record.task';
 import CleanRecordTask from '../tasks/clean-record.task';
 import MergeTask from '../tasks/merge.task';
@@ -15,20 +30,6 @@ import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
-import { type BaseTask } from '../tasks/task.interface';
-import {
-	type OptionsWithBothFileStats,
-	type OptionsWithBothStats,
-	type OptionsWithLocalFileStat,
-	type OptionsWithLocalFolderStat,
-	type OptionsWithLocalStat,
-	type OptionsWithRemoteFileStat,
-	type OptionsWithRemoteFolderStat,
-	type OptionsWithRemoteStat,
-	type SyncDecisionInput,
-	type TaskFactory,
-	type TaskOptions,
-} from './sync-decision.interface';
 import twoWayDecider from './two-way.decider.function';
 
 export default class TwoWaySyncDecider {

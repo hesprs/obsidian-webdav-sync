@@ -1,5 +1,5 @@
+import type { OptionsWithRemoteFolderStat } from '~/sync/decision/sync-decision.interface';
 import { statItem } from '~/fs/vault';
-import { type OptionsWithRemoteFolderStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 

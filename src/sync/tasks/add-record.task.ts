@@ -1,5 +1,5 @@
 import logger from '~/utils/logger';
-import { type OptionsWithBothStats } from '../decision/sync-decision.interface';
+import type { OptionsWithBothStats } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class AddRecordTask extends BaseTask<OptionsWithBothStats> {

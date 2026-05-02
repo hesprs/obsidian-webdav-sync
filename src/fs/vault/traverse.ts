@@ -1,7 +1,7 @@
-import { type Vault } from 'obsidian';
+import type { Vault } from 'obsidian';
+import type { StatsMap } from '~/types';
 import { normalizeVaultPath } from '~/platform/path';
 import { useSettings } from '~/settings';
-import { type StatsMap } from '~/types';
 import logger from '~/utils/logger';
 import postTraversal from '../post-traversal';
 import { toStatModel } from './utils';

@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import { For, Show, createEffect, createSignal } from 'solid-js';
-import { type fs } from '../App';
+import type { fs } from '../App';
 import File from './File';
 import Folder from './Folder';
 

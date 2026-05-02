@@ -1,5 +1,6 @@
 import { render } from 'solid-js/web';
-import App, { type FileTreeAppProps } from './App';
+import type { FileTreeAppProps } from './App';
+import App from './App';
 
 export type { default as FileTreeSelectionController } from './selection';
 export type { FileTreeSelectionSnapshot } from './types';

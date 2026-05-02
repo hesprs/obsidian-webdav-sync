@@ -39,7 +39,7 @@
 		"unicorn/prefer-global-this": "off",
 		"eslint/no-new": "off",
 		"eslint/sort-imports": "off", // disable temporarily since it is glitchy
-		"import/consistent-type-specifier-style": ["warn", "prefer-inline"],
+		"eslint/no-duplicate-imports": ["warn", { "allowSeparateTypeImports": true }],
 		"eslint/new-cap": "off",
 		"typescript/consistent-type-imports": "off",
 		"react/jsx-max-depth": "off",
@@ -66,7 +66,8 @@
 			{ "allow": ["**/*.css", "**/*.scss", "**/*.less"] }
 		],
 		"eslint/no-underscore-dangle": ["warn", { "allow": ["__root__"] }],
-		"unicorn/number-literal-case": "off"
+		"unicorn/number-literal-case": "off",
+		"eslint/no-multi-assign": "off"
 	},
 	"env": {
 		"builtin": true

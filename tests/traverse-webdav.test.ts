@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import type { StatsMap } from '~/types';
 import { traverseWebDAV, getDirectoryContents } from '~/fs/webdav';
-import { type StatsMap } from '~/types';
 
 const remoteRecordState: StatsMap = new Map();
 

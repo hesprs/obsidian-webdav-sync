@@ -1,5 +1,5 @@
-import { type Stat, type Vault } from 'obsidian';
-import { type StatModel } from '~/types';
+import type { Stat, Vault } from 'obsidian';
+import type { StatModel } from '~/types';
 
 export async function statItem(vault: Vault, path: string) {
 	const file = await vault.adapter.stat(path);

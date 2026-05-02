@@ -1,9 +1,10 @@
+import type { BinaryLike } from '~/platform/binary';
 import { statItem } from '~/fs/vault';
 import { getContent } from '~/fs/webdav';
-import { arrayBufferToText, toArrayBuffer, type BinaryLike } from '~/platform/binary';
+import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import { useSettings } from '~/settings';
 import logger from '~/utils/logger';
-import { type OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
+import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { getStdChunkSize, splitChunks } from '../utils/split-chunks';
 import { BaseTask, toTaskError } from './task.interface';

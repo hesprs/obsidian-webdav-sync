@@ -1,7 +1,8 @@
+import type { App } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
-import { PluginSettingTab, type App } from 'obsidian';
-import { type UserOptions } from '~/composable/glob-match';
-import { type ToggleNumericSettingsField } from '~/types';
+import { PluginSettingTab } from 'obsidian';
+import type { UserOptions } from '~/composable/glob-match';
+import type { ToggleNumericSettingsField } from '~/types';
 import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';

@@ -1,7 +1,7 @@
 import { setIcon, setTooltip } from 'obsidian';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
-import { type BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync/tasks/task.interface';
 import getTaskIcon from './icon-map';
 import FileTreeSelectionController from './selection';
 import createFileTreeData from './tree-data';

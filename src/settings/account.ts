@@ -1,4 +1,5 @@
-import { type TextComponent, Notice, SecretComponent, Setting } from 'obsidian';
+import type { TextComponent } from 'obsidian';
+import { Notice, SecretComponent, Setting } from 'obsidian';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
