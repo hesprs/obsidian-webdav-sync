@@ -8,7 +8,12 @@ export default function handleInput<T extends keyof PluginSettings>({
 	plugin,
 	field,
 	processValue,
-	stringify = (value: PluginSettings[T]) => value.toString(),
+	stringify = (value: PluginSettings[T]) =>
+		typeof value === 'string'
+			? value
+			: typeof value === 'boolean' || typeof value === 'number'
+				? value.toString()
+				: '',
 }: {
 	text: TextComponent;
 	plugin: WebDAVSyncPlugin;

@@ -66,7 +66,6 @@
 			{ "allow": ["**/*.css", "**/*.scss", "**/*.less"] }
 		],
 		"eslint/no-underscore-dangle": ["warn", { "allow": ["__root__"] }],
-		"typescript/no-base-to-string": "off",
 		"unicorn/number-literal-case": "off"
 	},
 	"env": {
