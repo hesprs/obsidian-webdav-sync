@@ -73,6 +73,12 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
   - Use local
   - Skip
 
+🔐 **Client-side Encryption**:
+
+- This plugin supports encrypting your files before uploading.
+- The encryption algorithm prevents unauthorized file access. Detects unintended modification and movement.
+- The encryption algorithm assumes stricter threat model, and achieves higher security, faster performance and smaller size than similar solutions like Remotely Save, see detail in the [algorithm spec](https://github.com/hesprs/obsidian-webdav-sync/blob/main/docs/encryption.md).
+
 ⚡ **Maximum Performance**:
 
 - Most sync operations are performed via parallelized network requests.

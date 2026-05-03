@@ -1,5 +1,6 @@
 import type { TextComponent } from 'obsidian';
 import { Notice, SecretComponent, Setting } from 'obsidian';
+import EncryptionReminderModal from '~/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
@@ -97,6 +98,33 @@ export default class AccountSettings extends BaseSettings {
 						remoteBaseDirText?.setValue(path);
 						void this.plugin.saveSettings();
 					}).open();
+				});
+			});
+
+		new Setting(this.containerEl)
+			.setName(t('settings.encryption.name'))
+			.setDesc(t('settings.encryption.desc'))
+			.addComponent((element) =>
+				new SecretComponent(this.app, element)
+					.setValue(this.plugin.settings.encryption.value)
+					.onChange((value) => {
+						if (this.plugin.settings.encryption.value !== value) {
+							this.plugin.settings.encryption.value = value;
+							void this.plugin.saveSettings();
+						}
+					}),
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.encryption.enabled);
+				toggle.onChange((enabled) => {
+					if (this.plugin.settings.encryption.enabled !== enabled) {
+						this.plugin.settings.encryption.enabled = enabled;
+						void this.plugin.saveSettings();
+						new EncryptionReminderModal(
+							this.plugin,
+							enabled ? 'enabled' : 'disabled',
+						).open();
+					}
 				});
 			});
 	}

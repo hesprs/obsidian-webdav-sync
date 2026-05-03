@@ -42,6 +42,8 @@ export default class SyncExecutorService {
 		});
 
 		try {
+			this.plugin.prepareSyncEncryptionKeys();
+
 			const sync = new SyncEngine(this.plugin, {
 				token: this.plugin.getToken(),
 				vault: this.plugin.app.vault,
@@ -115,6 +117,7 @@ export default class SyncExecutorService {
 
 			return { executed: true, run };
 		} finally {
+			this.plugin.clearSyncEncryptionKeys();
 			logger.popContext();
 		}
 	}

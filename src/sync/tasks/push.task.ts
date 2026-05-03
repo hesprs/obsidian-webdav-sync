@@ -2,6 +2,7 @@ import type { OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.int
 import { getContent } from '~/fs/vault';
 import { statItem } from '~/fs/webdav';
 import { arrayBufferToText } from '~/platform/binary';
+import { encryptContentForRemoteFile, resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask, toTaskError } from './task.interface';
@@ -19,13 +20,15 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
 				return { success: true } as const;
 			}
+			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
+			const uploadContent = await encryptContentForRemoteFile(this.localPath, localContent);
 
-			const res = await this.webdav.putFileContents(this.remotePath, localContent, {
+			const res = await this.webdav.putFileContents(executionRemotePath, uploadContent, {
 				overwrite: true,
 			});
 			if (!res) throw new Error('Upload failed');
 
-			const remote = await statItem(this.webdav, this.remotePath);
+			const remote = await statItem(this.webdav, executionRemotePath, this.remotePath);
 			if (!remote || remote.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
 

@@ -20,9 +20,9 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	} = input;
 	const mixedPath = [...localStats.keys(), ...remoteStats.keys(), ...records.keys()];
 
-	logger.debug('local state', localStats.keys());
-	logger.debug('remote state', remoteStats.keys());
-	logger.debug('records', records.keys());
+	logger.debug('local state', [...localStats.keys()]);
+	logger.debug('remote state', [...remoteStats.keys()]);
+	logger.debug('records', [...records.keys()]);
 
 	const tasks: Array<BaseTask> = [];
 

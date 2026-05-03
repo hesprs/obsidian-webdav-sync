@@ -1,26 +1,9 @@
 import type WebDAVSyncPlugin from '~';
-import logger from '~/utils/logger';
 
 // TODO: remove migration in May 2026
 export default function processSettings(plugin: WebDAVSyncPlugin): void {
 	let changed = false;
 	const settings = plugin.settings;
-
-	// Remove at 1 May 2026
-	if ('credential' in settings)
-		try {
-			const credential = settings.credential;
-			if (credential && typeof credential === 'string') {
-				plugin.app.secretStorage.setSecret('webdav-token', credential);
-				settings.token = 'webdav-token';
-			}
-			delete settings.credential;
-			changed = true;
-			logger.info('Migrated user WebDAV token to secret storage.');
-		} catch (error) {
-			logger.error('Failed to migrate WebDAV token!', error);
-			throw error;
-		}
 
 	// Remove at 10 May 2026
 	if ('bytes' in settings.skipLargeFiles && typeof settings.skipLargeFiles.bytes === 'number') {
@@ -122,6 +105,23 @@ export default function processSettings(plugin: WebDAVSyncPlugin): void {
 		settings.fastRealtimeSync = settings.useFastSyncOnLocalChange;
 		delete settings.useFastSyncOnLocalChange;
 		changed = true;
+	}
+
+	// Remove at 23 May 2026
+	if (settings.serverUrl) {
+		const UrlError = new Error('Invalid server URL, please check your settings');
+		let parsedUrl: URL;
+		try {
+			parsedUrl = new URL(settings.serverUrl);
+		} catch {
+			throw UrlError;
+		}
+		if (!['http:', 'https:'].includes(parsedUrl.protocol)) throw UrlError;
+		const newUrl = parsedUrl.toString().replace(/\/+$/, '');
+		if (newUrl !== settings.serverUrl) {
+			settings.serverUrl = newUrl;
+			changed = true;
+		}
 	}
 
 	if (changed) void plugin.saveSettings();

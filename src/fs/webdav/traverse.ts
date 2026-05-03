@@ -2,6 +2,7 @@ import type { StatsMap } from '~/types';
 import apiLimiter from '~/composable/api-limiter';
 import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
+import { decryptRemotePathForTraversal } from '~/utils/encryption';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
@@ -30,6 +31,7 @@ export default async function traverse({
 }: TraverseWebDAVOptions) {
 	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
 		await useSettings();
+	const encryptionEnabled = (await useSettings()).encryption?.enabled ?? false;
 	const result: StatsMap = new Map();
 
 	const getContentFunc = (path: string) =>
@@ -51,14 +53,19 @@ export default async function traverse({
 	};
 
 	if (exhaustiveRemoteTraversal) {
-		const resultItems = (await getContent(remoteDir)).map((stat) => {
-			const path = normalizePathToAbsolute(
-				remoteDir,
-				stat.filename,
-				stat.type === 'directory',
-			);
-			return toStatModel(stat, path);
-		});
+		const resultItems = await Promise.all(
+			(await getContent(remoteDir)).map(async (stat) => {
+				const remotePath = normalizePathToAbsolute(
+					remoteDir,
+					stat.filename,
+					stat.type === 'directory',
+				);
+				const path = encryptionEnabled
+					? await decryptRemotePathForTraversal(remotePath)
+					: remotePath;
+				return toStatModel(stat, path);
+			}),
+		);
 		for (const item of resultItems) {
 			const vaultPath = normalizePathToRelative(remoteDir, item.path);
 			result.set(vaultPath, item);
@@ -87,19 +94,30 @@ export default async function traverse({
 			await Promise.all(
 				currentLevelPaths.map(async (currentPath) => {
 					try {
-						const resultItems = (await getContent(currentPath)).map((stat) => {
-							const path = normalizePathToAbsolute(
-								remoteDir,
-								stat.filename,
-								stat.type === 'directory',
-							);
-							return toStatModel(stat, path);
-						});
+						const resultItems = await Promise.all(
+							(await getContent(currentPath)).map(async (stat) => {
+								const remotePath = normalizePathToAbsolute(
+									remoteDir,
+									stat.filename,
+									stat.type === 'directory',
+								);
+								const path = encryptionEnabled
+									? await decryptRemotePathForTraversal(remotePath)
+									: remotePath;
+								return {
+									listingPath: remotePath,
+									statModel: toStatModel(stat, path),
+								};
+							}),
+						);
 
 						for (const item of resultItems) {
-							const vaultPath = normalizePathToRelative(remoteDir, item.path);
-							result.set(vaultPath, item);
-							if (item.isDir) queue.push(item.path);
+							const vaultPath = normalizePathToRelative(
+								remoteDir,
+								item.statModel.path,
+							);
+							result.set(vaultPath, item.statModel);
+							if (item.statModel.isDir) queue.push(item.listingPath);
 						}
 						reportProgress(currentPath);
 					} catch (error) {

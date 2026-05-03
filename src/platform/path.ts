@@ -55,6 +55,29 @@ export function normalizeBaseDir(path: string): string {
 	const dir = normalizeRemotePath(path);
 	return dir === '/' ? '/' : `${dir}/`;
 }
+
+export function splitRemotePathAtBaseDir(remoteBaseDir: string, remotePath: string) {
+	const baseDir = normalizeBaseDir(remoteBaseDir);
+	const isDir = remotePath !== '/' && remotePath.endsWith('/');
+	const normalizedPath = isDir ? normalizeBaseDir(remotePath) : normalizeRemotePath(remotePath);
+	const relativePath = normalizePathToRelative(baseDir, normalizedPath);
+	return {
+		baseDir,
+		descendantSegments: relativePath === '/' ? [] : relativePath.split('/'),
+		isDir,
+	};
+}
+
+export function joinRemotePathFromBaseDir(
+	remoteBaseDir: string,
+	descendantSegments: Array<string>,
+	isDir: boolean,
+): string {
+	const baseDir = normalizeBaseDir(remoteBaseDir);
+	if (descendantSegments.length === 0) return baseDir;
+	const relativePath = descendantSegments.join('/');
+	return `${baseDir}${relativePath}${isDir ? '/' : ''}`;
+}
 // #endregion ======================================================================
 
 // #region Dirname / Basename
