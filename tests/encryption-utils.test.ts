@@ -1,4 +1,6 @@
+import type { SecretStorage } from 'obsidian';
 import { describe, expect, it } from 'vitest';
+import type { PluginSettings } from '~/settings';
 import {
 	decryptFileContent,
 	createRangedFileDecrypter,
@@ -72,11 +74,11 @@ describe('encryption runtime helpers', () => {
 		const context = createSyncEncryptionContext(
 			{
 				account: 'alice',
-				encryption: { value: 'secret-ref' },
+				encryption: { enabled: true, value: 'secret-ref' },
 				remoteDir: '/vault/',
 				serverUrl: 'https://dav.example.com',
-			},
-			{ getSecret: () => 'password' },
+			} as PluginSettings,
+			{ getSecret: () => 'password' } as unknown as SecretStorage,
 		);
 
 		const first = await context.keysPromise;
@@ -85,15 +87,15 @@ describe('encryption runtime helpers', () => {
 		expect([...first.nameKey]).toEqual([...second.nameKey]);
 	});
 
-	it('rejects sync encryption context when secret is missing', async () => {
+	it('rejects sync encryption context when secret is missing or empty', async () => {
 		const context = createSyncEncryptionContext(
 			{
 				account: 'alice',
-				encryption: { value: 'secret-ref' },
+				encryption: { enabled: true, value: 'secret-ref' },
 				remoteDir: '/vault/',
 				serverUrl: 'https://dav.example.com',
-			},
-			{ getSecret: () => undefined },
+			} as PluginSettings,
+			{ getSecret: () => '' } as unknown as SecretStorage,
 		);
 
 		await expect(context.keysPromise).rejects.toThrow(
@@ -138,7 +140,7 @@ describe('encryption runtime helpers', () => {
 
 	it('encrypts runtime wrappers when encryption is enabled', async () => {
 		const plugin = {
-			app: { secretStorage: { getSecret: () => 'password' } },
+			app: { secretStorage: { getSecret: () => 'password' } as unknown as SecretStorage },
 			getSyncEncryptionContext() {
 				return createSyncEncryptionContext(this.settings, this.app.secretStorage);
 			},
@@ -150,7 +152,7 @@ describe('encryption runtime helpers', () => {
 				encryption: { enabled: true, value: 'secret-ref' },
 				remoteDir: '/vault/',
 				serverUrl: 'https://dav.example.com',
-			},
+			} as PluginSettings,
 		};
 		plugin.settings.account = ' alice ';
 		plugin.settings.serverUrl = 'https://dav.example.com///';
@@ -195,7 +197,7 @@ describe('encryption runtime helpers', () => {
 
 	it('encrypts and decrypts remote paths through the runtime wrappers', async () => {
 		const plugin = {
-			app: { secretStorage: { getSecret: () => 'password' } },
+			app: { secretStorage: { getSecret: () => 'password' } as unknown as SecretStorage },
 			getSyncEncryptionContext() {
 				return createSyncEncryptionContext(this.settings, this.app.secretStorage);
 			},
@@ -207,7 +209,7 @@ describe('encryption runtime helpers', () => {
 				encryption: { enabled: true, value: 'secret-ref' },
 				remoteDir: '/vault/',
 				serverUrl: 'https://dav.example.com',
-			},
+			} as PluginSettings,
 		};
 		setPluginInstance(plugin as never);
 
