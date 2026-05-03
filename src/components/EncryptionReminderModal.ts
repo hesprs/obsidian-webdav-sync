@@ -24,7 +24,7 @@ export default class EncryptionReminderModal extends Modal {
 		);
 
 		contentEl.createEl('p', {
-			cls: 'whitespace-pre-line',
+			cls: 'whitespace-pre-wrap',
 			text: t(
 				this.state === 'enabled'
 					? 'settings.encryption.reminderModal.messageEnabled'

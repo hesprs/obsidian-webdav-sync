@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.1 - 2026-05-03
+
+- Specify encryption reminder modal text to prevent confusion.
+- Correct inconsistencies in reminder text.
+- Format the text to make it more readable.
+
 ## Obsidian WebDAV Sync v2.5.0 - 2026-05-03
 
 - Implemented client-side encryption. The encryption mechanism is faster, smaller, and more secure than similar solutions (like Remotely Save). See detail in [algorithm spec](https://github.com/hesprs/obsidian-webdav-sync/blob/main/docs/encryption.md).
