@@ -1,5 +1,6 @@
 import type { TextComponent } from 'obsidian';
 import { Notice, SecretComponent, Setting } from 'obsidian';
+import EncryptionReminderModal from '~/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
@@ -119,6 +120,10 @@ export default class AccountSettings extends BaseSettings {
 					if (this.plugin.settings.encryption.enabled !== enabled) {
 						this.plugin.settings.encryption.enabled = enabled;
 						void this.plugin.saveSettings();
+						new EncryptionReminderModal(
+							this.plugin,
+							enabled ? 'enabled' : 'disabled',
+						).open();
 					}
 				});
 			});
