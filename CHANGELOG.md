@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.0 - 2026-05-03
+
+- Implemented client-side encryption. The encryption mechanism is faster, smaller, and more secure than similar solutions (like Remotely Save). See detail in [algorithm spec](https://github.com/hesprs/obsidian-webdav-sync/blob/main/docs/encryption.md).
+- Adjusted settings entry description for better understanding.
+- Improved chunked downloading for better error
+- Fixed cancel button doesn't appear during pre-connecting.
+- Fixed deleting folders contain changed items causing 404 error.
+
 ## Obsidian WebDAV Sync v2.4.1 - 2026-04-25
 
 - Adjusted manual sync progress UI address text overflow problem on mobile devices.

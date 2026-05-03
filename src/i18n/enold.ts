@@ -74,14 +74,14 @@ const en = {
 			placeholder: 'Enter your credential',
 		},
 		encryption: {
-			desc: 'Store the encryption password in Obsidian secret storage and enable encrypted sync.',
+			desc: 'Encrypt files before upload and decrypt files when download. Encryption password will be stored in Obsidian keychain.',
 			name: 'Encryption',
 			reminderModal: {
 				acknowledge: 'I understand',
 				messageDisabled:
 					'⚠️ You should be cautious about following points before disabling encryption:\n\n1. All subsequent uploads will be in plaintext without encryption.\n2. Please ensure all devices have encryption disabled.\n3. If this vault was previously uploaded with encryption, delete the remote base directory entirely including the root folder, and re-upload the vault.',
 				messageEnabled:
-					"⚠️ You should be cautious about following points before enabling encryption:\n\n1. All subsequent uploads will be encrypted.\n2. Please ensure all devices have the same password and encryption enabled.\n3. If this vault was previously uploaded without encryption, delete the remote base directory entirely including the root folder, and re-upload the entire vault.\n4. The encryption algorithm binds the decryption key to the file location and server identity, this provides much better security and data integrity. But it also means that if you use a different server or moving a file to a different location without using this plugin, you won't be able to decrypt it.\n 5. Please avoid managing files manually on the server. If you change a server later, please re-upload the vault with encryption enabled.",
+					"⚠️ You should be cautious about following points before enabling encryption:\n\n1. All subsequent uploads will be encrypted.\n2. Please ensure all devices have the same password and encryption enabled.\n3. If this vault was previously uploaded without encryption, delete the remote base directory entirely including the root folder, and re-upload the entire vault.\n4. The encryption algorithm binds the decryption key to the file location and server identity, this provides much better security and data integrity. But it also means that if you use a different server or moving a file to a different location without using this plugin, you won't be able to decrypt it.\n5. Please avoid managing files manually on the server. If you change a server later, please re-upload the vault with encryption enabled.\n6. Due to the encryption, the sync process will take slightly longer to complete.",
 				titleDisabled: 'Encryption disabled',
 				titleEnabled: 'Encryption enabled',
 			},

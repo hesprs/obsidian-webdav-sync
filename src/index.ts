@@ -173,7 +173,10 @@ export default class WebDAVSyncPlugin extends Plugin {
 	}
 
 	getSyncEncryptionContext() {
-		this.syncEncryptionContext ??= createSyncEncryptionContext(this);
+		this.syncEncryptionContext ??= createSyncEncryptionContext(
+			this.settings,
+			this.app.secretStorage,
+		);
 		return this.syncEncryptionContext;
 	}
 

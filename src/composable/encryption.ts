@@ -17,7 +17,7 @@ const FILE_KEY_INFO = 'file-key-v1';
 const FILE_NAME_NONCE = ownedBytes(textEncoder.encode('file-name-v1'));
 const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';
 
-export type EncryptionIdentity = {
+type EncryptionIdentity = {
 	serverUrl: string;
 	account: string;
 	remoteDir: string;
@@ -121,7 +121,7 @@ export async function deriveNameKey(masterKey: BufferSource): Promise<Uint8Array
 	return deriveHkdfKey(masterKey, NAME_KEY_INFO);
 }
 
-export function getEncryptedFileSize(rawFileSize: number): number {
+function getEncryptedFileSize(rawFileSize: number): number {
 	if (rawFileSize < 0) throw new Error('Raw file size must be non-negative');
 	if (rawFileSize === 0) return FILE_SALT_LENGTH;
 	return (
