@@ -1,6 +1,6 @@
 # Client-side Encryption v1
 
-The plugin unloads encrypted files to remote, download and decrypt back to local. The schema below aims to achieve similar encryption function as `rclone` but with higher security.
+The plugin uploads encrypted files to remote, download and decrypt back to local. The schema below aims to achieve similar encryption function as `rclone` but with higher security.
 
 ## Terminology
 
@@ -60,15 +60,11 @@ The plugin unloads encrypted files to remote, download and decrypt back to local
 
 The function is toggled via settings "Encryption" toggling. It allows users to set encryption password via Obsidian keychain, like WebDAV token. The toggle button triggers a modal informing users that:
 
-- all subsequent uploads will be encrypted, unencrypted content can still download. And encrypted content can be decrypted on other devices once they have the correct password, regardless whether "Encryption" is enabled.
-- ensure all devices have password. And to their best, enable "Encryption" on all devices.
-- if they want full vault encryption, please delete the remote directory entirely and re-upload.
-
-Toggling "Encryption" only affects uploading logic. All other logic that is encryption-related will be performed normally every sync regardless the switch (see below)
+- all subsequent uploads will be encrypted.
+- ensure all devices have password and have "Encryption" enabled.
+- please delete remote base directory entirely and re-upload the entire vault if their vault is uploaded before
 
 ## Sync Routine
-
-**(behaviours below are always performed, no matter "Encryption" toggling)**
 
 On each sync, generate a promise to obtain _root file key_ and _name key_ that will be resolved and cached on demand:
 
@@ -82,9 +78,7 @@ Then come to the traversal and syncing logic:
 
 - encryption should be isolated at the end site, directly in the push task and mkdir task
 - decryption should happen immediately when the encrypted file touches local machine, directly during remote traversal, pull task, and `getRemoteContent`.
-- trigger decryption when the file name of the target ends with `.sync-enc` or `.sync-enc/`.
-- (note that decryption is triggered by file / folder name, no matter "Encryption" is enabled or not)
-- file upload should avoid file
+- assume all files are encrypted when "Encryption" is enabled, assume all plain when not enabled.
 
 ## File / Folder Path Encryption
 
@@ -133,9 +127,9 @@ Then come to the traversal and syncing logic:
 - Input the decrypted file path, encrypted size in bytes, and accept a sequential stream (not a true stream, just a repeatedly called class method) of random-size binary
 - Split and concatenate the chunk internally
 - For example, if the first received binary is 2,000,000B in size, the range decrypter:
-  - strips first 12B as _file salt_
+  - strips first 16B as _file salt_
   - add up counter for each chunk and strip next 1966380B as 15 _completed chunks_
-  - save the last 33908B as an _incomplete chunk_ and save to a buffer
+  - save the last 33604B as an _incomplete chunk_ and save to a buffer
   - decrypt the 15 _completed chunks_ as one-pass decryption
   - concatenate content, and return to caller. The caller should append the file and GC immediately
   - next time the decrypter class method is called, it concatenates the content in the buffer with the first certain size of bytes in the new binary as the first _completed chunk_.

@@ -73,6 +73,10 @@ const en = {
 			name: 'Credential',
 			placeholder: 'Enter your credential',
 		},
+		encryption: {
+			desc: 'Store the encryption password in Obsidian secret storage and enable encrypted sync.',
+			name: 'Encryption',
+		},
 		exhaustiveRemoteTraversal: {
 			desc: 'Traverse the entire remote directory tree within one WebDAV request, including all subdirectories. This could drastically reduce traversal time for large directories, but may have compatibility issues with some WebDAV servers. (This is to send "Depth: infinity" in PROPFIND request)',
 			name: 'Exhaustive remote traversal',

@@ -3,12 +3,17 @@ import type WebDAVSyncPlugin from '~';
 import { PluginSettingTab } from 'obsidian';
 import type { UserOptions } from '~/composable/glob-match';
 import type { ToggleNumericSettingsField } from '~/types';
-import waitUntil from '~/utils/wait-until';
 import AccountSettings from './account';
 import CommonSettings from './common';
 import ControlsSettings from './controls';
 import DevelopmentSettings from './development';
 import FilterSettings from './filter';
+export {
+	getPluginInstance,
+	setPluginInstance,
+	useSettings,
+	waitUntilPluginInstance,
+} from './plugin-instance';
 
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diffMatchPatch',
@@ -34,6 +39,10 @@ export type PluginSettings = {
 	serverUrl: string;
 	account: string;
 	token: string;
+	encryption: {
+		enabled: boolean;
+		value: string;
+	};
 	exhaustiveRemoteTraversal: boolean;
 	remoteDir: string;
 	showSyncStatusInNotificationOnMobile: boolean;
@@ -56,25 +65,6 @@ export type PluginSettings = {
 	startupSync: ToggleNumericSettingsField; // Value is delay
 	scheduledSync: ToggleNumericSettingsField; // Value is interval
 };
-
-let pluginInstance: WebDAVSyncPlugin | undefined;
-
-export function setPluginInstance(plugin?: WebDAVSyncPlugin) {
-	pluginInstance = plugin;
-}
-
-export function getPluginInstance() {
-	return pluginInstance;
-}
-
-export function waitUntilPluginInstance() {
-	return waitUntil(() => Boolean(pluginInstance), 100);
-}
-
-export async function useSettings() {
-	await waitUntilPluginInstance();
-	return (pluginInstance as WebDAVSyncPlugin).settings;
-}
 
 export class SyncSettingTab extends PluginSettingTab {
 	plugin: WebDAVSyncPlugin;

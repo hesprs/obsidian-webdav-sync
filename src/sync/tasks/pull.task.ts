@@ -3,6 +3,7 @@ import { statItem } from '~/fs/vault';
 import { getContent } from '~/fs/webdav';
 import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import { useSettings } from '~/settings';
+import { resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
 import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
 import isMergeablePath from '../utils/is-mergeable-path';
@@ -15,6 +16,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 	async exec() {
 		try {
 			const maxThroughput = (await useSettings()).maxThroughputConcurrency;
+			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
 			const chunkSize = getStdChunkSize(maxThroughput, 4);
 			const cache =
 				this.remote.size <= chunkSize
@@ -35,7 +37,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 					await Promise.all(
 						group.map(async ({ start, end }) => {
 							const buffer = await toArrayBuffer(
-								(await this.webdav.getFileContents(this.remotePath, {
+								(await this.webdav.getFileContents(executionRemotePath, {
 									headers: { Range: `bytes=${start}-${end}` },
 								})) as BinaryLike,
 							);
@@ -59,7 +61,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 				}
 				await this.syncRecord.removeFileChunk(this.remotePath);
 			} else {
-				remoteContent = await getContent(this.webdav, this.remotePath);
+				remoteContent = await getContent(this.webdav, executionRemotePath);
 				await this.vault.adapter.writeBinary(this.localPath, remoteContent, {
 					ctime: this.remote.mtime - 1000, // #1
 				});

@@ -75,6 +75,10 @@ const translation: typeof en = {
 			name: '凭证',
 			placeholder: '输入你的凭证',
 		},
+		encryption: {
+			desc: '将加密密码存储到 Obsidian 密钥链并启用加密同步。',
+			name: '加密',
+		},
 		exhaustiveRemoteTraversal: {
 			desc: '在一次 WebDAV 请求中遍历整个远程目录树，包括所有子目录。这可以大幅减少大型目录的遍历时间，但可能与某些 WebDAV 服务器存在兼容性问题。（即在 PROPFIND 请求中发送 "Depth: infinity"）',
 			name: '彻底远程遍历',

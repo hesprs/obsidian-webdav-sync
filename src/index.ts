@@ -1,6 +1,7 @@
 import './assets/global.css';
 import { Plugin } from 'obsidian';
 import type { PluginSettings, GlobMatchOptions } from './settings';
+import type { SyncEncryptionContext } from './utils/encryption';
 import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
@@ -23,6 +24,7 @@ import {
 	IndexedDbFileChunkStore,
 	IndexedDbSyncStateStore,
 } from './storage';
+import { createSyncEncryptionContext } from './utils/encryption';
 import getCredential from './utils/get-credential';
 import patchWebDav from './webdav-patch';
 
@@ -37,11 +39,16 @@ function createGlobMatchOptions(expr: string) {
 
 export default class WebDAVSyncPlugin extends Plugin {
 	public isSyncing = false;
+	private syncEncryptionContext: SyncEncryptionContext | undefined;
 	public settings: PluginSettings = {
 		account: '',
 		confirmBeforeDeleteInAutoSync: true,
 		confirmBeforeSync: true,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
+		encryption: {
+			enabled: false,
+			value: '',
+		},
 		exhaustiveRemoteTraversal: false,
 		fastRealtimeSync: true,
 		filterRules: {
@@ -155,6 +162,23 @@ export default class WebDAVSyncPlugin extends Plugin {
 	getToken() {
 		const token = `${this.settings.account}:${getCredential(this)}`;
 		return btoa(token);
+	}
+
+	prepareSyncEncryptionKeys() {
+		this.syncEncryptionContext = undefined;
+	}
+
+	getSyncEncryptionKeys() {
+		return this.getSyncEncryptionContext().keysPromise;
+	}
+
+	getSyncEncryptionContext() {
+		this.syncEncryptionContext ??= createSyncEncryptionContext(this);
+		return this.syncEncryptionContext;
+	}
+
+	clearSyncEncryptionKeys() {
+		this.syncEncryptionContext = undefined;
 	}
 
 	/**

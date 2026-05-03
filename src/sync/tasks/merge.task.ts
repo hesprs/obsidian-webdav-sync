@@ -5,6 +5,7 @@ import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
+import { resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
 import mergeDigIn from '~/utils/merge-dig-in';
 import { resolveByIntelligentMerge } from '../utils/merge';
@@ -24,7 +25,9 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				return { success: true } as const;
 			}
 
-			const remoteBuffer = await getRemoteContent(this.webdav, this.remotePath);
+			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
+
+			const remoteBuffer = await getRemoteContent(this.webdav, executionRemotePath);
 
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
@@ -67,11 +70,19 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			let newRemote: StatModel | undefined;
 			let newLocal: StatModel | undefined;
 			if (mergedText !== remoteText) {
-				const putResult = await this.webdav.putFileContents(this.remotePath, mergedText, {
-					overwrite: true,
-				});
+				const putResult = await this.webdav.putFileContents(
+					executionRemotePath,
+					mergedText,
+					{
+						overwrite: true,
+					},
+				);
 				if (!putResult) throw new Error(t('sync.error.failedToUploadMerged'));
-				const fetchedRemoteStat = await statWebDAVItem(this.webdav, this.remotePath);
+				const fetchedRemoteStat = await statWebDAVItem(
+					this.webdav,
+					executionRemotePath,
+					this.remotePath,
+				);
 				if (!fetchedRemoteStat || fetchedRemoteStat.isDir)
 					throw new Error(
 						`failed to read remote file stat after intelligent merge: ${this.localPath}`,

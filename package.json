@@ -16,6 +16,7 @@
 		"notes": "node scripts/release-notes.ts"
 	},
 	"devDependencies": {
+		"@noble/ciphers": "^2.2.0",
 		"@tsdown/css": "^0.21.10",
 		"@types/glob-to-regexp": "^0.4.4",
 		"@types/lodash-es": "^4.17.12",
@@ -23,6 +24,7 @@
 		"@unocss/postcss": "66.6.8",
 		"@vitejs/devtools": "^0.1.17",
 		"glob-to-regexp": "^0.4.1",
+		"hash-wasm": "^4.12.0",
 		"localspace": "^1.2.0",
 		"node-diff3": "^3.2.0",
 		"obsidian": "latest",
