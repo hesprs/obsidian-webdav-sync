@@ -5,7 +5,11 @@ import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
-import { resolveRemoteExecutionPath } from '~/utils/encryption';
+import {
+	decryptRemoteFileContent,
+	encryptContentForRemoteFile,
+	resolveRemoteExecutionPath,
+} from '~/utils/encryption';
 import logger from '~/utils/logger';
 import mergeDigIn from '~/utils/merge-dig-in';
 import { resolveByIntelligentMerge } from '../utils/merge';
@@ -25,9 +29,17 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				return { success: true } as const;
 			}
 
+			const settings = await useSettings();
 			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
 
-			const remoteBuffer = await getRemoteContent(this.webdav, executionRemotePath);
+			const downloadedRemoteBuffer = await getRemoteContent(this.webdav, executionRemotePath);
+			const remoteBuffer = settings.encryption.enabled
+				? await decryptRemoteFileContent(
+						this.localPath,
+						downloadedRemoteBuffer,
+						this.remote.size,
+					)
+				: downloadedRemoteBuffer;
 
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
@@ -62,17 +74,20 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			if (!mergeResult.success) {
 				const mergeDigInResult = mergeDigIn(localText, baseText, remoteText, {
 					stringSeparator: '\n',
-					useGitStyle: (await useSettings()).useGitStyle,
+					useGitStyle: settings.useGitStyle,
 				});
 				mergedText = mergeDigInResult.result.join('\n');
 			} else mergedText = mergeResult.mergedText as string;
 
 			let newRemote: StatModel | undefined;
 			let newLocal: StatModel | undefined;
+			const mergedBuffer = new TextEncoder().encode(mergedText).buffer;
 			if (mergedText !== remoteText) {
 				const putResult = await this.webdav.putFileContents(
 					executionRemotePath,
-					mergedText,
+					settings.encryption.enabled
+						? await encryptContentForRemoteFile(this.localPath, mergedBuffer)
+						: mergedText,
 					{
 						overwrite: true,
 					},
@@ -90,11 +105,9 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				newRemote = fetchedRemoteStat;
 			}
 			if (localText !== mergedText) {
-				await this.vault.adapter.writeBinary(
-					this.localPath,
-					new TextEncoder().encode(mergedText).buffer,
-					{ ctime: this.remote.mtime - 1000 },
-				);
+				await this.vault.adapter.writeBinary(this.localPath, mergedBuffer, {
+					ctime: this.remote.mtime - 1000,
+				});
 				const fetchedLocalStat = await statVaultItem(this.vault, this.localPath);
 				if (!fetchedLocalStat || fetchedLocalStat.isDir)
 					throw new Error(

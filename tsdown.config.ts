@@ -51,6 +51,7 @@ export default defineConfig({
 			// Obsidian plugins run in Electron with a DOM, but CJS resolution can still
 			// Select Solid's server runtime. Force the browser runtime explicitly.
 			alias: {
+				'hash-wasm': 'hash-wasm/dist/index.esm.js',
 				'solid-js/web': 'solid-js/web/dist/web.js',
 			},
 			conditionNames: ['browser', 'import', 'module', 'default'],

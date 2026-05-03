@@ -68,30 +68,6 @@ export default class AccountSettings extends BaseSettings {
 					}),
 			);
 
-		new Setting(this.containerEl)
-			.setClass('numeric-toggle')
-			.setName(t('settings.encryption.name'))
-			.setDesc(t('settings.encryption.desc'))
-			.addComponent((element) =>
-				new SecretComponent(this.app, element)
-					.setValue(this.plugin.settings.encryption.value)
-					.onChange((value) => {
-						if (this.plugin.settings.encryption.value !== value) {
-							this.plugin.settings.encryption.value = value;
-							void this.plugin.saveSettings();
-						}
-					}),
-			)
-			.addToggle((toggle) => {
-				toggle.setValue(this.plugin.settings.encryption.enabled);
-				toggle.onChange((enabled) => {
-					if (this.plugin.settings.encryption.enabled !== enabled) {
-						this.plugin.settings.encryption.enabled = enabled;
-						void this.plugin.saveSettings();
-					}
-				});
-			});
-
 		this.displayCheckConnection();
 
 		new Setting(this.containerEl)
@@ -121,6 +97,29 @@ export default class AccountSettings extends BaseSettings {
 						remoteBaseDirText?.setValue(path);
 						void this.plugin.saveSettings();
 					}).open();
+				});
+			});
+
+		new Setting(this.containerEl)
+			.setName(t('settings.encryption.name'))
+			.setDesc(t('settings.encryption.desc'))
+			.addComponent((element) =>
+				new SecretComponent(this.app, element)
+					.setValue(this.plugin.settings.encryption.value)
+					.onChange((value) => {
+						if (this.plugin.settings.encryption.value !== value) {
+							this.plugin.settings.encryption.value = value;
+							void this.plugin.saveSettings();
+						}
+					}),
+			)
+			.addToggle((toggle) => {
+				toggle.setValue(this.plugin.settings.encryption.enabled);
+				toggle.onChange((enabled) => {
+					if (this.plugin.settings.encryption.enabled !== enabled) {
+						this.plugin.settings.encryption.enabled = enabled;
+						void this.plugin.saveSettings();
+					}
 				});
 			});
 	}

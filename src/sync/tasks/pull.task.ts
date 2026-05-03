@@ -1,9 +1,18 @@
 import type { BinaryLike } from '~/platform/binary';
-import { statItem } from '~/fs/vault';
+import {
+	finalizeRangedDownloadTempPath,
+	prepareRangedDownloadTempPath,
+	removeVaultFileIfExists,
+	statItem,
+} from '~/fs/vault';
 import { getContent } from '~/fs/webdav';
 import { arrayBufferToText, toArrayBuffer } from '~/platform/binary';
 import { useSettings } from '~/settings';
-import { resolveRemoteExecutionPath } from '~/utils/encryption';
+import {
+	createRemoteFileContentRangedDecrypter,
+	decryptRemoteFileContent,
+	resolveRemoteExecutionPath,
+} from '~/utils/encryption';
 import logger from '~/utils/logger';
 import type { OptionsWithRemoteFileStat } from '../decision/sync-decision.interface';
 import isMergeablePath from '../utils/is-mergeable-path';
@@ -15,7 +24,9 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 
 	async exec() {
 		try {
-			const maxThroughput = (await useSettings()).maxThroughputConcurrency;
+			const settings = await useSettings();
+			const maxThroughput = settings.maxThroughputConcurrency;
+			const encryptionEnabled = settings.encryption.enabled;
 			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
 			const chunkSize = getStdChunkSize(maxThroughput, 4);
 			const cache =
@@ -33,35 +44,63 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 
 			if (split) {
 				logger.debug(`Pulling large file \`${this.remotePath}\` in chunks.`);
-				for (const group of split)
-					await Promise.all(
-						group.map(async ({ start, end }) => {
-							const buffer = await toArrayBuffer(
-								(await this.webdav.getFileContents(executionRemotePath, {
-									headers: { Range: `bytes=${start}-${end}` },
-								})) as BinaryLike,
-							);
-							await this.syncRecord.setFileChunk(buffer, {
-								end,
-								start,
-								...this.remote,
-							});
-						}),
-					);
+				const tempPath = await prepareRangedDownloadTempPath(this.vault, this.localPath);
+				try {
+					for (const group of split)
+						await Promise.all(
+							group.map(async ({ start, end }) => {
+								const buffer = await toArrayBuffer(
+									(await this.webdav.getFileContents(executionRemotePath, {
+										headers: { Range: `bytes=${start}-${end}` },
+									})) as BinaryLike,
+								);
+								await this.syncRecord.setFileChunk(buffer, {
+									end,
+									start,
+									...this.remote,
+								});
+							}),
+						);
 
-				const keys = (await this.syncRecord.getFileChunkKeys(this.remote))
-					.sort((a, b) => a.start - b.start)
-					.map(({ key }) => key);
-				for (const key of keys) {
-					const buffer = await this.syncRecord.getFileChunk(key);
-					if (!buffer) throw new Error(`File chunk not found: ${key}`);
-					await this.vault.adapter.appendBinary(this.localPath, buffer, {
-						ctime: this.remote.mtime - 1000, // #1
-					});
+					const decrypter = encryptionEnabled
+						? await createRemoteFileContentRangedDecrypter(
+								this.localPath,
+								this.remote.size,
+							)
+						: undefined;
+					const keys = (await this.syncRecord.getFileChunkKeys(this.remote))
+						.sort((a, b) => a.start - b.start)
+						.map(({ key }) => key);
+					for (const key of keys) {
+						const buffer = await this.syncRecord.getFileChunk(key);
+						if (!buffer) throw new Error(`File chunk not found: ${key}`);
+						const output = decrypter ? await decrypter.update(buffer) : buffer;
+						await this.writeRangedOutput(tempPath, output);
+					}
+
+					if (decrypter) {
+						const tail = await decrypter.finish();
+						await this.writeRangedOutput(tempPath, tail);
+					}
+
+					await finalizeRangedDownloadTempPath(this.vault, tempPath, this.localPath);
+					await this.syncRecord.removeFileChunk(this.remotePath);
+				} catch (error) {
+					await Promise.all([
+						removeVaultFileIfExists(this.vault, tempPath),
+						this.syncRecord.removeFileChunk(this.remotePath),
+					]);
+					throw error;
 				}
-				await this.syncRecord.removeFileChunk(this.remotePath);
 			} else {
-				remoteContent = await getContent(this.webdav, executionRemotePath);
+				const downloadedContent = await getContent(this.webdav, executionRemotePath);
+				remoteContent = encryptionEnabled
+					? await decryptRemoteFileContent(
+							this.localPath,
+							downloadedContent,
+							this.remote.size,
+						)
+					: downloadedContent;
 				await this.vault.adapter.writeBinary(this.localPath, remoteContent, {
 					ctime: this.remote.mtime - 1000, // #1
 				});
@@ -86,6 +125,13 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 			logger.error(`Failed to pull file ${this.remotePath} from remote`, error);
 			return { error: toTaskError(error, this), success: false };
 		}
+	}
+
+	private async writeRangedOutput(tempPath: string, buffer: ArrayBuffer) {
+		if (buffer.byteLength === 0) return;
+		await this.vault.adapter.appendBinary(tempPath, buffer, {
+			ctime: this.remote.mtime - 1000,
+		});
 	}
 }
 

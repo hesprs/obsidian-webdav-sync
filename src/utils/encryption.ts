@@ -1,12 +1,15 @@
 import type WebDAVSyncPlugin from '~';
-import type { EncryptionIdentity } from '~/composable/encryption';
+import type { EncryptionIdentity, RangedFileDecrypter } from '~/composable/encryption';
 import {
+	createRangedFileDecrypter,
+	decryptFileContent,
 	decryptBasename,
 	deriveMasterKey,
 	deriveMasterSalt,
-	encryptBasename,
 	deriveNameKey,
 	deriveRootFileKey,
+	encryptBasename,
+	encryptFileContent,
 } from '~/composable/encryption';
 import {
 	joinRemotePathFromBaseDir,
@@ -123,6 +126,37 @@ export function getEncryptionIdentity(plugin: WebDAVSyncPlugin): EncryptionIdent
 		remoteDir: normalizeBaseDir(plugin.settings.remoteDir),
 		serverUrl: plugin.settings.serverUrl.trim().replace(/\/+$/, ''),
 	};
+}
+
+export async function encryptContentForRemoteFile(
+	virtualPath: string,
+	plaintext: ArrayBuffer,
+): Promise<ArrayBuffer> {
+	const plugin = getRequiredPluginInstance();
+	if (!plugin.settings.encryption.enabled) return plaintext;
+	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
+	return await encryptFileContent(rootFileKey, virtualPath, plaintext);
+}
+
+export async function decryptRemoteFileContent(
+	virtualPath: string,
+	encryptedContent: ArrayBuffer,
+	encryptedFileSize: number,
+): Promise<ArrayBuffer> {
+	const plugin = getRequiredPluginInstance();
+	if (!plugin.settings.encryption.enabled) return encryptedContent;
+	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
+	return await decryptFileContent(rootFileKey, virtualPath, encryptedContent, encryptedFileSize);
+}
+
+export async function createRemoteFileContentRangedDecrypter(
+	virtualPath: string,
+	encryptedFileSize: number,
+): Promise<RangedFileDecrypter | undefined> {
+	const plugin = getRequiredPluginInstance();
+	if (!plugin.settings.encryption.enabled) return undefined;
+	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
+	return createRangedFileDecrypter(rootFileKey, virtualPath, encryptedFileSize);
 }
 
 function getEncryptionPassword(plugin: WebDAVSyncPlugin): string {
