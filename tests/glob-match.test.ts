@@ -40,7 +40,7 @@ describe('needIncludeFromGlobRules', () => {
 		expect(needIncludeFromGlobRules('important.log', inclusion, exclusion)).toBe(true);
 	});
 
-	describe('Standard wildcards', () => {
+	describe('standard wildcards', () => {
 		it('* matches zero or more characters within a path segment', () => {
 			const exclusion = makeRules(['*.txt']);
 
@@ -77,7 +77,7 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('Path separator rules', () => {
+	describe('path separator rules', () => {
 		it('patterns without / match recursively in any directory', () => {
 			const exclusion = makeRules(['*.log', 'temp']);
 
@@ -177,7 +177,7 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('Double-star ** matching', () => {
+	describe('double-star ** matching', () => {
 		it('**/pattern matches file names at any depth', () => {
 			const exclusion = makeRules(['**/__pycache__']);
 
@@ -211,7 +211,7 @@ describe('needIncludeFromGlobRules', () => {
 		});
 	});
 
-	describe('Combined rule examples', () => {
+	describe('combined rule examples', () => {
 		const exclusion = makeRules([
 			'*.a',
 			'bin/',
