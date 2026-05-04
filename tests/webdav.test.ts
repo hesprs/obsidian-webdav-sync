@@ -2,22 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 import parseXML from '~/composable/parse-xml';
 import requestUrl from '~/utils/request-url';
 
-vi.mock<typeof import('~/utils/request-url')>('~/utils/request-url', () => ({
+vi.mock('~/utils/request-url', () => ({
 	default: vi.fn(),
 }));
-vi.mock<typeof import('~/composable/parse-xml')>('~/composable/parse-xml', () => ({
+vi.mock('~/composable/parse-xml', () => ({
 	default: vi.fn(),
 }));
-vi.mock<typeof import('~/utils/is-503-error')>('~/utils/is-503-error', () => ({
+vi.mock('~/utils/is-503-error', () => ({
 	is503Error: () => false,
 }));
-vi.mock<typeof import('~/utils/logger')>('~/utils/logger', () => ({
+vi.mock('~/utils/logger', () => ({
 	default: {
 		debug: vi.fn(),
 		error: vi.fn(),
 	},
 }));
-vi.mock<typeof import('~/utils/sleep')>('~/utils/sleep', () => ({ default: vi.fn() }));
+vi.mock('~/utils/sleep', () => ({ default: vi.fn() }));
 
 describe('getDirectoryContents', () => {
 	const parseXMLMock = vi.mocked(parseXML);
