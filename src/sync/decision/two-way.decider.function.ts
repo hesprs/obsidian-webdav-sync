@@ -18,14 +18,12 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 		remoteBaseDir,
 		settings,
 	} = input;
-	const mixedPath = [...localStats.keys(), ...remoteStats.keys(), ...records.keys()];
 
 	logger.debug('local state', [...localStats.keys()]);
 	logger.debug('remote state', [...remoteStats.keys()]);
 	logger.debug('records', [...records.keys()]);
 
 	const tasks: Array<BaseTask> = [];
-
 	const files: Array<{
 		path: string;
 		local?: FileStatModel;
@@ -43,7 +41,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	}> = [];
 	const removeRecords: Array<string> = [];
 
-	for (const path of mixedPath) {
+	new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]).forEach((path) => {
 		if (hasInvalidChar(path)) throw new Error(`${t('sync.fileOp.filenameError')}: ${path}`);
 		const remote = remoteStats.get(path);
 		const local = localStats.get(path);
@@ -66,7 +64,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				remote,
 			});
 		else removeRecords.push(path);
-	}
+	});
 
 	const routeConflict = (params: {
 		local: FileStatModel;
