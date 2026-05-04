@@ -24,14 +24,9 @@ describe('encryption composable helpers', () => {
 
 		const encrypted = await encryptFileContent(rootFileKey, 'Folder/file.md', plaintext);
 
-		expect(
-			await decryptFileContent(
-				rootFileKey,
-				'Folder/file.md',
-				encrypted,
-				encrypted.byteLength,
-			),
-		).toEqual(plaintext);
+		await expect(
+			decryptFileContent(rootFileKey, 'Folder/file.md', encrypted, encrypted.byteLength),
+		).resolves.toStrictEqual(plaintext);
 	});
 
 	it('replays sequential encrypted buffers through the ranged decrypter', async () => {
@@ -57,7 +52,7 @@ describe('encryption composable helpers', () => {
 		combined.set(new Uint8Array(partC), partA.byteLength + partB.byteLength);
 		combined.set(new Uint8Array(tail), partA.byteLength + partB.byteLength + partC.byteLength);
 
-		expect(combined.buffer).toEqual(plaintext);
+		expect(combined.buffer).toStrictEqual(plaintext);
 	});
 
 	it('encrypts basenames deterministically', () => {
@@ -83,8 +78,8 @@ describe('encryption runtime helpers', () => {
 
 		const first = await context.keysPromise;
 		const second = await context.keysPromise;
-		expect([...first.rootFileKey]).toEqual([...second.rootFileKey]);
-		expect([...first.nameKey]).toEqual([...second.nameKey]);
+		expect([...first.rootFileKey]).toStrictEqual([...second.rootFileKey]);
+		expect([...first.nameKey]).toStrictEqual([...second.nameKey]);
 	});
 
 	it('rejects sync encryption context when secret is missing or empty', async () => {
@@ -117,22 +112,21 @@ describe('encryption runtime helpers', () => {
 		const plaintext = new TextEncoder().encode('hello runtime').buffer;
 
 		try {
-			expect(await resolveRemoteExecutionPath('/vault/Folder/file.md')).toBe(
+			await expect(resolveRemoteExecutionPath('/vault/Folder/file.md')).resolves.toBe(
 				'/vault/Folder/file.md',
 			);
-			expect(await decryptRemotePathForTraversal('/vault/Folder/file.md')).toBe(
+			await expect(decryptRemotePathForTraversal('/vault/Folder/file.md')).resolves.toBe(
 				'/vault/Folder/file.md',
 			);
-			expect(await encryptContentForRemoteFile('Folder/file.md', plaintext)).toBe(plaintext);
-			expect(
-				await decryptRemoteFileContent('Folder/file.md', plaintext, plaintext.byteLength),
-			).toBe(plaintext);
-			expect(
-				await createRemoteFileContentRangedDecrypter(
-					'Folder/file.md',
-					plaintext.byteLength,
-				),
-			).toBeUndefined();
+			await expect(encryptContentForRemoteFile('Folder/file.md', plaintext)).resolves.toBe(
+				plaintext,
+			);
+			await expect(
+				decryptRemoteFileContent('Folder/file.md', plaintext, plaintext.byteLength),
+			).resolves.toBe(plaintext);
+			await expect(
+				createRemoteFileContentRangedDecrypter('Folder/file.md', plaintext.byteLength),
+			).resolves.toBeUndefined();
 		} finally {
 			setPluginInstance();
 		}
@@ -188,8 +182,8 @@ describe('encryption runtime helpers', () => {
 				(rangedFirst?.byteLength ?? 0) + (rangedSecond?.byteLength ?? 0),
 			);
 
-			expect(direct).toEqual(plaintext);
-			expect(combined.buffer).toEqual(plaintext);
+			expect(direct).toStrictEqual(plaintext);
+			expect(combined.buffer).toStrictEqual(plaintext);
 		} finally {
 			setPluginInstance();
 		}
@@ -216,7 +210,7 @@ describe('encryption runtime helpers', () => {
 		try {
 			const encryptedPath = await resolveRemoteExecutionPath('/vault/Folder/空 格.md');
 			expect(encryptedPath).not.toBe('/vault/Folder/空 格.md');
-			expect(await decryptRemotePathForTraversal(encryptedPath)).toBe(
+			await expect(decryptRemotePathForTraversal(encryptedPath)).resolves.toBe(
 				'/vault/Folder/空 格.md',
 			);
 		} finally {

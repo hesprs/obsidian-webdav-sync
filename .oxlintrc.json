@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["unicorn", "typescript", "oxc", "import", "react"],
+	"plugins": ["unicorn", "typescript", "oxc", "import", "react", "vitest"],
 	"categories": {
 		"correctness": "warn",
 		"perf": "warn",
@@ -67,7 +67,23 @@
 		],
 		"eslint/no-underscore-dangle": ["warn", { "allow": ["__root__"] }],
 		"unicorn/number-literal-case": "off",
-		"eslint/no-multi-assign": "off"
+		"eslint/no-multi-assign": "off",
+		"jest/prefer-expect-assertions": "off",
+		"vitest/prefer-expect-assertions": "off",
+		"vitest/no-importing-vitest-globals": "off",
+		"vitest/prefer-import-in-mock": "off",
+		"jest/no-untyped-mock-factory": "off",
+		"vitest/require-mock-type-parameters": "off",
+		"vitest/prefer-to-be-truthy": "off",
+		"vitest/prefer-to-be-falsy": "off",
+		"vitest/prefer-describe-function-title": "off",
+		"jest/max-expects": "off",
+		"vitest/max-expects": "off",
+		"jest/prefer-ending-with-an-expect": "off",
+		"jest/no-conditional-expect": "off",
+		"vitest/no-conditional-expect": "off",
+		"jest/require-hook": "off",
+		"vitest/prefer-called-once": "off"
 	},
 	"env": {
 		"builtin": true
@@ -88,7 +104,29 @@
 		"navigator": "readonly",
 		"structuredClone": "readonly",
 		"crypto": "readonly",
-		"document": "readonly"
+		"document": "readonly",
+		"defineProps": "readonly",
+		"defineEmits": "readonly",
+		"setTimeout": "readonly",
+		"clearTimeout": "readonly",
+		"requestAnimationFrame": "readonly",
+		"location": "readonly",
+		"HTMLButtonElement": "readonly",
+		"withDefaults": "readonly",
+		"defineOptions": "readonly",
+		"defineExpose": "readonly",
+		"fetch": "readonly",
+		"getComputedStyle": "readonly",
+		"ClipboardItem": "readonly",
+		"Event": "readonly",
+		"HTMLInputElement": "readonly",
+		"setInterval": "readonly",
+		"clearInterval": "readonly",
+		"cancelAnimationFrame": "readonly",
+		"requestIdleCallback": "readonly",
+		"cancelIdleCallback": "readonly",
+		"HTMLAnchorElement": "readonly",
+		"KeyboardEvent": "readonly"
 	},
 	"ignorePatterns": ["**/node_modules/**", "**/dist/**"],
 	"options": {

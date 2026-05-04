@@ -41,14 +41,14 @@ describe('phase 1 mobile compatibility', () => {
 		const slice = source.subarray(1, 4);
 		const arrayBuffer = await toArrayBuffer(slice);
 
-		expect([...new Uint8Array(arrayBuffer)]).toEqual([2, 3, 4]);
+		expect([...new Uint8Array(arrayBuffer)]).toStrictEqual([2, 3, 4]);
 		expect(arrayBuffer.byteLength).toBe(3);
 	});
 
 	it('supports blob payloads at the binary boundary', async () => {
 		const arrayBuffer = await toArrayBuffer(new Blob([new Uint8Array([7, 8, 9])]));
 
-		expect([...new Uint8Array(arrayBuffer)]).toEqual([7, 8, 9]);
+		expect([...new Uint8Array(arrayBuffer)]).toStrictEqual([7, 8, 9]);
 	});
 
 	it('compares normalized binary payloads by bytes', async () => {

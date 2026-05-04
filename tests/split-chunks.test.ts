@@ -13,7 +13,7 @@ describe('splitChunks (Public API)', () => {
 	// Basic Chunking Behavior
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Basic chunking', () => {
+	describe('basic chunking', () => {
 		it('returns undefined when file is too small to split', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
 			// StdChunkSize will be at least 1MB when enabled
@@ -67,7 +67,7 @@ describe('splitChunks (Public API)', () => {
 	// Resume/Cache Scenarios
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Resumable download with cache', () => {
+	describe('resumable download with cache', () => {
 		it('skips cached prefix and chunks remaining suffix', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
 			const cache: Array<FileChunkKey> = [{ end: 4 * MB - 1, key: 'prefix', start: 0 }];
@@ -164,7 +164,7 @@ describe('splitChunks (Public API)', () => {
 	// Concurrency Grouping
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Concurrent group batching', () => {
+	describe('concurrent group batching', () => {
 		it('respects multiplex limit when grouping chunks', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 5 * MB };
 			const result = splitChunks({ cache: [], multiplex: 4, setting, total: 30 * MB });
@@ -201,7 +201,7 @@ describe('splitChunks (Public API)', () => {
 	// Edge Cases & Robustness
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Edge cases and input validation', () => {
+	describe('edge cases and input validation', () => {
 		it('handles empty cache array', () => {
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 10 * MB };
 			const result = splitChunks({ cache: [], multiplex: 2, setting, total: 20 * MB });
@@ -270,7 +270,7 @@ describe('splitChunks (Public API)', () => {
 	// Invariant Properties (Black-Box Verification)
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Output invariants', () => {
+	describe('output invariants', () => {
 		it('all chunks have valid non-negative ranges within file bounds', () => {
 			const total = 50 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 8 * MB };
@@ -354,7 +354,7 @@ describe('splitChunks (Public API)', () => {
 	// Realistic Integration Scenarios
 	// ─────────────────────────────────────────────────────────────
 
-	describe('Integration: realistic download patterns', () => {
+	describe('integration: realistic download patterns', () => {
 		it('simulates progressive multi-session resume', () => {
 			const total = 100 * MB;
 			const setting: ToggleNumericSettingsField = { enabled: true, value: 15 * MB };
@@ -440,10 +440,10 @@ describe('splitChunks (Public API)', () => {
 			expect(chunks).toHaveLength(4);
 
 			// Verify boundaries
-			expect(chunks[0]).toEqual({ end: 20 * MB - 1, start: 9 * MB });
-			expect(chunks[1]).toEqual({ end: 50 * MB - 1, start: 29 * MB });
-			expect(chunks[2]).toEqual({ end: 70 * MB - 1, start: 54 * MB });
-			expect(chunks[3]).toEqual({ end: 80 * MB - 1, start: 79 * MB });
+			expect(chunks[0]).toStrictEqual({ end: 20 * MB - 1, start: 9 * MB });
+			expect(chunks[1]).toStrictEqual({ end: 50 * MB - 1, start: 29 * MB });
+			expect(chunks[2]).toStrictEqual({ end: 70 * MB - 1, start: 54 * MB });
+			expect(chunks[3]).toStrictEqual({ end: 80 * MB - 1, start: 79 * MB });
 		});
 	});
 });

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import parseXML from '~/composable/parse-xml';
 import requestUrl from '~/utils/request-url';
 
@@ -8,7 +8,9 @@ vi.mock('~/utils/request-url', () => ({
 vi.mock('~/composable/parse-xml', () => ({
 	default: vi.fn(),
 }));
-vi.mock('~/utils/is-503-error', () => ({ is503Error: () => false }));
+vi.mock('~/utils/is-503-error', () => ({
+	is503Error: () => false,
+}));
 vi.mock('~/utils/logger', () => ({
 	default: {
 		debug: vi.fn(),
@@ -18,10 +20,6 @@ vi.mock('~/utils/logger', () => ({
 vi.mock('~/utils/sleep', () => ({ default: vi.fn() }));
 
 describe('getDirectoryContents', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
 	const parseXMLMock = vi.mocked(parseXML);
 
 	function mockParsedResponse(response: Array<unknown>): void {
@@ -33,6 +31,8 @@ describe('getDirectoryContents', () => {
 	}
 
 	it('parses absolute href responses (Nextcloud style)', async () => {
+		vi.clearAllMocks();
+
 		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
@@ -114,7 +114,7 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toEqual([
+		expect(files.map((f) => f.filename)).toStrictEqual([
 			'/Notes/Folder A/',
 			'/Notes/Project Plan.md',
 		]);
@@ -123,6 +123,8 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('parses path-only href responses (server-relative style)', async () => {
+		vi.clearAllMocks();
+
 		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
@@ -175,6 +177,8 @@ describe('getDirectoryContents', () => {
 	});
 
 	it('handles propstat arrays and picks successful prop values', async () => {
+		vi.clearAllMocks();
+
 		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
@@ -241,7 +245,7 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toEqual(['/Notes/Folder/', '/Notes/file.md']);
+		expect(files.map((f) => f.filename)).toStrictEqual(['/Notes/Folder/', '/Notes/file.md']);
 		expect(files[0].type).toBe('directory');
 		expect(files[1].type).toBe('file');
 		expect(files[1].size).toBe(9);

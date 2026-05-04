@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { StatsMap } from '~/types';
 import { traverseWebDAV, getDirectoryContents } from '~/fs/webdav';
 
@@ -34,13 +34,11 @@ vi.mock('~/settings', () => ({
 	})),
 }));
 
-describe('WebDAVTraversal', () => {
-	beforeEach(() => {
+describe('webDAVTraversal', () => {
+	it('uses remote-base-aware path when enqueuing child directories', async () => {
 		vi.clearAllMocks();
 		remoteRecordState.clear();
-	});
 
-	it('uses remote-base-aware path when enqueuing child directories', async () => {
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{
@@ -71,6 +69,9 @@ describe('WebDAVTraversal', () => {
 	});
 
 	it('skips not-found traversal nodes instead of failing and persisting retry loop', async () => {
+		vi.clearAllMocks();
+		remoteRecordState.clear();
+
 		vi.mocked(getDirectoryContents)
 			.mockResolvedValueOnce([
 				{

@@ -1,5 +1,5 @@
 import { requestUrl as obsidianRequestUrl } from 'obsidian';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import logger from '~/utils/logger';
 import requestUrl from '~/utils/request-url';
 
@@ -19,11 +19,9 @@ vi.mock('~/utils/logger', () => ({
 }));
 
 describe('requestUrl', () => {
-	beforeEach(() => {
-		vi.clearAllMocks();
-	});
-
 	it('skips logging expected 404 responses when throw is false', async () => {
+		vi.clearAllMocks();
+
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
 			headers: {},
 			status: 404,
@@ -42,6 +40,8 @@ describe('requestUrl', () => {
 	});
 
 	it('still logs and throws unexpected 404 responses', async () => {
+		vi.clearAllMocks();
+
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
 			headers: {},
 			status: 404,
@@ -52,10 +52,12 @@ describe('requestUrl', () => {
 			'404: <html>not found</html>',
 		);
 
-		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error).toHaveBeenCalledTimes(1);
 	});
 
 	it('still logs non-404 failures even when throw is false', async () => {
+		vi.clearAllMocks();
+
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
 			headers: {},
 			status: 500,
@@ -70,10 +72,12 @@ describe('requestUrl', () => {
 			}),
 		).resolves.toMatchObject({ status: 500 });
 
-		expect(logger.error).toHaveBeenCalledOnce();
+		expect(logger.error).toHaveBeenCalledTimes(1);
 	});
 
 	it('logs safe response metadata instead of raw response objects', async () => {
+		vi.clearAllMocks();
+
 		vi.mocked(obsidianRequestUrl).mockResolvedValue({
 			headers: { 'content-type': 'text/html' },
 			json: () => {
