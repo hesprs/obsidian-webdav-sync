@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.2 - 2026-05-04
+
+- Fixed the bug that all uploads, downloads, and deletion are repeated for three times
+
 ## Obsidian WebDAV Sync v2.5.1 - 2026-05-03
 
 - Specify encryption reminder modal text to prevent confusion.
