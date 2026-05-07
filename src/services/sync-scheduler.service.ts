@@ -85,7 +85,7 @@ export default class SyncSchedulerService {
 			(latest, request) => Math.max(latest, request.requestedAt),
 			0,
 		);
-		
+
 		return Math.max(0, latestRequestAt + this.plugin.settings.startupSync.value - Date.now());
 	}
 

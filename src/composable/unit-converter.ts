@@ -5,7 +5,7 @@ type UnitConfig<T extends UnitMap> = {
 };
 
 function round(value: number, precision: number): number {
-    const power = 10 ** precision;
+	const power = 10 ** precision;
 	return Math.round(value * power) / power;
 }
 
