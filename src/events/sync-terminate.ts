@@ -51,7 +51,6 @@ function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 		error,
 		errorSummary: run.errorSummary,
 		event: 'terminal_outcome',
-		mode: run.mode,
 		progressSummary: run.progressSummary,
 		remoteWalkSummary: run.remoteWalkSummary,
 		resultSummary: run.resultSummary,

@@ -1,6 +1,5 @@
 import type WebDAVSyncPlugin from '~';
 import type { SyncTrigger } from '~/events';
-import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
 import type {
 	default as SyncExecutorService,
@@ -45,7 +44,6 @@ export default class SyncSchedulerService {
 
 	requestManualSync() {
 		return this.requestSync({
-			mode: SyncStartMode.MANUAL_SYNC,
 			runKind: SyncRunKind.normal,
 			source: 'manual',
 		});
@@ -78,28 +76,25 @@ export default class SyncSchedulerService {
 	}
 
 	private getNextDelayMs() {
-		if (this.pendingRequests.some((request) => request.mode === SyncStartMode.MANUAL_SYNC))
-			return 0;
+		if (this.pendingRequests.some((request) => request.source === 'manual')) return 0;
+
+		if (this.pendingRequests.some((request) => request.source === 'startup'))
+			return this.plugin.settings.startupSync.value;
 
 		const latestRequestAt = this.pendingRequests.reduce(
 			(latest, request) => Math.max(latest, request.requestedAt),
 			0,
 		);
 
-		return Math.max(0, latestRequestAt + this.plugin.settings.startupSync.value - Date.now());
+		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSync.value - Date.now());
 	}
 
 	private reduceBatch(batch: Array<SyncRequest>): SyncExecutionRequest {
-		const mode = batch.some((request) => request.mode === SyncStartMode.MANUAL_SYNC)
-			? SyncStartMode.MANUAL_SYNC
-			: SyncStartMode.AUTO_SYNC;
-
 		const runKind = batch.some((request) => request.runKind === SyncRunKind.normal)
 			? SyncRunKind.normal
 			: SyncRunKind.fast;
 
 		return {
-			mode,
 			queuedAt: Date.now(),
 			runId: crypto.randomUUID(),
 			runKind,
