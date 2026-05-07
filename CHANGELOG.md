@@ -2,9 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.3 - 2026-05-07
+
+- Fixed the bug that startup sync uses real-time sync delay.
+- Fixed user config file size and time unit convert glitches.
+
 ## Obsidian WebDAV Sync v2.5.2 - 2026-05-04
 
-- Fixed the bug that all uploads, downloads, and deletion are repeated for three times
+- Fixed the bug that all uploads, downloads, and deletion are repeated for three times.
 
 ## Obsidian WebDAV Sync v2.5.1 - 2026-05-03
 

@@ -32,7 +32,7 @@ export default class ScheduledSyncService {
 			}, this.settings.scheduledSync.value);
 	}
 
-	private async handleStartupSync() {
+	private async handleStartupSync() {	
 		try {
 			await this.syncScheduler.requestSync({
 				mode: SyncStartMode.AUTO_SYNC,

@@ -85,8 +85,8 @@ export default class SyncSchedulerService {
 			(latest, request) => Math.max(latest, request.requestedAt),
 			0,
 		);
-
-		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSync.value - Date.now());
+		
+		return Math.max(0, latestRequestAt + this.plugin.settings.startupSync.value - Date.now());
 	}
 
 	private reduceBatch(batch: Array<SyncRequest>): SyncExecutionRequest {
@@ -117,7 +117,6 @@ export default class SyncSchedulerService {
 
 	private async flush() {
 		if (this.isFlushing || this.pendingRequests.length === 0) return;
-
 		if (this.plugin.isSyncing) {
 			this.flushTimer = window.setTimeout(() => {
 				this.flushTimer = undefined;
