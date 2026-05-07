@@ -2,7 +2,6 @@ import type { TAbstractFile } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import { syncRun } from '~/events';
 import { useSettings } from '~/settings';
-import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import type SyncSchedulerService from './sync-scheduler.service';
@@ -23,7 +22,6 @@ export default class RealtimeSyncService {
 		if (currentRun?.stage === 'executing') return;
 
 		await this.syncScheduler.requestSync({
-			mode: SyncStartMode.AUTO_SYNC,
 			runKind: fastRealtimeSync ? SyncRunKind.fast : SyncRunKind.normal,
 			source: 'realtime',
 		});

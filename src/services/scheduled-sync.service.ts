@@ -1,5 +1,4 @@
 import type WebDAVSyncPlugin from '~';
-import { SyncStartMode } from '~/sync';
 import { SyncRunKind } from '~/types';
 import type SyncSchedulerService from './sync-scheduler.service';
 
@@ -35,7 +34,6 @@ export default class ScheduledSyncService {
 	private async handleStartupSync() {
 		try {
 			await this.syncScheduler.requestSync({
-				mode: SyncStartMode.AUTO_SYNC,
 				runKind: SyncRunKind.normal,
 				source: 'startup',
 			});
@@ -46,7 +44,6 @@ export default class ScheduledSyncService {
 
 	private async handleIntervalSync() {
 		await this.syncScheduler.requestSync({
-			mode: SyncStartMode.AUTO_SYNC,
 			runKind: SyncRunKind.normal,
 			source: 'interval',
 		});
