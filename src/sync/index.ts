@@ -37,11 +37,6 @@ import RemoveLocalTask from './tasks/remove-local.task';
 import { TaskError } from './tasks/task.interface';
 import optimizeTasks from './utils/optimize-tasks';
 
-export enum SyncStartMode {
-	MANUAL_SYNC = 'manual_sync',
-	AUTO_SYNC = 'auto_sync',
-}
-
 type SyncResultSummary = {
 	totalTasks: number;
 	succeededTasks: number;
@@ -49,7 +44,7 @@ type SyncResultSummary = {
 	failed: Array<SyncFailedTaskInfo>;
 };
 
-export class SyncEngine {
+export default class SyncEngine {
 	isCancelled = false;
 
 	private readonly unsubscribeSyncCancel: () => void;
@@ -107,7 +102,6 @@ export class SyncEngine {
 				'Execution started',
 				{
 					event: 'execution_started',
-					mode: currentRun.mode,
 					planSummary: currentRun.planSummary,
 					progressSummary: currentRun.progressSummary,
 					runKind: currentRun.runKind,
@@ -142,7 +136,7 @@ export class SyncEngine {
 			}
 
 			if (
-				request.mode === SyncStartMode.MANUAL_SYNC &&
+				request.trigger === 'manual' &&
 				settings.confirmBeforeSync &&
 				displayableTasks.length > 0
 			) {
@@ -168,10 +162,7 @@ export class SyncEngine {
 			}
 
 			// Check for RemoveLocalTask during auto-sync and ask for confirmation
-			if (
-				request.mode === SyncStartMode.AUTO_SYNC &&
-				settings.confirmBeforeDeleteInAutoSync
-			) {
+			if (request.trigger !== 'manual' && settings.confirmBeforeDeleteInAutoSync) {
 				const removeLocalTasks = tasks.filter((task) => task instanceof RemoveLocalTask);
 				const otherTasks = tasks.filter((task) => !(task instanceof RemoveLocalTask));
 				if (removeLocalTasks.length > 0) {

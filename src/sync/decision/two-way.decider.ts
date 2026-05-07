@@ -6,7 +6,7 @@ import { traverseVault } from '~/fs/vault';
 import { traverseWebDAV } from '~/fs/webdav';
 import { useSettings } from '~/settings';
 import { SyncRunKind } from '~/types';
-import type { SyncEngine } from '..';
+import type SyncEngine from '..';
 import type { BaseTask } from '../tasks/task.interface';
 import type {
 	OptionsWithBothFileStats,

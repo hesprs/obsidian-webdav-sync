@@ -158,7 +158,7 @@ export default class ObservabilityService {
 
 	private applyFailureModal(run: SyncRunSnapshot) {
 		if (
-			run.mode !== 'manual' ||
+			run.trigger !== 'manual' ||
 			run.stage !== 'failed' ||
 			run.resultSummary === undefined ||
 			run.resultSummary.failed.length === 0 ||
@@ -202,7 +202,9 @@ export default class ObservabilityService {
 					: getText(t('sync.complete'));
 			}
 			case 'completed_noop': {
-				return getText(t(run.mode === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate'));
+				return getText(
+					t(run.trigger === 'manual' ? 'sync.alreadyUpToDate' : 'sync.upToDate'),
+				);
 			}
 			case 'cancelled': {
 				return getText(t('sync.cancelled'));
@@ -222,7 +224,7 @@ export default class ObservabilityService {
 	private getNoticeText(run: SyncRunSnapshot, previousRun?: SyncRunSnapshot): string | undefined {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
 		if (!isNewStage) return;
-		const ifManual = (text: string) => (run.mode === 'manual' ? text : undefined);
+		const ifManual = (text: string) => (run.trigger === 'manual' ? text : undefined);
 
 		switch (run.stage) {
 			case 'pre_connecting': {
@@ -280,7 +282,7 @@ export default class ObservabilityService {
 
 	private applyProgressModal(run: SyncRunSnapshot, previousRun?: SyncRunSnapshot) {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
-		if (isNewStage && run.mode === 'manual' && !this.progressModal)
+		if (isNewStage && run.trigger === 'manual' && !this.progressModal)
 			this.createProgressModal().open();
 		this.progressModal?.update(run);
 	}

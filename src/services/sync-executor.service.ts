@@ -1,16 +1,15 @@
 import type WebDAVSyncPlugin from '~';
-import type { SyncRunMode, SyncRunSnapshot, SyncTrigger } from '~/events';
+import type { SyncRunSnapshot, SyncTrigger } from '~/events';
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import type { SyncRunKind } from '~/types';
 import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import { SyncEngine, SyncStartMode } from '~/sync';
+import SyncEngine from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 
 export type SyncOptions = {
-	mode: SyncStartMode;
 	runKind: SyncRunKind;
 };
 
@@ -51,7 +50,6 @@ export default class SyncExecutorService {
 			});
 
 			let run = createQueuedSyncRunSnapshot({
-				mode: this.toRunMode(request.mode),
 				queuedAt: request.queuedAt,
 				runId: request.runId,
 				runKind: request.runKind,
@@ -68,7 +66,6 @@ export default class SyncExecutorService {
 				'Planning started',
 				{
 					event: 'planning_started',
-					mode: run.mode,
 					planningStartedAt: run.timestamps.planningStartedAt,
 					queuedAt: run.timestamps.queuedAt,
 					runKind: run.runKind,
@@ -100,7 +97,6 @@ export default class SyncExecutorService {
 				'Planning finished',
 				{
 					event: 'planning_finished',
-					mode: run.mode,
 					planSummary: run.planSummary,
 					runKind: run.runKind,
 					sources: run.sources,
@@ -120,9 +116,5 @@ export default class SyncExecutorService {
 			this.plugin.clearSyncEncryptionKeys();
 			logger.popContext();
 		}
-	}
-
-	private toRunMode(mode: SyncStartMode): SyncRunMode {
-		return mode === SyncStartMode.MANUAL_SYNC ? 'manual' : 'auto';
 	}
 }

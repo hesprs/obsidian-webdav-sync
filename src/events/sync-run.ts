@@ -2,7 +2,6 @@ import type { SyncRunKind } from '~/types';
 import { hook, ref } from '.';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
-export type SyncRunMode = 'manual' | 'auto';
 export type SyncRunStage =
 	| 'queued'
 	| 'pre_connecting'
@@ -73,7 +72,6 @@ export type SyncRunSnapshot = {
 	runId: string;
 	trigger: SyncTrigger;
 	sources: Array<SyncTrigger>;
-	mode: SyncRunMode;
 	runKind: SyncRunKind;
 	stage: SyncRunStage;
 	timestamps: SyncRunTimestamps;
@@ -90,13 +88,11 @@ export function createQueuedSyncRunSnapshot(input: {
 	runId: string;
 	trigger: SyncTrigger;
 	sources: Array<SyncTrigger>;
-	mode: SyncRunMode;
 	runKind: SyncRunKind;
 	queuedAt?: number;
 }): SyncRunSnapshot {
 	const queuedAt = input.queuedAt ?? Date.now();
 	return {
-		mode: input.mode,
 		progressSummary: {
 			completed: [],
 			completedTasks: 0,
