@@ -54,18 +54,17 @@ export default class SyncSchedulerService {
 			this.plugin.registerEvent(this.plugin.app.vault.on('modify', this.onChange));
 			this.plugin.registerEvent(this.plugin.app.vault.on('rename', this.onChange));
 		});
+		const schedule = () => {
+			if (this.settings.scheduledSync.enabled) this.startScheduledSync();
+		};
 		if (this.settings.startupSync.enabled)
-			this.startupSyncTimer = window.setTimeout(async () => {
-				try {
-					await this.requestSync({
-						runKind: SyncRunKind.normal,
-						source: 'startup',
-					});
-				} finally {
-					if (this.settings.scheduledSync.enabled) this.startScheduledSync();
-				}
+			this.startupSyncTimer = window.setTimeout(() => {
+				void this.requestSync({
+					runKind: SyncRunKind.normal,
+					source: 'startup',
+				}).finally(schedule);
 			}, this.settings.startupSync.value);
-		else if (this.settings.scheduledSync.enabled) this.startScheduledSync();
+		else schedule();
 	}
 
 	unload() {
@@ -87,8 +86,8 @@ export default class SyncSchedulerService {
 	startScheduledSync() {
 		if (this.scheduledSyncTimer) window.clearInterval(this.scheduledSyncTimer);
 		this.scheduledSyncTimer = window.setInterval(
-			async () =>
-				await this.requestSync({
+			() =>
+				void this.requestSync({
 					runKind: SyncRunKind.normal,
 					source: 'interval',
 				}),
@@ -103,7 +102,7 @@ export default class SyncSchedulerService {
 		}
 	}
 
-	private readonly onChange = async (file: TAbstractFile, old?: string) => {
+	private readonly onChange = (file: TAbstractFile, old?: string) => {
 		const { fastRealtimeSync, realtimeSync, filterRules } = this.settings;
 		if (!realtimeSync.enabled) return;
 
@@ -116,12 +115,14 @@ export default class SyncSchedulerService {
 			return;
 
 		if (this.realtimeSyncTimer) window.clearTimeout(this.realtimeSyncTimer);
-		this.realtimeSyncTimer = window.setTimeout(async () => {
-			await this.requestSync({
-				runKind: fastRealtimeSync ? SyncRunKind.fast : SyncRunKind.normal,
-				source: 'realtime',
-			});
-		}, this.settings.realtimeSync.value);
+		this.realtimeSyncTimer = window.setTimeout(
+			() =>
+				void this.requestSync({
+					runKind: fastRealtimeSync ? SyncRunKind.fast : SyncRunKind.normal,
+					source: 'realtime',
+				}),
+			this.settings.realtimeSync.value,
+		);
 	};
 
 	private async scheduleFlush() {
