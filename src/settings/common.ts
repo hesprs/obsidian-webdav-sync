@@ -162,6 +162,16 @@ export default class CommonSettings extends BaseSettings {
 			desc: t('settings.scheduledSync.desc'),
 			field: this.plugin.settings.scheduledSync,
 			name: t('settings.scheduledSync.name'),
+			onChange: () => {
+				const service = this.plugin.syncSchedulerService;
+				service.stopScheduledSync();
+				service.startScheduledSync();
+			},
+			onToggle: (enabled) => {
+				const service = this.plugin.syncSchedulerService;
+				if (enabled) service.startScheduledSync();
+				else service.stopScheduledSync();
+			},
 			placeholder: t('settings.scheduledSync.placeholder'),
 			rejectZero: true,
 			saveSettings: this.plugin.saveSettings,

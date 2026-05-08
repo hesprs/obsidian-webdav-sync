@@ -21,6 +21,7 @@ export default function generateSettingEntry({
 	saveSettings,
 	rejectZero,
 	onChange,
+	onToggle,
 }: {
 	container: HTMLElement;
 	name: string;
@@ -31,6 +32,7 @@ export default function generateSettingEntry({
 	saveSettings: () => Promise<void>;
 	rejectZero?: boolean;
 	onChange?: (value: number) => void;
+	onToggle?: (value: boolean) => void;
 }) {
 	new Setting(container)
 		.setClass('numeric-toggle')
@@ -64,6 +66,7 @@ export default function generateSettingEntry({
 			toggle.onChange((value) => {
 				if (value !== field.enabled) {
 					field.enabled = value;
+					onToggle?.(value);
 					void saveSettings();
 				}
 			});
