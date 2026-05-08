@@ -104,7 +104,6 @@ export default class SyncSchedulerService {
 	}
 
 	private readonly onChange = async (file: TAbstractFile, old?: string) => {
-		console.log(file);
 		const { fastRealtimeSync, realtimeSync, filterRules } = this.settings;
 		if (!realtimeSync.enabled) return;
 
