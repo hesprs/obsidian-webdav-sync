@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.4 - 2026-05-08
+
+- Refactored auto-sync scheduling logic (startup sync, scheduled sync, real-time sync).
+- Fixed various bugs related with sync scheduling.
+
 ## Obsidian WebDAV Sync v2.5.3 - 2026-05-07
 
 - Fixed the bug that startup sync uses real-time sync delay.
