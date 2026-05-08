@@ -7,8 +7,6 @@ import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
 import setupCommands from './services/command.setup';
 import ObservabilityService from './services/observability.service';
-import RealtimeSyncService from './services/realtime-sync.service';
-import ScheduledSyncService from './services/scheduled-sync.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import { WebDAVService } from './services/webdav.service';
@@ -121,8 +119,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
 	public ribbonManager = new SyncRibbonManager(this);
-	public realtimeSyncService = new RealtimeSyncService(this, this.syncSchedulerService);
-	public scheduledSyncService = new ScheduledSyncService(this, this.syncSchedulerService);
 
 	async onload() {
 		await this.loadSettings();
@@ -132,7 +128,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		setupCommands(this);
-		this.scheduledSyncService.start();
+		this.syncSchedulerService.start();
 		patchWebDav();
 	}
 
@@ -142,7 +138,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		void this.baseTextStore.unload();
 		void this.fileChunkStore.unload();
 		syncCancel();
-		this.scheduledSyncService.unload();
 		this.syncSchedulerService.unload();
 		this.observabilityService.unload();
 	}

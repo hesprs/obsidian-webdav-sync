@@ -1,7 +1,7 @@
 import type WebDAVSyncPlugin from '~';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
-import launchManualSync from '~/services/manual-sync.service';
+import launchManualSync from '~/utils/launch-manual-sync';
 
 export default class SyncRibbonManager {
 	private readonly startRibbonEl: HTMLElement;

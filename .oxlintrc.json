@@ -17,7 +17,7 @@
 		"eslint/func-style": "off",
 		"eslint/max-statements": "off",
 		"import/no-named-export": "off",
-		"curly": ["error", "multi"],
+		"curly": ["warn", "multi"],
 		"eslint/no-ternary": "off",
 		"eslint/no-nested-ternary": "off",
 		"unicorn/no-nested-ternary": "off",

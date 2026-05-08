@@ -2,6 +2,7 @@ import type WebDAVSyncPlugin from '~';
 import { Notice } from 'obsidian';
 import SyncConfirmModal from '~/components/SyncConfirmModal';
 import t from '~/i18n';
+import { SyncRunKind } from '~/types';
 
 type LaunchManualSyncOptions = {
 	skipConfirmation?: boolean;
@@ -23,5 +24,8 @@ export default function launchManualSync(
 		return;
 	}
 
-	void plugin.syncSchedulerService.requestManualSync();
+	void plugin.syncSchedulerService.requestSync({
+		runKind: SyncRunKind.normal,
+		source: 'manual',
+	});
 }

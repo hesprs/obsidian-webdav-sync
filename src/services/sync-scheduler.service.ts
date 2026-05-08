@@ -1,13 +1,14 @@
+import type { TAbstractFile } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import type { SyncTrigger } from '~/events';
 import { SyncRunKind } from '~/types';
+import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
+import waitUntil from '~/utils/wait-until';
 import type {
 	default as SyncExecutorService,
 	SyncExecutionRequest,
 	SyncOptions,
 } from './sync-executor.service';
-
-const SYNC_IDLE_POLL_MS = 500;
 
 type SyncRequest = {
 	requestedAt: number;
@@ -18,19 +19,22 @@ type SyncRequest = {
 
 export default class SyncSchedulerService {
 	private readonly pendingRequests: Array<SyncRequest> = [];
-	private flushTimer: number | undefined;
 	private isFlushing = false;
+	private isScheduling = false;
+	private realtimeSyncTimer?: number;
+	private scheduledSyncTimer?: number;
+	private startupSyncTimer?: number;
 
 	constructor(
 		private readonly plugin: WebDAVSyncPlugin,
 		private readonly syncExecutor: SyncExecutorService,
 	) {}
 
-	requestSync(
-		options: SyncOptions & {
-			source: SyncTrigger;
-		},
-	): Promise<boolean> {
+	get settings() {
+		return this.plugin.settings;
+	}
+
+	requestSync(options: SyncOptions & { source: SyncTrigger }): Promise<boolean> {
 		return new Promise<boolean>((resolve, reject) => {
 			this.pendingRequests.push({
 				...options,
@@ -38,55 +42,98 @@ export default class SyncSchedulerService {
 				requestedAt: Date.now(),
 				resolve,
 			});
-			this.scheduleFlush();
+			void this.scheduleFlush();
 		});
 	}
 
-	requestManualSync() {
-		return this.requestSync({
-			runKind: SyncRunKind.normal,
-			source: 'manual',
+	start() {
+		// https://forum.obsidian.md/t/dont-dispatch-create-event-on-startup/50022/3
+		this.plugin.app.workspace.onLayoutReady(() => {
+			this.plugin.registerEvent(this.plugin.app.vault.on('create', this.onChange));
+			this.plugin.registerEvent(this.plugin.app.vault.on('delete', this.onChange));
+			this.plugin.registerEvent(this.plugin.app.vault.on('modify', this.onChange));
+			this.plugin.registerEvent(this.plugin.app.vault.on('rename', this.onChange));
 		});
+		if (this.settings.startupSync.enabled)
+			this.startupSyncTimer = window.setTimeout(async () => {
+				try {
+					await this.requestSync({
+						runKind: SyncRunKind.normal,
+						source: 'startup',
+					});
+				} finally {
+					if (this.settings.scheduledSync.enabled) this.startScheduledSync();
+				}
+			}, this.settings.startupSync.value);
+		else if (this.settings.scheduledSync.enabled) this.startScheduledSync();
 	}
 
 	unload() {
-		if (this.flushTimer !== undefined) {
-			window.clearTimeout(this.flushTimer);
-			this.flushTimer = undefined;
-		}
-
 		while (this.pendingRequests.length > 0) {
 			const request = this.pendingRequests.shift();
 			request?.resolve(false);
 		}
-	}
-
-	private scheduleFlush() {
-		if (this.flushTimer !== undefined) {
-			window.clearTimeout(this.flushTimer);
-			this.flushTimer = undefined;
+		if (this.realtimeSyncTimer) {
+			window.clearTimeout(this.realtimeSyncTimer);
+			this.realtimeSyncTimer = undefined;
 		}
-
-		if (this.pendingRequests.length === 0 || this.isFlushing) return;
-
-		this.flushTimer = window.setTimeout(() => {
-			this.flushTimer = undefined;
-			void this.flush();
-		}, this.getNextDelayMs());
+		if (this.startupSyncTimer) {
+			window.clearTimeout(this.startupSyncTimer);
+			this.startupSyncTimer = undefined;
+		}
+		this.stopScheduledSync();
 	}
 
-	private getNextDelayMs() {
-		if (this.pendingRequests.some((request) => request.source === 'manual')) return 0;
-
-		if (this.pendingRequests.some((request) => request.source === 'startup'))
-			return this.plugin.settings.startupSync.value;
-
-		const latestRequestAt = this.pendingRequests.reduce(
-			(latest, request) => Math.max(latest, request.requestedAt),
-			0,
+	startScheduledSync() {
+		if (this.scheduledSyncTimer) window.clearInterval(this.scheduledSyncTimer);
+		this.scheduledSyncTimer = window.setInterval(
+			async () =>
+				await this.requestSync({
+					runKind: SyncRunKind.normal,
+					source: 'interval',
+				}),
+			this.settings.scheduledSync.value,
 		);
+	}
 
-		return Math.max(0, latestRequestAt + this.plugin.settings.realtimeSync.value - Date.now());
+	stopScheduledSync() {
+		if (this.scheduledSyncTimer) {
+			window.clearInterval(this.scheduledSyncTimer);
+			this.scheduledSyncTimer = undefined;
+		}
+	}
+
+	private readonly onChange = async (file: TAbstractFile, old?: string) => {
+		console.log(file);
+		const { fastRealtimeSync, realtimeSync, filterRules } = this.settings;
+		if (!realtimeSync.enabled) return;
+
+		const exclusions = buildRules(filterRules.exclusionRules);
+		const inclusions = buildRules(filterRules.inclusionRules);
+		if (
+			!needIncludeFromGlobRules(file.path, inclusions, exclusions) &&
+			!(old && needIncludeFromGlobRules(old, inclusions, exclusions))
+		)
+			return;
+
+		if (this.realtimeSyncTimer) window.clearTimeout(this.realtimeSyncTimer);
+		this.realtimeSyncTimer = window.setTimeout(async () => {
+			await this.requestSync({
+				runKind: fastRealtimeSync ? SyncRunKind.fast : SyncRunKind.normal,
+				source: 'realtime',
+			});
+		}, this.settings.realtimeSync.value);
+	};
+
+	private async scheduleFlush() {
+		if (this.pendingRequests.length === 0 || this.isScheduling) return;
+
+		this.isScheduling = true;
+		if (this.isFlushing || this.plugin.isSyncing)
+			await waitUntil(() => !this.isFlushing && !this.plugin.isSyncing);
+
+		void this.flush();
+		this.isScheduling = false;
 	}
 
 	private reduceBatch(batch: Array<SyncRequest>): SyncExecutionRequest {
@@ -94,41 +141,23 @@ export default class SyncSchedulerService {
 			? SyncRunKind.normal
 			: SyncRunKind.fast;
 
+		let trigger: SyncTrigger = 'realtime';
+		if (batch.some((request) => request.source === 'manual')) trigger = 'manual';
+		else if (batch.some((request) => request.source === 'startup')) trigger = 'startup';
+		else if (batch.some((request) => request.source === 'interval')) trigger = 'interval';
+
 		return {
 			queuedAt: Date.now(),
 			runId: crypto.randomUUID(),
 			runKind,
 			sources: [...new Set(batch.map((request) => request.source))],
-			trigger: this.getTrigger(batch),
+			trigger,
 		};
 	}
 
-	private getTrigger(batch: Array<SyncRequest>): SyncTrigger {
-		if (batch.some((request) => request.source === 'manual')) return 'manual';
-		if (batch.some((request) => request.source === 'startup')) return 'startup';
-		if (batch.some((request) => request.source === 'interval')) return 'interval';
-		return 'realtime';
-	}
-
 	private async flush() {
-		if (this.isFlushing || this.pendingRequests.length === 0) return;
-		if (this.plugin.isSyncing) {
-			this.flushTimer = window.setTimeout(() => {
-				this.flushTimer = undefined;
-				void this.flush();
-			}, SYNC_IDLE_POLL_MS);
-			return;
-		}
-
-		const nextDelayMs = this.getNextDelayMs();
-		if (nextDelayMs > 0) {
-			this.scheduleFlush();
-			return;
-		}
-
 		this.isFlushing = true;
 		const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
-
 		try {
 			const result = await this.syncExecutor.executeSync(this.reduceBatch(batch));
 			for (const request of batch) request.resolve(result.executed);
@@ -136,7 +165,6 @@ export default class SyncSchedulerService {
 			for (const request of batch) request.reject(error);
 		} finally {
 			this.isFlushing = false;
-			this.scheduleFlush();
 		}
 	}
 }
