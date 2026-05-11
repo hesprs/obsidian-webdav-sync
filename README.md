@@ -1,5 +1,5 @@
 <h1 align="center">
-    <img src="assets/logo.svg" alt="Obsidian WebDAV Sync logo" width="160px">
+    <img src="assets/logo.svg" alt="Obsidian WebDAV Sync logo" width="280px">
     <br />
     Obsidian WebDAV Sync
     <br />

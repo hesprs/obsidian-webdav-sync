@@ -19,7 +19,6 @@
 		"@noble/ciphers": "^2.2.0",
 		"@tsdown/css": "^0.21.10",
 		"@types/glob-to-regexp": "^0.4.4",
-		"@types/lodash-es": "^4.17.12",
 		"@types/node": "^25.6.0",
 		"@unocss/postcss": "66.6.8",
 		"@vitejs/devtools": "^0.1.17",
