@@ -48,9 +48,9 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 
 ## Ongoing Polling
 
-📢 Here's ongoing polling about new features! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
+📢 Here's ongoing polling about new directions in development! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
 
-- 🗳️ [Should this plugin support S3-compatible backend, or keep WebDAV only?](https://github.com/hesprs/obsidian-webdav-sync/discussions/90)
+- 🗳️ [Is `Smart Merge` worth the overhead?](https://github.com/hesprs/obsidian-webdav-sync/discussions/117)
 
 ## Features
 
