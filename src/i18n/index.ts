@@ -1,3 +1,4 @@
+import { getLanguage } from 'obsidian';
 import createI18n from '~/composable/i18n';
 import en from './enold';
 import ru from './ru';
@@ -21,8 +22,7 @@ function isLanguage(key: string): key is Languages {
 }
 
 function resolveLanguage(): Languages {
-	const code = window.localStorage.getItem('language') ?? navigator.language;
-	const segments = code.split('-');
+	const segments = getLanguage().split('-');
 	if (segments[0] === 'zh') return 'zh-Hans';
 	return isLanguage(segments[0]) ? segments[0] : 'en';
 }

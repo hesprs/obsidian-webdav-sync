@@ -70,16 +70,6 @@
 	border-color: var(--background-modifier-error);
 }
 
-input.error {
-	border-color: var(--background-modifier-error) !important;
-	box-shadow: none !important;
-}
-
-input.success {
-	border-color: var(--background-modifier-success) !important;
-	box-shadow: none !important;
-}
-
 .task-list-table {
 	width: 100%;
 	border-collapse: collapse;

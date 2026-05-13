@@ -2,7 +2,7 @@ import { setIcon, setTooltip } from 'obsidian';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import type { BaseTask } from '~/sync/tasks/task.interface';
-import getTaskIcon from './icon-map';
+import { getTaskColor, getTaskIcon } from '~/utils/get-task-icon';
 import FileTreeSelectionController from './selection';
 import createFileTreeData from './tree-data';
 
@@ -28,7 +28,7 @@ export default function App(props: FileTreeAppProps) {
 					const node = data.nodes[nodeId];
 					const task = node.task;
 					const icon = task
-						? getTaskIcon(task)
+						? { color: getTaskColor(task), icon: getTaskIcon(task) }
 						: { color: 'var(--text-normal)', icon: 'folder-open' };
 					const rowClass = task && !selectedById[nodeId] ? 'is-unselected' : '';
 					return (

@@ -21,11 +21,11 @@
     <a href="./assets/README.zh-Hans.md">
         <strong>简体中文</strong>
     </a> • 
+    <a href="https://community.obsidian.md/plugins/webdav-sync">
+        <strong>Plugin Store</strong>
+    </a> • 
     <a href="#ongoing-polling">
         <strong>Polling</strong>
-    </a> • 
-    <a href="#common-questions">
-        <strong>Q&A</strong>
     </a> • 
     <a href="#license-copyright-and-originality">
         <strong>License</strong>
@@ -108,12 +108,11 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 
 ## Install & Setup
 
-This plugin is currently in beta. You can install it using the [BRAT](https://github.com/TfTHacker/obsidian42-brat) plugin:
+You can install it from Obsidian plugin registry:
 
-1. Go to **Community plugins** and search for `BRAT`
-2. Install and enable it
-3. Go to BRAT settings, click **Add beta plugin**, copy and paste `https://github.com/hesprs/obsidian-webdav-sync` into the _Repository_ field
-4. Select the latest version and click **Add plugin**
+1. Go to **Community plugins** and search for `WebDAV Sync`
+2. Find the one made by `Hēsperus`
+3. Install and enable it
 
 Configuration:
 
