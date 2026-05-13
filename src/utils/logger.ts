@@ -216,6 +216,7 @@ class Logger {
 		if (summary.durationMs !== undefined)
 			lines.push(`- Duration: ${formatDuration(summary.durationMs)}`);
 		if (summary.planSummary) lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
+		lines.push('');
 
 		const warnings = summary.planSummary?.warnings ?? [];
 		if (warnings.length > 0) {

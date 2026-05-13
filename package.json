@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-webdav-sync",
-	"version": "2.5.4",
+	"version": "2.5.5",
 	"private": true,
 	"license": "AGPL-3.0",
 	"type": "module",
