@@ -36,7 +36,7 @@ export default class DeleteConfirmModal extends Modal {
 		instruction.setText(t('deleteConfirm.instruction'));
 
 		const treeContainer = contentEl.createDiv({
-			cls: 'max-h-50vh overflow-y-auto webdav-sync-delete-confirm-tree mb-3',
+			cls: 'webdav-sync-delete-confirm-tree mb-3',
 		});
 		this.renderTree = mountFileTree(treeContainer, {
 			controllerRef: (controller) => {

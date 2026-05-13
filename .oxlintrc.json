@@ -90,6 +90,9 @@
 		"browser": true,
 		"node": true
 	},
+	"globals": {
+		"activeDocument": "readonly"
+	},
 	"ignorePatterns": ["**/node_modules/**", "**/dist/**"],
 	"options": {
 		"typeAware": true

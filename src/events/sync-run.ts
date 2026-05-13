@@ -1,3 +1,4 @@
+import type { BaseTask } from '~/sync/tasks/task.interface';
 import type { SyncRunKind } from '~/types';
 import { hook, ref } from '.';
 
@@ -41,7 +42,7 @@ export type SyncProgressSummary = {
 };
 
 export type SyncFailedTaskInfo = {
-	taskName: string;
+	name: BaseTask['name'];
 	localPath: string;
 	errorMessage: string;
 };

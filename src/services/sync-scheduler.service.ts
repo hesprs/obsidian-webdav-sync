@@ -1,6 +1,7 @@
 import type { TAbstractFile } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import type { SyncTrigger } from '~/events';
+import { syncRun } from '~/events';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import waitUntil from '~/utils/wait-until';
@@ -103,6 +104,7 @@ export default class SyncSchedulerService {
 	}
 
 	private readonly onChange = (file: TAbstractFile, old?: string) => {
+		if (syncRun()?.stage === 'executing') return;
 		const { fastRealtimeSync, realtimeSync, filterRules } = this.settings;
 		if (!realtimeSync.enabled) return;
 

@@ -21,15 +21,6 @@ const translation: typeof en = {
 	errors: {
 		filenameUnsupportedChars: 'Файл {{path}} содержит недопустимые символы: {{chars}}',
 	},
-	failedTasks: {
-		close: 'Закрыть',
-		context: '{{syncType}} · Неудачных: {{failedCount}}',
-		errorMessage: 'Ошибка',
-		instruction: 'Следующие задачи не удалось выполнить во время синхронизации:',
-		localPath: 'Локальный путь',
-		taskName: 'Задача',
-		title: 'Неудачные задачи синхронизации',
-	},
 	settings: {
 		account: {
 			desc: 'Введите данные учетной записи WebDAV',
@@ -231,6 +222,7 @@ const translation: typeof en = {
 			notFound: 'Не найдено: {{path}}',
 		},
 		failed: 'Синхронизация не удалась!',
+		failedDescription: 'Следующие задачи не удалось выполнить во время синхронизации:',
 		failedStatus: '❌ Синхронизация не удалась',
 		failedWithError: '❌ Ошибка синхронизации: {{error}}',
 		fileFolderConflict: {

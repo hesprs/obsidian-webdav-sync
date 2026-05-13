@@ -21,15 +21,6 @@ const translation: typeof en = {
 	errors: {
 		filenameUnsupportedChars: '文件 {{path}} 包含不支持的字符：{{chars}}',
 	},
-	failedTasks: {
-		close: '关闭',
-		context: '{{syncType}} · {{failedCount}} 个失败任务',
-		errorMessage: '失败原因',
-		instruction: '以下任务在同步时失败：',
-		localPath: '本地路径',
-		taskName: '任务',
-		title: '同步失败任务',
-	},
 	settings: {
 		account: {
 			desc: '输入你的 WebDAV 账号',
@@ -230,6 +221,7 @@ const translation: typeof en = {
 			notFound: '未找到: {{path}}',
 		},
 		failed: '同步失败!',
+		failedDescription: '以下任务在同步时失败：',
 		failedStatus: '❌ 同步失败',
 		failedWithError: '❌ 同步失败，错误信息: {{error}}',
 		fileFolderConflict: {

@@ -3,7 +3,7 @@ import type { WebDAVClient } from 'webdav';
 import type { TranslationShape } from '~/i18n';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
-import getTaskName from '~/utils/get-task-name';
+import { getTaskName } from '~/utils/get-task-info';
 import type { TaskOptions } from '../decision/sync-decision.interface';
 
 export type BaseTaskOptions = {
@@ -51,7 +51,7 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 			this.name === 'createRemoteDir'
 				? this.remotePath
 				: this.localPath;
-		return { path, taskName: getTaskName(this) };
+		return { path, taskName: getTaskName(this.name) };
 	}
 }
 

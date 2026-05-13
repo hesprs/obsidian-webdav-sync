@@ -19,15 +19,6 @@ const en = {
 	errors: {
 		filenameUnsupportedChars: 'File {{path}} contains unsupported characters: {{chars}}',
 	},
-	failedTasks: {
-		close: 'Close',
-		context: '{{syncType}} · {{failedCount}} failed',
-		errorMessage: 'Error',
-		instruction: 'The following tasks failed during sync:',
-		localPath: 'Local path',
-		taskName: 'Task',
-		title: 'Failed sync tasks',
-	},
 	settings: {
 		account: {
 			desc: 'Enter your WebDAV account',
@@ -229,6 +220,7 @@ const en = {
 			notFound: 'Not found: {{path}}',
 		},
 		failed: 'Sync failed!',
+		failedDescription: 'The following tasks failed during sync:',
 		failedStatus: '❌ Sync failed',
 		failedWithError: '❌ Sync failed with error: {{error}}',
 		fileFolderConflict: {

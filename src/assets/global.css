@@ -70,39 +70,6 @@
 	border-color: var(--background-modifier-error);
 }
 
-input.error {
-	border-color: var(--background-modifier-error) !important;
-	box-shadow: none !important;
-}
-
-input.success {
-	border-color: var(--background-modifier-success) !important;
-	box-shadow: none !important;
-}
-
-.task-list-table {
-	width: 100%;
-	border-collapse: collapse;
-	margin: 1em 0;
-}
-
-.task-list-table th,
-.task-list-table td {
-	padding: 8px;
-	word-break: keep-all;
-	border: 1px solid var(--background-modifier-border);
-	text-align: left;
-}
-
-.task-list-table th {
-	background-color: var(--background-secondary);
-	font-weight: bold;
-}
-
-.task-list-table tr:hover {
-	background-color: var(--background-modifier-hover);
-}
-
 .webdav-sync-file-tree {
 	display: flex;
 	flex-direction: column;
@@ -135,7 +102,7 @@ input.success {
 	flex-shrink: 0;
 }
 
-.webdav-sync-file-tree__icon {
+.webdav-sync-task__icon {
 	display: flex;
 	align-items: center;
 	justify-content: center;
