@@ -1,4 +1,4 @@
-// oxlint-disable import/no-nodejs-modules
+// oxlint-disable
 import { exec } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 

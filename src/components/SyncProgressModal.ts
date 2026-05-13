@@ -1,9 +1,10 @@
 import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
 import type { FileTreeSelectionController } from '~/components/fileTree';
-import type { SyncRunSnapshot, SyncRunStage } from '~/events';
+import type { SyncRunSnapshot, SyncRunStage, SyncFailedTaskInfo } from '~/events';
 import type { BaseTask } from '~/sync/tasks/task.interface';
 import { mount as mountFileTree } from '~/components/fileTree';
+import renderFailedTasks from '~/components/render-failed-tasks';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
 import { TERMINAL_STAGES } from '~/services/observability.service';
@@ -21,7 +22,8 @@ export default class SyncProgressModal extends Modal {
 	private progressStats!: HTMLDivElement;
 	private currentFile!: HTMLDivElement;
 	private confirmationDescription!: HTMLParagraphElement;
-	private confirmationContainer!: HTMLDivElement;
+	private failedTasksDescription!: HTMLParagraphElement;
+	private detailContainer!: HTMLDivElement;
 	private controls: HTMLElement | undefined;
 	private stage: SyncStage = 'none';
 	private lastStage: SyncStage = 'none';
@@ -36,12 +38,11 @@ export default class SyncProgressModal extends Modal {
 		super(plugin.app);
 	}
 
-	private getUnits(run?: SyncRunSnapshot): {
+	private getUnits(run: SyncRunSnapshot): {
 		completed: number;
 		total: number;
 		percentage?: number;
 	} {
-		if (!run) return { completed: 0, total: 1 };
 		const stage = run.stage;
 		if (stage === 'walking_remote')
 			return {
@@ -57,8 +58,8 @@ export default class SyncProgressModal extends Modal {
 		return { completed: 0, total: 1 };
 	}
 
-	private updateStage(currentRun?: SyncRunSnapshot): void {
-		this.stage = this.resolveStage(currentRun?.stage);
+	private updateStage(currentRun: SyncRunSnapshot): void {
+		this.stage = this.resolveStage(currentRun.stage);
 		if (this.stage === this.lastStage) return;
 		this.renderControls();
 		if (this.lastStage === 'confirmation') this.clearTaskConfirmation();
@@ -73,10 +74,10 @@ export default class SyncProgressModal extends Modal {
 		return 'none';
 	}
 
-	public update(run?: SyncRunSnapshot): void {
+	public update(run: SyncRunSnapshot): void {
 		if (!this.progressBar || !this.progressText || !this.progressStats || !this.currentFile)
 			return;
-		const stage = run?.stage;
+		const stage = run.stage;
 
 		const { completed, total, percentage } = this.getUnits(run);
 		this.updateStage(run);
@@ -90,16 +91,16 @@ export default class SyncProgressModal extends Modal {
 		if (stage === 'pre_connecting') this.currentFile.setText(t('sync.preConnecting'));
 		else if (stage === 'walking_remote')
 			this.currentFile.setText(
-				`${t('sync.walkingRemote')} ${run?.remoteWalkSummary?.currentItem}`,
+				`${t('sync.walkingRemote')} ${run.remoteWalkSummary?.currentItem}`,
 			);
 		else if (stage === 'awaiting_confirmation')
 			this.currentFile.setText(t('sync.awaitingConfirmation'));
-		else if (stage === 'executing' && run?.progressSummary.completed.length === 0)
+		else if (stage === 'executing' && run.progressSummary.completed.length === 0)
 			this.currentFile.setText(t('sync.syncingFiles'));
 		else if (stage === 'cancelled') this.currentFile.setText(t('sync.cancelled'));
 		else if (stage === 'failed') this.currentFile.setText(t('sync.failedStatus'));
 		else if (stage === 'completed_noop') this.currentFile.setText(t('sync.alreadyUpToDate'));
-		else if (run?.stage === 'executing' && run?.progressSummary.completed.length > 0) {
+		else if (stage === 'executing' && run.progressSummary.completed.length > 0) {
 			const lastFile = run.progressSummary.completed.at(-1);
 			if (lastFile) this.currentFile.setText(`${lastFile.taskName} ${lastFile.path}`);
 		} else this.currentFile.setText(t('sync.complete'));
@@ -152,7 +153,12 @@ export default class SyncProgressModal extends Modal {
 			text: t('sync.manualConfirmation'),
 		});
 
-		this.confirmationContainer = container.createDiv({
+		this.failedTasksDescription = container.createEl('p', {
+			cls: 'whitespace-pre-line hidden mt-2 mb-0',
+			text: t('sync.failedDescription'),
+		});
+
+		this.detailContainer = container.createDiv({
 			cls: 'webdav-sync-confirmation-container hidden',
 		});
 	}
@@ -203,8 +209,8 @@ export default class SyncProgressModal extends Modal {
 	showTaskConfirmation(tasks: Array<BaseTask>, session: ManualConfirmationSession): void {
 		this.confirmationSession = session;
 		this.confirmationDescription.removeClass('hidden');
-		this.confirmationContainer.removeClass('hidden');
-		this.renderTree = mountFileTree(this.confirmationContainer, {
+		this.detailContainer.removeClass('hidden');
+		this.renderTree = mountFileTree(this.detailContainer, {
 			controllerRef: (controller) => (this.selectionController = controller),
 			tasks,
 		});
@@ -214,11 +220,16 @@ export default class SyncProgressModal extends Modal {
 		this.selectionController = undefined;
 		this.renderTree?.();
 		this.renderTree = undefined;
-		if (this.confirmationContainer) {
-			this.confirmationContainer.empty();
-			this.confirmationContainer.addClass('hidden');
+		if (this.detailContainer) {
+			this.detailContainer.empty();
+			this.detailContainer.addClass('hidden');
 		}
 		if (this.confirmationDescription) this.confirmationDescription.addClass('hidden');
+	}
+
+	public setFailedTasks(failedTasks: Array<SyncFailedTaskInfo>): void {
+		this.failedTasksDescription.removeClass('hidden');
+		renderFailedTasks(this.detailContainer, failedTasks);
 	}
 
 	private readonly cancelConfirmation = (): void => {

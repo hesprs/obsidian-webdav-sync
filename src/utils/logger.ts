@@ -23,7 +23,6 @@ export type LogEntry = {
 
 type RunReportSummary = {
 	trigger?: string;
-	mode?: string;
 	runKind?: string;
 	stage?: string;
 	sources?: Array<string>;
@@ -87,11 +86,6 @@ function sanitizeLogValue(value: unknown, depth = 0): LogValue | undefined {
 	}
 
 	return JSON.stringify(value) ?? '[unserializable metadata]';
-}
-
-function formatMode(mode?: string): string | undefined {
-	if (mode === undefined) return undefined;
-	return mode === 'manual' ? 'manual' : 'auto';
 }
 
 function formatDuration(durationMs?: number): string | undefined {
@@ -209,7 +203,6 @@ class Logger {
 		const lines: Array<string> = [`### Run ${runId}`, ''];
 
 		lines.push(`- Trigger: ${summary.trigger ?? 'unknown'}`);
-		lines.push(`- Mode: ${formatMode(summary.mode) ?? 'unknown'}`);
 		lines.push(`- Run kind: ${summary.runKind ?? 'unknown'}`);
 		lines.push(`- Outcome: ${summary.stage ?? 'unknown'}`);
 		if (summary.sources && summary.sources.length > 0)
@@ -223,6 +216,7 @@ class Logger {
 		if (summary.durationMs !== undefined)
 			lines.push(`- Duration: ${formatDuration(summary.durationMs)}`);
 		if (summary.planSummary) lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
+		lines.push('');
 
 		const warnings = summary.planSummary?.warnings ?? [];
 		if (warnings.length > 0) {
@@ -269,7 +263,6 @@ class Logger {
 			if (!metadata) continue;
 
 			summary.trigger ??= this.readString(metadata.trigger);
-			summary.mode ??= this.readString(metadata.mode);
 			summary.runKind ??= this.readString(metadata.runKind);
 			summary.stage = this.readString(metadata.stage) ?? summary.stage;
 			summary.sources ??= this.readStringArray(metadata.sources);

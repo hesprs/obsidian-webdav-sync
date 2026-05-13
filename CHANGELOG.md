@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.5 - 2026-05-13
+
+- Fixed sync execution itself triggering real-time sync.
+- Refurbished and simplified failed task display for better human readability.
+- Adjusted some minor formatting issues in logger.
+
 ## Obsidian WebDAV Sync v2.5.4 - 2026-05-08
 
 - Refactored auto-sync scheduling logic (startup sync, scheduled sync, real-time sync).

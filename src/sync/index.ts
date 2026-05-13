@@ -17,7 +17,7 @@ import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
 import breakableSleep from '~/utils/breakable-sleep';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
-import getTaskName from '~/utils/get-task-name';
+import { getTaskName } from '~/utils/get-task-info';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
@@ -409,7 +409,7 @@ export default class SyncEngine {
 				failed.push({
 					errorMessage: result.error.message,
 					localPath: task.options.localPath,
-					taskName: getTaskName(task),
+					name: task.name,
 				});
 			}
 
@@ -443,7 +443,7 @@ export default class SyncEngine {
 						error: taskResult.error,
 						localPath: task.localPath,
 						remotePath: task.remotePath,
-						taskName: getTaskName(task),
+						taskName: getTaskName(task.name),
 					},
 					{ category: 'sync.retry' },
 				);

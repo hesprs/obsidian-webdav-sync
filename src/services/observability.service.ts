@@ -2,7 +2,6 @@ import type WebDAVSyncPlugin from '~';
 import { Notice, Platform } from 'obsidian';
 import type { SyncRunSnapshot, SyncRunStage, SyncRunWarning } from '~/events';
 import type { BaseTask } from '~/sync/tasks/task.interface';
-import FailedTasksModal from '~/components/FailedTasksModal';
 import SyncProgressModal from '~/components/SyncProgressModal';
 import { syncRun } from '~/events';
 import t from '~/i18n';
@@ -18,7 +17,6 @@ const MOBILE_SYNC_NOTICE_HIDE_DELAY = 2000;
 
 export default class ObservabilityService {
 	private previousRun: SyncRunSnapshot | undefined;
-	private readonly shownFailureModalRunIds = new Set<string>();
 	private readonly unsubscribe = syncRun.subscribe((run) => {
 		if (!run) return;
 		this.apply(run);
@@ -91,7 +89,6 @@ export default class ObservabilityService {
 		this.applyMobileSyncNotice(run);
 		this.applyNotice(run, this.previousRun);
 		this.applyProgressModal(run, this.previousRun);
-		this.applyFailureModal(run);
 	}
 
 	private applyMobileSyncNotice(run: SyncRunSnapshot) {
@@ -154,23 +151,6 @@ export default class ObservabilityService {
 		this.clearMobileSyncNoticeHideTimeout();
 		this.mobileSyncNotice?.hide();
 		this.mobileSyncNotice = undefined;
-	}
-
-	private applyFailureModal(run: SyncRunSnapshot) {
-		if (
-			run.trigger !== 'manual' ||
-			run.stage !== 'failed' ||
-			run.resultSummary === undefined ||
-			run.resultSummary.failed.length === 0 ||
-			this.shownFailureModalRunIds.has(run.runId)
-		)
-			return;
-
-		this.shownFailureModalRunIds.add(run.runId);
-		new FailedTasksModal(this.plugin.app, run.resultSummary.failed, {
-			failedCount: run.resultSummary.failedTasks,
-			syncType: t(`sync.runKind.${run.runKind}`),
-		}).open();
 	}
 
 	private getStatusText(run: SyncRunSnapshot): string {
@@ -282,9 +262,11 @@ export default class ObservabilityService {
 
 	private applyProgressModal(run: SyncRunSnapshot, previousRun?: SyncRunSnapshot) {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
-		if (isNewStage && run.trigger === 'manual' && !this.progressModal)
+		const failed = run.stage === 'failed' && run.resultSummary?.failed?.length !== 0;
+		if (((isNewStage && run.trigger === 'manual') || failed) && !this.progressModal)
 			this.createProgressModal().open();
 		this.progressModal?.update(run);
+		if (failed) this.progressModal?.setFailedTasks(run.resultSummary?.failed ?? []);
 	}
 
 	showProgressModal() {

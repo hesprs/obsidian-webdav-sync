@@ -1,5 +1,5 @@
 export async function sha256Digest(data: BufferSource): Promise<ArrayBuffer> {
-	return globalThis.crypto.subtle.digest('SHA-256', data);
+	return crypto.subtle.digest('SHA-256', data);
 }
 
 export function hash(input: unknown): string {

@@ -3,7 +3,7 @@ import { argon2id } from 'hash-wasm';
 import { sha256Digest } from '~/platform/crypto';
 
 const textEncoder = new TextEncoder();
-const textDecoder = new globalThis.TextDecoder();
+const textDecoder = new TextDecoder();
 const EMPTY_SALT = ownedBytes(new Uint8Array());
 const MASTER_KEY_LENGTH = 32;
 const MASTER_SALT_LENGTH = 16;
@@ -160,9 +160,7 @@ export async function encryptFileContent(
 ): Promise<ArrayBuffer> {
 	const plaintextBytes = new Uint8Array(plaintext);
 	const encryptedFileSize = getEncryptedFileSize(plaintextBytes.length);
-	const fileSalt = ownedBytes(
-		globalThis.crypto.getRandomValues(new Uint8Array(FILE_SALT_LENGTH)),
-	);
+	const fileSalt = ownedBytes(crypto.getRandomValues(new Uint8Array(FILE_SALT_LENGTH)));
 	const fileKey = await importAesGcmKey(
 		await deriveFileKey(rootFileKey, fileSalt, encryptedFileSize, virtualPath),
 	);
@@ -238,14 +236,14 @@ async function deriveHkdfKey(
 	info: string,
 	salt: Uint8Array = EMPTY_SALT,
 ): Promise<Uint8Array> {
-	const keyMaterial = await globalThis.crypto.subtle.importKey(
+	const keyMaterial = await crypto.subtle.importKey(
 		'raw',
 		toBufferSource(masterKey),
 		'HKDF',
 		false,
 		['deriveBits'],
 	);
-	const derivedBits = await globalThis.crypto.subtle.deriveBits(
+	const derivedBits = await crypto.subtle.deriveBits(
 		{
 			hash: 'SHA-256',
 			info: textEncoder.encode(info),
@@ -259,7 +257,7 @@ async function deriveHkdfKey(
 }
 
 async function importAesGcmKey(key: Uint8Array): Promise<CryptoKey> {
-	return await globalThis.crypto.subtle.importKey('raw', toArrayBuffer(key), 'AES-GCM', false, [
+	return await crypto.subtle.importKey('raw', toArrayBuffer(key), 'AES-GCM', false, [
 		'encrypt',
 		'decrypt',
 	]);
@@ -271,7 +269,7 @@ async function encryptContentChunk(
 	chunkIndex: number,
 ): Promise<Uint8Array> {
 	return new Uint8Array(
-		await globalThis.crypto.subtle.encrypt(
+		await crypto.subtle.encrypt(
 			{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
 			key,
 			toArrayBuffer(chunk),
@@ -286,7 +284,7 @@ async function decryptContentChunk(
 ): Promise<Uint8Array> {
 	try {
 		return new Uint8Array(
-			await globalThis.crypto.subtle.decrypt(
+			await crypto.subtle.decrypt(
 				{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
 				key,
 				toArrayBuffer(encryptedChunk),
