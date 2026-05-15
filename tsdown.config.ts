@@ -25,7 +25,6 @@ export default defineConfig({
 		transformer: 'postcss',
 	},
 	define: {
-		'process.env.MODE': JSON.stringify(mode) ?? '"prod"',
 		'process.env.VERSION': JSON.stringify(pkg.version),
 	},
 	deps: {

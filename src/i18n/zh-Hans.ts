@@ -110,10 +110,6 @@ const translation: typeof en = {
 		invalidValue: '无效数值，已恢复至上一次设置',
 		log: {
 			button: '查看',
-			clear: '清除',
-			clearDesc: '删除所有已存储的支持日志记录',
-			clearName: '清除日志',
-			cleared: '支持日志已清除',
 			desc: '按同步运行导出可读的支持报告',
 			name: '支持报告',
 			saveError: '保存支持报告失败',

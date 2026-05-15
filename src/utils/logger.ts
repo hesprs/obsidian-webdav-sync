@@ -1,5 +1,5 @@
 import { apiVersion, Platform } from 'obsidian';
-import { IN_DEV, VERSION } from '~/consts';
+import { VERSION } from '~/consts';
 import formatDateTime from '~/utils/format-date';
 import { isNil } from './fns';
 import { formatTime } from './input-converters';
@@ -124,7 +124,6 @@ class Logger {
 	}
 
 	debug(message: string, metadata?: unknown, context?: LogContext) {
-		if (!IN_DEV) return;
 		this.write({ context, level: 'debug', message, metadata });
 	}
 

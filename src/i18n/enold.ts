@@ -109,10 +109,6 @@ const en = {
 		invalidValue: 'Invalid value, reset to the previous value',
 		log: {
 			button: 'View logs',
-			clear: 'Clear',
-			clearDesc: 'Delete all stored support log records',
-			clearName: 'Clear logs',
-			cleared: 'Support logs cleared',
 			desc: 'Export a readable support report grouped by sync run',
 			name: 'Support report',
 			saveError: 'Failed to save support report',
