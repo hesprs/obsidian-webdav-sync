@@ -1,4 +1,5 @@
 import type { RecordStatsMap, StatModel } from '~/types';
+import { isNil } from '~/utils/fns';
 import type IndexedDbFileChunkStore from './file-chunk.store';
 import type IndexedDbSyncStateStore from './sync-record.store';
 import IndexedDbBaseTextStore from './base-text.store';
@@ -41,7 +42,7 @@ export default class SyncRecord {
 		await Promise.all([
 			this.stateStore.set(this.namespace, key, { local, remote }),
 			(async () => {
-				if (baseText) await this.textStore.set(this.namespace, key, baseText);
+				if (!isNil(baseText)) await this.textStore.set(this.namespace, key, baseText);
 			})(),
 		]);
 	}
