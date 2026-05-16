@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.6 - 2026-05-17
+
+- Fixed WebDAV response parsing glitches on Mailbox service.
+- Simplify and imported logger for specificity.
+- Simplified several request-related logic.
+
 ## Obsidian WebDAV Sync v2.5.5 - 2026-05-13
 
 - Fixed sync execution itself triggering real-time sync.
