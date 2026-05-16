@@ -2,7 +2,7 @@ import { setIcon, setTooltip } from 'obsidian';
 import { For } from 'solid-js';
 import { createStore } from 'solid-js/store';
 import type { BaseTask } from '~/sync/tasks/task.interface';
-import { getTaskColor, getTaskIcon } from '~/utils/get-task-info';
+import { getTaskColor, getTaskIcon, getTaskName } from '~/utils/get-task-info';
 import FileTreeSelectionController from './selection';
 import createFileTreeData from './tree-data';
 
@@ -63,7 +63,7 @@ export default function App(props: FileTreeAppProps) {
 										setIcon(element, icon.icon);
 										element.style.color = icon.color;
 										if (!task) return;
-										setTooltip(element, task.toJSON().taskName, { delay: 100 });
+										setTooltip(element, getTaskName(task.name), { delay: 100 });
 									}}
 								/>
 								<div class="webdav-sync-file-tree__label">

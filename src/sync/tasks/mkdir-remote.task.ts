@@ -11,7 +11,7 @@ export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat
 		try {
 			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
 			await this.webdav.createDirectory(executionRemotePath);
-			const remote = await statItem(this.webdav, executionRemotePath, this.remotePath);
+			const remote = await statItem(executionRemotePath, this.remotePath);
 
 			if (!remote || !remote.isDir)
 				throw new Error(

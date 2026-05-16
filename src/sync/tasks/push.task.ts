@@ -28,7 +28,7 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 			});
 			if (!res) throw new Error('Upload failed');
 
-			const remote = await statItem(this.webdav, executionRemotePath, this.remotePath);
+			const remote = await statItem(executionRemotePath, this.remotePath);
 			if (!remote || remote.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
 

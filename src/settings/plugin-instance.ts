@@ -7,11 +7,12 @@ export function setPluginInstance(plugin?: WebDAVSyncPlugin) {
 	pluginInstance = plugin;
 }
 
-export function getPluginInstance() {
-	return pluginInstance;
+export async function usePlugin() {
+	await waitUntilPluginInstance();
+	return pluginInstance as WebDAVSyncPlugin;
 }
 
-export function waitUntilPluginInstance() {
+function waitUntilPluginInstance() {
 	return waitUntil(() => Boolean(pluginInstance), 100);
 }
 

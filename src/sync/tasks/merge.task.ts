@@ -94,7 +94,6 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				);
 				if (!putResult) throw new Error(t('sync.error.failedToUploadMerged'));
 				const fetchedRemoteStat = await statWebDAVItem(
-					this.webdav,
 					executionRemotePath,
 					this.remotePath,
 				);

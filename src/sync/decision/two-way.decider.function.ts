@@ -416,7 +416,6 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
 				tasks.push(taskFactory.createPushTask({ ...options, local }));
 			},
-			NONE: () => {},
 			REMOTE_DIR_PULL: () => {
 				if (!remote.isDir) return;
 				logger.debug(`Replace local file \`${localPath}\` with local directory`, {

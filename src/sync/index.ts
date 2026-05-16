@@ -370,7 +370,7 @@ export default class SyncEngine {
 		for (let i = 0; i < tasks.length; ++i) {
 			const task = tasks[i];
 			const taskResult = results[i];
-			const taskName = task.toJSON().taskName;
+			const taskName = getTaskName(task.name);
 			if (!taskResult.success)
 				logger.warn(
 					'Task execution failed',
@@ -394,7 +394,10 @@ export default class SyncEngine {
 		allCompletedTasks: Array<BaseTask>,
 	): SyncProgressSummary {
 		return {
-			completed: allCompletedTasks.map((task) => task.toJSON()),
+			completed: allCompletedTasks.map((task) => ({
+				path: task.localPath,
+				taskName: task.name ?? 'sync',
+			})),
 			completedTasks: allCompletedTasks.length,
 			totalTasks: totalDisplayableTasks.length,
 		};

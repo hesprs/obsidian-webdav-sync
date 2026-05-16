@@ -1,5 +1,4 @@
 import type { SecretStorage } from 'obsidian';
-import type WebDAVSyncPlugin from '~';
 import type { RangedFileDecrypter } from '~/composable/encryption';
 import type { PluginSettings } from '~/settings';
 import {
@@ -18,7 +17,7 @@ import {
 	normalizePathToRelative,
 	splitRemotePathAtBaseDir,
 } from '~/platform/path';
-import { getPluginInstance } from '~/settings/plugin-instance';
+import { usePlugin } from '~/settings/plugin-instance';
 
 type SyncEncryptionKeys = {
 	rootFileKey: Uint8Array;
@@ -99,7 +98,7 @@ async function encryptRemotePathBelowBaseDir(
 }
 
 export async function decryptRemotePathForTraversal(remotePath: string): Promise<string> {
-	const plugin = getRequiredPluginInstance();
+	const plugin = await usePlugin();
 	if (!plugin.settings.encryption.enabled) return remotePath;
 
 	const remoteDir = plugin.settings.remoteDir;
@@ -107,7 +106,7 @@ export async function decryptRemotePathForTraversal(remotePath: string): Promise
 }
 
 export async function resolveRemoteExecutionPath(virtualAbsolutePath: string): Promise<string> {
-	const plugin = getRequiredPluginInstance();
+	const plugin = await usePlugin();
 	if (!plugin.settings.encryption.enabled) return virtualAbsolutePath;
 
 	const remoteDir = plugin.settings.remoteDir;
@@ -124,7 +123,7 @@ export async function encryptContentForRemoteFile(
 	virtualPath: string,
 	plaintext: ArrayBuffer,
 ): Promise<ArrayBuffer> {
-	const plugin = getRequiredPluginInstance();
+	const plugin = await usePlugin();
 	if (!plugin.settings.encryption.enabled) return plaintext;
 	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
 	return await encryptFileContent(rootFileKey, virtualPath, plaintext);
@@ -135,7 +134,7 @@ export async function decryptRemoteFileContent(
 	encryptedContent: ArrayBuffer,
 	encryptedFileSize: number,
 ): Promise<ArrayBuffer> {
-	const plugin = getRequiredPluginInstance();
+	const plugin = await usePlugin();
 	if (!plugin.settings.encryption.enabled) return encryptedContent;
 	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
 	return await decryptFileContent(rootFileKey, virtualPath, encryptedContent, encryptedFileSize);
@@ -145,7 +144,7 @@ export async function createRemoteFileContentRangedDecrypter(
 	virtualPath: string,
 	encryptedFileSize: number,
 ): Promise<RangedFileDecrypter | undefined> {
-	const plugin = getRequiredPluginInstance();
+	const plugin = await usePlugin();
 	if (!plugin.settings.encryption.enabled) return undefined;
 	const { rootFileKey } = await plugin.getSyncEncryptionKeys();
 	return createRangedFileDecrypter(rootFileKey, virtualPath, encryptedFileSize);
@@ -221,10 +220,4 @@ function normalizeRelativeDescendantPath(path: string): string {
 				.split('/')
 				.map((segment) => segment.normalize('NFC'))
 				.join('/');
-}
-
-function getRequiredPluginInstance(): WebDAVSyncPlugin {
-	const plugin = getPluginInstance();
-	if (!plugin) throw new Error('Plugin instance is not ready');
-	return plugin;
 }

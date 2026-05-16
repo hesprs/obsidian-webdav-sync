@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import type { FileStatModel } from '~/types';
 import parseXML from '~/composable/parse-xml';
 import requestUrl from '~/utils/request-url';
 
@@ -33,7 +34,7 @@ describe('getDirectoryContents', () => {
 	it('parses absolute href responses (Nextcloud style)', async () => {
 		vi.clearAllMocks();
 
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -114,18 +115,18 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toStrictEqual([
+		expect(files.map((f) => f.path)).toStrictEqual([
 			'/Notes/Folder A/',
 			'/Notes/Project Plan.md',
 		]);
-		expect(files[0].type).toBe('directory');
-		expect(files[1].type).toBe('file');
+		expect(files[0].isDir).toBe(true);
+		expect(files[1].isDir).toBe(false);
 	});
 
 	it('parses path-only href responses (server-relative style)', async () => {
 		vi.clearAllMocks();
 
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -172,14 +173,15 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/Notes/中文.md');
-		expect(files[0].size).toBe(4);
+		const firstFile = files[0];
+		expect(firstFile.path).toBe('/Notes/中文.md');
+		expect((firstFile as FileStatModel).size).toBe(4);
 	});
 
 	it('handles propstat arrays and picks successful prop values', async () => {
 		vi.clearAllMocks();
 
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -245,14 +247,14 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
 		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.filename)).toStrictEqual(['/Notes/Folder/', '/Notes/file.md']);
-		expect(files[0].type).toBe('directory');
-		expect(files[1].type).toBe('file');
-		expect(files[1].size).toBe(9);
+		expect(files.map((f) => f.path)).toStrictEqual(['/Notes/Folder/', '/Notes/file.md']);
+		expect(files[0].isDir).toBe(true);
+		expect(files[1].isDir).toBe(false);
+		expect((files[1] as FileStatModel).size).toBe(9);
 	});
 
 	it('skips malformed response items without prop values', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -303,12 +305,12 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/Notes/Ok.md');
-		expect(files[0].size).toBe(5);
+		expect(files[0].path).toBe('/Notes/Ok.md');
+		expect((files[0] as FileStatModel).size).toBe(5);
 	});
 
 	it('keeps nested absolute path when listing non-root directory', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -343,12 +345,12 @@ describe('getDirectoryContents', () => {
 		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/test/');
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/test/abc/');
-		expect(files[0].type).toBe('directory');
+		expect(files[0].path).toBe('/test/abc/');
+		expect(files[0].isDir).toBe(true);
 	});
 
 	it('decodes XML entities', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).default;
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
 		vi.mocked(requestUrl).mockResolvedValue({
 			headers: {},
 			text: `<?xml version="1.0"?>
@@ -387,7 +389,7 @@ describe('getDirectoryContents', () => {
 		);
 
 		expect(files).toHaveLength(1);
-		expect(files[0].filename).toBe('/<test>/ab & c/');
-		expect(files[0].type).toBe('directory');
+		expect(files[0].path).toBe('/<test>/ab & c/');
+		expect(files[0].isDir).toBe(true);
 	});
 });

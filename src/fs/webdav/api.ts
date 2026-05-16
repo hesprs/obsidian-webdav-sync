@@ -1,3 +1,5 @@
+import type { DAVResult } from 'webdav';
+import type { StatModel } from '~/types';
 import parseXML from '~/composable/parse-xml';
 import { normalizeRemotePath } from '~/platform/path';
 import { isNil } from '~/utils/fns';
@@ -24,18 +26,9 @@ type WebDAVResponseItem = {
 	propstat?: WebDAVPropstat | Array<WebDAVPropstat>;
 };
 
-type WebDAVResponse = {
-	multistatus: {
-		response: WebDAVResponseItem | Array<WebDAVResponseItem>;
-	};
-};
-
-export type FileStat = {
-	filename: string;
-	lastmod: string;
-	size: number;
-	type: 'directory' | 'file';
-};
+function normalizePath(path: string) {
+	return normalizeRemotePath(decodeURIComponent(path));
+}
 
 function isSuccessStatus(status?: string): boolean {
 	if (!status) return true;
@@ -69,18 +62,14 @@ function extractNextLink(linkHeader: string): string | undefined {
 	return matches ? matches[1] : undefined;
 }
 
-function hrefToPathname(href: string): string {
+function extractPathname(href: string): string {
 	if (href.startsWith('http://') || href.startsWith('https://'))
 		return decodeURIComponent(new URL(href).pathname);
 	return decodeURIComponent(href);
 }
 
-function normalizePathForMatch(pathname: string): string {
-	return normalizeRemotePath(hrefToPathname(pathname || '/'));
-}
-
 function buildStripPrefixes(serverUrl: string): Array<string> {
-	const endpointPath = normalizePathForMatch(new URL(serverUrl).pathname);
+	const endpointPath = extractPathname(serverUrl);
 	return [endpointPath];
 }
 
@@ -90,51 +79,52 @@ function buildDirectoryUrl(serverUrl: string, _path: string): string {
 	return `${serverUrl}${encodedPath}`;
 }
 
+function buildItemUrl(serverUrl: string, _path: string): string {
+	const normalizedPath = normalizeRemotePath(_path);
+	const path =
+		normalizedPath !== '/' && _path.endsWith('/') ? `${normalizedPath}/` : normalizedPath;
+	const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+	return `${serverUrl}${encodedPath}`;
+}
+
 function convertToFileStat(
 	stripPrefixes: Array<string>,
 	item: WebDAVResponseItem,
-): FileStat | undefined {
+): StatModel | undefined {
 	const props = getValidProps(item);
 	if (!props) return undefined;
 
 	const isDir = isCollectionResource(props.resourcetype);
-	const hrefPathname = normalizePathForMatch(item.href);
 
-	let relativePath = hrefPathname;
+	let path = normalizePath(item.href);
 	for (const prefix of stripPrefixes)
-		if (prefix !== '/' && hrefPathname.startsWith(prefix)) {
-			relativePath = hrefPathname.slice(prefix.length);
+		if (prefix !== '/' && path.startsWith(prefix)) {
+			path = path.slice(prefix.length);
 			break;
 		}
 
-	const path = normalizeRemotePath(relativePath);
 	const filename = isDir ? `${path}/` : path;
+	const lastModResp = props.getlastmodified;
 
-	return {
-		filename,
-		lastmod: props.getlastmodified || '',
-		size: props.getcontentlength ? parseInt(props.getcontentlength, 10) : 0,
-		type: isDir ? 'directory' : 'file',
-	};
+	// https://github.com/hesprs/obsidian-webdav-sync/issues/119#issuecomment-4467822635
+	const lastMod =
+		typeof lastModResp === 'string'
+			? lastModResp
+			: typeof lastModResp === 'object'
+				? (lastModResp as { '#text': string })['#text']
+				: '';
+
+	return isDir
+		? { isDir, path: filename }
+		: {
+				isDir,
+				mtime: new Date(lastMod).valueOf(),
+				path: filename,
+				size: props.getcontentlength ? parseInt(props.getcontentlength) : 0,
+			};
 }
 
-export default async function getDirectoryContents(
-	serverUrl: string,
-	token: string,
-	path: string,
-	infinity = false,
-): Promise<Array<FileStat>> {
-	const endpoint = serverUrl.trim().replace(/\/+$/, '');
-	if (!endpoint) throw new Error('WebDAV server URL is not configured');
-
-	const contents: Array<FileStat> = [];
-	const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
-	let currentUrl = buildDirectoryUrl(endpoint, path);
-
-	while (true)
-		try {
-			const response = await requestUrl({
-				body: `<?xml version="1.0" encoding="utf-8"?>
+const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8"?>
 <propfind xmlns="DAV:">
   <prop>
     <displayname/>
@@ -143,26 +133,88 @@ export default async function getDirectoryContents(
     <getcontentlength/>
     <getcontenttype/>
   </prop>
-</propfind>`,
+</propfind>`;
+
+async function propfind(
+	endpoint: string,
+	token: string,
+	url: string,
+	depth: '0' | '1' | 'infinity',
+) {
+	while (true)
+		try {
+			const response = await requestUrl({
+				body: PROPFIND_BODY,
 				headers: {
 					Authorization: `Basic ${token}`,
 					'Content-Type': 'application/xml',
-					Depth: infinity ? 'infinity' : '1',
+					Depth: depth,
 				},
 				method: 'PROPFIND',
-				url: currentUrl,
+				url,
 			});
 
-			const result: WebDAVResponse = parseXML(response.text);
-
+			const result: DAVResult = parseXML(response.text);
+			const stripPrefixes = buildStripPrefixes(endpoint).sort((a, b) => b.length - a.length);
 			const items = Array.isArray(result.multistatus.response)
 				? result.multistatus.response
 				: [result.multistatus.response];
 
+			return {
+				items,
+				response,
+				stripPrefixes,
+			};
+		} catch (error) {
+			if (isRetryableError(error)) {
+				logger.error('WebDAV connection error, retrying...', error);
+				await sleep(5000);
+				continue;
+			}
+			throw error;
+		}
+}
+
+export async function getStat(endpoint: string, token: string, path: string): Promise<StatModel> {
+	const { items, stripPrefixes } = await propfind(
+		endpoint,
+		token,
+		buildItemUrl(endpoint, path),
+		'0',
+	);
+	const normalizedTargetPath = normalizeRemotePath(path);
+
+	for (const item of items) {
+		const stat = convertToFileStat(stripPrefixes, item);
+		if (!stat) continue;
+		if (normalizeRemotePath(stat.path) === normalizedTargetPath) return stat;
+	}
+
+	throw new Error(`WebDAV stat not found for ${path}`);
+}
+
+export async function getDirectoryContents(
+	endpoint: string,
+	token: string,
+	path: string,
+	infinity = false,
+): Promise<Array<StatModel>> {
+	const contents: Array<StatModel> = [];
+	let currentUrl = buildDirectoryUrl(endpoint, path);
+
+	while (true)
+		try {
+			const { items, response, stripPrefixes } = await propfind(
+				endpoint,
+				token,
+				currentUrl,
+				infinity ? 'infinity' : '1',
+			);
+
 			const parsedItems = items
 				.slice(1)
 				.map((item) => convertToFileStat(stripPrefixes, item))
-				.filter((item): item is FileStat => item !== undefined);
+				.filter((item): item is StatModel => item !== undefined);
 
 			contents.push(...parsedItems);
 
@@ -173,7 +225,7 @@ export default async function getDirectoryContents(
 			if (!nextLink) break;
 			const nextUrl = new URL(nextLink);
 
-			const pathName = normalizeRemotePath(hrefToPathname(nextUrl.pathname));
+			const pathName = normalizePath(nextUrl.pathname);
 			nextUrl.pathname = `${pathName}/`;
 			currentUrl = nextUrl.toString();
 		} catch (error) {

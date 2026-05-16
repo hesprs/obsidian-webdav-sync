@@ -1,6 +1,6 @@
 import type { StatsMap } from '~/types';
 import apiLimiter from '~/composable/api-limiter';
-import { normalizePathToAbsolute, normalizePathToRelative } from '~/platform/path';
+import { normalizePathToRelative } from '~/platform/path';
 import { useSettings } from '~/settings';
 import { decryptRemotePathForTraversal } from '~/utils/encryption';
 import isRetryableError from '~/utils/is-retryable-error';
@@ -8,8 +8,7 @@ import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
 import type { OnProgress } from '../fs.interface';
 import postTraversal from '../post-traversal';
-import getDirectoryContents from './api';
-import { toStatModel } from './utils';
+import { getDirectoryContents } from './api';
 
 type TraverseWebDAVOptions = {
 	onProgress?: OnProgress;
@@ -31,7 +30,7 @@ export default async function traverse({
 }: TraverseWebDAVOptions) {
 	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
 		await useSettings();
-	const encryptionEnabled = (await useSettings()).encryption?.enabled ?? false;
+	const encrypted = (await useSettings()).encryption.enabled;
 	const result: StatsMap = new Map();
 
 	const getContentFunc = (path: string) =>
@@ -55,15 +54,8 @@ export default async function traverse({
 	if (exhaustiveRemoteTraversal) {
 		const resultItems = await Promise.all(
 			(await getContent(remoteDir)).map(async (stat) => {
-				const remotePath = normalizePathToAbsolute(
-					remoteDir,
-					stat.filename,
-					stat.type === 'directory',
-				);
-				const path = encryptionEnabled
-					? await decryptRemotePathForTraversal(remotePath)
-					: remotePath;
-				return toStatModel(stat, path);
+				if (encrypted) stat.path = await decryptRemotePathForTraversal(stat.path);
+				return stat;
 			}),
 		);
 		for (const item of resultItems) {
@@ -96,18 +88,9 @@ export default async function traverse({
 					try {
 						const resultItems = await Promise.all(
 							(await getContent(currentPath)).map(async (stat) => {
-								const remotePath = normalizePathToAbsolute(
-									remoteDir,
-									stat.filename,
-									stat.type === 'directory',
-								);
-								const path = encryptionEnabled
-									? await decryptRemotePathForTraversal(remotePath)
-									: remotePath;
-								return {
-									listingPath: remotePath,
-									statModel: toStatModel(stat, path),
-								};
+								if (encrypted)
+									stat.path = await decryptRemotePathForTraversal(stat.path);
+								return { listingPath: stat.path, statModel: stat };
 							}),
 						);
 

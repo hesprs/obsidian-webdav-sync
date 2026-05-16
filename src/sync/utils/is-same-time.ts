@@ -1,6 +1,6 @@
 export default function isSameTime(
-	timestamp1: Date | number | undefined,
-	timestamp2: Date | number | undefined,
+	timestamp1?: Date | number,
+	timestamp2?: Date | number,
 ): boolean {
 	// If either timestamp is undefined, they are not the same
 	if (timestamp1 === undefined || timestamp2 === undefined) return false;

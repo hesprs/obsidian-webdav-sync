@@ -8,12 +8,7 @@ import CommonSettings from './common';
 import ControlsSettings from './controls';
 import DevelopmentSettings from './development';
 import FilterSettings from './filter';
-export {
-	getPluginInstance,
-	setPluginInstance,
-	useSettings,
-	waitUntilPluginInstance,
-} from './plugin-instance';
+export * from './plugin-instance';
 
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diffMatchPatch',

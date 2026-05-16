@@ -1,6 +1,8 @@
-import { IN_DEV, VERSION } from '~/consts';
+import { apiVersion, Platform } from 'obsidian';
+import { VERSION } from '~/consts';
 import formatDateTime from '~/utils/format-date';
 import { isNil } from './fns';
+import { formatTime } from './input-converters';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 
@@ -88,13 +90,6 @@ function sanitizeLogValue(value: unknown, depth = 0): LogValue | undefined {
 	return JSON.stringify(value) ?? '[unserializable metadata]';
 }
 
-function formatDuration(durationMs?: number): string | undefined {
-	if (durationMs === undefined) return undefined;
-	if (durationMs < 1000) return `${durationMs}ms`;
-	if (durationMs < 60_000) return `${(durationMs / 1000).toFixed(1)}s`;
-	return `${(durationMs / 60_000).toFixed(1)}m`;
-}
-
 function formatTimestamp(timestamp?: number): string | undefined {
 	if (timestamp === undefined) return undefined;
 	return formatDateTime(timestamp);
@@ -129,7 +124,6 @@ class Logger {
 	}
 
 	debug(message: string, metadata?: unknown, context?: LogContext) {
-		if (!IN_DEV) return;
 		this.write({ context, level: 'debug', message, metadata });
 	}
 
@@ -167,11 +161,23 @@ class Logger {
 			runGroups.set(log.runId, group);
 		}
 
+		const OS = {
+			Android: Platform.isAndroidApp,
+			Linux: Platform.isLinux,
+			MacOS: Platform.isMacOS,
+			Windows: Platform.isWin,
+			iOS: Platform.isIosApp,
+		};
+		const operatingSystem =
+			Object.entries(OS).find(([, isActive]) => isActive)?.[0] ?? 'Unknown';
+
 		const lines: Array<string> = [
 			'# WebDAV Sync Support Report',
 			'',
 			`Generated at: ${formatDateTime(Date.now())}`,
 			`Plugin version: ${VERSION}`,
+			`Obsidian API version: ${apiVersion}`,
+			`Operating system: ${operatingSystem}`,
 			'',
 		];
 
@@ -214,7 +220,7 @@ class Logger {
 			lines.push(`- Execution started: ${formatTimestamp(summary.executionStartedAt)}`);
 		lines.push(`- Ended at: ${formatTimestamp(summary.endedAt) ?? 'unknown'}`);
 		if (summary.durationMs !== undefined)
-			lines.push(`- Duration: ${formatDuration(summary.durationMs)}`);
+			lines.push(`- Duration: ${formatTime(summary.durationMs)}`);
 		if (summary.planSummary) lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
 		lines.push('');
 

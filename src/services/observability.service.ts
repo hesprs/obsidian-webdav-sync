@@ -262,7 +262,7 @@ export default class ObservabilityService {
 
 	private applyProgressModal(run: SyncRunSnapshot, previousRun?: SyncRunSnapshot) {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
-		const failed = run.stage === 'failed' && run.resultSummary?.failed?.length !== 0;
+		const failed = run.stage === 'failed' && run.resultSummary?.failed?.length;
 		if (((isNewStage && run.trigger === 'manual') || failed) && !this.progressModal)
 			this.createProgressModal().open();
 		this.progressModal?.update(run);

@@ -31,15 +31,6 @@ export default class DevelopmentSettings extends BaseSettings {
 					void this.saveLogsToNote();
 				});
 			});
-		new Setting(this.containerEl)
-			.setName(t('settings.log.clearName'))
-			.setDesc(t('settings.log.clearDesc'))
-			.addButton((button) => {
-				button.setButtonText(t('settings.log.clear')).onClick(() => {
-					logger.clear();
-					new Notice(t('settings.log.cleared'));
-				});
-			});
 	}
 
 	private async clearVaultRecords() {

@@ -32,6 +32,9 @@ export class TextComponent {}
 export class ButtonComponent {}
 
 export function setIcon() {}
+export function getLanguage() {
+	return 'en';
+}
 export function requireApiVersion() {
 	return true;
 }

@@ -133,7 +133,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	}
 
 	onunload() {
-		setPluginInstance();
+		setPluginInstance(this);
 		void this.syncStateStore.unload();
 		void this.baseTextStore.unload();
 		void this.fileChunkStore.unload();

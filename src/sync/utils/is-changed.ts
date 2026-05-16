@@ -1,4 +1,4 @@
-import type { StatModel, StatsMap } from '~/types';
+import type { RecordStatsMap, StatsMap } from '~/types';
 import isSub from '~/utils/is-sub';
 import type { BaseTask } from '../tasks/task.interface';
 import MergeTask from '../tasks/merge.task';
@@ -15,7 +15,7 @@ export default function isChanged({
 }: {
 	path: string;
 	source: 'local' | 'remote';
-	records: Map<string, { local: StatModel; remote: StatModel }>;
+	records: RecordStatsMap;
 	currentStats: StatsMap;
 	tasks?: Array<BaseTask>;
 }) {

@@ -2,7 +2,7 @@ import UnoCSS from '@unocss/postcss';
 import postcssMergeRules from 'postcss-merge-rules';
 import { defineConfig } from 'tsdown';
 import solid from 'unplugin-solid/rolldown';
-import pkg from './package.json' with { type: 'json' };
+import man from './manifest.json' with { type: 'json' };
 
 const mode = process.env.MODE;
 const dev = mode === 'dev';
@@ -25,8 +25,7 @@ export default defineConfig({
 		transformer: 'postcss',
 	},
 	define: {
-		'process.env.MODE': JSON.stringify(mode) ?? '"prod"',
-		'process.env.VERSION': JSON.stringify(pkg.version),
+		'process.env.VERSION': JSON.stringify(man.version),
 	},
 	deps: {
 		neverBundle: [

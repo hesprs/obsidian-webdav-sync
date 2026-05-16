@@ -4,14 +4,10 @@ import { traverseWebDAV, getDirectoryContents } from '~/fs/webdav';
 
 const remoteRecordState: StatsMap = new Map();
 
-vi.mock('~/fs/webdav/api', () => ({
-	default: vi.fn(),
-}));
+vi.mock('~/fs/webdav/api', () => ({ getDirectoryContents: vi.fn() }));
 
 vi.mock('~/utils/api-limiter', () => ({
-	default: {
-		wrap: <T>(fn: T) => fn,
-	},
+	default: { wrap: <T>(fn: T) => fn },
 }));
 
 vi.mock('~/utils/logger', () => ({
@@ -24,13 +20,11 @@ vi.mock('~/utils/logger', () => ({
 
 vi.mock('~/settings', () => ({
 	useSettings: vi.fn(() => ({
+		encryption: { enabled: false },
 		exhaustiveRemoteTraversal: false,
 		remoteDir: '/test/',
 		serverUrl: 'https://dav.example.com/dav',
-		skipLargeFiles: {
-			bytes: 10 * 1024 * 1024,
-			maxSize: '10MB',
-		},
+		skipLargeFiles: { enabled: false },
 	})),
 }));
 
@@ -40,14 +34,7 @@ describe('webDAVTraversal', () => {
 		remoteRecordState.clear();
 
 		vi.mocked(getDirectoryContents)
-			.mockResolvedValueOnce([
-				{
-					filename: '/test/webdav-sync/',
-					lastmod: 'Mon, 01 Jan 2024 00:00:00 GMT',
-					size: 0,
-					type: 'directory',
-				},
-			])
+			.mockResolvedValueOnce([{ isDir: true, path: '/test/webdav-sync/' }])
 			.mockResolvedValueOnce([]);
 
 		await traverseWebDAV({ token: 'token' });
@@ -73,14 +60,7 @@ describe('webDAVTraversal', () => {
 		remoteRecordState.clear();
 
 		vi.mocked(getDirectoryContents)
-			.mockResolvedValueOnce([
-				{
-					filename: '/test/missing/',
-					lastmod: 'Mon, 01 Jan 2024 00:00:00 GMT',
-					size: 0,
-					type: 'directory',
-				},
-			])
+			.mockResolvedValueOnce([{ isDir: true, path: '/test/missing/' }])
 			.mockRejectedValueOnce({
 				message: '404: Not Found',
 				res: { status: 404 },
