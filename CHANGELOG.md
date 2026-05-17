@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.7 - 2026-05-18
+
+- Fixed traversal errors when encryption is enabled that makes the plugin think almost remote files are deleted.
+
 ## Obsidian WebDAV Sync v2.5.6 - 2026-05-17
 
 - Fixed WebDAV response parsing glitches on Mailbox service.
