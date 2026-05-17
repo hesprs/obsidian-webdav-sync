@@ -41,7 +41,6 @@ export type Hook<Args extends GeneralArray = []> = {
 };
 
 export function hook<Args extends GeneralArray = []>(): Hook<Args> {
-	// oxlint-disable-next-line unicorn/consistent-function-scoping
 	const result: Hook<Args> = (...args: Args) => {
 		for (const callback of result.subs) callback(...args);
 	};

@@ -88,9 +88,10 @@ export default async function traverse({
 					try {
 						const resultItems = await Promise.all(
 							(await getContent(currentPath)).map(async (stat) => {
+								const listingPath = stat.path;
 								if (encrypted)
-									stat.path = await decryptRemotePathForTraversal(stat.path);
-								return { listingPath: stat.path, statModel: stat };
+									stat.path = await decryptRemotePathForTraversal(listingPath);
+								return { listingPath, statModel: stat };
 							}),
 						);
 

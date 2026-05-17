@@ -63,5 +63,5 @@ export default defineConfig({
 	},
 	platform: 'browser',
 	plugins: [solid()],
-	target: 'es2018',
+	target: 'es2024',
 });
