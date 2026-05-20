@@ -94,7 +94,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		scheduledSync: {
 			enabled: false,
-			value: 600,
+			value: 6000,
 		},
 		serverUrl: '',
 		showSyncStatusInNotificationOnMobile: true,

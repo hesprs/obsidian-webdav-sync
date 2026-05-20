@@ -124,6 +124,14 @@ Configuration:
 
 ## Common Questions
 
+<details><summary>Why the plugin prompts me to input "ID" and "Secret" to add a WebDAV credential?</summary>
+
+It might be confusing that it requires an `ID` + `Secret` pair to configure your password only. Actually, this is the new Keychain feature of Obsidian. When adding a new secret, the `Secret` is the place to input your true password, and the ID it requested is like a name to a person, whose only purpose it to help Obsidian distinguish secrets and represent them without using the secret directly.
+
+So to add a secret and use it in the Credential field, you can type anything you like to the ID field (for example, `webdav-token`), and input your true password into the Secret field. Click save and link the new secret to the plugin.
+
+</details>
+
 <details><summary>Does this plugin support syncing Obsidian config folder (.obsidian)?</summary>
 
 Yes, but this folder is excluded from syncing by default. To sync specific files or folders inside, (for example, Obsidian settings), you can go to plugin settings - `Filter Rules` - `Inclusion rules` and add a new rule `.obsidian/app.json`.
