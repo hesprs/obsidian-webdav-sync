@@ -168,14 +168,19 @@ The only scenario you may need to manually delete some files happens when you ex
 
 Below is a list of planned features and improvements, the faster this plugin is adopted and the star ⭐ grows, the faster the development will be. Also, we welcome contributors that would like to help us with the development.
 
-- [x] Support syncing files in the Obsidian config folder (`.obsidian/`)
-- [x] Saving WebDAV credentials in Obsidian Keychain
-- [x] Allow users to adjust rate and concurrency limits
-- [x] Enhance observability of sync progress
-- [x] Implement encryption like the one in Remotely Save
-- [x] Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
-- [x] Refurbish sync selection UI
-- [ ] Rebuild in V3 with drastically faster syncing, runtime backend driver loading, and cleaner architecture.
+- [x] v1.2: Enhance observability of sync progress
+- [x] v1.3: Allow users to adjust rate and concurrency limits
+- [x] v2.3: Support syncing files in the Obsidian config folder (`.obsidian/`)
+- [x] v2.3: Saving WebDAV credentials in Obsidian Keychain
+- [x] v2.4: Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
+- [x] v2.4, v2.5.5: Refurbish sync selection UI
+- [x] v2.5: Implement encryption like the one in Remotely Save
+- [ ] v2.6: Unify remote and local file CRUD interface with Uni-CRUD
+- [ ] v2.7: Overhaul encryption as a Uni-CRUD wrapper
+- [ ] v2.8: Redesign smart merge and unify storage layer using Uni-KV
+- [ ] v2.9: Refactor core sync routine for extensibility, and batch operations with Uni-CRUD
+- [ ] v2.10: Refactor the entire architecture to SynthKernel
+- [ ] v3.0: Dynamic module loading, module store, asymmetric storage, and rebrand
 
 ## License, Copyright, and Originality
 
