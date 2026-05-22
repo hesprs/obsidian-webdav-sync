@@ -30,9 +30,6 @@ export function getTaskIcon(taskName: BaseTask['name']): string {
 		case 'removeRemoteRecursively': {
 			return 'archive-x';
 		}
-		case 'filenameError': {
-			return 'alert-triangle';
-		}
 		default: {
 			return 'refresh-cw';
 		}
@@ -54,7 +51,6 @@ export function getTaskColor(taskName: BaseTask['name']): string {
 		case 'createLocalDir':
 		case 'download':
 		case 'upload':
-		case 'filenameError':
 		default: {
 			return BLUE_COLOR;
 		}

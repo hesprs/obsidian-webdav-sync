@@ -230,7 +230,6 @@ const en = {
 			createLocalDir: 'Create local directory',
 			createRemoteDir: 'Create remote directory',
 			download: 'Download',
-			filenameError: 'Invalid path characters',
 			merge: 'Merge',
 			removeLocal: 'Remove local',
 			removeLocalRecursively: 'Remove local recursively',

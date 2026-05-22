@@ -230,7 +230,6 @@ const translation: typeof en = {
 			createLocalDir: '创建本地目录',
 			createRemoteDir: '创建远程目录',
 			download: '下载',
-			filenameError: '路径含无效字符',
 			merge: '合并',
 			removeLocal: '删除本地',
 			removeLocalRecursively: '递归删除本地',
