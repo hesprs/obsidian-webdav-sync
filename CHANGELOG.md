@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.8 - 2026-05-22
+
+- Remove invalid characters check since most services actually support them.
+- Adjusted misconfigured default schedule interval from 600ms to 6000ms.
+
 ## Obsidian WebDAV Sync v2.5.7 - 2026-05-18
 
 - Fixed traversal errors when encryption is enabled that makes the plugin think almost remote files are deleted.
