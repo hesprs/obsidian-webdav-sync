@@ -2,7 +2,6 @@ import type { FileStatModel, FolderStatModel, StatModel } from '~/types';
 import t from '~/i18n';
 import { normalizePathToAbsolute } from '~/platform/path';
 import { ConflictStrategy, UnmergeableStrategy } from '~/settings';
-import { hasInvalidChar } from '~/utils/has-invalid-char';
 import logger from '~/utils/logger';
 import type { BaseTask } from '../tasks/task.interface';
 import type { SyncDecisionInput } from './sync-decision.interface';
@@ -42,7 +41,6 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	const removeRecords: Array<string> = [];
 
 	new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]).forEach((path) => {
-		if (hasInvalidChar(path)) throw new Error(`${t('sync.fileOp.filenameError')}: ${path}`);
 		const remote = remoteStats.get(path);
 		const local = localStats.get(path);
 		if (!(local?.isDir || remote?.isDir))

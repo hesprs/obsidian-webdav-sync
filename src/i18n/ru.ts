@@ -232,7 +232,6 @@ const translation: typeof en = {
 			createLocalDir: 'Создать локальную папку',
 			createRemoteDir: 'Создать удаленную папку',
 			download: 'Скачать',
-			filenameError: 'Недопустимые символы в пути',
 			merge: 'Слияние',
 			removeLocal: 'Удалить локально',
 			removeLocalRecursively: 'Удалить локально рекурсивно',
