@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-webdav-sync",
-	"version": "2.5.7",
+	"version": "2.5.8",
 	"private": true,
 	"license": "AGPL-3.0",
 	"type": "module",
@@ -39,5 +39,11 @@
 		"vitest": "^4.1.7",
 		"webdav": "^5.10.0"
 	},
-	"packageManager": "pnpm@10.28.0"
+	"devEngines": {
+		"packageManager": {
+			"name": "pnpm",
+			"version": "^11.2.2",
+			"onFail": "download"
+		}
+	}
 }
