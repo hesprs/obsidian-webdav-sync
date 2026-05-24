@@ -78,6 +78,7 @@ export type SyncRunSnapshot = {
 	timestamps: SyncRunTimestamps;
 	planSummary?: SyncPlanSummary;
 	remoteWalkSummary?: RemoteWalkSummary;
+	serverUrl?: string;
 	progressSummary: SyncProgressSummary;
 	resultSummary?: SyncResultSummary;
 	errorSummary?: SyncErrorSummary;

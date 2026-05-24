@@ -16,7 +16,6 @@ import {
 	ConflictStrategy,
 	UnmergeableStrategy,
 } from './settings';
-import processSettings from './settings/process';
 import {
 	IndexedDbBaseTextStore,
 	IndexedDbFileChunkStore,
@@ -121,7 +120,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public ribbonManager = new SyncRibbonManager(this);
 
 	async onload() {
-		await this.loadSettings();
+		Object.assign(this.settings, await this.loadData());
 		await this.syncStateStore.initialize();
 		await this.baseTextStore.initialize();
 		await this.fileChunkStore.initialize();
@@ -140,11 +139,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		syncCancel();
 		this.syncSchedulerService.unload();
 		this.observabilityService.unload();
-	}
-
-	async loadSettings() {
-		Object.assign(this.settings, await this.loadData());
-		processSettings(this);
 	}
 
 	saveSettings = async () => await this.saveData(this.settings);

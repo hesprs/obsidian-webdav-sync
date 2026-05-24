@@ -61,11 +61,9 @@ function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 		trigger: run.trigger,
 	};
 
-	if (run.stage === 'failed')
-		logger.error('Sync failed', metadata, { category: 'sync.lifecycle' });
-	else if (run.stage === 'cancelled')
-		logger.warn('Sync cancelled', metadata, { category: 'sync.lifecycle' });
+	if (run.stage === 'failed') logger.error('Sync failed', metadata);
+	else if (run.stage === 'cancelled') logger.warn('Sync cancelled', metadata);
 	else if (run.stage === 'completed_noop')
-		logger.info('Sync completed with no changes', metadata, { category: 'sync.lifecycle' });
-	else logger.info('Sync completed', metadata, { category: 'sync.lifecycle' });
+		logger.info('Sync completed with no changes', metadata);
+	else logger.info('Sync completed', metadata);
 }

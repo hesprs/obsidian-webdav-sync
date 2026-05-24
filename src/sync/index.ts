@@ -98,19 +98,7 @@ export default class SyncEngine {
 				planSummary: this.summarizePlan(tasks),
 			});
 			syncRun(currentRun);
-			logger.info(
-				'Execution started',
-				{
-					event: 'execution_started',
-					planSummary: currentRun.planSummary,
-					progressSummary: currentRun.progressSummary,
-					runKind: currentRun.runKind,
-					sources: currentRun.sources,
-					timestamps: currentRun.timestamps,
-					trigger: currentRun.trigger,
-				},
-				{ category: 'sync.lifecycle' },
-			);
+			logger.info('Execution started');
 
 			if (tasks.length === 0) {
 				currentRun = finalizeSyncRun(currentRun, {
@@ -372,18 +360,14 @@ export default class SyncEngine {
 			const taskResult = results[i];
 			const taskName = getTaskName(task.name);
 			if (!taskResult.success)
-				logger.warn(
-					'Task execution failed',
-					{
-						error: taskResult.error,
-						index: i + 1,
-						localPath: task.localPath,
-						remotePath: task.remotePath,
-						taskName,
-						totalTasks: tasksToDisplay.length,
-					},
-					{ category: 'sync.task' },
-				);
+				logger.warn('Task execution failed', {
+					error: taskResult.error,
+					index: i + 1,
+					localPath: task.localPath,
+					remotePath: task.remotePath,
+					taskName,
+					totalTasks: tasksToDisplay.length,
+				});
 		}
 
 		return { results, run: currentRun };
@@ -439,17 +423,13 @@ export default class SyncEngine {
 			const taskResult = await task.exec();
 			if (!taskResult.success && isRetryableError(taskResult.error)) {
 				attempt++;
-				logger.warn(
-					'Retrying task after transient error',
-					{
-						attempt,
-						error: taskResult.error,
-						localPath: task.localPath,
-						remotePath: task.remotePath,
-						taskName: getTaskName(task.name),
-					},
-					{ category: 'sync.retry' },
-				);
+				logger.warn('Retrying task after transient error', {
+					attempt,
+					error: taskResult.error,
+					localPath: task.localPath,
+					remotePath: task.remotePath,
+					taskName: getTaskName(task.name),
+				});
 				await breakableSleep(syncCancel, 5000);
 				if (this.isCancelled)
 					return {
@@ -472,26 +452,24 @@ export default class SyncEngine {
 				return await operation();
 			} catch (error) {
 				if (!isRetryableError(error)) {
-					logger.error('WebDAV operation failed', { error }, { category: 'sync.retry' });
+					logger.error('WebDAV operation failed', error);
 					throw toError(error, 'WebDAV operation failed');
 				}
 
 				retryCount++;
 				const retryError = toError(error, 'WebDAV operation failed');
 				if (retryCount >= 3) {
-					logger.error(
-						'WebDAV connection failed after retries',
-						{ error: retryError, retryCount },
-						{ category: 'sync.retry' },
-					);
+					logger.error('WebDAV connection failed after retries', {
+						error: retryError,
+						retryCount,
+					});
 					throw new SyncRetryExhaustedError(undefined, retryError);
 				}
 
-				logger.warn(
-					'Retrying WebDAV operation after transient error',
-					{ error: retryError, retryCount },
-					{ category: 'sync.retry' },
-				);
+				logger.warn('Retrying WebDAV operation after transient error', {
+					error: retryError,
+					retryCount,
+				});
 				await breakableSleep(syncCancel, 5000);
 				this.throwIfCancelled();
 			}
@@ -500,9 +478,7 @@ export default class SyncEngine {
 
 	private readonly throwIfCancelled = () => {
 		if (!this.isCancelled) return;
-		logger.warn('WebDAV operation cancelled', undefined, {
-			category: 'sync.retry',
-		});
+		logger.warn('WebDAV operation cancelled');
 		throw new SyncCancelledError();
 	};
 

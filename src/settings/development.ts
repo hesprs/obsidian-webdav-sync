@@ -73,7 +73,7 @@ export default class DevelopmentSettings extends BaseSettings {
 			await this.app.workspace.getLeaf().openFile(file);
 		} catch (error) {
 			new Notice(t('settings.log.saveError'));
-			logger.error('Failed to export support report', { error });
+			logger.error('Failed to export support report', error);
 		}
 	}
 }
