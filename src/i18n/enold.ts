@@ -226,6 +226,7 @@ const en = {
 				'Unable to sync: {{path}} is a {{remoteForm}} at remote but a {{localForm}} at local',
 		},
 		fileOp: {
+			addRecord: 'Add Record',
 			cleanRecord: 'Clean record',
 			createLocalDir: 'Create local directory',
 			createRemoteDir: 'Create remote directory',

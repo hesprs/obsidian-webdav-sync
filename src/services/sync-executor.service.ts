@@ -30,15 +30,9 @@ export default class SyncExecutorService {
 
 	async executeSync(request: SyncExecutionRequest): Promise<SyncExecutionResult> {
 		if (this.plugin.isSyncing) return { executed: false };
-
 		if (!this.plugin.isAccountConfigured()) return { executed: false };
-
 		await waitUntil(() => !this.plugin.isSyncing, 500);
-
-		logger.pushContext({
-			category: 'sync',
-			runId: request.runId,
-		});
+		logger.pushRunId(request.runId);
 
 		try {
 			this.plugin.prepareSyncEncryptionKeys();
@@ -57,23 +51,12 @@ export default class SyncExecutorService {
 				trigger: request.trigger,
 			});
 			run = updateSyncRunSnapshot(run, {
+				serverUrl: this.plugin.settings.serverUrl,
 				stage: 'pre_connecting',
 				timestamps: { planningStartedAt: Date.now() },
 			});
 			syncRun(run);
-
-			logger.info(
-				'Planning started',
-				{
-					event: 'planning_started',
-					planningStartedAt: run.timestamps.planningStartedAt,
-					queuedAt: run.timestamps.queuedAt,
-					runKind: run.runKind,
-					sources: run.sources,
-					trigger: run.trigger,
-				},
-				{ category: 'sync.lifecycle' },
-			);
+			logger.info('Planning started');
 
 			let tasks: Array<BaseTask> | undefined;
 			try {
@@ -93,17 +76,7 @@ export default class SyncExecutorService {
 				planSummary: sync.summarizePlan(tasks),
 			});
 			syncRun(run);
-			logger.info(
-				'Planning finished',
-				{
-					event: 'planning_finished',
-					planSummary: run.planSummary,
-					runKind: run.runKind,
-					sources: run.sources,
-					trigger: run.trigger,
-				},
-				{ category: 'sync.lifecycle' },
-			);
+			logger.info(`Planning finished with ${tasks.length} tasks`);
 
 			run = await sync.start({
 				request,
@@ -114,7 +87,7 @@ export default class SyncExecutorService {
 			return { executed: true, run };
 		} finally {
 			this.plugin.clearSyncEncryptionKeys();
-			logger.popContext();
+			logger.popRunId();
 		}
 	}
 }

@@ -1,15 +1,12 @@
 import { apiVersion, Platform } from 'obsidian';
+import type { SyncRunSnapshot } from '~/events';
 import { VERSION } from '~/consts';
+import { syncRun } from '~/events';
 import formatDateTime from '~/utils/format-date';
 import { isNil } from './fns';
 import { formatTime } from './input-converters';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
-
-type LogContext = {
-	runId?: string;
-	category?: string;
-};
 
 type LogValue = string | number | boolean | null | Array<LogValue> | { [key: string]: LogValue };
 
@@ -17,43 +14,24 @@ export type LogEntry = {
 	timestamp: string;
 	timestampMs: number;
 	level: LogLevel;
-	category: string;
 	message: string;
 	runId?: string;
 	metadata?: LogValue;
 };
 
-type RunReportSummary = {
-	trigger?: string;
-	runKind?: string;
-	stage?: string;
-	sources?: Array<string>;
-	queuedAt?: number;
-	planningStartedAt?: number;
-	executionStartedAt?: number;
-	endedAt?: number;
-	durationMs?: number;
-	planSummary?: {
-		totalTasks: number;
-		warnings?: Array<{ code?: string; messageKey?: string }>;
-	};
-	resultSummary?: {
-		totalTasks: number;
-		succeededTasks: number;
-		failedTasks: number;
-		failed?: Array<{
-			taskName?: string;
-			localPath?: string;
-			errorMessage?: string;
-		}>;
-	};
-	errorSummary?: {
-		message?: string;
-		name?: string;
-	};
-};
-
 const MAX_LOG_ENTRIES = 1000;
+const MAX_RUNS = 200;
+
+// oxlint-disable-next-line sort-keys
+const OS = {
+	'Android Tablet': Platform.isTablet && Platform.isAndroidApp,
+	iPadOS: Platform.isTablet && Platform.isMacOS,
+	Android: Platform.isAndroidApp,
+	iOS: Platform.isIosApp,
+	Linux: Platform.isLinux,
+	macOS: Platform.isMacOS,
+	Windows: Platform.isWin,
+};
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -90,60 +68,37 @@ function sanitizeLogValue(value: unknown, depth = 0): LogValue | undefined {
 	return JSON.stringify(value) ?? '[unserializable metadata]';
 }
 
-function formatTimestamp(timestamp?: number): string | undefined {
-	if (timestamp === undefined) return undefined;
-	return formatDateTime(timestamp);
-}
-
 class Logger {
-	private logs: Array<LogEntry> = [];
-	private readonly contextStack: Array<LogContext> = [];
+	private readonly logs: Array<LogEntry> = [];
+	private readonly runs: Record<string, SyncRunSnapshot> = {};
+	private readonly contextStack: Array<string> = [];
 
-	pushContext(context: LogContext) {
-		const current = this.getCurrentContext();
-		this.contextStack.push({
-			...current,
-			...context,
-		});
+	constructor() {
+		syncRun.subscribe(this.receiveRun);
 	}
 
-	popContext() {
+	pushRunId(context: string) {
+		this.contextStack.push(context);
+	}
+
+	popRunId() {
 		this.contextStack.pop();
 	}
 
-	info(message: string, metadata?: unknown, context?: LogContext) {
-		this.write({ context, level: 'info', message, metadata });
+	info(message: string, metadata?: unknown) {
+		this.write({ level: 'info', message, metadata });
 	}
 
-	warn(message: string, metadata?: unknown, context?: LogContext) {
-		this.write({ context, level: 'warn', message, metadata });
+	warn(message: string, metadata?: unknown) {
+		this.write({ level: 'warn', message, metadata });
 	}
 
-	error(message: string, metadata?: unknown, context?: LogContext) {
-		this.write({ context, level: 'error', message, metadata });
+	error(message: string, metadata?: unknown) {
+		this.write({ level: 'error', message, metadata });
 	}
 
-	debug(message: string, metadata?: unknown, context?: LogContext) {
-		this.write({ context, level: 'debug', message, metadata });
-	}
-
-	clear() {
-		this.logs = [];
-	}
-
-	getEntries(): Array<LogEntry> {
-		return [...this.logs];
-	}
-
-	stringify(): string {
-		return this.logs
-			.map((log) => {
-				const metadata =
-					log.metadata === undefined ? '' : ` ${JSON.stringify(log.metadata)}`;
-				const runId = log.runId === undefined ? '' : ` [run:${log.runId}]`;
-				return `${log.timestamp} [${log.level}] [${log.category}]${runId} ${log.message}${metadata}`;
-			})
-			.join('\n');
+	debug(message: string, metadata?: unknown) {
+		this.write({ level: 'debug', message, metadata });
 	}
 
 	exportMarkdownReport(): string {
@@ -161,13 +116,6 @@ class Logger {
 			runGroups.set(log.runId, group);
 		}
 
-		const OS = {
-			Android: Platform.isAndroidApp,
-			Linux: Platform.isLinux,
-			MacOS: Platform.isMacOS,
-			Windows: Platform.isWin,
-			iOS: Platform.isIosApp,
-		};
 		const operatingSystem =
 			Object.entries(OS).find(([, isActive]) => isActive)?.[0] ?? 'Unknown';
 
@@ -204,27 +152,38 @@ class Logger {
 		return lines.join('\n');
 	}
 
+	private readonly receiveRun = (run?: SyncRunSnapshot) => {
+		if (run) this.runs[run.runId] = run;
+		const keys = Object.keys(this.runs);
+		if (keys.length > MAX_RUNS) {
+			const oldestRunId = keys[0];
+			delete this.runs[oldestRunId];
+		}
+	};
+
 	private buildRunReport(runId: string, entries: Array<LogEntry>): Array<string> {
-		const summary = this.extractRunSummary(entries);
+		const run = this.runs[runId];
+		const { planSummary, timestamps, resultSummary, errorSummary } = run;
 		const lines: Array<string> = [`### Run ${runId}`, ''];
 
-		lines.push(`- Trigger: ${summary.trigger ?? 'unknown'}`);
-		lines.push(`- Run kind: ${summary.runKind ?? 'unknown'}`);
-		lines.push(`- Outcome: ${summary.stage ?? 'unknown'}`);
-		if (summary.sources && summary.sources.length > 0)
-			lines.push(`- Sources: ${summary.sources.join(', ')}`);
-		lines.push(`- Queued at: ${formatTimestamp(summary.queuedAt) ?? 'unknown'}`);
-		if (summary.planningStartedAt !== undefined)
-			lines.push(`- Planning started: ${formatTimestamp(summary.planningStartedAt)}`);
-		if (summary.executionStartedAt !== undefined)
-			lines.push(`- Execution started: ${formatTimestamp(summary.executionStartedAt)}`);
-		lines.push(`- Ended at: ${formatTimestamp(summary.endedAt) ?? 'unknown'}`);
-		if (summary.durationMs !== undefined)
-			lines.push(`- Duration: ${formatTime(summary.durationMs)}`);
-		if (summary.planSummary) lines.push(`- Total tasks: ${summary.planSummary.totalTasks}`);
+		lines.push(`- Trigger: ${run.trigger}`);
+		lines.push(`- Run kind: ${run.runKind}`);
+		lines.push(`- Outcome: ${run.stage ?? 'unknown'}`);
+		if (run.serverUrl) lines.push(`- Server URL: \`${run.serverUrl}\``);
+		if (run.sources.length > 0) lines.push(`- Sources: ${run.sources.join(', ')}`);
+
+		if (timestamps.queuedAt) lines.push(`- Queued at: ${formatDateTime(timestamps.queuedAt)}`);
+		if (timestamps.planningStartedAt)
+			lines.push(`- Planning started: ${formatDateTime(timestamps.planningStartedAt)}`);
+		if (timestamps.executionStartedAt)
+			lines.push(`- Execution started: ${formatDateTime(timestamps.executionStartedAt)}`);
+		if (timestamps.endedAt) lines.push(`- Ended at: ${formatDateTime(timestamps.endedAt)}`);
+		if (timestamps.durationMs) lines.push(`- Duration: ${formatTime(timestamps.durationMs)}`);
+
+		if (planSummary) lines.push(`- Total tasks: ${planSummary.totalTasks}`);
 		lines.push('');
 
-		const warnings = summary.planSummary?.warnings ?? [];
+		const warnings = planSummary?.warnings ?? [];
 		if (warnings.length > 0) {
 			lines.push('#### Important warnings', '');
 			for (const warning of warnings)
@@ -232,139 +191,36 @@ class Logger {
 			lines.push('');
 		}
 
-		if (summary.resultSummary) {
+		if (resultSummary) {
 			lines.push('#### Outcome', '');
-			lines.push(`- Succeeded: ${summary.resultSummary.succeededTasks}`);
-			lines.push(`- Failed: ${summary.resultSummary.failedTasks}`, '');
+			lines.push(`- Succeeded: ${resultSummary.succeededTasks}`);
+			lines.push(`- Failed: ${resultSummary.failedTasks}`, '');
 		}
 
-		const failures = summary.resultSummary?.failed ?? [];
+		const failures = resultSummary?.failed ?? [];
 		if (failures.length > 0) {
 			lines.push('#### Failures', '');
 			for (const failure of failures) {
-				const task = failure.taskName ?? 'Unknown task';
-				const path = failure.localPath ?? 'Unknown path';
+				const task = failure.name;
+				const path = failure.localPath;
 				const errorMessage = failure.errorMessage ?? 'Unknown error';
 				lines.push(`- ${task} — ${path} — ${errorMessage}`);
 			}
 			lines.push('');
 		}
 
-		if (summary.errorSummary?.message)
-			lines.push('#### Terminal error', '', `- ${summary.errorSummary.message}`, '');
+		if (errorSummary?.message)
+			lines.push('#### Terminal error', '', `- ${errorSummary.message}`, '');
 
 		lines.push('#### Timeline', '');
 		for (const entry of entries) lines.push(this.formatTimelineLine(entry));
-
 		lines.push('');
 
 		return lines;
 	}
 
-	private extractRunSummary(entries: Array<LogEntry>): RunReportSummary {
-		const summary: RunReportSummary = {};
-
-		for (const entry of entries) {
-			const metadata = isPlainObject(entry.metadata) ? entry.metadata : undefined;
-			if (!metadata) continue;
-
-			summary.trigger ??= this.readString(metadata.trigger);
-			summary.runKind ??= this.readString(metadata.runKind);
-			summary.stage = this.readString(metadata.stage) ?? summary.stage;
-			summary.sources ??= this.readStringArray(metadata.sources);
-
-			const timestamps = isPlainObject(metadata.timestamps) ? metadata.timestamps : undefined;
-			summary.queuedAt ??= this.readNumber(timestamps?.queuedAt ?? metadata.queuedAt);
-			summary.planningStartedAt ??= this.readNumber(
-				timestamps?.planningStartedAt ?? metadata.planningStartedAt,
-			);
-			summary.executionStartedAt ??= this.readNumber(
-				timestamps?.executionStartedAt ?? metadata.executionStartedAt,
-			);
-			summary.endedAt =
-				this.readNumber(timestamps?.endedAt ?? metadata.endedAt) ?? summary.endedAt;
-			summary.durationMs =
-				this.readNumber(timestamps?.durationMs ?? metadata.durationMs) ??
-				summary.durationMs;
-
-			const planSummary = this.readPlanSummary(metadata.planSummary);
-			if (planSummary) summary.planSummary = planSummary;
-
-			const resultSummary = this.readResultSummary(metadata.resultSummary);
-			if (resultSummary) summary.resultSummary = resultSummary;
-
-			const errorSummary = this.readErrorSummary(metadata.errorSummary);
-			if (errorSummary) summary.errorSummary = errorSummary;
-		}
-
-		return summary;
-	}
-
-	private readPlanSummary(value: unknown): RunReportSummary['planSummary'] {
-		if (!isPlainObject(value)) return undefined;
-		const warnings = Array.isArray(value.warnings)
-			? value.warnings
-					.filter((warning): warning is Record<string, unknown> => isPlainObject(warning))
-					.map((warning) => ({
-						code: this.readString(warning.code),
-						messageKey: this.readString(warning.messageKey),
-					}))
-			: undefined;
-
-		return {
-			totalTasks: this.readNumber(value.totalTasks) ?? 0,
-			warnings,
-		};
-	}
-
-	private readResultSummary(value: unknown): RunReportSummary['resultSummary'] {
-		if (!isPlainObject(value)) return undefined;
-		const failed = Array.isArray(value.failed)
-			? value.failed
-					.filter((failure): failure is Record<string, unknown> => isPlainObject(failure))
-					.map((failure) => ({
-						errorMessage: this.readString(failure.errorMessage),
-						localPath: this.readString(failure.localPath),
-						taskName: this.readString(failure.taskName),
-					}))
-			: undefined;
-
-		return {
-			failed,
-			failedTasks: this.readNumber(value.failedTasks) ?? 0,
-			succeededTasks: this.readNumber(value.succeededTasks) ?? 0,
-			totalTasks: this.readNumber(value.totalTasks) ?? 0,
-		};
-	}
-
-	private readErrorSummary(value: unknown): RunReportSummary['errorSummary'] {
-		if (!isPlainObject(value)) return undefined;
-		return {
-			message: this.readString(value.message),
-			name: this.readString(value.name),
-		};
-	}
-
-	private readString(value: unknown): string | undefined {
-		return typeof value === 'string' ? value : undefined;
-	}
-
-	private readNumber(value: unknown): number | undefined {
-		return typeof value === 'number' ? value : undefined;
-	}
-
-	private readStringArray(value: unknown): Array<string> | undefined {
-		if (!Array.isArray(value)) return undefined;
-		return value.filter((item): item is string => typeof item === 'string');
-	}
-
 	private formatTimelineLine(entry: LogEntry): string {
-		const parts = [
-			`- ${entry.timestamp}`,
-			`**${entry.level.toUpperCase()}**`,
-			`\`${entry.category}\``,
-			entry.message,
-		];
+		const parts = [`- ${entry.timestamp}`, `**${entry.level.toUpperCase()}**`, entry.message];
 		if (entry.metadata !== undefined) parts.push(`— \`${JSON.stringify(entry.metadata)}\``);
 		return parts.join(' ');
 	}
@@ -373,25 +229,17 @@ class Logger {
 		level,
 		message,
 		metadata,
-		context,
 	}: {
 		level: LogLevel;
 		message: string;
 		metadata?: unknown;
-		context?: LogContext;
 	}) {
 		const timestampMs = Date.now();
-		const mergedContext = {
-			category: 'app',
-			...this.getCurrentContext(),
-			...context,
-		};
 		const entry: LogEntry = {
-			category: mergedContext.category ?? 'app',
 			level,
 			message,
 			metadata: sanitizeLogValue(metadata),
-			runId: mergedContext.runId,
+			runId: this.currentId,
 			timestamp: formatDateTime(timestampMs),
 			timestampMs,
 		};
@@ -401,8 +249,8 @@ class Logger {
 			this.logs.splice(0, this.logs.length - MAX_LOG_ENTRIES);
 	}
 
-	private getCurrentContext(): LogContext {
-		return this.contextStack.at(-1) ?? {};
+	private get currentId() {
+		return this.contextStack.at(-1) ?? '';
 	}
 }
 

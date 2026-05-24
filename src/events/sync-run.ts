@@ -1,4 +1,4 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { TaskNames } from '~/sync/tasks/task.interface';
 import type { SyncRunKind } from '~/types';
 import { hook, ref } from '.';
 
@@ -36,13 +36,13 @@ export type SyncProgressSummary = {
 	totalTasks: number;
 	completedTasks: number;
 	completed: Array<{
-		taskName: string;
+		taskName: TaskNames;
 		path: string;
 	}>;
 };
 
 export type SyncFailedTaskInfo = {
-	name: BaseTask['name'];
+	name: TaskNames;
 	localPath: string;
 	errorMessage: string;
 };
@@ -78,6 +78,7 @@ export type SyncRunSnapshot = {
 	timestamps: SyncRunTimestamps;
 	planSummary?: SyncPlanSummary;
 	remoteWalkSummary?: RemoteWalkSummary;
+	serverUrl?: string;
 	progressSummary: SyncProgressSummary;
 	resultSummary?: SyncResultSummary;
 	errorSummary?: SyncErrorSummary;
