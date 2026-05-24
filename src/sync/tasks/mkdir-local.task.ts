@@ -1,5 +1,4 @@
 import type { OptionsWithRemoteFolderStat } from '~/sync/decision/sync-decision.interface';
-import { statItem } from '~/fs/vault';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -9,15 +8,10 @@ export default class MkdirLocalTask extends BaseTask<OptionsWithRemoteFolderStat
 	async exec() {
 		try {
 			await this.vault.adapter.mkdir(this.localPath);
-			const local = await statItem(this.vault, this.localPath);
-			if (!local || !local.isDir)
-				throw new Error(
-					`failed to read local directory stat after creation: ${this.localPath}`,
-				);
 
 			await this.syncRecord.upsertRecords({
 				key: this.localPath,
-				local,
+				local: { isDir: true, path: this.localPath },
 				remote: this.remote,
 			});
 
