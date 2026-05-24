@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.9 - 2026-05-24
+
+- Fixed task name display error in progress modal.
+- Removed outdated migration script.
+- Improved logger for specificity, simplicity and memory usage.
+- Reduced redundant stat calls after mkdir operations.
+
 ## Obsidian WebDAV Sync v2.5.8 - 2026-05-22
 
 - Remove invalid characters check since most services actually support them.

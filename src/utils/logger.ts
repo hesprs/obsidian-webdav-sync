@@ -164,7 +164,7 @@ class Logger {
 	private buildRunReport(runId: string, entries: Array<LogEntry>): Array<string> {
 		const run = this.runs[runId];
 		const { planSummary, timestamps, resultSummary, errorSummary } = run;
-		const lines: Array<string> = [`### Run ${runId}`, ''];
+		const lines: Array<string> = [`### Run \`${runId}\``, ''];
 
 		lines.push(`- Trigger: ${run.trigger}`);
 		lines.push(`- Run kind: ${run.runKind}`);
