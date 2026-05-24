@@ -1,11 +1,11 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { TaskNames } from '~/sync/tasks/task.interface';
 import t from '~/i18n';
 
 const RED_COLOR = 'var(--color-red)';
 const BLUE_COLOR = 'var(--color-blue)';
 const YELLOW_COLOR = 'var(--color-yellow)';
 
-export function getTaskIcon(taskName: BaseTask['name']): string {
+export function getTaskIcon(taskName: TaskNames): string {
 	switch (taskName) {
 		case 'createRemoteDir': {
 			return 'folder-up';
@@ -36,7 +36,7 @@ export function getTaskIcon(taskName: BaseTask['name']): string {
 	}
 }
 
-export function getTaskColor(taskName: BaseTask['name']): string {
+export function getTaskColor(taskName: TaskNames): string {
 	switch (taskName) {
 		case 'merge': {
 			return YELLOW_COLOR;
@@ -57,7 +57,7 @@ export function getTaskColor(taskName: BaseTask['name']): string {
 	}
 }
 
-export function getTaskName(taskName: BaseTask['name']) {
+export function getTaskName(taskName: TaskNames) {
 	if (taskName) return t(`sync.fileOp.${taskName}`);
 	return t('sync.fileOp.sync');
 }

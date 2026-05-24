@@ -21,6 +21,7 @@ type TaskFailureResult = {
 };
 
 export type TaskResult = TaskSuccessResult | TaskFailureResult;
+export type TaskNames = BaseTask['name'];
 
 export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 	constructor(readonly options: BaseTaskOptions & T) {
@@ -32,7 +33,7 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 		this.local = options.local;
 		this.remote = options.remote;
 	}
-	readonly name?: keyof TranslationShape['sync']['fileOp'];
+	abstract readonly name: keyof TranslationShape['sync']['fileOp'];
 	readonly localPath: string;
 	readonly remotePath: string;
 	protected readonly webdav: WebDAVClient;

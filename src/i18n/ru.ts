@@ -228,6 +228,7 @@ const translation: typeof en = {
 				'Не удалось синхронизировать: {{path}} — это {{remoteForm}} на удалённом сервере, но {{localForm}} локально',
 		},
 		fileOp: {
+			addRecord: 'Добавить запись',
 			cleanRecord: 'Очистить запись',
 			createLocalDir: 'Создать локальную папку',
 			createRemoteDir: 'Создать удаленную папку',

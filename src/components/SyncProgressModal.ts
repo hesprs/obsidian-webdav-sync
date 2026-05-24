@@ -8,6 +8,7 @@ import renderFailedTasks from '~/components/render-failed-tasks';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
 import { TERMINAL_STAGES } from '~/services/observability.service';
+import { getTaskName } from '~/utils/get-task-info';
 
 type ManualConfirmationSession = {
 	onConfirm: () => void;
@@ -102,7 +103,8 @@ export default class SyncProgressModal extends Modal {
 		else if (stage === 'completed_noop') this.currentFile.setText(t('sync.alreadyUpToDate'));
 		else if (stage === 'executing' && run.progressSummary.completed.length > 0) {
 			const lastFile = run.progressSummary.completed.at(-1);
-			if (lastFile) this.currentFile.setText(`${lastFile.taskName} ${lastFile.path}`);
+			if (lastFile)
+				this.currentFile.setText(`${getTaskName(lastFile.taskName)} ${lastFile.path}`);
 		} else this.currentFile.setText(t('sync.complete'));
 	}
 

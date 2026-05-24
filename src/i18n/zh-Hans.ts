@@ -226,6 +226,7 @@ const translation: typeof en = {
 			message: '无法同步：{{path}}在远程为{{remoteForm}}，但在本地为{{localForm}}',
 		},
 		fileOp: {
+			addRecord: '添加记录',
 			cleanRecord: '清理记录',
 			createLocalDir: '创建本地目录',
 			createRemoteDir: '创建远程目录',
