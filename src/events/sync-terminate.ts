@@ -50,15 +50,10 @@ function logTerminalRun(run: SyncRunSnapshot, error?: Error) {
 	const metadata = {
 		error,
 		errorSummary: run.errorSummary,
-		event: 'terminal_outcome',
 		progressSummary: run.progressSummary,
 		remoteWalkSummary: run.remoteWalkSummary,
 		resultSummary: run.resultSummary,
-		runKind: run.runKind,
-		sources: run.sources,
-		stage: run.stage,
 		timestamps: run.timestamps,
-		trigger: run.trigger,
 	};
 
 	if (run.stage === 'failed') logger.error('Sync failed', metadata);
