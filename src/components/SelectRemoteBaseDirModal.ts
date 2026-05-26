@@ -4,6 +4,7 @@ import { Modal } from 'obsidian';
 import { getDirectoryContents } from '~/fs/webdav/api';
 import { mkdirsWebDAV } from '~/fs/webdav/utils';
 import { normalizeBaseDir, remoteBasename } from '~/platform/path';
+import logger from '~/utils/logger';
 import mountWebDAVExplorer from './explorer';
 
 export default class SelectRemoteBaseDirModal extends Modal {
@@ -16,10 +17,7 @@ export default class SelectRemoteBaseDirModal extends Modal {
 	}
 
 	onOpen() {
-		const { contentEl } = this;
-
-		const explorer = activeDocument.createDiv();
-		contentEl.appendChild(explorer);
+		const explorer = this.contentEl.createDiv();
 
 		const webdav = this.plugin.webDAVService.createWebDAVClient();
 
@@ -27,11 +25,13 @@ export default class SelectRemoteBaseDirModal extends Modal {
 			fs: {
 				ls: async (target) => {
 					const token = this.plugin.getToken();
+					logger.info(`WebDAV ls: target="${target}", serverUrl="${this.plugin.settings.serverUrl}"`);
 					const items = await getDirectoryContents(
 						this.plugin.settings.serverUrl,
 						token,
 						target,
 					);
+					logger.info(`WebDAV ls: got ${items.length} items`);
 					return items.map((stat) => ({
 						basename: remoteBasename(stat.path),
 						isDir: stat.isDir,

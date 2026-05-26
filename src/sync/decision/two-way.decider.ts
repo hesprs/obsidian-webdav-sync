@@ -122,6 +122,7 @@ export default class TwoWaySyncDecider {
 			settings: {
 				conflictStrategy: this.sync.settings.conflictStrategy,
 				unmergeableStrategy: this.sync.settings.unmergeableStrategy,
+				readOnly: this.sync.settings.readOnly,
 			},
 			taskFactory,
 		};

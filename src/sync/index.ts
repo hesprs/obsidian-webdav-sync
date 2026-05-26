@@ -458,10 +458,22 @@ export default class SyncEngine {
 
 				retryCount++;
 				const retryError = toError(error, 'WebDAV operation failed');
-				if (retryCount >= 3) {
+				const err = error as { status?: number; res?: { status?: number } };
+				const statusCode = err.status ?? err.res?.status;
+				// 401 (Unauthorized) may be transient — use longer wait and higher retry cap
+				const retry401Cfg = this.settings.retry401;
+				const retry401IntervalCfg = this.settings.retry401Interval;
+				const maxRetries = statusCode === 401
+					? (retry401Cfg.enabled ? retry401Cfg.value : 10)
+					: 3;
+				const waitMs = statusCode === 401
+					? (retry401IntervalCfg.enabled ? retry401IntervalCfg.value : 30) * 1000
+					: 5000;
+				if (retryCount >= maxRetries) {
 					logger.error('WebDAV connection failed after retries', {
 						error: retryError,
 						retryCount,
+						statusCode,
 					});
 					throw new SyncRetryExhaustedError(undefined, retryError);
 				}
@@ -469,8 +481,9 @@ export default class SyncEngine {
 				logger.warn('Retrying WebDAV operation after transient error', {
 					error: retryError,
 					retryCount,
+					statusCode,
 				});
-				await breakableSleep(syncCancel, 5000);
+				await breakableSleep(syncCancel, waitMs);
 				this.throwIfCancelled();
 			}
 		}

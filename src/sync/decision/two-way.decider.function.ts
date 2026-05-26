@@ -23,6 +23,26 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	logger.debug('records', [...records.keys()]);
 
 	const tasks: Array<BaseTask> = [];
+	const readOnly = settings.readOnly;
+
+	// Helper: only add write-operations if NOT in read-only mode.
+	// When readOnly and a remote version exists, pull remote to overwrite local instead.
+	const pushWriteTask = (task: BaseTask, fallbackPull?: BaseTask) => {
+		if (readOnly) {
+			if (fallbackPull) {
+				logger.info(
+					`Read-only mode: pulling remote to overwrite local for ${task.localPath || task.remotePath}`,
+				);
+				tasks.push(fallbackPull);
+				return;
+			}
+			logger.info(
+				`Read-only mode: skipping write task '${task.name}' for ${task.localPath || task.remotePath}`,
+			);
+			return;
+		}
+		tasks.push(task);
+	};
 	const files: Array<{
 		path: string;
 		local?: FileStatModel;
@@ -74,7 +94,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 		function commonRoutes(strategy: UnmergeableStrategy | ConflictStrategy) {
 			if (strategy === UnmergeableStrategy.Skip) return;
 			if (strategy === UnmergeableStrategy.KeepLocal) {
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				pushWriteTask(taskFactory.createPushTask({ ...options, local }));
 				return true;
 			}
 			if (strategy === UnmergeableStrategy.KeepRemote) {
@@ -83,7 +103,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			}
 			if (strategy === UnmergeableStrategy.LatestTimeStamp) {
 				if (local.mtime >= remote.mtime) {
-					tasks.push(taskFactory.createPushTask({ ...options, local }));
+					pushWriteTask(taskFactory.createPushTask({ ...options, local }));
 					return true;
 				}
 				tasks.push(taskFactory.createPullTask({ ...options, remote }));
@@ -92,10 +112,20 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			return false;
 		}
 		const { local, remote, options, strategy, unmergeableStrategy } = params;
+
+		// In read-only mode, remote always wins — pull remote to overwrite local
+		if (readOnly) {
+			logger.info(
+				`Read-only mode: conflict resolved by pulling remote for ${options.localPath}`,
+			);
+			tasks.push(taskFactory.createPullTask({ ...options, remote }));
+			return;
+		}
+
 		if (strategy === ConflictStrategy.DiffMatchPatch && !isMergeablePath(local.path))
 			commonRoutes(unmergeableStrategy);
 		else if (!commonRoutes(strategy))
-			tasks.push(taskFactory.createMergeTask({ ...options, local, remote }));
+			pushWriteTask(taskFactory.createMergeTask({ ...options, local, remote }));
 	};
 
 	// * Sync files
@@ -166,7 +196,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Push local file \`${localPath}\` to remote`, {
 					reason: 'local file exists without a remote file',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				pushWriteTask(taskFactory.createPushTask({ ...options, local }));
 			},
 			NORECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
@@ -201,7 +231,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Push local file \`${localPath}\` to remote`, {
 					reason: 'local file changed and remote file does not exist',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				pushWriteTask(taskFactory.createPushTask({ ...options, local }));
 			},
 			RECORD_NOREMOTE_LOCAL_REMOVE: () => {
 				if (!local) return;
@@ -236,7 +266,10 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Push local file \`${localPath}\` changes to remote`, {
 					reason: 'local file changed',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				pushWriteTask(
+					taskFactory.createPushTask({ ...options, local }),
+					taskFactory.createPullTask({ ...options, remote }),
+				);
 			},
 			RECORD_REMOTE_NOLOCAL_PULL: () => {
 				if (!remote) return;
@@ -247,10 +280,17 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			},
 			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
 				if (!remote) return;
+				if (readOnly) {
+					logger.debug(`Read-only: pull remote to restore deleted local file \`${remotePath}\``, {
+						reason: 'local deleted, read-only prevents remote deletion',
+					});
+					tasks.push(taskFactory.createPullTask({ ...options, remote }));
+					return;
+				}
 				logger.debug(`Remove remote file \`${remote.path}\``, {
 					reason: 'remote file is removable',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				pushWriteTask(taskFactory.createRemoveRemoteTask({ ...options, remote }));
 			},
 		};
 
@@ -309,14 +349,14 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Create remote folder according to local \`${localPath}\``, {
 					reason: 'local folder does not exist remotely',
 				});
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				pushWriteTask(taskFactory.createMkdirRemoteTask({ ...options, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_PUSH: () => {
 				if (!local) return;
 				logger.debug(`Create remote folder according to local \`${localPath}\``, {
 					reason: 'local folder content changed',
 				});
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				pushWriteTask(taskFactory.createMkdirRemoteTask({ ...options, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_REMOVE: () => {
 				if (!local) return;
@@ -349,10 +389,17 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			},
 			REMOTE_NOLOCAL_RECORD_REMOVE: () => {
 				if (!remote) return;
+				if (readOnly) {
+					logger.debug(`Read-only: create local folder to restore \`${remotePath}\``, {
+						reason: 'local folder deleted, read-only prevents remote deletion',
+					});
+					tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
+					return;
+				}
 				logger.debug(`Remove remote folder \`${remotePath}\``, {
 					reason: 'remote folder is removable (no content changes)',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				pushWriteTask(taskFactory.createRemoveRemoteTask({ ...options, remote }));
 			},
 		};
 
@@ -403,16 +450,19 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Replace remote file \`${remotePath}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				pushWriteTask(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				pushWriteTask(taskFactory.createMkdirRemoteTask({ ...options, local }));
 			},
 			LOCAL_FILE_PUSH: () => {
 				if (local.isDir) return;
 				logger.debug(`Replace remote directory \`${remotePath}\` with local file`, {
 					reason: 'local file changed but not remote',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				pushWriteTask(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				pushWriteTask(
+					taskFactory.createPushTask({ ...options, local }),
+					taskFactory.createPullTask({ ...options, remote }),
+				);
 			},
 			REMOTE_DIR_PULL: () => {
 				if (!remote.isDir) return;

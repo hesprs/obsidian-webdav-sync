@@ -2,6 +2,7 @@ import type { DAVResult } from 'webdav';
 import type { StatModel } from '~/types';
 import parseXML from '~/composable/parse-xml';
 import { normalizeRemotePath } from '~/platform/path';
+import { useSettings } from '~/settings';
 import { isNil } from '~/utils/fns';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
@@ -74,7 +75,8 @@ function buildStripPrefixes(serverUrl: string): Array<string> {
 }
 
 function buildDirectoryUrl(serverUrl: string, _path: string): string {
-	const path = `${normalizeRemotePath(_path)}/`;
+	const normalized = normalizeRemotePath(_path);
+	const path = normalized === '/' ? '/' : `${normalized}/`;
 	const encodedPath = path.split('/').map(encodeURIComponent).join('/');
 	return `${serverUrl}${encodedPath}`;
 }
@@ -141,7 +143,12 @@ async function propfind(
 	url: string,
 	depth: '0' | '1' | 'infinity',
 ) {
-	while (true)
+	const settings = await useSettings();
+	const maxRetries401 = settings.retry401.enabled ? settings.retry401.value : 10;
+	const retry401WaitMs = (settings.retry401Interval.enabled ? settings.retry401Interval.value : 30) * 1000;
+	const MAX_RETRIES = maxRetries401;
+	let retryCount = 0;
+	while (retryCount < MAX_RETRIES)
 		try {
 			const response = await requestUrl({
 				body: PROPFIND_BODY,
@@ -167,12 +174,21 @@ async function propfind(
 			};
 		} catch (error) {
 			if (isRetryableError(error)) {
-				logger.error('WebDAV connection error, retrying...', error);
-				await sleep(5000);
+				retryCount++;
+				const err = error as { status?: number; res?: { status?: number } };
+				const statusCode = err.status ?? err.res?.status;
+				const waitMs = statusCode === 401 ? retry401WaitMs : 5000;
+				logger.error(
+					`WebDAV ${statusCode === 401 ? '401 Unauthorized' : 'connection'} error (attempt ${retryCount}/${MAX_RETRIES}), retrying in ${waitMs / 1000}s...`,
+					error,
+				);
+				await sleep(waitMs);
 				continue;
 			}
 			throw error;
 		}
+
+	throw new Error(`WebDAV PROPFIND failed after ${MAX_RETRIES} retries`);
 }
 
 export async function getStat(endpoint: string, token: string, path: string): Promise<StatModel> {
@@ -199,10 +215,15 @@ export async function getDirectoryContents(
 	path: string,
 	infinity = false,
 ): Promise<Array<StatModel>> {
+	const settings = await useSettings();
+	const maxRetries401 = settings.retry401.enabled ? settings.retry401.value : 10;
+	const retry401WaitMs = (settings.retry401Interval.enabled ? settings.retry401Interval.value : 30) * 1000;
 	const contents: Array<StatModel> = [];
 	let currentUrl = buildDirectoryUrl(endpoint, path);
 
-	while (true)
+	let retryCount = 0;
+	const MAX_RETRIES = maxRetries401;
+	while (retryCount < MAX_RETRIES)
 		try {
 			const { items, response, stripPrefixes } = await propfind(
 				endpoint,
@@ -228,14 +249,27 @@ export async function getDirectoryContents(
 			const pathName = normalizePath(nextUrl.pathname);
 			nextUrl.pathname = `${pathName}/`;
 			currentUrl = nextUrl.toString();
+
+			// Reset retry count on successful pagination step
+			retryCount = 0;
 		} catch (error) {
 			if (isRetryableError(error)) {
-				logger.error('WebDAV connection error, retrying...', error);
-				await sleep(5000);
+				retryCount++;
+				const err = error as { status?: number; res?: { status?: number } };
+				const statusCode = err.status ?? err.res?.status;
+				const waitMs = statusCode === 401 ? retry401WaitMs : 5000;
+				logger.error(
+					`WebDAV ${statusCode === 401 ? '401 Unauthorized' : 'connection'} error (attempt ${retryCount}/${MAX_RETRIES}), retrying in ${waitMs / 1000}s...`,
+					error,
+				);
+				await sleep(waitMs);
 				continue;
 			}
 			throw error;
 		}
+
+	if (retryCount >= MAX_RETRIES)
+		throw new Error(`WebDAV directory listing failed after ${MAX_RETRIES} retries`);
 
 	return contents;
 }

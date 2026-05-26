@@ -34,6 +34,7 @@ export type PluginSettings = {
 	serverUrl: string;
 	account: string;
 	token: string;
+	readOnly: boolean;
 	encryption: {
 		enabled: boolean;
 		value: string;
@@ -53,6 +54,8 @@ export type PluginSettings = {
 	};
 	skipLargeFiles: ToggleNumericSettingsField; // Value is max size
 	realtimeSync: ToggleNumericSettingsField; // Value is delay
+	retry401: ToggleNumericSettingsField; // Value is max retry count
+	retry401Interval: ToggleNumericSettingsField; // Value is wait seconds
 	maxWebDAVConcurrency: ToggleNumericSettingsField; // Value is max
 	maxThroughputConcurrency: ToggleNumericSettingsField; // Value is max
 	maxSyncTaskConcurrency: ToggleNumericSettingsField; // Value is max

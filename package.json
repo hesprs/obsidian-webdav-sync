@@ -24,6 +24,7 @@
 		"@vitejs/devtools": "^0.1.22",
 		"glob-to-regexp": "^0.4.1",
 		"hash-wasm": "^4.12.0",
+		"jsdom": "^29.1.1",
 		"localspace": "^1.2.0",
 		"node-diff3": "^3.2.0",
 		"obsidian": "latest",

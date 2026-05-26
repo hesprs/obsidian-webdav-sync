@@ -27,6 +27,11 @@ export default async function requestUrl(p: RequestUrlParam | string) {
 
 	if (res.status >= 400) {
 		logger.error(`Received unexpected status code ${res.status}`, getSafeResponseMetadata(res));
+		if (res.status === 401) {
+			logger.warn(
+				`401 Unauthorized — possible causes: (1) expired/invalid credentials, (2) server auth session timeout, (3) reverse proxy auth failure, (4) encoding issue in Basic auth header`,
+			);
+		}
 		if (typeof p === 'string' || p.throw !== false) throw new RequestUrlError(res);
 	}
 

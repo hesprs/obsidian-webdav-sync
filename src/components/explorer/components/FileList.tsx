@@ -33,11 +33,14 @@ export function createFileList() {
 					const newItems = await props.fs.ls(props.path);
 					setItems(newItems);
 				} catch (error) {
-					if (error instanceof Error) new Notice(error.message);
+					if (error instanceof Error) new Notice(`WebDAV error: ${error.message}`);
+					else new Notice(`WebDAV unknown error`);
 				}
 			}
 
 			createEffect(() => {
+				// Track path changes (navigation) to auto-refresh
+				const _currentPath = props.path;
 				if (version() === 0) {
 					void refresh();
 					return;

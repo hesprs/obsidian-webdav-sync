@@ -85,6 +85,18 @@ const en = {
 			desc: "Assume remote content doesn't change during a fast sync to reuse cached data and avoid unnecessary requests. This can improve sync performance but ignores remote changes. Recommend to use with startup sync periodic sync",
 			name: 'Fast mode for real-time sync',
 		},
+		readOnly: {
+			desc: 'When enabled, local changes will NOT be uploaded to the remote server. Only download (pull) operations are allowed. Use this to sync one-way from remote to local.',
+			name: 'Read-only mode (download only)',
+		},
+		retry401: {
+			desc: 'Maximum number of retry attempts when a 401 (Unauthorized) error is encountered. 401 errors may be transient during server restarts or session refreshes.',
+			name: '401 retry max attempts',
+		},
+		retry401Interval: {
+			desc: 'Wait time in seconds between each 401 retry attempt. Longer intervals give the server more time to recover from transient auth issues.',
+			name: '401 retry interval (seconds)',
+		},
 		filters: {
 			add: 'Add rule',
 			cancel: 'Cancel',

@@ -48,6 +48,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		},
 		exhaustiveRemoteTraversal: false,
 		fastRealtimeSync: true,
+		readOnly: false,
 		filterRules: {
 			exclusionRules: [
 				'**/.git',
@@ -89,6 +90,14 @@ export default class WebDAVSyncPlugin extends Plugin {
 		realtimeSync: {
 			enabled: false,
 			value: 5000,
+		},
+		retry401: {
+			enabled: true,
+			value: 10,
+		},
+		retry401Interval: {
+			enabled: true,
+			value: 30,
 		},
 		remoteDir: normalizeBaseDir(this.app.vault.getName()),
 		scheduledSync: {

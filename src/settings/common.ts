@@ -137,6 +137,16 @@ export default class CommonSettings extends BaseSettings {
 					}),
 			);
 
+		new Setting(this.containerEl)
+			.setName(t('settings.readOnly.name'))
+			.setDesc(t('settings.readOnly.desc'))
+			.addToggle((toggle) =>
+				toggle.setValue(this.plugin.settings.readOnly).onChange((value) => {
+					this.plugin.settings.readOnly = value;
+					void this.plugin.saveSettings();
+				}),
+			);
+
 		generateSettingEntry({
 			container: this.containerEl,
 			desc: t('settings.realtimeSync.desc'),

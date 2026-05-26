@@ -68,5 +68,6 @@ export type SyncDecisionInput = {
 	settings: {
 		conflictStrategy: ConflictStrategy;
 		unmergeableStrategy: UnmergeableStrategy;
+		readOnly: boolean;
 	};
 };

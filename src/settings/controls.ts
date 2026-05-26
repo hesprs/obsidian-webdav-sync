@@ -11,6 +11,28 @@ export default class ControlsSettings extends BaseSettings {
 
 		generateSettingEntry({
 			container: this.containerEl,
+			desc: t('settings.retry401.desc'),
+			field: this.plugin.settings.retry401,
+			name: t('settings.retry401.name'),
+			placeholder: '10',
+			rejectZero: true,
+			saveSettings: this.plugin.saveSettings,
+			type: UserInputType.Number,
+		});
+
+		generateSettingEntry({
+			container: this.containerEl,
+			desc: t('settings.retry401Interval.desc'),
+			field: this.plugin.settings.retry401Interval,
+			name: t('settings.retry401Interval.name'),
+			placeholder: '30',
+			rejectZero: true,
+			saveSettings: this.plugin.saveSettings,
+			type: UserInputType.Number,
+		});
+
+		generateSettingEntry({
+			container: this.containerEl,
 			desc: t('settings.skipLargeFiles.desc'),
 			field: this.plugin.settings.skipLargeFiles,
 			name: t('settings.skipLargeFiles.name'),
