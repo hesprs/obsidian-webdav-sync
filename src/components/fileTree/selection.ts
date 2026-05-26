@@ -19,15 +19,12 @@ export default class FileTreeSelectionController {
 
 		this.setSelected(nodeId, nextSelected, changed);
 
-		if (node.isCreateFolderTask) {
-			if (!nextSelected)
-				for (const descendantId of node.selectableDescendantTaskIds)
-					this.setSelected(descendantId, false, changed);
-		} else if (node.isDeleteFolderTask)
-			if (nextSelected)
-				for (const descendantId of node.selectableDescendantTaskIds)
-					this.setSelected(descendantId, true, changed);
+		// Cascade to descendants: folder tasks propagate selection both ways
+		if (node.isCreateFolderTask || node.isDeleteFolderTask)
+			for (const descendantId of node.selectableDescendantTaskIds)
+				this.setSelected(descendantId, nextSelected, changed);
 
+		// Cascade to ancestors
 		if (nextSelected)
 			for (const ancestorId of node.ancestorCreateFolderTaskIds)
 				this.setSelected(ancestorId, true, changed);
@@ -48,6 +45,20 @@ export default class FileTreeSelectionController {
 			else unselectedTasks.push(task);
 		}
 		return { selectedTasks, unselectedTasks };
+	}
+
+	selectAll(): Set<string> {
+		const changed = new Set<string>();
+		for (const taskNodeId of this.data.taskNodeIds)
+			this.setSelected(taskNodeId, true, changed);
+		return changed;
+	}
+
+	deselectAll(): Set<string> {
+		const changed = new Set<string>();
+		for (const taskNodeId of this.data.taskNodeIds)
+			this.setSelected(taskNodeId, false, changed);
+		return changed;
 	}
 
 	private setSelected(nodeId: string, nextSelected: boolean, changed: Set<string>) {

@@ -76,6 +76,18 @@
 	gap: 4px;
 }
 
+.webdav-sync-file-tree__toolbar {
+	display: flex;
+	gap: 8px;
+	margin-bottom: 4px;
+}
+
+.webdav-sync-file-tree__btn {
+	padding: 2px 8px;
+	font-size: 12px;
+	cursor: pointer;
+}
+
 .webdav-sync-file-tree input[type='checkbox'] {
 	accent-color: var(--interactive-accent);
 }
@@ -100,6 +112,35 @@
 	border-radius: 50%;
 	background-color: var(--text-muted);
 	flex-shrink: 0;
+}
+
+.webdav-sync-file-tree__chevron {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	cursor: pointer;
+	color: var(--text-muted);
+	font-size: 12px;
+	user-select: none;
+}
+
+.webdav-sync-file-tree__chevron::before {
+	content: '▸';
+}
+
+.webdav-sync-file-tree__chevron.is-collapsed::before {
+	content: '▸';
+}
+
+.webdav-sync-file-tree__chevron:not(.is-collapsed)::before {
+	content: '▾';
+}
+
+.webdav-sync-file-tree__chevron:hover {
+	color: var(--text-normal);
 }
 
 .webdav-sync-task__icon {

@@ -267,6 +267,8 @@ const translation: typeof en = {
 		showProgressButton: 'Показать прогресс синхронизации',
 		startButton: 'Начать синхронизацию',
 		stopButton: 'Остановить синхронизацию',
+		selectAll: 'Выбрать все',
+		deselectAll: 'Снять все',
 		syncingFiles: '⌛️ Синхронизация файлов...',
 		upToDate: '✅ Актуальная версия',
 		walkingRemote: '🔍 Сканирование удаленных файлов',

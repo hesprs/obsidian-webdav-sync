@@ -265,6 +265,8 @@ const translation: typeof en = {
 		showProgressButton: '显示同步进度',
 		startButton: '开始同步',
 		stopButton: '停止同步',
+		selectAll: '全选',
+		deselectAll: '取消全选',
 		syncingFiles: '⌛️ 正在同步文件...',
 		upToDate: '✅ 已同步到最新',
 		walkingRemote: '🔍 远程扫描',

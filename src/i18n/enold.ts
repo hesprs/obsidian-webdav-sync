@@ -265,6 +265,8 @@ const en = {
 		showProgressButton: 'Show sync progress',
 		startButton: 'Start sync',
 		stopButton: 'Stop sync',
+		selectAll: 'Select all',
+		deselectAll: 'Deselect all',
 		syncingFiles: '⌛️ Syncing files...',
 		upToDate: '✅ Up to date',
 		walkingRemote: '🔍 Walking remote',
