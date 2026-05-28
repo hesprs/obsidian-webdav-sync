@@ -1,4 +1,4 @@
-import './assets/global.css';
+import './global.css';
 import { Plugin } from 'obsidian';
 import type { PluginSettings, GlobMatchOptions } from './settings';
 import type { SyncEncryptionContext } from './utils/encryption';
