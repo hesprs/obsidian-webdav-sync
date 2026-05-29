@@ -1,4 +1,4 @@
-import type en from './enold';
+import type en from './en';
 
 const translation: typeof en = {
 	deleteConfirm: {

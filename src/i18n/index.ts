@@ -1,6 +1,6 @@
 import { getLanguage } from 'obsidian';
 import createI18n from '~/composable/i18n';
-import en from './enold';
+import en from './en';
 import ru from './ru';
 import zhHans from './zh-Hans';
 
