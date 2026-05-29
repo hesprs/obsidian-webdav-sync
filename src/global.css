@@ -102,18 +102,6 @@
 	flex-shrink: 0;
 }
 
-.webdav-sync-file-tree__toolbar {
-	display: flex;
-	gap: 8px;
-	margin-bottom: 4px;
-}
-
-.webdav-sync-file-tree__btn {
-	padding: 2px 8px;
-	font-size: 12px;
-	cursor: pointer;
-}
-
 .webdav-sync-task__icon {
 	display: flex;
 	align-items: center;
