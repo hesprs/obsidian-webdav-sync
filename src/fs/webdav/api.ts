@@ -27,7 +27,7 @@ type WebDAVResponseItem = {
 };
 
 function normalizePath(path: string) {
-	return normalizeRemotePath(decodeURIComponent(path));
+	return normalizeRemotePath(extractPathname(path));
 }
 
 function isSuccessStatus(status?: string): boolean {
@@ -63,9 +63,9 @@ function extractNextLink(linkHeader: string): string | undefined {
 }
 
 function extractPathname(href: string): string {
-	if (href.startsWith('http://') || href.startsWith('https://'))
-		return decodeURIComponent(new URL(href).pathname);
-	return decodeURIComponent(href);
+	return decodeURIComponent(
+		href.startsWith('http://') || href.startsWith('https://') ? new URL(href).pathname : href,
+	);
 }
 
 function buildStripPrefixes(serverUrl: string): Array<string> {
