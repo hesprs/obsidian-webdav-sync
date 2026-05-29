@@ -74,7 +74,8 @@ function buildStripPrefixes(serverUrl: string): Array<string> {
 }
 
 function buildDirectoryUrl(serverUrl: string, _path: string): string {
-	const path = `${normalizeRemotePath(_path)}/`;
+	const normalized = normalizeRemotePath(_path);
+	const path = normalized === '/' ? '/' : `${normalized}/`;
 	const encodedPath = path.split('/').map(encodeURIComponent).join('/');
 	return `${serverUrl}${encodedPath}`;
 }
@@ -141,6 +142,7 @@ async function propfind(
 	url: string,
 	depth: '0' | '1' | 'infinity',
 ) {
+	let retries = 0;
 	while (true)
 		try {
 			const response = await requestUrl({
@@ -167,6 +169,8 @@ async function propfind(
 			};
 		} catch (error) {
 			if (isRetryableError(error)) {
+				retries++;
+				if (retries > 3) throw error;
 				logger.error('WebDAV connection error, retrying...', error);
 				await sleep(5000);
 				continue;
@@ -201,6 +205,7 @@ export async function getDirectoryContents(
 ): Promise<Array<StatModel>> {
 	const contents: Array<StatModel> = [];
 	let currentUrl = buildDirectoryUrl(endpoint, path);
+	let retries = 0;
 
 	while (true)
 		try {
@@ -230,6 +235,8 @@ export async function getDirectoryContents(
 			currentUrl = nextUrl.toString();
 		} catch (error) {
 			if (isRetryableError(error)) {
+				retries++;
+				if (retries > 3) throw error;
 				logger.error('WebDAV connection error, retrying...', error);
 				await sleep(5000);
 				continue;

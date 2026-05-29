@@ -34,6 +34,7 @@ export function createFileList() {
 					setItems(newItems);
 				} catch (error) {
 					if (error instanceof Error) new Notice(error.message);
+					else new Notice(`WebDAV unknown error`);
 				}
 			}
 

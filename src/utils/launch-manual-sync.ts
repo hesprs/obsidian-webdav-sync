@@ -12,7 +12,10 @@ export default function launchManualSync(
 	plugin: WebDAVSyncPlugin,
 	options: LaunchManualSyncOptions = {},
 ): void {
-	if (plugin.isSyncing) return;
+	if (plugin.isSyncing) {
+		plugin.observabilityService.showProgressModal();
+		return;
+	}
 
 	if (!plugin.isAccountConfigured()) {
 		new Notice(t('sync.error.accountNotConfigured'));

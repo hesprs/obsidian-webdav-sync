@@ -83,7 +83,8 @@
 		"jest/no-conditional-expect": "off",
 		"vitest/no-conditional-expect": "off",
 		"jest/require-hook": "off",
-		"vitest/prefer-called-once": "off"
+		"vitest/prefer-called-once": "off",
+		"react/jsx-handler-names": "off"
 	},
 	"env": {
 		"builtin": true,

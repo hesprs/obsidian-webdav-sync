@@ -28,7 +28,10 @@ export default function App(props: FileTreeAppProps) {
 					const node = data.nodes[nodeId];
 					const task = node.task;
 					const icon = task
-						? { color: getTaskColor(task.name), icon: getTaskIcon(task.name) }
+						? {
+								color: getTaskColor(task.name),
+								icon: getTaskIcon(task.name),
+							}
 						: { color: 'var(--text-normal)', icon: 'folder-open' };
 					const rowClass = task && !selectedById[nodeId] ? 'is-unselected' : '';
 					return (
