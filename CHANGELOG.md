@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.10 - 2026-05-30
+
+- Added traditional Chinese translation.
+- Fixed the bug that causes the plugin fail to resolve absolute URL paths returned by servers.
+- Made clicking the sync button during syncing open the progress modal instead of doing nothing.
+- Optimized several points to improve code clarity and prevent infinite retries.
+
 ## Obsidian WebDAV Sync v2.5.9 - 2026-05-24
 
 - Fixed task name display error in progress modal.

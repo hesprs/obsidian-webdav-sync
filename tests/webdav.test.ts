@@ -392,4 +392,57 @@ describe('getDirectoryContents', () => {
 		expect(files[0].path).toBe('/<test>/ab & c/');
 		expect(files[0].isDir).toBe(true);
 	});
+
+	it('normalizes absolute IIS href responses', async () => {
+		vi.clearAllMocks();
+
+		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
+		vi.mocked(requestUrl).mockResolvedValue({
+			headers: {},
+			text: `<?xml version="1.0"?>
+<d:multistatus xmlns:d="DAV:">
+  <d:response>
+    <d:href>http://192.168.1.165:8000/obsidian_sync/</d:href>
+    <d:propstat>
+      <d:prop><d:resourcetype><d:collection/></d:resourcetype></d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+  <d:response>
+    <d:href>http://192.168.1.165:8000/obsidian_sync/Folder%20A/Note.md</d:href>
+    <d:propstat>
+      <d:prop>
+        <d:resourcetype/>
+        <d:getcontentlength>7</d:getcontentlength>
+      </d:prop>
+      <d:status>HTTP/1.1 200 OK</d:status>
+    </d:propstat>
+  </d:response>
+</d:multistatus>`,
+		} as never);
+		mockParsedResponse([
+			{
+				href: 'http://192.168.1.165:8000/obsidian_sync/',
+				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
+			},
+			{
+				href: 'http://192.168.1.165:8000/obsidian_sync/Folder%20A/Note.md',
+				propstat: {
+					prop: { getcontentlength: '7', resourcetype: {} },
+					status: 'HTTP/1.1 200 OK',
+				},
+			},
+		]);
+
+		const files = await getDirectoryContents(
+			'http://192.168.1.165:8000/',
+			'token',
+			'/obsidian_sync/',
+		);
+
+		expect(files).toHaveLength(1);
+		expect(files[0].path).toBe('/obsidian_sync/Folder A/Note.md');
+		expect(files[0].isDir).toBe(false);
+		expect((files[0] as FileStatModel).size).toBe(7);
+	});
 });
