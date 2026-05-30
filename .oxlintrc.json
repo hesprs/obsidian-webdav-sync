@@ -56,7 +56,7 @@
 					"snakeCase": false,
 					"pascalCase": true
 				},
-				"ignore": "zh-Hans.ts"
+				"ignore": "zh-(Hans|Hant).ts"
 			}
 		],
 		"unicorn/consistent-function-scoping": "off",

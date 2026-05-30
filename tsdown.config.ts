@@ -18,7 +18,7 @@ export default defineConfig({
 	],
 	css: {
 		fileName: 'styles.css',
-		minify: !dev,
+		minify: true,
 		postcss: {
 			plugins: [UnoCSS(), postcssMergeRules()],
 		},
@@ -56,7 +56,7 @@ export default defineConfig({
 			conditionNames: ['browser', 'import', 'module', 'default'],
 		},
 	},
-	minify: !dev,
+	minify: true,
 	outputOptions: {
 		codeSplitting: false,
 		file: 'dist/main.js',
