@@ -65,7 +65,7 @@ function diff3MergeStrings(
 	});
 
 	if (regions.some((region) => !region.ok)) return false;
-	return regions.flatMap((region) => region.ok).join('\n');
+	return regions.flatMap((region) => region.ok ?? []).join('\n');
 }
 
 export function resolveByIntelligentMerge(params: IntelligentMergeParams): IntelligentMergeResult {
