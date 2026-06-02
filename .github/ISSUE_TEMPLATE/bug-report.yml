@@ -33,7 +33,7 @@ body:
     attributes:
       label: WebDAV Service Provider
       description: The WebDAV service from which provider are you using?
-      placeholder: e.g., self-hosted [...] NAS
+      placeholder: e.g., Nextcloud
     validations:
       required: true
 
@@ -56,6 +56,7 @@ body:
       label: Support Log
       description: Please go to plugin settings - `Development settings` - `Support report`, click `Export to note`, copy and paste the content of the full log. This will be automatically formatted into code, so no need for backticks.
       render: shell
+      placeholder: If the support log contains information that you think is improper to disclose, only pasting lines with `ERROR` labels is OK.
 
   - type: checkboxes
     id: terms
@@ -74,5 +75,4 @@ body:
         - I have checked historical bugs and there's no entry fitting this scenario.
         - I have confirmed that the issue doesn't contain any sensitive information.
         - Issues caused by non-standard WebDAV server configurations **will not be fixed**.
-        - Issues where maintainers has requested clarification / coordinated testing but the reporter hasn't provide any further information will be closed after 72 hours.
-        - Issues without enough information will be closed after 72 hours.
+        - Issues where maintainers have requested clarification / coordinated testing but the reporter hasn't provide any further information will be closed after 72 hours.

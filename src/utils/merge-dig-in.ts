@@ -36,10 +36,15 @@ export default function mergeDigIn(
 				region.conflict?.a as Array<string>,
 				region.conflict?.b as Array<string>,
 			);
-			for (const inner of c) {
-				conflict = true;
-				result.push(aSection, ...inner.buffer1, xSection, ...inner.buffer2, bSection);
-			}
+
+			for (const inner of c)
+				// https://github.com/bhousel/node-diff3/issues/88
+				if ((inner as { common?: Array<string> }).common)
+					result.push(...(inner as unknown as { common: Array<string> }).common);
+				else {
+					conflict = true;
+					result.push(aSection, ...inner.buffer1, xSection, ...inner.buffer2, bSection);
+				}
 		}
 	});
 

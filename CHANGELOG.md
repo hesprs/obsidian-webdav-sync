@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.11 - 2026-06-02
+
+- Fixed the bug that causes smart merge to fail due to undefined iterator.
+
 ## Obsidian WebDAV Sync v2.5.10 - 2026-05-30
 
 - Added traditional Chinese translation.
@@ -23,7 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ## Obsidian WebDAV Sync v2.5.7 - 2026-05-18
 
-- Fixed traversal errors when encryption is enabled that makes the plugin think almost remote files are deleted.
+- Fixed traversal errors that encryption makes the plugin think almost remote files are deleted.
 
 ## Obsidian WebDAV Sync v2.5.6 - 2026-05-17
 
