@@ -170,10 +170,9 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			},
 			NORECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
-				logger.debug(
-					`Detected conflict between local file \`${localPath}\` and remote file ${remotePath}`,
-					{ reason: 'both local and remote files exist without a record' },
-				);
+				logger.debug(`Detected conflict in file \`${localPath}\``, {
+					reason: 'both local and remote files exist without a record',
+				});
 				routeConflict({
 					local,
 					options,
@@ -213,7 +212,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			},
 			RECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
-				logger.debug(`Detected conflict between \`${localPath}\` and \`${remotePath}\``, {
+				logger.debug(`Detected conflict in \`${localPath}\``, {
 					reason: 'both local and remote files changed',
 				});
 				routeConflict({
@@ -403,32 +402,40 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`Replace remote file \`${remotePath}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				tasks.push(
+					taskFactory.createRemoveRemoteTask({ ...options, remote }),
+					taskFactory.createMkdirRemoteTask({ ...options, local }),
+				);
 			},
 			LOCAL_FILE_PUSH: () => {
 				if (local.isDir) return;
 				logger.debug(`Replace remote directory \`${remotePath}\` with local file`, {
 					reason: 'local file changed but not remote',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				tasks.push(
+					taskFactory.createRemoveRemoteTask({ ...options, remote }),
+					taskFactory.createPushTask({ ...options, local }),
+				);
 			},
 			REMOTE_DIR_PULL: () => {
 				if (!remote.isDir) return;
 				logger.debug(`Replace local file \`${localPath}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
-				tasks.push(taskFactory.createRemoveLocalTask({ ...options, local }));
-				tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
+				tasks.push(
+					taskFactory.createRemoveLocalTask({ ...options, local }),
+					taskFactory.createMkdirLocalTask({ ...options, remote }),
+				);
 			},
 			REMOTE_FILE_PULL: () => {
 				if (!remote.isDir) return;
 				logger.debug(`Replace local directory \`${localPath}\` with remote file`, {
 					reason: 'remote file changed but not local',
 				});
-				tasks.push(taskFactory.createRemoveLocalTask({ ...options, local }));
-				tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
+				tasks.push(
+					taskFactory.createRemoveLocalTask({ ...options, local }),
+					taskFactory.createMkdirLocalTask({ ...options, remote }),
+				);
 			},
 		};
 

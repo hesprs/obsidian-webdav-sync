@@ -12,7 +12,7 @@ function renderFailedTaskRow(itemEl: HTMLDivElement, task: SyncFailedTaskInfo) {
 	setTooltip(icon, taskName);
 
 	main.createSpan({ cls: 'font-semibold', text: taskName });
-	main.createSpan({ cls: 'text-[var(--text-muted)]', text: task.localPath });
+	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: task.localPath });
 
 	row.createDiv({ cls: 'text-[var(--text-muted)] break-words mt-1', text: task.errorMessage });
 }
@@ -22,9 +22,7 @@ export default function renderFailedTasks(
 	failedTasks: Array<SyncFailedTaskInfo>,
 ): void {
 	detailContainer.empty();
-
 	const tasksContainer = detailContainer.createDiv({ cls: 'w-100% flex flex-col gap-3 p-1.5' });
 	detailContainer.removeClass('hidden');
-
 	failedTasks.forEach((task) => renderFailedTaskRow(tasksContainer, task));
 }
