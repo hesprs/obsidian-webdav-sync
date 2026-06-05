@@ -30,7 +30,9 @@ export default class SyncExecutorService {
 
 	async executeSync(request: SyncExecutionRequest): Promise<SyncExecutionResult> {
 		if (this.plugin.isSyncing) return { executed: false };
+		logger.debug('checkpoint 11')
 		if (!this.plugin.isAccountConfigured()) return { executed: false };
+		logger.debug('checkpoint 12')
 		await waitUntil(() => !this.plugin.isSyncing, 500);
 		logger.pushRunId(request.runId);
 

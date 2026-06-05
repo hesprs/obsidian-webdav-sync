@@ -2,10 +2,12 @@ import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
 import t from '~/i18n';
 import launchManualSync from '~/utils/launch-manual-sync';
+import logger from '~/utils/logger';
 
 export default class SyncConfirmModal extends Modal {
 	constructor(private readonly plugin: WebDAVSyncPlugin) {
 		super(plugin.app);
+		logger.debug('checkpoint 6')
 	}
 
 	onOpen() {
@@ -37,6 +39,7 @@ export default class SyncConfirmModal extends Modal {
 					.setCta()
 					.onClick(() => {
 						this.close();
+						logger.debug('checkpoint 8')
 						launchManualSync(this.plugin, { skipConfirmation: true });
 					}),
 			)
@@ -46,6 +49,7 @@ export default class SyncConfirmModal extends Modal {
 	}
 
 	onClose() {
+		logger.debug('checkpoint 7')
 		this.contentEl.empty();
 	}
 }
