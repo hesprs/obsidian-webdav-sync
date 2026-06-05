@@ -4,7 +4,6 @@ import type { SyncTrigger } from '~/events';
 import { syncRun } from '~/events';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
-import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 import type {
 	default as SyncExecutorService,
@@ -37,7 +36,6 @@ export default class SyncSchedulerService {
 	}
 
 	requestSync(options: SyncOptions & { source: SyncTrigger }): Promise<boolean> {
-		logger.debug('checkpoint 9');
 		return new Promise<boolean>((resolve, reject) => {
 			this.pendingRequests.push({
 				...options,
@@ -161,7 +159,6 @@ export default class SyncSchedulerService {
 
 	private async flush() {
 		this.isFlushing = true;
-		logger.debug('checkpoint 10');
 		const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
 		try {
 			const result = await this.syncExecutor.executeSync(this.reduceBatch(batch));
