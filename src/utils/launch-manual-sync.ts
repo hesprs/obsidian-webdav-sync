@@ -13,26 +13,26 @@ export default function launchManualSync(
 	plugin: WebDAVSyncPlugin,
 	options: LaunchManualSyncOptions = {},
 ): void {
-	logger.debug('checkpoint 1')
+	logger.debug('checkpoint 1');
 	if (plugin.isSyncing) {
-		logger.debug('checkpoint 2')
+		logger.debug('checkpoint 2');
 		plugin.observabilityService.showProgressModal();
 		return;
 	}
 
 	if (!plugin.isAccountConfigured()) {
-		logger.debug('checkpoint 3')
+		logger.debug('checkpoint 3');
 		new Notice(t('sync.error.accountNotConfigured'));
 		return;
 	}
 
 	if (plugin.settings.confirmBeforeSync && !options.skipConfirmation) {
-		logger.debug('checkpoint 4')
+		logger.debug('checkpoint 4');
 		new SyncConfirmModal(plugin).open();
 		return;
 	}
 
-	logger.debug('checkpoint 5')
+	logger.debug('checkpoint 5');
 	void plugin.syncSchedulerService.requestSync({
 		runKind: SyncRunKind.normal,
 		source: 'manual',
