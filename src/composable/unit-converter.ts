@@ -25,11 +25,11 @@ export default function createUnitConverter<T extends UnitMap>({
 			return `${round(scaled, 2)} ${entry[0]}`;
 		},
 		parse: (input: string): number | undefined => {
-			const match = /^(-?\d+(?:\.\d+)?)\s*([a-z]*)$/i.exec(input.trim());
-			if (!match) return undefined;
-			const num = parseFloat(match[1]);
+			const match = /^(?<value>-?\d+(?:\.\d+)?)\s*(?<unit>[a-z]*)$/i.exec(input.trim());
+			if (!match?.groups) return undefined;
+			const num = parseFloat(match.groups.value);
 			if (!Number.isFinite(num) || num < 0) return undefined;
-			const rawUnit = (match[2] || (defaultUnit as string)).toLowerCase();
+			const rawUnit = (match.groups.unit || (defaultUnit as string)).toLowerCase();
 			return rawUnit in unitMap ? num * unitMap[rawUnit] : undefined;
 		},
 	};

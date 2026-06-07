@@ -1,43 +1,67 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
 import type { FileStatModel } from '~/types';
-import parseXML from '~/composable/parse-xml';
-import requestUrl from '~/utils/request-url';
 
-vi.mock('~/utils/request-url', () => ({
-	default: vi.fn(),
+type RequestUrlResponse = {
+	headers: Record<string, string | undefined>;
+	text: string;
+};
+
+type ParsedResponse = {
+	multistatus: {
+		response: Array<unknown>;
+	};
+};
+
+let requestUrlResponse: RequestUrlResponse;
+let parsedResponse: ParsedResponse;
+const requestUrlMock = mock(async () => requestUrlResponse);
+const parseXMLMock = mock(() => parsedResponse);
+
+const requestUrlModule = await import('~/utils/request-url');
+const parseXMLModule = await import('~/composable/parse-xml');
+
+void mock.module('~/utils/request-url', () => ({
+	default: requestUrlMock,
 }));
-vi.mock('~/composable/parse-xml', () => ({
-	default: vi.fn(),
+void mock.module('~/composable/parse-xml', () => ({
+	default: parseXMLMock,
 }));
-vi.mock('~/utils/is-503-error', () => ({
-	is503Error: () => false,
-}));
-vi.mock('~/utils/logger', () => ({
-	default: {
-		debug: vi.fn(),
-		error: vi.fn(),
-	},
-}));
-vi.mock('~/utils/sleep', () => ({ default: vi.fn() }));
 
-describe('getDirectoryContents', () => {
-	const parseXMLMock = vi.mocked(parseXML);
+const webdavApi = import('../src/fs/webdav/api');
 
-	function mockParsedResponse(response: Array<unknown>): void {
-		parseXMLMock.mockReturnValueOnce({
-			multistatus: {
-				response,
-			},
-		} as never);
-	}
+beforeEach(() => {
+	requestUrlResponse = {
+		headers: {},
+		text: '',
+	};
+	parsedResponse = {
+		multistatus: {
+			response: [],
+		},
+	};
+});
 
-	it('parses absolute href responses (Nextcloud style)', async () => {
-		vi.clearAllMocks();
+afterAll(() => {
+	void mock.module('~/utils/request-url', () => requestUrlModule);
+	void mock.module('~/composable/parse-xml', () => parseXMLModule);
+});
 
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+function mockDirectoryResponse(xml: string, responses: Array<unknown>): void {
+	requestUrlResponse = {
+		headers: {},
+		text: xml,
+	};
+	parsedResponse = {
+		multistatus: {
+			response: responses,
+		},
+	};
+}
+
+test('parses absolute href responses from Nextcloud', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/remote.php/dav/files/alice/Notes/</d:href>
@@ -72,8 +96,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/remote.php/dav/files/alice/Notes/',
 				propstat: {
@@ -106,30 +129,28 @@ describe('getDirectoryContents', () => {
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents(
-			'https://cloud.example.com/remote.php/dav/files/alice',
-			'token',
-			'/Notes',
-		);
+	const files = await getDirectoryContents(
+		'https://cloud.example.com/remote.php/dav/files/alice',
+		'token',
+		'/Notes',
+	);
 
-		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.path)).toStrictEqual([
-			'/Notes/Folder A/',
-			'/Notes/Project Plan.md',
-		]);
-		expect(files[0].isDir).toBe(true);
-		expect(files[1].isDir).toBe(false);
-	});
+	expect(files).toHaveLength(2);
+	expect(files.map((file) => file.path)).toStrictEqual([
+		'/Notes/Folder A/',
+		'/Notes/Project Plan.md',
+	]);
+	expect(files[0].isDir).toBe(true);
+	expect(files[1].isDir).toBe(false);
+});
 
-	it('parses path-only href responses (server-relative style)', async () => {
-		vi.clearAllMocks();
-
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('parses path-only href responses from server-relative listings', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/vault/Notes/</d:href>
@@ -151,8 +172,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/vault/Notes/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -164,27 +184,20 @@ describe('getDirectoryContents', () => {
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents(
-			'https://dav.example.com/vault',
-			'token',
-			'/Notes',
-		);
+	const files = await getDirectoryContents('https://dav.example.com/vault', 'token', '/Notes');
 
-		expect(files).toHaveLength(1);
-		const firstFile = files[0];
-		expect(firstFile.path).toBe('/Notes/中文.md');
-		expect((firstFile as FileStatModel).size).toBe(4);
-	});
+	expect(files).toHaveLength(1);
+	expect(files[0].path).toBe('/Notes/中文.md');
+	expect((files[0] as FileStatModel).size).toBe(4);
+});
 
-	it('handles propstat arrays and picks successful prop values', async () => {
-		vi.clearAllMocks();
-
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('picks successful prop values from propstat arrays', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/dav/Notes/</d:href>
@@ -219,8 +232,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/dav/Notes/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -242,22 +254,22 @@ describe('getDirectoryContents', () => {
 					},
 				],
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
+	const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
-		expect(files).toHaveLength(2);
-		expect(files.map((f) => f.path)).toStrictEqual(['/Notes/Folder/', '/Notes/file.md']);
-		expect(files[0].isDir).toBe(true);
-		expect(files[1].isDir).toBe(false);
-		expect((files[1] as FileStatModel).size).toBe(9);
-	});
+	expect(files).toHaveLength(2);
+	expect(files.map((file) => file.path)).toStrictEqual(['/Notes/Folder/', '/Notes/file.md']);
+	expect(files[0].isDir).toBe(true);
+	expect(files[1].isDir).toBe(false);
+	expect((files[1] as FileStatModel).size).toBe(9);
+});
 
-	it('skips malformed response items without prop values', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('skips malformed response items without prop values', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/dav/Notes/</d:href>
@@ -283,8 +295,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/dav/Notes/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -300,20 +311,20 @@ describe('getDirectoryContents', () => {
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
+	const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/Notes');
 
-		expect(files).toHaveLength(1);
-		expect(files[0].path).toBe('/Notes/Ok.md');
-		expect((files[0] as FileStatModel).size).toBe(5);
-	});
+	expect(files).toHaveLength(1);
+	expect(files[0].path).toBe('/Notes/Ok.md');
+	expect((files[0] as FileStatModel).size).toBe(5);
+});
 
-	it('keeps nested absolute path when listing non-root directory', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('keeps nested absolute paths when listing a subdirectory', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/dav/test/</d:href>
@@ -330,8 +341,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/dav/test/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -340,20 +350,20 @@ describe('getDirectoryContents', () => {
 				href: '/dav/test/abc/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/test/');
+	const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/test/');
 
-		expect(files).toHaveLength(1);
-		expect(files[0].path).toBe('/test/abc/');
-		expect(files[0].isDir).toBe(true);
-	});
+	expect(files).toHaveLength(1);
+	expect(files[0].path).toBe('/test/abc/');
+	expect(files[0].isDir).toBe(true);
+});
 
-	it('decodes XML entities', async () => {
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('decodes XML entities in href values', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>/dav/&lt;test&gt;/</d:href>
@@ -370,8 +380,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: '/dav/<test>/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -380,26 +389,20 @@ describe('getDirectoryContents', () => {
 				href: '/dav/<test>/ab & c/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents(
-			'https://dav.example.com/dav',
-			'token',
-			'/<test>/',
-		);
+	const files = await getDirectoryContents('https://dav.example.com/dav', 'token', '/<test>/');
 
-		expect(files).toHaveLength(1);
-		expect(files[0].path).toBe('/<test>/ab & c/');
-		expect(files[0].isDir).toBe(true);
-	});
+	expect(files).toHaveLength(1);
+	expect(files[0].path).toBe('/<test>/ab & c/');
+	expect(files[0].isDir).toBe(true);
+});
 
-	it('normalizes absolute IIS href responses', async () => {
-		vi.clearAllMocks();
-
-		const getDirectoryContents = (await import('../src/fs/webdav/api')).getDirectoryContents;
-		vi.mocked(requestUrl).mockResolvedValue({
-			headers: {},
-			text: `<?xml version="1.0"?>
+test('normalizes absolute IIS href responses', async () => {
+	const { getDirectoryContents } = await webdavApi;
+	mockDirectoryResponse(
+		`<?xml version="1.0"?>
 <d:multistatus xmlns:d="DAV:">
   <d:response>
     <d:href>http://192.168.1.165:8000/obsidian_sync/</d:href>
@@ -419,8 +422,7 @@ describe('getDirectoryContents', () => {
     </d:propstat>
   </d:response>
 </d:multistatus>`,
-		} as never);
-		mockParsedResponse([
+		[
 			{
 				href: 'http://192.168.1.165:8000/obsidian_sync/',
 				propstat: { prop: { resourcetype: { collection: {} } }, status: 'HTTP/1.1 200 OK' },
@@ -432,17 +434,17 @@ describe('getDirectoryContents', () => {
 					status: 'HTTP/1.1 200 OK',
 				},
 			},
-		]);
+		],
+	);
 
-		const files = await getDirectoryContents(
-			'http://192.168.1.165:8000/',
-			'token',
-			'/obsidian_sync/',
-		);
+	const files = await getDirectoryContents(
+		'http://192.168.1.165:8000/',
+		'token',
+		'/obsidian_sync/',
+	);
 
-		expect(files).toHaveLength(1);
-		expect(files[0].path).toBe('/obsidian_sync/Folder A/Note.md');
-		expect(files[0].isDir).toBe(false);
-		expect((files[0] as FileStatModel).size).toBe(7);
-	});
+	expect(files).toHaveLength(1);
+	expect(files[0].path).toBe('/obsidian_sync/Folder A/Note.md');
+	expect(files[0].isDir).toBe(false);
+	expect((files[0] as FileStatModel).size).toBe(7);
 });

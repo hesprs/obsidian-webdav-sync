@@ -21,6 +21,47 @@ export type AppProps = {
 	onClose: () => void;
 };
 
+type SingleColProps = {
+	fs: fs;
+	showNewFolder: () => boolean;
+	setShowNewFolder: (value: boolean) => void;
+	cwd: () => string | undefined;
+	enter: (path: string) => void;
+};
+
+function SingleCol(props: SingleColProps) {
+	const list = createFileList();
+	return (
+		<div class="flex-1 flex flex-col overflow-y-auto scrollbar-hide">
+			<Show when={props.showNewFolder()}>
+				<NewFolder
+					class="mt-1"
+					onCancel={() => {
+						props.setShowNewFolder(false);
+					}}
+					onConfirm={(name) => void createFolder(props, list.refresh, name)}
+				/>
+			</Show>
+			<list.FileList
+				fs={props.fs}
+				path={props.cwd() ?? ''}
+				onClick={(f) => props.enter(f.path)}
+			/>
+		</div>
+	);
+}
+
+async function createFolder(props: SingleColProps, refresh: () => void, name: string) {
+	const target = joinRemotePath(props.cwd() ?? '/', name);
+	try {
+		await Promise.resolve(props.fs.mkdirs(target));
+		props.setShowNewFolder(false);
+		refresh();
+	} catch (error) {
+		if (error instanceof Error) new Notice(error.message);
+	}
+}
+
 function App(props: AppProps) {
 	const [stack, setStack] = createSignal(['/']);
 	const [showNewFolder, setShowNewFolder] = createSignal(false);
@@ -34,38 +75,15 @@ function App(props: AppProps) {
 		setStack((newStack) => (newStack.length > 1 ? newStack.slice(0, -1) : newStack));
 	}
 
-	async function createFolder(name: string, refresh: () => void) {
-		const target = joinRemotePath(cwd() ?? '/', name);
-		try {
-			await Promise.resolve(props.fs.mkdirs(target));
-			setShowNewFolder(false);
-			refresh();
-		} catch (error) {
-			if (error instanceof Error) new Notice(error.message);
-		}
-	}
-
-	const SingleCol = () => {
-		const list = createFileList();
-		return (
-			<div class="flex-1 flex flex-col overflow-y-auto scrollbar-hide">
-				<Show when={showNewFolder()}>
-					<NewFolder
-						class="mt-1"
-						onCancel={() => {
-							setShowNewFolder(false);
-						}}
-						onConfirm={(name) => void createFolder(name, list.refresh)}
-					/>
-				</Show>
-				<list.FileList fs={props.fs} path={cwd() ?? ''} onClick={(f) => enter(f.path)} />
-			</div>
-		);
-	};
-
 	return (
 		<div class="flex flex-col gap-4 h-50vh">
-			<SingleCol />
+			<SingleCol
+				cwd={cwd}
+				enter={enter}
+				fs={props.fs}
+				setShowNewFolder={setShowNewFolder}
+				showNewFolder={showNewFolder}
+			/>
 			<div class="flex gap-2 text-xs">
 				<span>{t('dirSelector.currentPath', { path: cwd() ?? '/' })}</span>
 			</div>

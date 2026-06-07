@@ -1,4 +1,4 @@
-type TraversalProgress = {
+export type TraversalProgress = {
 	processedDirectories: number;
 	totalDirectories: number;
 	currentDirectory?: string;

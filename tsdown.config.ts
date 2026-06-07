@@ -25,7 +25,7 @@ export default defineConfig({
 		transformer: 'postcss',
 	},
 	define: {
-		'process.env.VERSION': JSON.stringify(man.version),
+		'Bun.env.VERSION': JSON.stringify(man.version),
 	},
 	deps: {
 		neverBundle: [

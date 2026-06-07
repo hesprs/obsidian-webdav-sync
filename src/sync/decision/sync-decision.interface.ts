@@ -44,19 +44,19 @@ export type OptionsWithBothFileStats = {
 } & TaskOptions;
 
 export type TaskFactory = {
-	createPullTask(options: OptionsWithRemoteFileStat): BaseTask<OptionsWithRemoteFileStat>;
-	createPushTask(options: OptionsWithLocalFileStat): BaseTask<OptionsWithLocalFileStat>;
-	createMergeTask(options: OptionsWithBothFileStats): BaseTask<OptionsWithBothFileStats>;
-	createRemoveLocalTask(options: OptionsWithLocalStat): BaseTask<OptionsWithLocalStat>;
-	createRemoveRemoteTask(options: OptionsWithRemoteStat): BaseTask<OptionsWithRemoteStat>;
-	createMkdirLocalTask(
+	createPullTask: (options: OptionsWithRemoteFileStat) => BaseTask<OptionsWithRemoteFileStat>;
+	createPushTask: (options: OptionsWithLocalFileStat) => BaseTask<OptionsWithLocalFileStat>;
+	createMergeTask: (options: OptionsWithBothFileStats) => BaseTask<OptionsWithBothFileStats>;
+	createRemoveLocalTask: (options: OptionsWithLocalStat) => BaseTask<OptionsWithLocalStat>;
+	createRemoveRemoteTask: (options: OptionsWithRemoteStat) => BaseTask<OptionsWithRemoteStat>;
+	createMkdirLocalTask: (
 		options: OptionsWithRemoteFolderStat,
-	): BaseTask<OptionsWithRemoteFolderStat>;
-	createMkdirRemoteTask(
+	) => BaseTask<OptionsWithRemoteFolderStat>;
+	createMkdirRemoteTask: (
 		options: OptionsWithLocalFolderStat,
-	): BaseTask<OptionsWithLocalFolderStat>;
-	createCleanRecordTask(options: TaskOptions): BaseTask;
-	createAddRecordTask(options: OptionsWithBothStats): BaseTask<OptionsWithBothStats>;
+	) => BaseTask<OptionsWithLocalFolderStat>;
+	createCleanRecordTask: (options: TaskOptions) => BaseTask;
+	createAddRecordTask: (options: OptionsWithBothStats) => BaseTask<OptionsWithBothStats>;
 };
 
 export type SyncDecisionInput = {

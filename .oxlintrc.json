@@ -1,6 +1,6 @@
 {
 	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"plugins": ["unicorn", "typescript", "oxc", "import", "react", "vitest"],
+	"plugins": ["unicorn", "typescript", "oxc", "import", "react"],
 	"categories": {
 		"correctness": "warn",
 		"perf": "warn",
@@ -68,32 +68,45 @@
 		"eslint/no-underscore-dangle": ["warn", { "allow": ["__root__"] }],
 		"unicorn/number-literal-case": "off",
 		"eslint/no-multi-assign": "off",
-		"jest/prefer-expect-assertions": "off",
-		"vitest/prefer-expect-assertions": "off",
-		"vitest/no-importing-vitest-globals": "off",
-		"vitest/prefer-import-in-mock": "off",
-		"jest/no-untyped-mock-factory": "off",
-		"vitest/require-mock-type-parameters": "off",
-		"vitest/prefer-to-be-truthy": "off",
-		"vitest/prefer-to-be-falsy": "off",
-		"vitest/prefer-describe-function-title": "off",
-		"jest/max-expects": "off",
-		"vitest/max-expects": "off",
-		"jest/prefer-ending-with-an-expect": "off",
-		"jest/no-conditional-expect": "off",
-		"vitest/no-conditional-expect": "off",
-		"jest/require-hook": "off",
-		"vitest/prefer-called-once": "off",
-		"react/jsx-handler-names": "off"
+		"react/jsx-handler-names": "off",
+		"typescript/method-signature-style": ["warn", "property"]
 	},
 	"env": {
 		"builtin": true,
-		"browser": true,
-		"node": true
+		"browser": true
 	},
 	"globals": {
-		"activeDocument": "readonly"
+		"activeDocument": "readonly",
+		"Bun": "readonly",
+		"process": "readonly"
 	},
+	"overrides": [
+		{
+			"files": ["test/**/*.ts"],
+			"plugins": ["unicorn", "typescript", "oxc", "import", "vitest"],
+			"rules": {
+				"jest/prefer-expect-assertions": "off",
+				"vitest/prefer-expect-assertions": "off",
+				"vitest/no-importing-vitest-globals": "off",
+				"vitest/prefer-import-in-mock": "off",
+				"jest/no-untyped-mock-factory": "off",
+				"vitest/require-mock-type-parameters": "off",
+				"vitest/prefer-to-be-truthy": "off",
+				"vitest/prefer-to-be-falsy": "off",
+				"vitest/prefer-describe-function-title": "off",
+				"jest/max-expects": "off",
+				"vitest/max-expects": "off",
+				"jest/prefer-ending-with-an-expect": "off",
+				"jest/no-conditional-expect": "off",
+				"vitest/no-conditional-expect": "off",
+				"jest/require-hook": "off",
+				"vitest/prefer-called-once": "off",
+				"import/no-namespace": "off",
+				"vitest/prefer-importing-vitest-globals": "off",
+				"vitest/require-hook": "off"
+			}
+		}
+	],
 	"ignorePatterns": ["**/node_modules/**", "**/dist/**"],
 	"options": {
 		"typeAware": true

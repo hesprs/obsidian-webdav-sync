@@ -48,7 +48,7 @@ export default function createI18n<TranslationShape extends StringTree>(
 
 function interpolate(template: string, params?: InterpolationValues): string {
 	if (params === undefined) return template;
-	return template.replace(/\{\{\s*([^{}\s]+)\s*\}\}/g, (match, key: string) => {
+	return template.replace(/\{\{\s*(?<key>[^{}\s]+)\s*\}\}/g, (match, key: string) => {
 		const value = params[key];
 		return value === undefined ? match : String(value);
 	});

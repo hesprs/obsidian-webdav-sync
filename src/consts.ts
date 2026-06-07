@@ -1,4 +1,5 @@
 import { requireApiVersion } from 'obsidian';
+
 export const VALID_REQURL = requireApiVersion('1.12.3');
 
-export const VERSION = process.env.VERSION ?? '2.1.0';
+export const VERSION = Bun.env.VERSION ?? '2.1.0';

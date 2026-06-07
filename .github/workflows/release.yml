@@ -18,20 +18,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: latest
-          cache: 'pnpm'
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Extract release notes
-        run: pnpm notes "${{ github.ref_name }}"
+        run: bun notes "${{ github.ref_name }}"
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Detect release mode
         run: |
@@ -44,9 +38,9 @@ jobs:
       - name: Build plugin
         run: |
           if [ "$IS_PRERELEASE" = "true" ]; then
-            pnpm dev
+            bun dev
           else
-            pnpm build
+            bun run build
           fi
 
       - name: Attest plugin artifacts
