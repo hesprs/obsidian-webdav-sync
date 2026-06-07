@@ -13,32 +13,15 @@ type ParsedResponse = {
 };
 
 let requestUrlResponse: RequestUrlResponse;
-
 let parsedResponse: ParsedResponse;
-
 const requestUrlMock = mock(async () => requestUrlResponse);
 const parseXMLMock = mock(() => parsedResponse);
-const loggerDebugMock = mock(() => undefined);
-const loggerErrorMock = mock(() => undefined);
-const sleepMock = mock(async () => undefined);
 
 void mock.module('~/utils/request-url', () => ({
 	default: requestUrlMock,
 }));
 void mock.module('~/composable/parse-xml', () => ({
 	default: parseXMLMock,
-}));
-void mock.module('~/utils/is-retryable-error', () => ({
-	default: mock(() => false),
-}));
-void mock.module('~/utils/logger', () => ({
-	default: {
-		debug: loggerDebugMock,
-		error: loggerErrorMock,
-	},
-}));
-void mock.module('~/utils/sleep', () => ({
-	default: sleepMock,
 }));
 
 const webdavApi = import('../src/fs/webdav/api');

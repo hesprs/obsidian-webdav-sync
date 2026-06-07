@@ -1,18 +1,4 @@
-import { expect, mock, test } from 'bun:test';
-
-await mock.module('~/settings', () => ({
-	usePlugin: async () =>
-		({
-			getToken: () => 'token',
-			settings: {
-				serverUrl: 'https://dav.example.com/dav',
-			},
-		}) as never,
-	useSettings: async () => ({
-		maxThroughputConcurrency: { enabled: false, value: 0 },
-		useGitStyle: false,
-	}),
-}));
+import { expect, test } from 'bun:test';
 
 const [
 	{ default: MkdirLocalTask },
