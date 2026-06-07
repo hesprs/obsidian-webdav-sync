@@ -1,19 +1,13 @@
-import { afterAll, expect, mock, test } from 'bun:test';
+import { expect, mock, test } from 'bun:test';
 
 const getDirectoryContentsMock = mock(() =>
 	Promise.resolve([] as Array<{ isDir: boolean; path: string }>),
 );
 
-const webdavApiModule = await import('~/fs/webdav/api');
-
 void mock.module('~/fs/webdav/api', () => ({
 	getDirectoryContents: getDirectoryContentsMock,
 	getStat: mock(() => Promise.resolve({} as never)),
 }));
-
-afterAll(() => {
-	void mock.module('~/fs/webdav/api', () => webdavApiModule);
-});
 
 const { traverseWebDAV } = await import('~/fs/webdav');
 
