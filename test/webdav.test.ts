@@ -1,4 +1,4 @@
-import { afterAll, beforeEach, expect, mock, test } from 'bun:test';
+import { beforeEach, expect, mock, test } from 'bun:test';
 import type { FileStatModel } from '~/types';
 
 type RequestUrlResponse = {
@@ -16,9 +16,6 @@ let requestUrlResponse: RequestUrlResponse;
 let parsedResponse: ParsedResponse;
 const requestUrlMock = mock(async () => requestUrlResponse);
 const parseXMLMock = mock(() => parsedResponse);
-
-const requestUrlModule = await import('~/utils/request-url');
-const parseXMLModule = await import('~/composable/parse-xml');
 
 void mock.module('~/utils/request-url', () => ({
 	default: requestUrlMock,
@@ -39,11 +36,6 @@ beforeEach(() => {
 			response: [],
 		},
 	};
-});
-
-afterAll(() => {
-	void mock.module('~/utils/request-url', () => requestUrlModule);
-	void mock.module('~/composable/parse-xml', () => parseXMLModule);
 });
 
 function mockDirectoryResponse(xml: string, responses: Array<unknown>): void {

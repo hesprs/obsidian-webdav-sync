@@ -13,7 +13,7 @@
 		"lint": "oxlint --fix && oxfmt",
 		"check": "tsc && oxlint && oxfmt --check",
 		"notes": "bun scripts/release-notes.ts",
-		"tests": "bun --preload=./test/mocks test"
+		"tests": "bun --preload=./test/mocks --isolate test"
 	},
 	"devDependencies": {
 		"@noble/ciphers": "^2.2.0",
