@@ -38,9 +38,7 @@ export default function mergeDigIn(
 			);
 
 			for (const inner of c)
-				// https://github.com/bhousel/node-diff3/issues/88
-				if ((inner as { common?: Array<string> }).common)
-					result.push(...(inner as unknown as { common: Array<string> }).common);
+				if (inner.common) result.push(...inner.common);
 				else {
 					conflict = true;
 					result.push(aSection, ...inner.buffer1, xSection, ...inner.buffer2, bSection);

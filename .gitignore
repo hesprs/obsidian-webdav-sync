@@ -1,14 +1,5 @@
-**/codemap.md
 plans
-PLAN.md
-LOG.md
-MEMORY.md
-AGENTS.md
-REQUIREMENTS.md
-PROGRESS.md
 
 node_modules
 .ignore
 dist
-.vscode
-.slim

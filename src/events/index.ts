@@ -7,8 +7,8 @@ export type Ref<T> = {
 	(newValue: T): void;
 	value: T;
 	subs: Set<RefMatchingFunc<T>>;
-	subscribe(func: RefMatchingFunc<T>): () => void;
-	unsubscribe(func: RefMatchingFunc<T>): void;
+	subscribe: (func: RefMatchingFunc<T>) => () => void;
+	unsubscribe: (func: RefMatchingFunc<T>) => void;
 };
 
 export function ref<T>(initial: T): Ref<T> {
@@ -36,8 +36,8 @@ export type GeneralArray = ReadonlyArray<unknown>;
 export type Hook<Args extends GeneralArray = []> = {
 	(...args: Args): void;
 	subs: Set<HookMatchingFunc<Args>>;
-	subscribe(callback: HookMatchingFunc<Args>): () => void;
-	unsubscribe(callback: HookMatchingFunc<Args>): void;
+	subscribe: (callback: HookMatchingFunc<Args>) => () => void;
+	unsubscribe: (callback: HookMatchingFunc<Args>) => void;
 };
 
 export function hook<Args extends GeneralArray = []>(): Hook<Args> {

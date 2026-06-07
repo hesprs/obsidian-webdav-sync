@@ -8,6 +8,7 @@ import CommonSettings from './common';
 import ControlsSettings from './controls';
 import DevelopmentSettings from './development';
 import FilterSettings from './filter';
+
 export * from './plugin-instance';
 
 export enum ConflictStrategy {

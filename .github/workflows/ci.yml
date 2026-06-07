@@ -22,23 +22,17 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v6
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: latest
-          cache: 'pnpm'
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: pnpm install
+        run: bun install
 
       - name: Run checks
-        run: pnpm check
+        run: bun check
 
       - name: Run tests
-        run: pnpm test
+        run: bun tests
 
       - name: Run test build
-        run: pnpm build
+        run: bun run build
