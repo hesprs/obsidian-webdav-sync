@@ -1,23 +1,19 @@
-// oxlint-disable import/no-nodejs-modules
-import { exec } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-
-const CHANGELOG_PATH = join(process.cwd(), 'CHANGELOG.md');
-const OUTPUT_PATH = join(process.cwd(), 'release-notes.md');
+const CHANGELOG_PATH = 'CHANGELOG.md';
+const OUTPUT_PATH = 'release-notes.md';
 
 function getSemVer(version: string): string {
-	const match = /(\d+\.\d+\.\d+)/.exec(version);
+	const match = /(?<semver>\d+\.\d+\.\d+)/.exec(version);
 	if (!match)
 		throw new Error(`Invalid version format: ${version}. Expected semver (e.g., 1.0.0).`);
 
-	return match[1];
+	return match.groups?.semver ?? '';
 }
 
-function extractNotes(version: string): string {
-	if (!existsSync(CHANGELOG_PATH)) throw new Error(`CHANGELOG.md not found at ${CHANGELOG_PATH}`);
+async function extractNotes(version: string): Promise<string> {
+	if (!(await Bun.file(CHANGELOG_PATH).exists()))
+		throw new Error(`CHANGELOG.md not found at ${CHANGELOG_PATH}`);
 
-	const content = readFileSync(CHANGELOG_PATH, 'utf8');
+	const content = await Bun.file(CHANGELOG_PATH).text();
 	const lines = content.split('\n');
 	const targetSemVer = getSemVer(version);
 
@@ -44,8 +40,8 @@ function extractNotes(version: string): string {
 	return notes.join('\n').trim();
 }
 
-try {
-	const versionTag = process.argv[2];
+async function main(): Promise<void> {
+	const versionTag = Bun.argv[2];
 
 	if (!versionTag)
 		throw new Error(
@@ -55,12 +51,19 @@ try {
 	console.log(`Extracting release notes for ${versionTag}...`);
 	const notes = versionTag.includes('-')
 		? 'Development release built for debug purpose, not recommended for real usage.'
-		: extractNotes(versionTag);
-	writeFileSync(OUTPUT_PATH, notes);
-	exec('pnpm oxfmt release-notes.md');
+		: await extractNotes(versionTag);
+	await Bun.write(OUTPUT_PATH, notes);
+	Bun.spawnSync({ cmd: ['bun', 'oxfmt', OUTPUT_PATH] });
 
 	console.log(`Successfully wrote release notes to ${OUTPUT_PATH}`);
+}
+
+try {
+	await main();
 } catch (error) {
 	console.error('Error:', error instanceof Error ? error.message : error);
-	process.exit(1);
+	throw error;
 }
+
+// oxlint-disable-next-line unicorn/require-module-specifiers
+export {};

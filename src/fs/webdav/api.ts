@@ -32,9 +32,9 @@ function normalizePath(path: string) {
 
 function isSuccessStatus(status?: string): boolean {
 	if (!status) return true;
-	const match = /\s(\d{3})(?:\s|$)/.exec(status);
+	const match = /\s(?<code>\d{3})(?:\s|$)/.exec(status);
 	if (!match) return false;
-	const code = Number.parseInt(match[1], 10);
+	const code = Number.parseInt(match.groups?.code ?? '', 10);
 	return code >= 200 && code < 300;
 }
 
@@ -58,8 +58,8 @@ function isCollectionResource(resourcetype: WebDAVProp['resourcetype']): boolean
 }
 
 function extractNextLink(linkHeader: string): string | undefined {
-	const matches = /<([^>]+)>;\s*rel="next"/.exec(linkHeader);
-	return matches ? matches[1] : undefined;
+	const matches = /<(?<href>[^>]+)>;\s*rel="next"/.exec(linkHeader);
+	return matches?.groups?.href;
 }
 
 function extractPathname(href: string): string {

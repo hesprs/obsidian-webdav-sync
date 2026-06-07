@@ -6,12 +6,12 @@ import { decryptRemotePathForTraversal } from '~/utils/encryption';
 import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import sleep from '~/utils/sleep';
-import type { OnProgress } from '../fs.interface';
+import type { TraversalProgress } from '../fs.interface';
 import postTraversal from '../post-traversal';
 import { getDirectoryContents } from './api';
 
 type TraverseWebDAVOptions = {
-	onProgress?: OnProgress;
+	onProgress?: (progress: TraversalProgress) => void;
 	throwIfCancelled?: () => void;
 	token: string;
 };

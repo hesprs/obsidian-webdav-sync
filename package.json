@@ -6,44 +6,37 @@
 	"type": "module",
 	"main": "main.js",
 	"scripts": {
-		"dev": "MODE=dev pnpm tsdown",
-		"inspect": "MODE=inspect pnpm tsdown",
+		"dev": "MODE=dev tsdown",
+		"inspect": "MODE=inspect tsdown",
 		"build": "tsdown",
-		"ver": "node scripts/version-bump.ts",
-		"test": "vitest run",
+		"ver": "bun scripts/version-bump.ts",
 		"lint": "oxlint --fix && oxfmt",
 		"check": "tsc && oxlint && oxfmt --check",
-		"notes": "node scripts/release-notes.ts"
+		"notes": "bun scripts/release-notes.ts",
+		"tests": "bun --preload=./test/mocks test"
 	},
 	"devDependencies": {
 		"@noble/ciphers": "^2.2.0",
-		"@tsdown/css": "^0.22.0",
+		"@tsdown/css": "^0.22.2",
+		"@types/bun": "^1.3.14",
 		"@types/glob-to-regexp": "^0.4.4",
-		"@types/node": "^25.7.0",
-		"@unocss/postcss": "66.6.8",
-		"@vitejs/devtools": "^0.1.22",
+		"@unocss/postcss": "66.7.0",
+		"@vitejs/devtools": "^0.3.1",
 		"glob-to-regexp": "^0.4.1",
 		"hash-wasm": "^4.12.0",
-		"localspace": "^1.2.0",
-		"node-diff3": "^3.2.0",
-		"obsidian": "latest",
-		"oxfmt": "^0.49.0",
-		"oxlint": "^1.64.0",
-		"oxlint-tsgolint": "^0.22.1",
+		"localspace": "^1.3.0",
+		"node-diff3": "^3.2.1",
+		"obsidian": "^1.13.0",
+		"oxfmt": "^0.53.0",
+		"oxlint": "^1.68.0",
+		"oxlint-tsgolint": "^0.23.0",
 		"postcss-merge-rules": "^8.0.0",
-		"solid-js": "^1.9.12",
-		"tsdown": "^0.22.0",
+		"solid-js": "^1.9.13",
+		"tsdown": "^0.22.2",
 		"typescript": "^6.0.3",
-		"unocss": "66.6.8",
+		"unocss": "66.7.0",
 		"unplugin-solid": "^1.0.0",
-		"vitest": "^4.1.6",
 		"webdav": "^5.10.0"
 	},
-	"devEngines": {
-		"packageManager": {
-			"name": "pnpm",
-			"version": "^11.2.2",
-			"onFail": "download"
-		}
-	}
+	"packageManager": "bun@1.3.13"
 }
