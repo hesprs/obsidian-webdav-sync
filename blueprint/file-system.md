@@ -19,7 +19,7 @@ The file systems the plugin will majorly be interacting with are the Obsidian Va
 - when stream finishes, `this.move()` `.trash/<random-string>` to the destination location.
 - `this.stat()` and return `mtime`.
 
-`delete()`: wrap `vault.adapter.remove()`
+`delete()`: try to obtain trash file preference from `vault.config.trashOption`, then trash accordingly. If `trashSystem` fails, fallback to `trashLocal`.
 
 `move()`: wrap `vault.adapter.rename()`
 
@@ -28,7 +28,7 @@ The file systems the plugin will majorly be interacting with are the Obsidian Va
 `stat()`:
 
 - wrap `vault.adapter.stat()`
-- convert to the project standard `Stat` format
+- convert to the project standard `Stat` format, `uid` uses Etag if present, otherwise fallback to `mtime`.
 
 `listAll()`: BFS recursive `vault.adapter.stat()` + convert to `Stat` array
 
@@ -46,7 +46,7 @@ The WebDAV abstraction should not use any external libraries. Only use Obsidian 
 
 `write()`: `PUT` request to constructed URL. Try to find `Etag` in the response header. If found, return it. If not found, `this.stat()` immediately to the file just uploaded and return `uid`.
 
-`delete()`: `DELETE` request to the constructed URL. Surface `404` errors where the file has already been deleted.
+`delete()`: `DELETE` request to the constructed URL. Swallow `404` errors where the file has already been deleted.
 
 `mkdir()`: `MKCOL` request to the constructed URL.
 
@@ -72,7 +72,7 @@ All other methods: prepend the base dir to the received key, relay to the origin
 
 Auto-retry requests. Receives an options object including `maxRetry` (number) and `retryableStatusCodes` (array of string).
 
-Only re-assigns the `request` method in the original class (ignore TS complaint) by obtaining it, wrapping with retry logic, and assign back.
+Only re-assigns the `request` method in the original class by obtaining it, wrapping with retry logic, and assign back.
 
 ## Mechanisms
 
@@ -94,7 +94,7 @@ While WebDAV uses:
 File: `https://.../file.md`, `https://.../folder/file.md`
 Folder: `https://.../folder/`, `https://.../folder/folder/`
 
-**Error handling**: Except 404 errors explicitly documented above to surface, other request errors should be thrown fast. No retry needed (which should be handled by the retry shim).
+**Error handling**: Except 404 errors explicitly documented above to swallow, other request errors should be thrown fast. No retry needed (which should be handled by the retry shim).
 
 **Local remote disparity**: The local vault has an intentionally different interface with remote. This is for specific reasons:
 

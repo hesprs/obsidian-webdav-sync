@@ -5,7 +5,13 @@ import type { MaybePromise } from '~/types';
 // oxlint-disable typescript/method-signature-style
 // oxlint-disable typescript/consistent-type-definitions
 
-export interface VaultFs {
+export interface VaultFsInterface {
+	/**
+	 * All keys use unified format:
+	 * - root: `/`
+	 * - file: `note.md`, `folder/note.md`
+	 * - folder: `folder/`, `folder/nested/`
+	 */
 	getUid(): string; // String whose inequality signifies the client is unique
 	read(key: string): MaybePromise<ArrayBuffer>;
 	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
@@ -20,7 +26,7 @@ export interface VaultFs {
 export abstract class RemoteFs<T extends object = object> {
 	constructor(
 		public options: T,
-		protected request = requestUrl,
+		public request: typeof requestUrl = requestUrl,
 	) {}
 	abstract getUid(): string; // String whose inequality signifies the client is unique
 	abstract read(key: string): MaybePromise<ArrayBuffer>;
@@ -33,10 +39,10 @@ export abstract class RemoteFs<T extends object = object> {
 	abstract listAll(key: string, progress?: Ref<Progress>): MaybePromise<Array<Stat>>; // List recursive children under one folder
 }
 
-export type RemoteFsShim = (original: RemoteFs, ...args: Array<any>) => RemoteFs;
+export type RemoteFsShim = (original: RemoteFs, ...args: Array<unknown>) => RemoteFs;
 
 export type FileStat = {
-	isDir: true;
+	isDir: false;
 	key: string;
 	mtime: number;
 	size: number;
@@ -44,7 +50,7 @@ export type FileStat = {
 	uid: string;
 };
 export type FolderStat = {
-	isDir: false;
+	isDir: true;
 	key: string;
 };
 export type Stat = FileStat | FolderStat;
