@@ -72,7 +72,13 @@ All other methods: prepend the base dir to the received key, relay to the origin
 
 Auto-retry requests. Receives an options object including `maxRetry` (number) and `retryableStatusCodes` (array of string).
 
-Only re-assigns the `request` method in the original class by obtaining it, wrapping with retry logic, and assign back.
+Only re-assigns the `request` method in the original class by obtaining it, wrapping with retry logic, and assigning back.
+
+### Rate Limiter Shim
+
+Limit the max concurrency and request interval of remote requests. Receives `maxConcurrency` and `minInterval` as options in the second argument.
+
+Only re-assigns the `request` method in the original class by obtaining it, wrapping with a newly instantiated API limiter composable, and assigning back.
 
 ## Mechanisms
 
@@ -99,6 +105,6 @@ Folder: `https://.../folder/`, `https://.../folder/folder/`
 **Local remote disparity**: The local vault has an intentionally different interface with remote. This is for specific reasons:
 
 - We don't need so many shims around vault FS.
-- Obsidian doesn't support read stream. And thus, we don't write stream in remote FS.
+- Obsidian doesn't support read stream. And thus, we don't need write stream in remote FS.
 
 **Behavioral purity**: Raw FS classes should not carry one additional functions, such as base dir config or retry, they should all be achieved via shims.
