@@ -4,7 +4,6 @@
 	"private": true,
 	"license": "AGPL-3.0",
 	"type": "module",
-	"main": "main.js",
 	"scripts": {
 		"dev": "MODE=dev tsdown",
 		"inspect": "MODE=inspect tsdown",
@@ -32,6 +31,7 @@
 		"oxlint-tsgolint": "^0.23.0",
 		"postcss-merge-rules": "^8.0.0",
 		"solid-js": "^1.9.13",
+		"synthkernel": "^0.0.2",
 		"tsdown": "^0.22.2",
 		"typescript": "^6.0.3",
 		"unocss": "66.7.0",

@@ -1,6 +1,6 @@
+import { hook, ref } from 'synthkernel';
 import type { TaskNames } from '~/sync/tasks/task.interface';
 import type { SyncRunKind } from '~/types';
-import { hook, ref } from '.';
 
 export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
 export type SyncRunStage =

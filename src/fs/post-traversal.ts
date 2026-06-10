@@ -54,5 +54,5 @@ function completeLostDir(stats: StatsMap, filteredStats: StatsMap): void {
 }
 
 function isRoot(path: string) {
-	return path === '/' || path === '.' || path === '';
+	return ['', '/', '.'].includes(path);
 }

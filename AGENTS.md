@@ -17,7 +17,7 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 - Don't export helpers or types that is only used within a file.
 - Tests should only test exported items.
 - Avoid over-defensive validation. If something is sure to be validated / normalized at least once at call site, do not validate / normalize again.
-- All Obsidian API mock go `test/mocks/obsidian.ts`.
+- All Obsidian API mocks go `test/mocks/obsidian.ts`.
 
 ## Repository Map
 
