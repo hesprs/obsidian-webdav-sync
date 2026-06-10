@@ -11,7 +11,7 @@ export type WebdavFsOptions = {
 	endpoint: string;
 	username: string;
 	password: string;
-	useInfinity: boolean;
+	useInfinity?: boolean;
 };
 
 type WebDAVPropValue = string | { '#text'?: string } | undefined;

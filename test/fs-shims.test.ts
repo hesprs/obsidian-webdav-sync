@@ -15,6 +15,7 @@ type RequestResponse = {
 
 class ShimmedRemoteFs extends RemoteFs<Record<string, never>> {
 	public calls = {
+		checkConnection: 0,
 		delete: [] as Array<string>,
 		list: [] as Array<string>,
 		listAll: [] as Array<string>,
@@ -36,6 +37,11 @@ class ShimmedRemoteFs extends RemoteFs<Record<string, never>> {
 
 	getUid() {
 		return 'remote';
+	}
+
+	checkConnection(): Promise<{ success: true } | { success: false; reason: string }> {
+		this.calls.checkConnection++;
+		return Promise.resolve({ success: true });
 	}
 
 	read(key: string) {
