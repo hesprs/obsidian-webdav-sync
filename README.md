@@ -175,8 +175,8 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] v2.4: Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
 - [x] v2.4, v2.5.5: Refurbish sync selection UI
 - [x] v2.5: Implement encryption like the one in Remotely Save
-- [ ] v2.6: Unify remote and local file CRUD interface with Uni-CRUD
-- [ ] v2.7: Overhaul encryption as a Uni-CRUD wrapper
+- [ ] v2.6: Refactor remote and local file CRUD interface
+- [ ] v2.7: Overhaul encryption as a remote FS shim
 - [ ] v2.8: Redesign smart merge and unify storage layer using Uni-KV
 - [ ] v2.9: Refactor core sync routine for extensibility, and batch operations with Uni-CRUD
 - [ ] v2.10: Refactor the entire architecture to SynthKernel
