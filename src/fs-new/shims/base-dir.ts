@@ -1,5 +1,6 @@
 import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
+import type { MaybePromise } from '~/types';
 import { normalizeBaseDir, splitRemotePathAtBaseDir } from '~/platform/path';
 import type { Progress, Stat } from '../interface';
 import { RemoteFs } from '../interface';
@@ -51,6 +52,10 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 	options: T;
 	request: typeof requestUrl;
 
+	checkConnection(): MaybePromise<{ success: true } | { success: false; reason: string }> {
+		return this.original.checkConnection();
+	}
+
 	getUid(): string {
 		return `${this.original.getUid()}~${this.baseDir}`;
 	}
@@ -71,8 +76,8 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 		return this.original.delete(joinUnifiedKey(this.baseDir, key));
 	}
 
-	mkdir(key: string) {
-		return this.original.mkdir(joinUnifiedKey(this.baseDir, key));
+	mkdir(key: string, recursive?: boolean) {
+		return this.original.mkdir(joinUnifiedKey(this.baseDir, key), recursive);
 	}
 
 	async stat(key: string) {

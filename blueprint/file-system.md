@@ -40,6 +40,8 @@ The WebDAV abstraction should not use any external libraries. Only use Obsidian 
 
 `getUid()`: user server endpoint + `~` + user account name
 
+`checkConnection()`: most simple method to test whether a WebDAV endpoint, account name, credential are correct.
+
 `read()`: `GET` request to constructed URL
 
 `readStream()`: `GET` with byte range header, each request fixed at 2MiB, multiplex max 8 requests during streaming. When multiplexed response arrives, sort and feed to stream. When back pressure detected, stop making mew requests. So there's max 8 \* 2MiB = 16MiB backpressure held in memory.
@@ -48,7 +50,7 @@ The WebDAV abstraction should not use any external libraries. Only use Obsidian 
 
 `delete()`: `DELETE` request to the constructed URL. Swallow `404` errors where the file has already been deleted.
 
-`mkdir()`: `MKCOL` request to the constructed URL.
+`mkdir()`: `MKCOL` request to the constructed URL. Optional recursive flag.
 
 `stat()`: `PROPFIND` (depth 0) request to constructed URL with custom XML. Parse with `XMLParser` composable, convert to `Stat`.
 

@@ -112,6 +112,25 @@ function buildUrl(endpoint: string, key: string, isDir: boolean) {
 	return `${normalizeEndpoint(endpoint)}${encodedPath}`;
 }
 
+function getRequestStatus(error: unknown) {
+	if (typeof error !== 'object' || error === null) return undefined;
+	const res = (error as { res?: { status?: unknown } }).res;
+	return typeof res?.status === 'number' ? res.status : undefined;
+}
+
+function getRecursiveDirectoryKeys(key: string) {
+	const normalized = buildRemotePath(key, true);
+	if (normalized === '/') return [];
+
+	const keys: Array<string> = [];
+	let current = '';
+	for (const segment of normalized.slice(1, -1).split('/')) {
+		current = current === '' ? segment : `${current}/${segment}`;
+		keys.push(`${current}/`);
+	}
+	return keys;
+}
+
 function getTargetRemotePath(key: string) {
 	return key === '/' ? '/' : normalizeRemotePath(key);
 }
@@ -195,15 +214,40 @@ function getFileUid(stat: Stat, key: string) {
 }
 
 export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
+	private readonly auth: string;
+
+	constructor(options: WebdavFsOptions, request?: typeof requestUrl) {
+		super(options, request);
+		this.auth = getAuthorization(this.options.username, this.options.password);
+	}
+
 	getUid() {
 		return `${this.options.endpoint}~${this.options.username}`;
 	}
 
+	async checkConnection() {
+		try {
+			const response = await this.request({
+				body: '<D:propfind xmlns:D="DAV:"/>',
+				headers: { Authorization: this.auth, Depth: '0' },
+				method: 'PROPFIND',
+				url: buildUrl(this.options.endpoint, '/', true),
+			});
+			if (response.status === 200 || response.status === 207)
+				return { success: true } as const;
+			return { reason: response.status.toString(), success: false } as const;
+		} catch (error) {
+			const errorMessage = error instanceof Error ? error.message : String(error);
+			return {
+				reason: errorMessage,
+				success: false,
+			} as const;
+		}
+	}
+
 	async read(key: string) {
 		const response = await this.request({
-			headers: {
-				Authorization: getAuthorization(this.options.username, this.options.password),
-			},
+			headers: { Authorization: this.auth },
 			method: 'GET',
 			url: buildUrl(this.options.endpoint, key, false),
 		});
@@ -226,10 +270,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 			requestRange: async (start, endInclusive) => {
 				const response = await this.request({
 					headers: {
-						Authorization: getAuthorization(
-							this.options.username,
-							this.options.password,
-						),
+						Authorization: this.auth,
 						Range: `bytes=${start}-${endInclusive}`,
 					},
 					method: 'GET',
@@ -245,9 +286,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 	async write(key: string, value: ArrayBuffer) {
 		const response = await this.request({
 			body: value,
-			headers: {
-				Authorization: getAuthorization(this.options.username, this.options.password),
-			},
+			headers: { Authorization: this.auth },
 			method: 'PUT',
 			url: buildUrl(this.options.endpoint, key, false),
 		});
@@ -261,9 +300,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 	async delete(key: string) {
 		try {
 			await this.request({
-				headers: {
-					Authorization: getAuthorization(this.options.username, this.options.password),
-				},
+				headers: { Authorization: this.auth },
 				method: 'DELETE',
 				url: buildUrl(this.options.endpoint, key, false),
 			});
@@ -277,16 +314,20 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		}
 	}
 
-	async mkdir(key: string) {
-		if (key === '/') return;
+	async mkdir(key: string, recursive = false) {
+		const directoryKeys = recursive ? getRecursiveDirectoryKeys(key) : [key];
 
-		await this.request({
-			headers: {
-				Authorization: getAuthorization(this.options.username, this.options.password),
-			},
-			method: 'MKCOL',
-			url: buildUrl(this.options.endpoint, key, true),
-		});
+		for (const directoryKey of directoryKeys)
+			try {
+				await this.request({
+					headers: { Authorization: this.auth },
+					method: 'MKCOL',
+					url: buildUrl(this.options.endpoint, directoryKey, true),
+				});
+			} catch (error) {
+				if (recursive && getRequestStatus(error) === 405) continue;
+				throw error;
+			}
 	}
 
 	async stat(key: string): Promise<Stat> {

@@ -126,6 +126,33 @@ test('delete swallows 404 and rethrows other failures', async () => {
 	expect(fs.delete('Notes/file.md')).rejects.toStrictEqual({ res: { status: 500 } });
 });
 
+test('mkdir recursively creates parent folders in order', async () => {
+	requestUrlMock.mockImplementation(async (params) => {
+		if (params.url === 'https://dav.example.com/dav/Notes/') return response;
+		if (params.url === 'https://dav.example.com/dav/Notes/Folder%20A/')
+			throw { res: { status: 405 } };
+		if (params.url === 'https://dav.example.com/dav/Notes/Folder%20A/Child/') return response;
+		throw new Error(`Unexpected URL: ${params.url}`);
+	});
+
+	const fs = new WebdavFs({
+		endpoint: 'https://dav.example.com/dav',
+		password: 'pass',
+		useInfinity: false,
+		username: 'alice',
+	});
+
+	await fs.mkdir('Notes/Folder A/Child/', true);
+
+	expect(
+		requestUrlMock.mock.calls.map(([params]) => ({ method: params.method, url: params.url })),
+	).toStrictEqual([
+		{ method: 'MKCOL', url: 'https://dav.example.com/dav/Notes/' },
+		{ method: 'MKCOL', url: 'https://dav.example.com/dav/Notes/Folder%20A/' },
+		{ method: 'MKCOL', url: 'https://dav.example.com/dav/Notes/Folder%20A/Child/' },
+	]);
+});
+
 test('list excludes the queried folder and normalizes descendant keys', async () => {
 	setXmlResponse([
 		{

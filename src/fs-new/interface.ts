@@ -29,11 +29,14 @@ export abstract class RemoteFs<T extends object = object> {
 		public request: typeof requestUrl = requestUrl,
 	) {}
 	abstract getUid(): string; // String whose inequality signifies the client is unique
+	abstract checkConnection(): MaybePromise<
+		{ success: true } | { success: false; reason: string }
+	>;
 	abstract read(key: string): MaybePromise<ArrayBuffer>;
 	abstract readStream(key: string): MaybePromise<ReadableStream>;
 	abstract write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
 	abstract delete(key: string): MaybePromise<void>;
-	abstract mkdir(key: string): MaybePromise<void>;
+	abstract mkdir(key: string, recursive?: boolean): MaybePromise<void>;
 	abstract stat(key: string): MaybePromise<Stat>;
 	abstract list(key: string): MaybePromise<Array<Stat>>; // List direct children under one folder
 	abstract listAll(key: string, progress?: Ref<Progress>): MaybePromise<Array<Stat>>; // List recursive children under one folder
