@@ -20,22 +20,21 @@ export type SyncRunWarning = {
 };
 
 export type SyncPlanSummary = {
-	totalTasks: number;
+	total: number;
 	requiresConfirmation: boolean;
 	requiresDeleteConfirmation: boolean;
 	warnings: Array<SyncRunWarning>;
 };
 
 export type RemoteWalkSummary = {
-	totalItems: number;
-	completedItems: number;
-	currentItem: string;
+	total: number;
+	completed: number;
 };
 
 export type SyncProgressSummary = {
-	totalTasks: number;
-	completedTasks: number;
-	completed: Array<{
+	total: number;
+	completed: number;
+	completedTasks: Array<{
 		taskName: TaskNames;
 		path: string;
 	}>;
@@ -48,10 +47,10 @@ export type SyncFailedTaskInfo = {
 };
 
 export type SyncResultSummary = {
-	totalTasks: number;
-	succeededTasks: number;
-	failedTasks: number;
-	failed: Array<SyncFailedTaskInfo>;
+	total: number;
+	completed: number;
+	failed: number;
+	failedTasks: Array<SyncFailedTaskInfo>;
 };
 
 export type SyncErrorSummary = {
@@ -96,9 +95,9 @@ export function createQueuedSyncRunSnapshot(input: {
 	const queuedAt = input.queuedAt ?? Date.now();
 	return {
 		progressSummary: {
-			completed: [],
-			completedTasks: 0,
-			totalTasks: 0,
+			completed: 0,
+			completedTasks: [],
+			total: 0,
 		},
 		runId: input.runId,
 		runKind: input.runKind,

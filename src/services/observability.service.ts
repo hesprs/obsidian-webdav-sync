@@ -161,23 +161,21 @@ export default class ObservabilityService {
 				return getText(t('sync.preConnecting'));
 			}
 			case 'walking_remote': {
-				const { totalItems, completedItems } = run.remoteWalkSummary ?? {};
-				return getText(`${t('sync.walkingRemote')} (${completedItems}/${totalItems})`);
+				const { total, completed } = run.remoteWalkSummary ?? {};
+				return getText(`${t('sync.walkingRemote')} (${completed}/${total})`);
 			}
 			case 'awaiting_confirmation': {
 				return getText(t('sync.awaitingConfirmation'));
 			}
 			case 'executing': {
-				const { totalTasks, completedTasks } = run.progressSummary;
-				const percent = Math.round((completedTasks / totalTasks || 1) * 10_000) / 100;
+				const { total, completed } = run.progressSummary;
+				const percent = Math.round((completed / total || 1) * 10_000) / 100;
 				return getText(t('sync.progress', { percent }));
 			}
 			case 'completed': {
 				return run.resultSummary?.failedTasks
 					? getText(
-							t('sync.completeWithFailed', {
-								failedCount: run.resultSummary.failedTasks,
-							}),
+							t('sync.completeWithFailed', { failedCount: run.resultSummary.failed }),
 						)
 					: getText(t('sync.complete'));
 			}
@@ -192,9 +190,7 @@ export default class ObservabilityService {
 			case 'failed': {
 				return run.resultSummary?.failedTasks
 					? getText(
-							t('sync.completeWithFailed', {
-								failedCount: run.resultSummary.failedTasks,
-							}),
+							t('sync.completeWithFailed', { failedCount: run.resultSummary.failed }),
 						)
 					: getText(t('sync.failedStatus'));
 			}
@@ -219,9 +215,7 @@ export default class ObservabilityService {
 			case 'completed': {
 				return ifManual(
 					run.resultSummary?.failedTasks
-						? t('sync.completeWithFailed', {
-								failedCount: run.resultSummary.failedTasks,
-							})
+						? t('sync.completeWithFailed', { failedCount: run.resultSummary.failed })
 						: t('sync.complete'),
 				);
 			}
@@ -234,9 +228,7 @@ export default class ObservabilityService {
 			case 'failed': {
 				return ifManual(
 					run.resultSummary?.failedTasks
-						? t('sync.completeWithFailed', {
-								failedCount: run.resultSummary.failedTasks,
-							})
+						? t('sync.completeWithFailed', { failedCount: run.resultSummary.failed })
 						: t('sync.failedWithError', {
 								error: run.errorSummary?.message ?? t('sync.failedStatus'),
 							}),
@@ -262,11 +254,11 @@ export default class ObservabilityService {
 
 	private applyProgressModal(run: SyncRunSnapshot, previousRun?: SyncRunSnapshot) {
 		const isNewStage = previousRun?.runId !== run.runId || previousRun.stage !== run.stage;
-		const failed = run.stage === 'failed' && run.resultSummary?.failed?.length;
+		const failed = run.stage === 'failed' && run.resultSummary?.failedTasks?.length;
 		if (((isNewStage && run.trigger === 'manual') || failed) && !this.progressModal)
 			this.createProgressModal().open();
 		this.progressModal?.update(run);
-		if (failed) this.progressModal?.setFailedTasks(run.resultSummary?.failed ?? []);
+		if (failed) this.progressModal?.setFailedTasks(run.resultSummary?.failedTasks ?? []);
 	}
 
 	showProgressModal() {

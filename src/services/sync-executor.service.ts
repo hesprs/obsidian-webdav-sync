@@ -8,7 +8,6 @@ import SyncEngine from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
 import { createVaultFs, createWebdavFs } from '~/utils/fs-factory';
 import logger from '~/utils/logger';
-import waitUntil from '~/utils/wait-until';
 
 export type SyncOptions = {
 	runKind: SyncRunKind;
@@ -32,12 +31,9 @@ export default class SyncExecutorService {
 	async executeSync(request: SyncExecutionRequest): Promise<SyncExecutionResult> {
 		if (this.plugin.isSyncing) return { executed: false };
 		if (!this.plugin.isAccountConfigured()) return { executed: false };
-		await waitUntil(() => !this.plugin.isSyncing, 500);
 		logger.pushRunId(request.runId);
 
 		try {
-			this.plugin.prepareSyncEncryptionKeys();
-
 			const sync = new SyncEngine(this.plugin, {
 				token: this.plugin.getToken(),
 				vaultFs: createVaultFs(this.plugin),
@@ -87,7 +83,6 @@ export default class SyncExecutorService {
 
 			return { executed: true, run };
 		} finally {
-			this.plugin.clearSyncEncryptionKeys();
 			logger.popRunId();
 		}
 	}

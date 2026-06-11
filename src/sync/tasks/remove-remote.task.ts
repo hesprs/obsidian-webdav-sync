@@ -1,5 +1,4 @@
 import type { OptionsWithRemoteStat } from '~/sync/decision/sync-decision.interface';
-import { resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -8,11 +7,11 @@ export default class RemoveRemoteTask extends BaseTask<OptionsWithRemoteStat> {
 
 	async exec() {
 		try {
-			await this.webdav.deleteFile(await resolveRemoteExecutionPath(this.remotePath));
-			await this.syncRecord.removeRecords(this.localPath);
+			await this.webdav.delete(this.key);
+			await this.syncRecord.removeRecords(this.key);
 			return { success: true } as const;
 		} catch (error) {
-			logger.error(`Failed to remove remote file ${this.remotePath}`, error);
+			logger.error(`Failed to remove remote file \`${this.key}\``, error);
 			return { error: toTaskError(error, this), success: false };
 		}
 	}

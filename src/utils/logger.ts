@@ -180,7 +180,7 @@ class Logger {
 		if (timestamps.endedAt) lines.push(`- Ended at: ${formatDateTime(timestamps.endedAt)}`);
 		if (timestamps.durationMs) lines.push(`- Duration: ${formatTime(timestamps.durationMs)}`);
 
-		if (planSummary) lines.push(`- Total tasks: ${planSummary.totalTasks}`);
+		if (planSummary) lines.push(`- Total tasks: ${planSummary.total}`);
 		lines.push('');
 
 		const warnings = planSummary?.warnings ?? [];
@@ -193,18 +193,16 @@ class Logger {
 
 		if (resultSummary) {
 			lines.push('#### Outcome', '');
-			lines.push(`- Succeeded: ${resultSummary.succeededTasks}`);
-			lines.push(`- Failed: ${resultSummary.failedTasks}`, '');
+			lines.push(`- Succeeded: ${resultSummary.completed}`);
+			lines.push(`- Failed: ${resultSummary.failed}`, '');
 		}
 
-		const failures = resultSummary?.failed ?? [];
+		const failures = resultSummary?.failedTasks ?? [];
 		if (failures.length > 0) {
 			lines.push('#### Failures', '');
 			for (const failure of failures) {
-				const task = failure.name;
-				const path = failure.localPath;
-				const errorMessage = failure.errorMessage ?? 'Unknown error';
-				lines.push(`- ${task} — ${path} — ${errorMessage}`);
+				const { name, key, errorMessage } = failure;
+				lines.push(`- ${name} — ${key} — ${errorMessage}`);
 			}
 			lines.push('');
 		}

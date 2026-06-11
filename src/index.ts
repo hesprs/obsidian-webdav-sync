@@ -1,7 +1,6 @@
 import './global.css';
 import { Plugin } from 'obsidian';
 import type { PluginSettings, GlobMatchOptions } from './settings';
-import type { SyncEncryptionContext } from './utils/encryption';
 import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
 import { normalizeBaseDir } from './platform/path';
@@ -15,14 +14,8 @@ import {
 	ConflictStrategy,
 	UnmergeableStrategy,
 } from './settings';
-import {
-	IndexedDbBaseTextStore,
-	IndexedDbFileChunkStore,
-	IndexedDbSyncStateStore,
-} from './storage';
-import { createSyncEncryptionContext } from './utils/encryption';
+import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import getCredential from './utils/get-credential';
-import patchWebDav from './webdav-patch';
 
 function createGlobMatchOptions(expr: string) {
 	return {
@@ -35,7 +28,6 @@ function createGlobMatchOptions(expr: string) {
 
 export default class WebDAVSyncPlugin extends Plugin {
 	public isSyncing = false;
-	private syncEncryptionContext: SyncEncryptionContext | undefined;
 	public settings: PluginSettings = {
 		account: '',
 		confirmBeforeDeleteInAutoSync: true,
@@ -111,7 +103,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	public syncStateStore = new IndexedDbSyncStateStore();
 	public baseTextStore = new IndexedDbBaseTextStore();
-	public fileChunkStore = new IndexedDbFileChunkStore();
 	public observabilityService = new ObservabilityService(this);
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
@@ -121,19 +112,16 @@ export default class WebDAVSyncPlugin extends Plugin {
 		Object.assign(this.settings, await this.loadData());
 		await this.syncStateStore.initialize();
 		await this.baseTextStore.initialize();
-		await this.fileChunkStore.initialize();
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		setupCommands(this);
 		this.syncSchedulerService.start();
-		patchWebDav();
 	}
 
 	onunload() {
 		setPluginInstance(this);
 		void this.syncStateStore.unload();
 		void this.baseTextStore.unload();
-		void this.fileChunkStore.unload();
 		syncCancel();
 		this.syncSchedulerService.unload();
 		this.observabilityService.unload();
@@ -147,28 +135,8 @@ export default class WebDAVSyncPlugin extends Plugin {
 	}
 
 	getToken() {
-		const token = `${this.settings.account}:${getCredential(this)}`;
-		return btoa(token);
-	}
-
-	prepareSyncEncryptionKeys() {
-		this.syncEncryptionContext = undefined;
-	}
-
-	getSyncEncryptionKeys() {
-		return this.getSyncEncryptionContext().keysPromise;
-	}
-
-	getSyncEncryptionContext() {
-		this.syncEncryptionContext ??= createSyncEncryptionContext(
-			this.settings,
-			this.app.secretStorage,
-		);
-		return this.syncEncryptionContext;
-	}
-
-	clearSyncEncryptionKeys() {
-		this.syncEncryptionContext = undefined;
+		const { account, token } = this.settings;
+		return btoa(`${account}:${getCredential(this, token)}`);
 	}
 
 	/**

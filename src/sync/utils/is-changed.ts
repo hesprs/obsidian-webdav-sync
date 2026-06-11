@@ -6,25 +6,25 @@ import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 
 export default function isChanged({
-	path,
+	key,
 	source,
 	records,
 	tasks,
 	currentStats,
 }: {
-	path: string;
+	key: string;
 	source: 'local' | 'remote';
 	records: RecordStatsMap;
 	currentStats: StatsMap;
 	tasks?: Array<BaseTask>;
 }) {
-	const inRecords = records.get(path);
+	const inRecords = records.get(key);
 	const record = inRecords
 		? inRecords.isDir
 			? { isDir: true }
 			: { isDir: false, uid: inRecords[source] }
 		: undefined;
-	const target = currentStats.get(path);
+	const target = currentStats.get(key);
 	if (!record || !target) return true;
 	// Unable to compare between directories and files
 	if (target.isDir !== record.isDir) return true;
@@ -39,12 +39,12 @@ export default function isChanged({
 					(task instanceof MergeTask ||
 						task instanceof PushTask ||
 						task instanceof PullTask) &&
-					isSub(path, task.key)
+					isSub(key, task.key)
 				)
 					return true;
 		for (const [subPath, stats] of currentStats) {
 			// Check for subfolder changes
-			if (!stats.isDir || !isSub(path, subPath)) continue;
+			if (!stats.isDir || !isSub(key, subPath)) continue;
 			if (!records.get(subPath)) return true;
 		}
 	}

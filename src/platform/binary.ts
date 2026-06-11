@@ -1,6 +1,6 @@
-export type BinaryLike = ArrayBuffer | ArrayBufferView | Blob;
+type BinaryLike = ArrayBuffer | ArrayBufferView | Blob;
 
-export function toArrayBufferSync(data: ArrayBuffer | ArrayBufferView): ArrayBuffer {
+function toArrayBufferSync(data: ArrayBuffer | ArrayBufferView): ArrayBuffer {
 	if (data instanceof ArrayBuffer) return data;
 
 	if (ArrayBuffer.isView(data)) {
