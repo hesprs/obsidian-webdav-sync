@@ -84,6 +84,12 @@ Limit the max concurrency and request interval of remote requests. Receives `max
 
 Only re-assigns the `request` method in the original class by obtaining it, wrapping with a newly instantiated API limiter composable, and assigning back.
 
+### Encryption Shim
+
+Apply client-side encryption / decryption directly at file system level
+
+Detail see `./encryption.md`.
+
 ## Mechanisms
 
 **Unified key schema**:

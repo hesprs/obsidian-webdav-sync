@@ -142,8 +142,24 @@ Then come to the traversal and syncing logic:
 
 ## Implementation
 
-- The implementation should only use:
-  - Web Crypto
-  - `argon2id` export from `hash-wasm`
-  - `gcmsiv` export from `@noble/ciphers/aes.js`
-- Helpers and exports should be encapsulated in `src/composable/encryption.ts`. The implementation should be context-agnostic and reusable across similar projects. Context-dependent implementation should go `src/utils/`.
+The implementation should only use:
+
+- Web Crypto
+- `argon2id` export from `hash-wasm`
+- `gcmsiv` export from `@noble/ciphers/aes.js`
+
+The encryption function will be cleanly integrated as a wrapper class as a shim layer above [`RemoteFs`](./file-system.md), similar to base dir shim:
+
+`getUid()`, `checkConnection()`, `options`, `request`: keep as-is.
+
+`read()`: encrypt key before relaying to original, and decrypt when original returns.
+
+`readStream()`: encrypt key before relaying to original, creates a new stream that relay consumes the original stream.
+
+`write()`: encrypt the key and the content before relying to original.
+
+`delete()`, `mkdir()`, `stat()`: encrypt the key before relying to original.
+
+`stat()`: encrypt the key before relaying, decrypt the `key` in `Stat` when original returns.
+
+`list()`, `listAll()`: encrypt the key before relaying, decrypt the `key` in `Array<Stat>` when original returns.
