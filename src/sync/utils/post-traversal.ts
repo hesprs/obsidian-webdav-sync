@@ -1,6 +1,6 @@
 import type { GlobMatchOptions } from '~/settings';
 import type { StatsMap } from '~/types';
-import { vaultDirname } from '~/platform/path';
+import { dirname } from '~/platform/path';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import logger from '~/utils/logger';
 
@@ -21,11 +21,11 @@ export default function postTraversal(
 	for (const [path, stat] of stats) {
 		if (path.length === 0) continue;
 		if (!needIncludeFromGlobRules(path, inclusions, exclusions)) {
-			logger.debug(`Skipping ${stat.path} due to exclusion rules.`);
+			logger.debug(`Skipping ${stat.key} due to exclusion rules.`);
 			continue;
 		}
 		if (!stat.isDir && maxSize && stat.size > maxSize) {
-			logger.debug(`Skipping ${stat.path} due to file size limit.`);
+			logger.debug(`Skipping ${stat.key} due to file size limit.`);
 			continue;
 		}
 		includedStats.set(path, stat);
@@ -43,7 +43,7 @@ function completeLostDir(stats: StatsMap, filteredStats: StatsMap): void {
 	for (const filePath of filteredStats.keys()) {
 		let currentPath = filePath;
 		while (true) {
-			const path = vaultDirname(currentPath);
+			const path = dirname(currentPath);
 			if (isRoot(path) || filteredStats.has(path)) break;
 			const dirStat = stats.get(path);
 			if (!dirStat || !dirStat.isDir) break;

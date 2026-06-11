@@ -1,9 +1,7 @@
+import type { Stat } from '~/fs-new';
 import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
-import type { StatModel } from '~/types';
-import { getContent as getLocalContent, statItem as statVaultItem } from '~/fs/vault';
-import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs/webdav';
 import t from '~/i18n';
-import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
+import { arrayBufferEquals, arrayBufferToText, textToArrayBuffer } from '~/platform/binary';
 import { useSettings } from '~/settings';
 import {
 	decryptRemoteFileContent,
@@ -22,29 +20,25 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 		try {
 			let localBuffer: ArrayBuffer;
 			try {
-				localBuffer = await getLocalContent(this.vault, this.localPath);
+				localBuffer = await this.vault.read(this.key);
 			} catch {
-				// Ignore if local not found (which indicates that it has been deleted or renamed, common in case of a fast local change)
-				logger.warn(`Failed to get local content at path \`${this.localPath}\``);
+				// Ignore if local not found (which indicates that it has been deleted or renamed, common in case of fast local change)
+				logger.warn(`Failed to get local content at path \`${this.key}\``);
 				return { success: true } as const;
 			}
 
 			const settings = await useSettings();
-			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
+			const executionRemotePath = await resolveRemoteExecutionPath(this.key);
 
-			const downloadedRemoteBuffer = await getRemoteContent(this.webdav, executionRemotePath);
+			const downloadedRemoteBuffer = await this.webdav.read(executionRemotePath);
 			const remoteBuffer = settings.encryption.enabled
-				? await decryptRemoteFileContent(
-						this.localPath,
-						downloadedRemoteBuffer,
-						this.remote.size,
-					)
+				? await decryptRemoteFileContent(this.key, downloadedRemoteBuffer, this.remote.size)
 				: downloadedRemoteBuffer;
 
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
 					baseText: await arrayBufferToText(localBuffer),
-					key: this.localPath,
+					key: this.key,
 					local: this.local,
 					remote: this.remote,
 				});
@@ -53,7 +47,7 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 
 			const localText = await arrayBufferToText(localBuffer);
 			const remoteText = await arrayBufferToText(remoteBuffer);
-			const baseText = (await this.syncRecord.getBaseText(this.localPath)) ?? localText;
+			const baseText = (await this.syncRecord.getBaseText(this.key)) ?? localText;
 			let mergedText: string;
 			const mergeResult = resolveByIntelligentMerge({
 				baseContentText: baseText,
@@ -64,7 +58,7 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 			if (mergeResult.isIdentical) {
 				await this.syncRecord.upsertRecords({
 					baseText: localText,
-					key: this.localPath,
+					key: this.key,
 					local: this.local,
 					remote: this.remote,
 				});
@@ -79,18 +73,15 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				mergedText = mergeDigInResult.result.join('\n');
 			} else mergedText = mergeResult.mergedText as string;
 
-			let newRemote: StatModel | undefined;
-			let newLocal: StatModel | undefined;
+			let newRemote: Stat | undefined;
+			let newLocal: Stat | undefined;
 			const mergedBuffer = new TextEncoder().encode(mergedText).buffer;
 			if (mergedText !== remoteText) {
-				const putResult = await this.webdav.putFileContents(
+				const putResult = await this.webdav.write(
 					executionRemotePath,
 					settings.encryption.enabled
-						? await encryptContentForRemoteFile(this.localPath, mergedBuffer)
-						: mergedText,
-					{
-						overwrite: true,
-					},
+						? await encryptContentForRemoteFile(this.key, mergedBuffer)
+						: await textToArrayBuffer(mergedText),
 				);
 				if (!putResult) throw new Error(t('sync.error.failedToUploadMerged'));
 				const fetchedRemoteStat = await statWebDAVItem(
@@ -99,18 +90,16 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				);
 				if (!fetchedRemoteStat || fetchedRemoteStat.isDir)
 					throw new Error(
-						`failed to read remote file stat after intelligent merge: ${this.localPath}`,
+						`failed to read remote file \`${this.key}\` after intelligent merge.`,
 					);
 				newRemote = fetchedRemoteStat;
 			}
 			if (localText !== mergedText) {
-				await this.vault.adapter.writeBinary(this.localPath, mergedBuffer, {
-					ctime: this.remote.mtime - 1000,
-				});
-				const fetchedLocalStat = await statVaultItem(this.vault, this.localPath);
+				await this.vault.write(this.key, await textToArrayBuffer(mergedText));
+				const fetchedLocalStat = await this.vault.stat(this.key);
 				if (!fetchedLocalStat || fetchedLocalStat.isDir)
 					throw new Error(
-						`failed to read local file stat after intelligent merge: ${this.localPath}`,
+						`failed to read local file \`${this.key}\` after intelligent merge.`,
 					);
 				newLocal = fetchedLocalStat;
 			}

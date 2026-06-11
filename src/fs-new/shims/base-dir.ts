@@ -1,39 +1,21 @@
 import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
-import { normalizeBaseDir, splitRemotePathAtBaseDir } from '~/platform/path';
+import { normalizeBaseDir } from '~/platform/path';
 import type { Progress, Stat } from '../interface';
 import { RemoteFs } from '../interface';
 
-function splitUnifiedKey(key: string) {
-	if (key === '/') return { descendantSegments: [] as Array<string>, isDir: true };
-	const isDir = key.endsWith('/');
-	const trimmed = key.replace(/^\/+/, '').replace(/\/+$/, '');
-	return {
-		descendantSegments: trimmed === '' ? [] : trimmed.split('/'),
-		isDir,
-	};
-}
-
 function joinUnifiedKey(baseDir: string, key: string) {
-	const { descendantSegments, isDir } = splitUnifiedKey(key);
-	if (baseDir === '/')
-		return descendantSegments.length === 0
-			? '/'
-			: `${descendantSegments.join('/')}${isDir ? '/' : ''}`;
-
-	const baseSegments = baseDir.replace(/^\/+/, '').replace(/\/+$/, '').split('/');
-	if (descendantSegments.length === 0) return `${baseSegments.join('/')}/`;
-	return `${[...baseSegments, ...descendantSegments].join('/')}${isDir ? '/' : ''}`;
+	const joined = `${baseDir}${key}`;
+	return joined.endsWith('//') ? joined.slice(0, -1) : joined;
 }
 
 function stripBaseDir(baseDir: string, stat: Stat): Stat {
-	const { descendantSegments, isDir } = splitRemotePathAtBaseDir(baseDir, stat.key);
-	const key =
-		descendantSegments.length === 0
-			? '/'
-			: `${descendantSegments.join('/')}${isDir ? '/' : ''}`;
-	return { ...stat, key };
+	const originalKey = stat.key;
+	if (!originalKey.startsWith(baseDir))
+		throw new Error(`Accessed out-of-scope path ${originalKey}`);
+	const key = originalKey.slice(baseDir.length);
+	return { ...stat, key: key === '' ? '/' : key };
 }
 
 function stripBaseDirFromStats(baseDir: string, stats: Array<Stat>) {

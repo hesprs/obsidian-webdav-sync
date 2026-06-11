@@ -4,6 +4,7 @@ import EncryptionReminderModal from '~/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
+import { createWebdavFs } from '~/utils/fs-factory';
 import handleInput from '~/utils/handle-input';
 import BaseSettings from './settings.base';
 
@@ -147,9 +148,9 @@ export default class AccountSettings extends BaseSettings {
 		buttonEl.classList.remove('success', 'error');
 		buttonEl.textContent = t('settings.checkConnection.name');
 		try {
-			const { success, error } = await this.plugin.webDAVService.checkWebDAVConnection();
+			const result = await createWebdavFs(this.plugin).checkConnection();
 			buttonEl.classList.remove('loading');
-			if (success) {
+			if (result.success) {
 				buttonEl.classList.add('success');
 				buttonEl.textContent = t('settings.checkConnection.successButton');
 				new Notice(t('settings.checkConnection.success'));
@@ -158,10 +159,9 @@ export default class AccountSettings extends BaseSettings {
 
 			buttonEl.classList.add('error');
 			buttonEl.textContent = t('settings.checkConnection.failureButton');
-			const reason = error?.message?.trim();
 			new Notice(
-				reason
-					? t('settings.checkConnection.failureWithReason', { reason })
+				result.reason
+					? t('settings.checkConnection.failureWithReason', { reason: result.reason })
 					: t('settings.checkConnection.failure'),
 			);
 		} catch {

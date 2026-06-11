@@ -114,7 +114,7 @@ test('base-dir shim rewrites keys relative to its base', async () => {
 	const original = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
 	const shim = baseDirShim(original, '/base');
 
-	expect(shim.getUid()).toBe('remote~/base/');
+	expect(shim.getUid()).toBe('remote~base/');
 
 	const rootStat = await shim.stat('/');
 	const stat = await shim.stat('note.md');

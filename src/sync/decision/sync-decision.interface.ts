@@ -1,46 +1,46 @@
+import type { FileStat, FolderStat, Stat } from '~/fs-new';
 import type { ConflictStrategy, UnmergeableStrategy } from '~/settings';
-import type { FileStatModel, FolderStatModel, RecordStatsMap, StatModel, StatsMap } from '~/types';
+import type { RecordStatsMap, StatsMap } from '~/types';
 import type { BaseTask } from '../tasks/task.interface';
 
 export type TaskOptions = {
-	remotePath: string;
-	localPath: string;
-	remote?: StatModel;
-	local?: StatModel;
+	key: string;
+	remote?: Stat;
+	local?: Stat;
 };
 
 export type OptionsWithRemoteFileStat = {
-	remote: FileStatModel;
+	remote: FileStat;
 } & TaskOptions;
 
 export type OptionsWithLocalFileStat = {
-	local: FileStatModel;
+	local: FileStat;
 } & TaskOptions;
 
 export type OptionsWithRemoteFolderStat = {
-	remote: FolderStatModel;
+	remote: FolderStat;
 } & TaskOptions;
 
 export type OptionsWithLocalFolderStat = {
-	local: FolderStatModel;
+	local: FolderStat;
 } & TaskOptions;
 
 export type OptionsWithLocalStat = {
-	local: StatModel;
+	local: Stat;
 } & TaskOptions;
 
 export type OptionsWithRemoteStat = {
-	remote: StatModel;
+	remote: Stat;
 } & TaskOptions;
 
 export type OptionsWithBothStats = {
-	local: StatModel;
-	remote: StatModel;
+	local: Stat;
+	remote: Stat;
 } & TaskOptions;
 
 export type OptionsWithBothFileStats = {
-	local: FileStatModel;
-	remote: FileStatModel;
+	local: FileStat;
+	remote: FileStat;
 } & TaskOptions;
 
 export type TaskFactory = {

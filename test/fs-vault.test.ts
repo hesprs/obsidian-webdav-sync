@@ -145,7 +145,7 @@ test('writeStream should append to temp file then rename into place', async () =
 	const uid = await fs.writeStream('note.md', stream);
 
 	expect(uid).toBe('999');
-	expect(calls.writeBinary[0]?.[0]).toContain('.trash/webdav-sync/note.md.');
+	expect(calls.writeBinary[0]?.[0]).toContain('.trash/webdav-sync-temp/');
 	expect(calls.appendBinary).toHaveLength(1);
 	expect(calls.appendBinary[0]?.[1]).toBe('cdef');
 	expect(calls.rename[0]).toBeDefined();

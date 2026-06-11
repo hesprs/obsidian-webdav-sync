@@ -1,8 +1,9 @@
 import type { Ref } from 'synthkernel';
 import { requestUrl } from 'obsidian';
 import parseXML from '~/composable/parse-xml';
-import { normalizeRemotePath } from '~/platform/path';
+import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/platform/path';
 import { isNil } from '~/utils/fns';
+import getStatusFromError from '~/utils/get-status-from-error';
 import type { FolderStat, Progress, Stat } from '../interface';
 import { RemoteFs } from '../interface';
 import { createWebDAVReadStream } from './read-stream';
@@ -54,10 +55,6 @@ const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8"?>
 const READ_CHUNK_SIZE = 2 * 1024 * 1024;
 const READ_MAX_CONCURRENT = 8;
 
-function normalizeEndpoint(endpoint: string) {
-	return endpoint.replace(/\/+$/, '');
-}
-
 function getAuthorization(username: string, password: string) {
 	return `Basic ${btoa(`${username}:${password}`)}`;
 }
@@ -94,54 +91,28 @@ function asArray<T>(value: T | Array<T>) {
 	return Array.isArray(value) ? value : [value];
 }
 
-function extractPathname(href: string) {
-	return decodeURIComponent(
-		href.startsWith('http://') || href.startsWith('https://') ? new URL(href).pathname : href,
-	);
-}
-
-function buildRemotePath(key: string, isDir: boolean) {
+function prependSlash(key: string) {
 	if (key === '/') return '/';
-	const normalized = normalizeRemotePath(key);
-	return isDir ? `${normalized}/` : normalized;
+	return `/${key}`;
 }
 
-function buildUrl(endpoint: string, key: string, isDir: boolean) {
-	const path = buildRemotePath(key, isDir);
-	const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-	return `${normalizeEndpoint(endpoint)}${encodedPath}`;
+function buildUrl(endpoint: string, key: string) {
+	const encodedPath = key.split('/').map(encodeURIComponent).join('/');
+	return `${endpoint}${prependSlash(encodedPath)}`;
 }
 
-function getRequestStatus(error: unknown) {
-	if (typeof error !== 'object' || error === null) return undefined;
-	const res = (error as { res?: { status?: unknown } }).res;
-	return typeof res?.status === 'number' ? res.status : undefined;
-}
-
-function getRecursiveDirectoryKeys(key: string) {
-	const normalized = buildRemotePath(key, true);
-	if (normalized === '/') return [];
-
+function getRecursiveKeys(key: string) {
 	const keys: Array<string> = [];
-	let current = '';
-	for (const segment of normalized.slice(1, -1).split('/')) {
-		current = current === '' ? segment : `${current}/${segment}`;
-		keys.push(`${current}/`);
+	while (key !== '/') {
+		keys.push(key);
+		key = dirname(key);
 	}
-	return keys;
+	return keys.reverse();
 }
 
-function getTargetRemotePath(key: string) {
-	return key === '/' ? '/' : normalizeRemotePath(key);
-}
-
-function stripEndpointPath(endpoint: string, href: string) {
-	const endpointPath = normalizeRemotePath(new URL(endpoint).pathname);
-	const path = normalizeRemotePath(extractPathname(href));
-	if (endpointPath === '/') return path;
-	if (path === endpointPath) return '/';
-	if (!path.startsWith(`${endpointPath}/`)) return path;
-	return path.slice(endpointPath.length);
+function stripEndpoint(endpoint: string, href: string) {
+	if (href.startsWith(endpoint)) href = href.slice(endpoint.length);
+	return href.slice(1);
 }
 
 function toStat(endpoint: string, item: WebDAVResponseItem): Stat | undefined {
@@ -149,48 +120,42 @@ function toStat(endpoint: string, item: WebDAVResponseItem): Stat | undefined {
 	const validPropstat = propstats.find(
 		(propstat) => isSuccessStatus(propstat.status) && propstat.prop,
 	);
-	if (!validPropstat?.prop) return undefined;
+	if (!validPropstat?.prop) return;
 
-	const remotePath = stripEndpointPath(endpoint, item.href);
+	const remotePath = stripEndpoint(endpoint, item.href);
 	const isDir = isCollectionResource(validPropstat.prop.resourcetype);
-	if (remotePath === '/') return { isDir: true, key: '/' };
+	if (remotePath === '') return { isDir: true, key: '/' };
 
-	const key = remotePath.slice(1);
-	if (isDir) return { isDir: true, key: `${key}/` };
+	const key = normalizeKey(normalizeChar(remotePath), isDir);
+	if (isDir) return { isDir: true, key };
 
 	const mtime = new Date(getDavText(validPropstat.prop.getlastmodified) ?? '').valueOf();
 	const size = Number.parseInt(getDavText(validPropstat.prop.getcontentlength) ?? '0', 10);
-	const uid = getDavText(validPropstat.prop.getetag) ?? String(mtime);
+	const uid = getDavText(validPropstat.prop.getetag) ?? mtime.toString();
 
-	return {
-		isDir: false,
-		key,
-		mtime,
-		size,
-		uid,
-	};
+	return { isDir: false, key, mtime, size, uid };
 }
 
 type PropfindOptions = {
 	depth: '0' | '1' | 'infinity';
-	isDir: boolean;
 	key: string;
 };
 
 async function propfind(
 	request: typeof requestUrl,
-	options: WebdavFsOptions,
+	auth: string,
+	endpoint: string,
 	propfindOptions: PropfindOptions,
 ) {
 	const response = await request({
 		body: PROPFIND_BODY,
 		headers: {
-			Authorization: getAuthorization(options.username, options.password),
+			Authorization: auth,
 			'Content-Type': 'application/xml',
 			Depth: propfindOptions.depth,
 		},
 		method: 'PROPFIND',
-		url: buildUrl(options.endpoint, propfindOptions.key, propfindOptions.isDir),
+		url: buildUrl(endpoint, propfindOptions.key),
 	});
 
 	const parsed = parseXML(response.text) as WebDAVMultistatus;
@@ -198,7 +163,7 @@ async function propfind(
 }
 
 function isTargetItem(key: string, endpoint: string, item: WebDAVResponseItem) {
-	return stripEndpointPath(endpoint, item.href) === getTargetRemotePath(key);
+	return normalizeChar(stripEndSlash(stripEndpoint(endpoint, item.href))) === stripEndSlash(key);
 }
 
 function toDescendantStats(key: string, endpoint: string, items: Array<WebDAVResponseItem>) {
@@ -215,14 +180,16 @@ function getFileUid(stat: Stat, key: string) {
 
 export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 	private readonly auth: string;
+	private readonly endpoint: string;
 
 	constructor(options: WebdavFsOptions, request?: typeof requestUrl) {
 		super(options, request);
 		this.auth = getAuthorization(this.options.username, this.options.password);
+		this.endpoint = normalizeUrl(this.options.endpoint);
 	}
 
 	getUid() {
-		return `${this.options.endpoint}~${this.options.username}`;
+		return `webdav~${this.options.endpoint}~${this.options.username}`;
 	}
 
 	async checkConnection() {
@@ -231,7 +198,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 				body: '<D:propfind xmlns:D="DAV:"/>',
 				headers: { Authorization: this.auth, Depth: '0' },
 				method: 'PROPFIND',
-				url: buildUrl(this.options.endpoint, '/', true),
+				url: buildUrl(this.endpoint, '/'),
 			});
 			if (response.status === 200 || response.status === 207)
 				return { success: true } as const;
@@ -249,7 +216,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		const response = await this.request({
 			headers: { Authorization: this.auth },
 			method: 'GET',
-			url: buildUrl(this.options.endpoint, key, false),
+			url: buildUrl(this.endpoint, key),
 		});
 
 		return response.arrayBuffer;
@@ -274,7 +241,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 						Range: `bytes=${start}-${endInclusive}`,
 					},
 					method: 'GET',
-					url: buildUrl(this.options.endpoint, key, false),
+					url: buildUrl(this.endpoint, key),
 				});
 
 				return response.arrayBuffer;
@@ -288,7 +255,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 			body: value,
 			headers: { Authorization: this.auth },
 			method: 'PUT',
-			url: buildUrl(this.options.endpoint, key, false),
+			url: buildUrl(this.endpoint, key),
 		});
 
 		const etag = getHeader(response.headers, 'etag');
@@ -302,7 +269,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 			await this.request({
 				headers: { Authorization: this.auth },
 				method: 'DELETE',
-				url: buildUrl(this.options.endpoint, key, false),
+				url: buildUrl(this.endpoint, key),
 			});
 		} catch (error) {
 			const status =
@@ -315,17 +282,17 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 	}
 
 	async mkdir(key: string, recursive = false) {
-		const directoryKeys = recursive ? getRecursiveDirectoryKeys(key) : [key];
+		const directoryKeys = recursive ? getRecursiveKeys(key) : [key];
 
 		for (const directoryKey of directoryKeys)
 			try {
 				await this.request({
 					headers: { Authorization: this.auth },
 					method: 'MKCOL',
-					url: buildUrl(this.options.endpoint, directoryKey, true),
+					url: buildUrl(this.endpoint, directoryKey),
 				});
 			} catch (error) {
-				if (recursive && getRequestStatus(error) === 405) continue;
+				if (recursive && getStatusFromError(error) === 405) continue;
 				throw error;
 			}
 	}
@@ -333,11 +300,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 	async stat(key: string): Promise<Stat> {
 		if (key === '/') return { isDir: true, key: '/' } satisfies FolderStat;
 
-		const items = await propfind(this.request, this.options, {
-			depth: '0',
-			isDir: key.endsWith('/'),
-			key,
-		});
+		const items = await propfind(this.request, this.auth, this.endpoint, { depth: '0', key });
 		const item = items.find((candidate) => isTargetItem(key, this.options.endpoint, candidate));
 		if (!item) throw new Error(`WebDAV stat not found for ${key}`);
 
@@ -346,20 +309,31 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		return stat;
 	}
 
+	async exists(key: string): Promise<boolean> {
+		try {
+			const items = await propfind(this.request, this.auth, this.endpoint, {
+				depth: '0',
+				key,
+			});
+			const item = items.find((candidate) =>
+				isTargetItem(key, this.options.endpoint, candidate),
+			);
+			return Boolean(item);
+		} catch (error: unknown) {
+			if (getStatusFromError(error) === 404) return false;
+			throw error;
+		}
+	}
+
 	async list(key: string) {
-		const items = await propfind(this.request, this.options, {
-			depth: '1',
-			isDir: true,
-			key,
-		});
+		const items = await propfind(this.request, this.auth, this.endpoint, { depth: '1', key });
 		return toDescendantStats(key, this.options.endpoint, items);
 	}
 
 	async listAll(key: string, progress?: Ref<Progress>) {
 		if (this.options.useInfinity) {
-			const items = await propfind(this.request, this.options, {
+			const items = await propfind(this.request, this.auth, this.endpoint, {
 				depth: 'infinity',
-				isDir: true,
 				key,
 			});
 			const result = toDescendantStats(key, this.options.endpoint, items);
@@ -400,7 +374,6 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 			);
 
 			for (const items of currentLevelResults) for (const item of items) result.push(item);
-
 			for (const nextLevelKeys of nextLevelKeysByIndex) queue.push(...nextLevelKeys);
 		}
 

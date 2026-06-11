@@ -3,37 +3,24 @@ import sleep from '~/utils/sleep';
 import type { RemoteFs } from '../interface';
 
 type RetryShimOptions = {
-	maxRetry: number;
-	retryableStatusCodes: Array<number>;
-	retryDelayMs: number;
+	maxRetry?: number;
+	isRetryable: (error: unknown) => boolean;
+	retryDelayMs?: number;
 };
-
-function getRequestStatus(error: unknown) {
-	if (typeof error !== 'object' || error === null) return undefined;
-	const res = (error as { res?: { status?: unknown } }).res;
-	return typeof res?.status === 'number' ? res.status : undefined;
-}
 
 export default function applyRetryShim<T extends object>(
 	original: RemoteFs<T>,
-	options: RetryShimOptions,
+	{ maxRetry = 3, isRetryable, retryDelayMs = 1000 }: RetryShimOptions,
 ): RemoteFs<T> {
 	const request = original.request;
-	const retryableStatusCodes = new Set(options.retryableStatusCodes);
 	type RequestParam = Parameters<typeof requestUrl>[0];
 
 	async function wrappedRequest(p: RequestParam, retryCount = 0) {
 		try {
 			return await request(p);
 		} catch (error) {
-			const status = getRequestStatus(error);
-			if (
-				status === undefined ||
-				!retryableStatusCodes.has(status) ||
-				retryCount >= options.maxRetry
-			)
-				throw error;
-			await sleep(options.retryDelayMs);
+			if (!isRetryable(error) || retryCount >= maxRetry) throw error;
+			await sleep(retryDelayMs);
 			return wrappedRequest(p, retryCount + 1);
 		}
 	}

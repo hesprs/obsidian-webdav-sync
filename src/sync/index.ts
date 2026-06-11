@@ -1,5 +1,3 @@
-import type { Vault } from 'obsidian';
-import type { WebDAVClient } from 'webdav';
 import type {
 	SyncFailedTaskInfo,
 	SyncProgressSummary,
@@ -7,28 +5,21 @@ import type {
 	ProgressPatch,
 	SyncPlanSummary,
 } from '~/events';
+import type { VaultFs, WebdavFs } from '~/fs-new';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import { syncRun, syncCancel, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import { statItem } from '~/fs/vault';
 import t from '~/i18n';
+import { hash } from '~/platform/crypto';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
-import breakableSleep from '~/utils/breakable-sleep';
-import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import { getTaskName } from '~/utils/get-task-info';
-import isRetryableError from '~/utils/is-retryable-error';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
 import type { BaseTask, TaskResult } from './tasks/task.interface';
 import TwoWaySyncDecider from './decision/two-way.decider';
-import {
-	SyncCancelledError,
-	SyncRetryExhaustedError,
-	isSyncCancelledError,
-	toError,
-} from './errors';
+import { SyncCancelledError, isSyncCancelledError } from './errors';
 import AddRecordTask from './tasks/add-record.task';
 import CleanRecordTask from './tasks/clean-record.task';
 import MkdirRemoteTask from './tasks/mkdir-remote.task';
@@ -52,8 +43,8 @@ export default class SyncEngine {
 	constructor(
 		private readonly plugin: WebDAVSyncPlugin,
 		private readonly options: {
-			vault: Vault;
-			webdav: WebDAVClient;
+			vaultFs: VaultFs;
+			webdavFs: WebdavFs;
 			token: string;
 		},
 	) {
@@ -173,7 +164,7 @@ export default class SyncEngine {
 					});
 					syncRun(currentRun);
 					const { tasksToDelete, tasksToReupload } = await new DeleteConfirmModal(
-						this.app,
+						this.plugin.app,
 						removeLocalTasks,
 					).openAndWait();
 
@@ -264,9 +255,9 @@ export default class SyncEngine {
 		const final: Array<PushTask | MkdirRemoteTask> = [];
 		for (const task of tasks) {
 			const options = task.options;
-			const local = await statItem(this.vault, options.localPath);
+			const local = await this.vault.stat(options.key);
 			if (!local)
-				throw new Error(`Local file item not found during reupload: ${options.localPath}`);
+				throw new Error(`Local file item not found during reupload: ${options.key}`);
 			if (local.isDir) final.push(new MkdirRemoteTask({ ...options, local }));
 			else final.push(new PushTask({ ...options, local }));
 		}
@@ -282,40 +273,15 @@ export default class SyncEngine {
 			this.getStateKey(),
 			this.plugin.syncStateStore,
 			this.plugin.baseTextStore,
-			this.plugin.fileChunkStore,
 		);
 	}
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {
-		const webdav = this.webdav;
-		const remoteBaseDir = this.remoteBaseDir;
-
-		let remoteBaseDirExists = await this.retryWebDAVCall(() => webdav.exists(remoteBaseDir));
-
-		if (!remoteBaseDirExists) await syncRecord.drop();
-
-		while (!remoteBaseDirExists) {
-			this.throwIfCancelled();
-
-			try {
-				await webdav.createDirectory(remoteBaseDir, {
-					recursive: true,
-				});
-				remoteBaseDirExists = true;
-				continue;
-			} catch (error) {
-				if (isRetryableError(error)) {
-					await breakableSleep(syncCancel, 5000);
-					this.throwIfCancelled();
-					// oxlint-disable-next-line no-useless-assignment
-					remoteBaseDirExists = await this.retryWebDAVCall(() =>
-						webdav.exists(remoteBaseDir),
-					);
-					continue;
-				}
-				throw error;
-			}
-		}
+		const { webdav } = this;
+		if (await webdav.exists('/')) return;
+		await syncRecord.drop();
+		this.throwIfCancelled();
+		await webdav.mkdir('/', true);
 	}
 
 	private async execTaskGroup(
@@ -325,10 +291,9 @@ export default class SyncEngine {
 		allCompletedTasks: Array<BaseTask>,
 	) {
 		let currentRun = run;
-		const tasksToDisplay = tasks.filter((task) => this.isDisplayableTask(task));
 		const settledResults = await Promise.allSettled(
 			tasks.map(async (task) => {
-				const result = await this.executeWithRetry(task);
+				const result = await task.exec();
 				if (this.isDisplayableTask(task)) {
 					allCompletedTasks.push(task);
 					currentRun = updateSyncRunSnapshot(currentRun, {
@@ -362,11 +327,8 @@ export default class SyncEngine {
 			if (!taskResult.success)
 				logger.warn('Task execution failed', {
 					error: taskResult.error,
-					index: i + 1,
-					localPath: task.localPath,
-					remotePath: task.remotePath,
+					key: task.key,
 					taskName,
-					totalTasks: tasksToDisplay.length,
 				});
 		}
 
@@ -379,7 +341,7 @@ export default class SyncEngine {
 	): SyncProgressSummary {
 		return {
 			completed: allCompletedTasks.map((task) => ({
-				path: task.localPath,
+				path: task.key,
 				taskName: task.name ?? 'sync',
 			})),
 			completedTasks: allCompletedTasks.length,
@@ -395,7 +357,7 @@ export default class SyncEngine {
 				const task = result.error.task;
 				failed.push({
 					errorMessage: result.error.message,
-					localPath: task.options.localPath,
+					key: task.key,
 					name: task.name,
 				});
 			}
@@ -408,94 +370,18 @@ export default class SyncEngine {
 		};
 	}
 
-	/**
-	 * Automatically handle 503 errors and retry task execution
-	 */
-	private async executeWithRetry(task: BaseTask): Promise<TaskResult> {
-		let attempt = 0;
-		while (true) {
-			if (this.isCancelled)
-				return {
-					error: new TaskError(t('sync.cancelled'), task),
-					success: false,
-				};
-
-			const taskResult = await task.exec();
-			if (!taskResult.success && isRetryableError(taskResult.error)) {
-				attempt++;
-				logger.warn('Retrying task after transient error', {
-					attempt,
-					error: taskResult.error,
-					localPath: task.localPath,
-					remotePath: task.remotePath,
-					taskName: getTaskName(task.name),
-				});
-				await breakableSleep(syncCancel, 5000);
-				if (this.isCancelled)
-					return {
-						error: new TaskError(t('sync.cancelled'), task),
-						success: false,
-					};
-
-				continue;
-			}
-			return taskResult;
-		}
-	}
-
-	private async retryWebDAVCall<T>(operation: () => Promise<T>) {
-		let retryCount = 0;
-		while (true) {
-			this.throwIfCancelled();
-
-			try {
-				return await operation();
-			} catch (error) {
-				if (!isRetryableError(error)) {
-					logger.error('WebDAV operation failed', error);
-					throw toError(error, 'WebDAV operation failed');
-				}
-
-				retryCount++;
-				const retryError = toError(error, 'WebDAV operation failed');
-				if (retryCount >= 3) {
-					logger.error('WebDAV connection failed after retries', {
-						error: retryError,
-						retryCount,
-					});
-					throw new SyncRetryExhaustedError(undefined, retryError);
-				}
-
-				logger.warn('Retrying WebDAV operation after transient error', {
-					error: retryError,
-					retryCount,
-				});
-				await breakableSleep(syncCancel, 5000);
-				this.throwIfCancelled();
-			}
-		}
-	}
-
 	private readonly throwIfCancelled = () => {
 		if (!this.isCancelled) return;
 		logger.warn('WebDAV operation cancelled');
 		throw new SyncCancelledError();
 	};
 
-	get app() {
-		return this.plugin.app;
-	}
-
 	get webdav() {
-		return this.options.webdav;
+		return this.options.webdavFs;
 	}
 
 	get vault() {
-		return this.options.vault;
-	}
-
-	get remoteBaseDir() {
-		return this.settings.remoteDir;
+		return this.options.vaultFs;
 	}
 
 	get settings() {
@@ -503,11 +389,6 @@ export default class SyncEngine {
 	}
 
 	private getStateKey() {
-		return getSyncStateKey({
-			account: this.settings.account,
-			remoteBaseDir: this.remoteBaseDir,
-			serverUrl: this.settings.serverUrl,
-			vaultName: this.vault.getName(),
-		});
+		return hash(`${this.vault.getUid()}~~${this.webdav.getUid()}`);
 	}
 }

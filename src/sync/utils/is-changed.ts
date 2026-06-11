@@ -4,7 +4,6 @@ import type { BaseTask } from '../tasks/task.interface';
 import MergeTask from '../tasks/merge.task';
 import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
-import isSameTime from './is-same-time';
 
 export default function isChanged({
 	path,
@@ -19,13 +18,18 @@ export default function isChanged({
 	currentStats: StatsMap;
 	tasks?: Array<BaseTask>;
 }) {
-	const thisRecord = records.get(path)?.[source];
+	const inRecords = records.get(path);
+	const record = inRecords
+		? inRecords.isDir
+			? { isDir: true }
+			: { isDir: false, uid: inRecords[source] }
+		: undefined;
 	const target = currentStats.get(path);
-	if (!thisRecord || !target) return true;
+	if (!record || !target) return true;
 	// Unable to compare between directories and files
-	if (target.isDir !== thisRecord.isDir) return true;
+	if (target.isDir !== record.isDir) return true;
 	// Compare files
-	if (!target.isDir && !thisRecord.isDir) return !isSameTime(target.mtime, thisRecord.mtime);
+	if (!target.isDir && !record.isDir) return target.uid !== record.uid;
 	else {
 		// Compare folders
 		if (tasks)
@@ -35,14 +39,13 @@ export default function isChanged({
 					(task instanceof MergeTask ||
 						task instanceof PushTask ||
 						task instanceof PullTask) &&
-					isSub(path, task.localPath)
+					isSub(path, task.key)
 				)
 					return true;
 		for (const [subPath, stats] of currentStats) {
 			// Check for subfolder changes
 			if (!stats.isDir || !isSub(path, subPath)) continue;
-			const recorded = records.get(subPath)?.[source];
-			if (!recorded) return true;
+			if (!records.get(subPath)) return true;
 		}
 	}
 	return false;

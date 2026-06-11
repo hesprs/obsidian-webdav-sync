@@ -1,36 +1,31 @@
 import { Notice } from 'obsidian';
 import { For, Show, createEffect, createSignal } from 'solid-js';
-import type { fs } from '../App';
+import type { FolderStat, RemoteFs, Stat } from '~/fs-new';
+import { basename } from '~/platform/path';
 import File from './File';
 import Folder from './Folder';
 
-export type FileStat = {
-	path: string;
-	basename: string;
-	isDir: boolean;
-};
-
 export type FileListProps = {
 	path: string;
-	fs: fs;
-	onClick: (file: FileStat) => void;
+	fs: RemoteFs;
+	onClick: (file: FolderStat) => void;
 };
 
 export function createFileList() {
 	const [version, setVersion] = createSignal(0);
 	return {
 		FileList: (props: FileListProps) => {
-			const [items, setItems] = createSignal<Array<FileStat>>([]);
+			const [items, setItems] = createSignal<Array<Stat>>([]);
 
 			const sortedItems = () =>
 				items().sort((a, b) => {
-					if (a.isDir === b.isDir) return a.basename.localeCompare(b.basename, ['zh']);
+					if (a.isDir === b.isDir) return basename(a.key).localeCompare(basename(b.key));
 					return a.isDir && !b.isDir ? -1 : 1;
 				});
 
 			async function refresh() {
 				try {
-					const newItems = await props.fs.ls(props.path);
+					const newItems = await props.fs.list(props.path);
 					setItems(newItems);
 				} catch (error) {
 					if (error instanceof Error) new Notice(error.message);
@@ -49,11 +44,13 @@ export function createFileList() {
 			return (
 				<For each={sortedItems()}>
 					{(f) => (
-						<Show when={f.isDir} fallback={<File name={f.basename} />}>
+						<Show when={f.isDir} fallback={<File name={basename(f.key)} />}>
 							<Folder
-								name={f.basename}
-								path={f.path}
-								onClick={() => props.onClick(f)}
+								name={basename(f.key)}
+								path={f.key}
+								onClick={() => {
+									if (f.isDir) props.onClick(f);
+								}}
 							/>
 						</Show>
 					)}
