@@ -12,7 +12,7 @@ function renderFailedTaskRow(itemEl: HTMLDivElement, task: SyncFailedTaskInfo) {
 	setTooltip(icon, taskName);
 
 	main.createSpan({ cls: 'font-semibold', text: taskName });
-	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: task.localPath });
+	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: task.key });
 
 	row.createDiv({ cls: 'text-[var(--text-muted)] break-words mt-1', text: task.errorMessage });
 }

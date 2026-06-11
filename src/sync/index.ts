@@ -4,16 +4,17 @@ import type {
 	SyncRunSnapshot,
 	ProgressPatch,
 	SyncPlanSummary,
+	SyncResultSummary,
 } from '~/events';
-import type { VaultFs, WebdavFs } from '~/fs-new';
+import type { RemoteFs, VaultFs } from '~/fs-new';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import { syncRun, syncCancel, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
 import t from '~/i18n';
-import { hash } from '~/platform/crypto';
 import { SyncRecord } from '~/storage';
 import { SyncRunKind } from '~/types';
+import getStateKey from '~/utils/get-state-key';
 import { getTaskName } from '~/utils/get-task-info';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
@@ -28,13 +29,6 @@ import RemoveLocalTask from './tasks/remove-local.task';
 import { TaskError } from './tasks/task.interface';
 import optimizeTasks from './utils/optimize-tasks';
 
-type SyncResultSummary = {
-	totalTasks: number;
-	succeededTasks: number;
-	failedTasks: number;
-	failed: Array<SyncFailedTaskInfo>;
-};
-
 export default class SyncEngine {
 	isCancelled = false;
 
@@ -44,7 +38,7 @@ export default class SyncEngine {
 		private readonly plugin: WebDAVSyncPlugin,
 		private readonly options: {
 			vaultFs: VaultFs;
-			webdavFs: WebdavFs;
+			webdavFs: RemoteFs;
 			token: string;
 		},
 	) {
@@ -95,10 +89,10 @@ export default class SyncEngine {
 				currentRun = finalizeSyncRun(currentRun, {
 					patch: {
 						resultSummary: {
-							failed: [],
-							failedTasks: 0,
-							succeededTasks: 0,
-							totalTasks: 0,
+							completed: 0,
+							failed: 0,
+							failedTasks: [],
+							total: 0,
 						},
 					},
 					stage: 'completed_noop',
@@ -213,7 +207,7 @@ export default class SyncEngine {
 			}
 
 			const resultSummary = this.createResultSummary(allTasksResult);
-			const failedCount = resultSummary.failedTasks;
+			const failedCount = resultSummary.failed;
 			currentRun = finalizeSyncRun(currentRun, {
 				patch: {
 					errorSummary:
@@ -246,7 +240,7 @@ export default class SyncEngine {
 		return {
 			requiresConfirmation: false,
 			requiresDeleteConfirmation: false,
-			totalTasks: tasks.length,
+			total: tasks.length,
 			warnings: [],
 		};
 	}
@@ -340,22 +334,22 @@ export default class SyncEngine {
 		allCompletedTasks: Array<BaseTask>,
 	): SyncProgressSummary {
 		return {
-			completed: allCompletedTasks.map((task) => ({
+			completed: allCompletedTasks.length,
+			completedTasks: allCompletedTasks.map((task) => ({
 				path: task.key,
 				taskName: task.name ?? 'sync',
 			})),
-			completedTasks: allCompletedTasks.length,
-			totalTasks: totalDisplayableTasks.length,
+			total: totalDisplayableTasks.length,
 		};
 	}
 
 	private createResultSummary(results: Array<TaskResult>): SyncResultSummary {
-		const failed: Array<SyncFailedTaskInfo> = [];
+		const failedTasks: Array<SyncFailedTaskInfo> = [];
 
 		for (const result of results)
 			if (!result.success && result.error) {
 				const task = result.error.task;
-				failed.push({
+				failedTasks.push({
 					errorMessage: result.error.message,
 					key: task.key,
 					name: task.name,
@@ -363,10 +357,10 @@ export default class SyncEngine {
 			}
 
 		return {
-			failed,
-			failedTasks: failed.length,
-			succeededTasks: results.filter((result) => result.success).length,
-			totalTasks: results.length,
+			completed: results.filter((result) => result.success).length,
+			failed: failedTasks.length,
+			failedTasks,
+			total: results.length,
 		};
 	}
 
@@ -389,6 +383,6 @@ export default class SyncEngine {
 	}
 
 	private getStateKey() {
-		return hash(`${this.vault.getUid()}~~${this.webdav.getUid()}`);
+		return getStateKey(this.webdav, this.vault);
 	}
 }

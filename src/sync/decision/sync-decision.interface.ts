@@ -63,7 +63,6 @@ export type SyncDecisionInput = {
 	currentLocalStats: StatsMap;
 	currentRemoteStats: StatsMap;
 	records: RecordStatsMap;
-	remoteBaseDir: string;
 	taskFactory: TaskFactory;
 	settings: {
 		conflictStrategy: ConflictStrategy;

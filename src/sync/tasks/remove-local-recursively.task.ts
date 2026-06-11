@@ -1,4 +1,3 @@
-import { trashFile } from '~/fs/vault';
 import logger from '~/utils/logger';
 import { BaseTask, toTaskError } from './task.interface';
 
@@ -7,14 +6,11 @@ export default class RemoveLocalRecursivelyTask extends BaseTask {
 
 	async exec() {
 		try {
-			const exists = await this.vault.adapter.exists(this.localPath);
-			if (!exists) return { success: true } as const;
-
-			await trashFile(this.vault, this.localPath);
-			await this.syncRecord.removeRecordSubtree(this.localPath);
+			await this.vault.delete(this.key);
+			await this.syncRecord.removeRecordSubtree(this.key);
 			return { success: true } as const;
 		} catch (error) {
-			logger.error(`Failed to remove local directory ${this.remotePath} recursively`, error);
+			logger.error(`Failed to remove local directory \`${this.key}\` recursively`, error);
 			return { error: toTaskError(error, this), success: false };
 		}
 	}

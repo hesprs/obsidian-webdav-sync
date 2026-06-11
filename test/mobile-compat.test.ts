@@ -1,39 +1,5 @@
 import { expect, test } from 'bun:test';
 import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
-import { getSyncStateKey } from '~/utils/get-sync-state-key';
-
-test('builds stable sync state keys from sync namespace identity', () => {
-	expect(
-		getSyncStateKey({
-			account: 'alice',
-			remoteBaseDir: '/remote/base/',
-			serverUrl: 'https://dav.example.com///',
-			vaultName: 'Vault',
-		}),
-	).toBe(
-		getSyncStateKey({
-			account: 'alice',
-			remoteBaseDir: '/remote/base',
-			serverUrl: 'https://dav.example.com',
-			vaultName: 'Vault',
-		}),
-	);
-	expect(
-		getSyncStateKey({
-			account: 'alice',
-			remoteBaseDir: '/remote/base',
-			serverUrl: 'https://dav.example.com',
-			vaultName: 'Vault',
-		}),
-	).not.toBe(
-		getSyncStateKey({
-			account: 'bob',
-			remoteBaseDir: '/remote/base',
-			serverUrl: 'https://dav.example.com',
-			vaultName: 'Vault',
-		}),
-	);
-});
 
 test('normalizes binary views into exact ArrayBuffer slices', async () => {
 	const source = new Uint8Array([1, 2, 3, 4, 5]);

@@ -1,6 +1,5 @@
-import type { FileStatModel, FolderStatModel, StatModel } from '~/types';
+import type { FileStat, FolderStat, Stat } from '~/fs-new';
 import t from '~/i18n';
-import { normalizePathToAbsolute } from '~/platform/path';
 import { ConflictStrategy, UnmergeableStrategy } from '~/settings';
 import logger from '~/utils/logger';
 import type { BaseTask } from '../tasks/task.interface';
@@ -14,7 +13,6 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 		currentRemoteStats: remoteStats,
 		records,
 		taskFactory,
-		remoteBaseDir,
 		settings,
 	} = input;
 
@@ -24,92 +22,69 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 
 	const tasks: Array<BaseTask> = [];
 	const files: Array<{
-		path: string;
-		local?: FileStatModel;
-		remote?: FileStatModel;
+		key: string;
+		local?: FileStat;
+		remote?: FileStat;
 	}> = [];
 	const folders: Array<{
-		path: string;
-		local?: FolderStatModel;
-		remote?: FolderStatModel;
+		key: string;
+		local?: FolderStat;
+		remote?: FolderStat;
 	}> = [];
 	const fileFolders: Array<{
-		path: string;
-		local: StatModel;
-		remote: StatModel;
+		key: string;
+		local: Stat;
+		remote: Stat;
 	}> = [];
 	const removeRecords: Array<string> = [];
 
-	new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]).forEach((path) => {
-		const remote = remoteStats.get(path);
-		const local = localStats.get(path);
-		if (!(local?.isDir || remote?.isDir))
-			files.push({
-				local,
-				path,
-				remote,
-			});
+	new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]).forEach((key) => {
+		const remote = remoteStats.get(key);
+		const local = localStats.get(key);
+		if (!(local?.isDir || remote?.isDir)) files.push({ key, local, remote });
 		else if (!(remote?.isDir === false || local?.isDir === false))
-			folders.push({
-				local,
-				path,
-				remote,
-			});
-		else if (remote && local)
-			fileFolders.push({
-				local,
-				path,
-				remote,
-			});
-		else removeRecords.push(path);
+			folders.push({ key, local, remote });
+		else if (remote && local) fileFolders.push({ key, local, remote });
+		else removeRecords.push(key);
 	});
 
 	const routeConflict = (params: {
-		local: FileStatModel;
-		remote: FileStatModel;
-		options: { localPath: string; remotePath: string };
+		local: FileStat;
+		remote: FileStat;
+		key: string;
 		strategy: ConflictStrategy;
 		unmergeableStrategy: UnmergeableStrategy;
 	}) => {
 		function commonRoutes(strategy: UnmergeableStrategy | ConflictStrategy) {
 			if (strategy === UnmergeableStrategy.Skip) return;
 			if (strategy === UnmergeableStrategy.KeepLocal) {
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				tasks.push(taskFactory.createPushTask({ key, local }));
 				return true;
 			}
 			if (strategy === UnmergeableStrategy.KeepRemote) {
-				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				tasks.push(taskFactory.createPullTask({ key, remote }));
 				return true;
 			}
 			if (strategy === UnmergeableStrategy.LatestTimeStamp) {
 				if (local.mtime >= remote.mtime) {
-					tasks.push(taskFactory.createPushTask({ ...options, local }));
+					tasks.push(taskFactory.createPushTask({ key, local }));
 					return true;
 				}
-				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				tasks.push(taskFactory.createPullTask({ key, remote }));
 				return true;
 			}
 			return false;
 		}
-		const { local, remote, options, strategy, unmergeableStrategy } = params;
-		if (strategy === ConflictStrategy.DiffMatchPatch && !isMergeablePath(local.path))
+		const { local, remote, key, strategy, unmergeableStrategy } = params;
+		if (strategy === ConflictStrategy.DiffMatchPatch && !isMergeablePath(local.key))
 			commonRoutes(unmergeableStrategy);
 		else if (!commonRoutes(strategy))
-			tasks.push(taskFactory.createMergeTask({ ...options, local, remote }));
+			tasks.push(taskFactory.createMergeTask({ key, local, remote }));
 	};
 
 	// * Sync files
-	for (const { local, remote, path } of files) {
-		const record = records.get(path);
-		const localPath = local?.path ?? path;
-		const remotePath =
-			remote?.path ??
-			(local ? normalizePathToAbsolute(remoteBaseDir, path, local.isDir) : remoteBaseDir);
-
-		const options = {
-			localPath,
-			remotePath,
-		};
+	for (const { local, remote, key } of files) {
+		const record = records.get(key);
 		let caseName: keyof typeof operations = 'NONE';
 		let remoteChanged: boolean;
 		let localChanged: boolean;
@@ -118,14 +93,14 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			if (remote) {
 				remoteChanged = isChanged({
 					currentStats: remoteStats,
-					path,
+					key,
 					records,
 					source: 'remote',
 				});
 				if (local) {
 					localChanged = isChanged({
 						currentStats: localStats,
-						path,
+						key,
 						records,
 						source: 'local',
 					});
@@ -137,7 +112,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			} else if (local) {
 				localChanged = isChanged({
 					currentStats: localStats,
-					path,
+					key,
 					records,
 					source: 'local',
 				});
@@ -149,7 +124,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			if (local) {
 				localChanged = isChanged({
 					currentStats: localStats,
-					path,
+					key,
 					records,
 					source: 'local',
 				});
@@ -163,19 +138,19 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			NONE: () => {},
 			NORECORD_NOREMOTE_LOCAL_PUSH: () => {
 				if (!local) return;
-				logger.debug(`Push local file \`${localPath}\` to remote`, {
+				logger.debug(`Push local file \`${key}\` to remote`, {
 					reason: 'local file exists without a remote file',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				tasks.push(taskFactory.createPushTask({ key, local }));
 			},
 			NORECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
-				logger.debug(`Detected conflict in file \`${localPath}\``, {
+				logger.debug(`Detected conflict in file \`${key}\``, {
 					reason: 'both local and remote files exist without a record',
 				});
 				routeConflict({
+					key,
 					local,
-					options,
 					remote,
 					strategy: settings.conflictStrategy,
 					unmergeableStrategy: settings.unmergeableStrategy,
@@ -186,38 +161,38 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				logger.debug(`creating new record`, {
 					reason: 'both local and remote exist but no record',
 				});
-				tasks.push(taskFactory.createAddRecordTask({ ...options, local, remote }));
+				tasks.push(taskFactory.createAddRecordTask({ key, local, remote }));
 			},
 			NORECORD_REMOTE_NOLOCAL_PULL: () => {
 				if (!remote) return;
-				logger.debug(`Pull remote file \`${remotePath}\` to local`, {
+				logger.debug(`Pull remote file \`${key}\` to local`, {
 					reason: 'remote file exists without a local file',
 				});
-				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				tasks.push(taskFactory.createPullTask({ key, remote }));
 			},
 			RECORD_NOREMOTE_LOCAL_PUSH: () => {
 				if (!local) return;
-				logger.debug(`Push local file \`${localPath}\` to remote`, {
+				logger.debug(`Push local file \`${key}\` to remote`, {
 					reason: 'local file changed and remote file does not exist',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				tasks.push(taskFactory.createPushTask({ key, local }));
 			},
 			RECORD_NOREMOTE_LOCAL_REMOVE: () => {
 				if (!local) return;
-				logger.debug(`Remove local file \`${localPath}\``, {
+				logger.debug(`Remove local file \`${key}\``, {
 					reason: 'local file is removable',
 				});
-				tasks.push(taskFactory.createRemoveLocalTask({ ...options, local }));
+				tasks.push(taskFactory.createRemoveLocalTask({ key, local }));
 				return;
 			},
 			RECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
-				logger.debug(`Detected conflict in \`${localPath}\``, {
+				logger.debug(`Detected conflict in \`${key}\``, {
 					reason: 'both local and remote files changed',
 				});
 				routeConflict({
+					key,
 					local,
-					options,
 					remote,
 					strategy: settings.conflictStrategy,
 					unmergeableStrategy: settings.unmergeableStrategy,
@@ -225,31 +200,31 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			},
 			RECORD_REMOTE_LOCAL_PULL: () => {
 				if (!remote || !local) return;
-				logger.debug(`Pull remote file \`${remotePath}\` changes to local`, {
+				logger.debug(`Pull remote file \`${key}\` changes to local`, {
 					reason: 'remote file changed',
 				});
-				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				tasks.push(taskFactory.createPullTask({ key, remote }));
 			},
 			RECORD_REMOTE_LOCAL_PUSH: () => {
 				if (!remote || !local) return;
-				logger.debug(`Push local file \`${localPath}\` changes to remote`, {
+				logger.debug(`Push local file \`${key}\` changes to remote`, {
 					reason: 'local file changed',
 				});
-				tasks.push(taskFactory.createPushTask({ ...options, local }));
+				tasks.push(taskFactory.createPushTask({ key, local }));
 			},
 			RECORD_REMOTE_NOLOCAL_PULL: () => {
 				if (!remote) return;
-				logger.debug(`Pull remote file \`${remotePath}\` to local`, {
+				logger.debug(`Pull remote file \`${key}\` to local`, {
 					reason: 'remote file changed and local file does not exist',
 				});
-				tasks.push(taskFactory.createPullTask({ ...options, remote }));
+				tasks.push(taskFactory.createPullTask({ key, remote }));
 			},
 			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
 				if (!remote) return;
-				logger.debug(`Remove remote file \`${remote.path}\``, {
+				logger.debug(`Remove remote file \`${key}\``, {
 					reason: 'remote file is removable',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				tasks.push(taskFactory.createRemoveRemoteTask({ key, remote }));
 			},
 		};
 
@@ -257,16 +232,8 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	}
 
 	// * Sync folders
-	for (const { path, remote, local } of folders) {
-		const record = records.get(path);
-		const localPath = local?.path ?? path;
-		const remotePath =
-			remote?.path ??
-			(local ? normalizePathToAbsolute(remoteBaseDir, path, local.isDir) : remoteBaseDir);
-		const options = {
-			localPath,
-			remotePath,
-		};
+	for (const { key, remote, local } of folders) {
+		const record = records.get(key);
 
 		let caseName: keyof typeof operations = 'NONE';
 		let remoteChanged: boolean;
@@ -277,7 +244,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				if (!remote) {
 					localChanged = isChanged({
 						currentStats: localStats,
-						path,
+						key,
 						records,
 						source: 'local',
 						tasks,
@@ -289,7 +256,7 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 			} else if (remote) {
 				remoteChanged = isChanged({
 					currentStats: remoteStats,
-					path,
+					key,
 					records,
 					source: 'remote',
 					tasks,
@@ -305,77 +272,74 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 		const operations = {
 			LOCAL_NOREMOTE_NORECORD_PUSH: () => {
 				if (!local) return;
-				logger.debug(`Create remote folder according to local \`${localPath}\``, {
+				logger.debug(`Create remote folder according to local \`${key}\``, {
 					reason: 'local folder does not exist remotely',
 				});
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				tasks.push(taskFactory.createMkdirRemoteTask({ key, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_PUSH: () => {
 				if (!local) return;
-				logger.debug(`Create remote folder according to local \`${localPath}\``, {
+				logger.debug(`Create remote folder according to local \`${key}\``, {
 					reason: 'local folder content changed',
 				});
-				tasks.push(taskFactory.createMkdirRemoteTask({ ...options, local }));
+				tasks.push(taskFactory.createMkdirRemoteTask({ key, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_REMOVE: () => {
 				if (!local) return;
-				logger.debug(`Remove local folder \`${localPath}\``, {
+				logger.debug(`Remove local folder \`${key}\``, {
 					reason: 'local folder is removable (no content changes)',
 				});
-				tasks.push(taskFactory.createRemoveLocalTask({ ...options, local }));
+				tasks.push(taskFactory.createRemoveLocalTask({ key, local }));
 			},
 			LOCAL_REMOTE_NORECORD_RECORD: () => {
 				if (!local || !remote) return;
-				logger.debug(`creating new record for folder \`${localPath}\``, {
+				logger.debug(`creating new record for folder \`${key}\``, {
 					reason: 'both local and remote exist but no record',
 				});
-				tasks.push(taskFactory.createAddRecordTask({ ...options, local, remote }));
+				tasks.push(taskFactory.createAddRecordTask({ key, local, remote }));
 			},
 			NONE: () => {},
 			REMOTE_NOLOCAL_NORECORD_PULL: () => {
 				if (!remote) return;
-				logger.debug(`Create  local folder according to remote \`${remotePath}\``, {
+				logger.debug(`Create local folder according to remote \`${key}\``, {
 					reason: 'remote folder does not exist locally',
 				});
-				tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
+				tasks.push(taskFactory.createMkdirLocalTask({ key, remote }));
 			},
 			REMOTE_NOLOCAL_RECORD_PULL: () => {
 				if (!remote) return;
-				logger.debug(`Create local folder according to remote \`${remotePath}\``, {
+				logger.debug(`Create local folder according to remote \`${key}\``, {
 					reason: 'remote folder content changed',
 				});
-				tasks.push(taskFactory.createMkdirLocalTask({ ...options, remote }));
+				tasks.push(taskFactory.createMkdirLocalTask({ key, remote }));
 			},
 			REMOTE_NOLOCAL_RECORD_REMOVE: () => {
 				if (!remote) return;
-				logger.debug(`Remove remote folder \`${remotePath}\``, {
+				logger.debug(`Remove remote folder \`${key}\``, {
 					reason: 'remote folder is removable (no content changes)',
 				});
-				tasks.push(taskFactory.createRemoveRemoteTask({ ...options, remote }));
+				tasks.push(taskFactory.createRemoveRemoteTask({ key, remote }));
 			},
 		};
 
 		operations[caseName]();
 	}
 
-	for (const { path, remote, local } of fileFolders) {
-		const record = records.get(path);
-		const remotePath = remote.path;
-		const localPath = local.path;
+	for (const { key, remote, local } of fileFolders) {
+		const record = records.get(key);
 		let caseName: keyof typeof operations;
 		const localChanged = isChanged({
 			currentStats: localStats,
-			path,
+			key,
 			records,
 			source: 'local',
 		});
 		const remoteChanged = isChanged({
 			currentStats: remoteStats,
-			path,
+			key,
 			records,
 			source: 'remote',
 		});
-		const options = { localPath, remotePath };
 
 		if (record)
 			if (localChanged && remoteChanged) caseName = 'CONFLICT';
@@ -391,50 +355,50 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 				const remoteForm = t(`sync.fileFolderConflict.${remoteFormat}`);
 				const localForm = t(`sync.fileFolderConflict.${localFormat}`);
 				const message = t(`sync.fileFolderConflict.message`, {
+					key,
 					localForm,
-					path,
 					remoteForm,
 				});
 				throw new Error(message);
 			},
 			LOCAL_DIR_PUSH: () => {
 				if (!local.isDir) return;
-				logger.debug(`Replace remote file \`${remotePath}\` with local directory`, {
+				logger.debug(`Replace remote file \`${key}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
 				tasks.push(
-					taskFactory.createRemoveRemoteTask({ ...options, remote }),
-					taskFactory.createMkdirRemoteTask({ ...options, local }),
+					taskFactory.createRemoveRemoteTask({ key, remote }),
+					taskFactory.createMkdirRemoteTask({ key, local }),
 				);
 			},
 			LOCAL_FILE_PUSH: () => {
 				if (local.isDir) return;
-				logger.debug(`Replace remote directory \`${remotePath}\` with local file`, {
+				logger.debug(`Replace remote directory \`${key}\` with local file`, {
 					reason: 'local file changed but not remote',
 				});
 				tasks.push(
-					taskFactory.createRemoveRemoteTask({ ...options, remote }),
-					taskFactory.createPushTask({ ...options, local }),
+					taskFactory.createRemoveRemoteTask({ key, remote }),
+					taskFactory.createPushTask({ key, local }),
 				);
 			},
 			REMOTE_DIR_PULL: () => {
 				if (!remote.isDir) return;
-				logger.debug(`Replace local file \`${localPath}\` with local directory`, {
+				logger.debug(`Replace local file \`${key}\` with local directory`, {
 					reason: 'local directory changed but not remote',
 				});
 				tasks.push(
-					taskFactory.createRemoveLocalTask({ ...options, local }),
-					taskFactory.createMkdirLocalTask({ ...options, remote }),
+					taskFactory.createRemoveLocalTask({ key, local }),
+					taskFactory.createMkdirLocalTask({ key, remote }),
 				);
 			},
 			REMOTE_FILE_PULL: () => {
 				if (!remote.isDir) return;
-				logger.debug(`Replace local directory \`${localPath}\` with remote file`, {
+				logger.debug(`Replace local directory \`${key}\` with remote file`, {
 					reason: 'remote file changed but not local',
 				});
 				tasks.push(
-					taskFactory.createRemoveLocalTask({ ...options, local }),
-					taskFactory.createMkdirLocalTask({ ...options, remote }),
+					taskFactory.createRemoveLocalTask({ key, local }),
+					taskFactory.createMkdirLocalTask({ key, remote }),
 				);
 			},
 		};
@@ -442,11 +406,11 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 		operations[caseName]();
 	}
 
-	for (const path of removeRecords) {
-		logger.debug(`cleaning orphaned sync record ${path}`, {
+	for (const key of removeRecords) {
+		logger.debug(`cleaning orphaned sync record ${key}`, {
 			reason: 'both local and remote deleted',
 		});
-		tasks.push(taskFactory.createCleanRecordTask({ localPath: path, remotePath: path }));
+		tasks.push(taskFactory.createCleanRecordTask({ key }));
 	}
 
 	return tasks;

@@ -38,38 +38,14 @@ const dummyOption = {
 test('merges removals and orders directory creation before file tasks', () => {
 	const tasks = optimizeTasks(
 		[
-			new PushTask({
-				...sharedOptions,
-				localPath: 'folder/file.md',
-				remotePath: 'folder/file.md',
-			}),
-			new PullTask({
-				...sharedOptions,
-				localPath: 'notes/file.md',
-				remotePath: 'notes/file.md',
-			}),
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'old/file.md',
-				remotePath: 'old/file.md',
-			}),
-			new RemoveRemoteTask({
-				...sharedOptions,
-				localPath: 'gone/file.md',
-				remotePath: 'gone/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'folder',
-				remotePath: 'folder',
-			}),
-			new MkdirLocalTask({
-				...sharedOptions,
-				localPath: 'notes',
-				remotePath: 'notes',
-			}),
-			new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
-			new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
+			new PushTask({ ...sharedOptions, key: 'folder/file.md' }),
+			new PullTask({ ...sharedOptions, key: 'notes/file.md' }),
+			new RemoveLocalTask({ ...sharedOptions, key: 'old/file.md' }),
+			new RemoveRemoteTask({ ...sharedOptions, key: 'gone/file.md' }),
+			new MkdirRemoteTask({ ...sharedOptions, key: 'folder/' }),
+			new MkdirLocalTask({ ...sharedOptions, key: 'notes/' }),
+			new RemoveLocalTask({ ...sharedOptions, key: 'old/' }),
+			new RemoveRemoteTask({ ...sharedOptions, key: 'gone/' }),
 		],
 		dummyOption,
 		dummyOption,
@@ -82,27 +58,15 @@ test('merges removals and orders directory creation before file tasks', () => {
 	expect(tasks[4]).toBeInstanceOf(PushTask);
 	expect(tasks[5]).toBeInstanceOf(PullTask);
 	expect(tasks).toHaveLength(6);
-	expect(tasks[1].localPath).toBe('old');
+	expect(tasks[1].key).toBe('old/');
 });
 
 test('keeps remote reupload steps ahead of local deletion', () => {
 	const tasks = optimizeTasks(
 		[
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new PushTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'archive',
-				remotePath: 'archive',
-			}),
+			new RemoveLocalTask({ ...sharedOptions, key: 'archive/file.md' }),
+			new PushTask({ ...sharedOptions, key: 'archive/file.md' }),
+			new MkdirRemoteTask({ ...sharedOptions, key: 'archive/' }),
 		],
 		dummyOption,
 		dummyOption,
