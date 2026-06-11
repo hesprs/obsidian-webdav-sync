@@ -210,7 +210,7 @@ export default function createFileTreeData(tasks: Array<BaseTask>): FileTreeData
 	const taskNodeIdSet = new Set<string>();
 
 	for (const task of tasks) {
-		const segments = getPathSegments(task.localPath);
+		const segments = getPathSegments(task.key);
 		let parentId = '__root__';
 		let currentPath;
 		for (const [index, segment] of segments.entries()) {
@@ -232,7 +232,7 @@ export default function createFileTreeData(tasks: Array<BaseTask>): FileTreeData
 
 			parentId = nodeId;
 		}
-		const leafNodeId = task.localPath;
+		const leafNodeId = task.key;
 		if (!taskNodeIdSet.has(leafNodeId)) {
 			taskNodeIdSet.add(leafNodeId);
 			taskNodeIds.push(leafNodeId);

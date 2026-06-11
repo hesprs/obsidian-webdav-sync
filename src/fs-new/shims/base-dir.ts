@@ -46,8 +46,8 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 		return this.original.read(joinUnifiedKey(this.baseDir, key));
 	}
 
-	readStream(key: string) {
-		return this.original.readStream(joinUnifiedKey(this.baseDir, key));
+	readStream(key: string, totalSize?: number) {
+		return this.original.readStream(joinUnifiedKey(this.baseDir, key), totalSize);
 	}
 
 	write(key: string, value: ArrayBuffer) {
@@ -66,6 +66,10 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 		return Promise.resolve(this.original.stat(joinUnifiedKey(this.baseDir, key))).then((stat) =>
 			stripBaseDir(this.baseDir, stat),
 		);
+	}
+
+	exists(key: string): MaybePromise<boolean> {
+		return this.original.exists(joinUnifiedKey(this.baseDir, key));
 	}
 
 	async list(key: string) {
