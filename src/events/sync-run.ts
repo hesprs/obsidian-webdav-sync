@@ -43,7 +43,7 @@ export type SyncProgressSummary = {
 
 export type SyncFailedTaskInfo = {
 	name: TaskNames;
-	localPath: string;
+	key: string;
 	errorMessage: string;
 };
 

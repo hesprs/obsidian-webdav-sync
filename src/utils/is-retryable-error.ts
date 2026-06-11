@@ -1,3 +1,5 @@
+import getStatusFromError from './get-status-from-error';
+
 const RETRYABLE_STATUS_CODES = new Set([401, 408, 425, 429, 502, 503, 504]);
 
 const RETRYABLE_MESSAGE_PATTERNS = [
@@ -21,7 +23,7 @@ const RETRYABLE_MESSAGE_PATTERNS = [
 	/\btimed out\b/i,
 ];
 
-type ErrorLike = {
+export type ErrorLike = {
 	message?: unknown;
 	status?: unknown;
 	res?: {
@@ -33,11 +35,6 @@ type ErrorLike = {
 	cause?: unknown;
 	error?: unknown;
 };
-
-function getStatusCode(error: ErrorLike): number | undefined {
-	const candidates = [error.status, error.res?.status, error.response?.status];
-	for (const candidate of candidates) if (typeof candidate === 'number') return candidate;
-}
 
 function hasRetryableMessage(message: string): boolean {
 	return RETRYABLE_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
@@ -61,7 +58,7 @@ export default function isRetryableError(error: unknown): boolean {
 		visited.add(current);
 
 		const errorLike = current as ErrorLike;
-		const statusCode = getStatusCode(errorLike);
+		const statusCode = getStatusFromError(errorLike);
 		if (statusCode && RETRYABLE_STATUS_CODES.has(statusCode)) return true;
 
 		if (typeof errorLike.message === 'string')

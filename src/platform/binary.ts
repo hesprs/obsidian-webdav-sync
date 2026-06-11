@@ -36,3 +36,7 @@ export function arrayBufferEquals(left: ArrayBuffer, right: ArrayBuffer): boolea
 export async function arrayBufferToText(buffer: ArrayBuffer): Promise<string> {
 	return await new Blob([new Uint8Array(buffer)]).text();
 }
+
+export async function textToArrayBuffer(text: string): Promise<ArrayBuffer> {
+	return await new Blob([text]).arrayBuffer();
+}

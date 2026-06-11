@@ -54,6 +54,8 @@ The WebDAV abstraction should not use any external libraries. Only use Obsidian 
 
 `stat()`: `PROPFIND` (depth 0) request to constructed URL with custom XML. Parse with `XMLParser` composable, convert to `Stat`.
 
+`exists()`: `PROPFIND` and intercept 404 responses.
+
 `list()`: `PROPFIND` (depth 1) request to constructed folder URL with custom XML. Parse with `XMLParser`, convert to `Stat` array.
 
 `listAll()`: when `useInfinity` is true, use `PROPFIND` (depth `infinity`) request, parse and convert to `Stat` array. Otherwise BFS recursive depth 1 `PROPFIND`. When the `progress` argument is present, reactively update it.

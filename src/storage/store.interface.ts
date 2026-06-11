@@ -12,7 +12,6 @@ export function createStorageUnavailableError(cause: unknown): Error {
 export const STORAGE_NAME = 'obsidian-webdav-sync';
 export const SYNC_STATE_STORE_NAME = 'sync-state';
 export const BASE_TEXT_STORE_NAME = 'base-text';
-export const FILE_CHUNK_STORE_NAME = 'file-chunk';
 
 export function parseKey(key: string) {
 	const i = key.indexOf(':');

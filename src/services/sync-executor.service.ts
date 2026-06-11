@@ -6,6 +6,7 @@ import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/e
 import finalizeSyncRun from '~/events/sync-terminate';
 import SyncEngine from '~/sync';
 import { isSyncCancelledError } from '~/sync/errors';
+import { createVaultFs, createWebdavFs } from '~/utils/fs-factory';
 import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 
@@ -39,8 +40,8 @@ export default class SyncExecutorService {
 
 			const sync = new SyncEngine(this.plugin, {
 				token: this.plugin.getToken(),
-				vault: this.plugin.app.vault,
-				webdav: this.plugin.webDAVService.createWebDAVClient(),
+				vaultFs: createVaultFs(this.plugin),
+				webdavFs: createWebdavFs(this.plugin),
 			});
 
 			let run = createQueuedSyncRunSnapshot({

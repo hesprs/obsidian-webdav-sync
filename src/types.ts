@@ -1,29 +1,14 @@
-export type StatModel = FileStatModel | FolderStatModel;
-
-export type FileStatModel = {
-	path: string;
-	isDir: false;
-	mtime: number;
-	size: number;
-};
-
-export type FolderStatModel = {
-	path: string;
-	isDir: true;
-};
+import type { Stat } from './fs-new';
 
 export enum SyncRunKind {
 	normal = 'normal',
 	fast = 'fast',
 }
 
-export type RecordStatModel = {
-	local: StatModel;
-	remote: StatModel;
-};
+export type RecordStat = { isDir: false; local: string; remote: string } | { isDir: true };
 
-export type StatsMap = Map<string, StatModel>;
-export type RecordStatsMap = Map<string, RecordStatModel>;
+export type StatsMap = Map<string, Stat>;
+export type RecordStatsMap = Map<string, RecordStat>;
 
 export type MaybePromise<T> = Promise<T> | T;
 

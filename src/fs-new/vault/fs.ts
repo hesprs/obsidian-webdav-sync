@@ -1,51 +1,45 @@
 import type { Vault } from 'obsidian';
-import { normalizeVaultPath, vaultDirname } from '~/platform/path';
+import { dirname, stripEndSlash } from '~/platform/path';
 import type { Stat, VaultFsInterface } from '../interface';
 
-function toNativePath(key: string): string {
-	if (key === '/') return '/';
-	return normalizeVaultPath(key);
+function toKey(vaultPath: string, isDir: boolean): string {
+	if (vaultPath === '/') return '/';
+	return isDir ? `${vaultPath}/` : vaultPath;
 }
 
-function toFolderKey(key: string): string {
-	if (key === '/') return '/';
-	const normalized = normalizeVaultPath(key);
-	return normalized === '' ? '/' : `${normalized}/`;
-}
-
-function toStatKey(path: string, isDir: boolean): string {
-	if (path === '/') return '/';
-	const normalized = normalizeVaultPath(path);
-	return isDir ? `${normalized}/` : normalized;
+function toVaultPath(key: string) {
+	if (key === '/') return key;
+	return stripEndSlash(key);
 }
 
 function toStat(
 	nativePath: string,
 	stat: { type: 'file' | 'folder'; mtime: number; size?: number },
 ): Stat {
-	if (stat.type === 'folder') return { isDir: true, key: toStatKey(nativePath, true) };
+	if (stat.type === 'folder') return { isDir: true, key: toKey(nativePath, true) };
 	return {
 		isDir: false,
-		key: toStatKey(nativePath, false),
+		key: toKey(nativePath, false),
 		mtime: stat.mtime,
 		size: stat.size ?? 0,
 		uid: String(stat.mtime),
 	};
 }
 
-async function ensureVaultDir(vault: Vault, path: string): Promise<void> {
-	if (path === '' || path === '.' || path === '/') return;
-	if (await vault.adapter.exists(path)) return;
-	await ensureVaultDir(vault, vaultDirname(path));
-	if (!(await vault.adapter.exists(path))) await vault.adapter.mkdir(path);
+async function ensureKeyDir(vault: Vault, key: string): Promise<void> {
+	if (key === '/') return;
+	const vaultPath = toVaultPath(key);
+	if (await vault.adapter.exists(vaultPath)) return;
+	await ensureKeyDir(vault, dirname(key));
+	if (!(await vault.adapter.exists(vaultPath))) await vault.adapter.mkdir(vaultPath);
 }
 
 async function removeVaultFileIfExists(vault: Vault, path: string): Promise<void> {
 	if (await vault.adapter.exists(path)) await vault.adapter.remove(path);
 }
 
-function getTrashTempPath(key: string): string {
-	return normalizeVaultPath(`.trash/webdav-sync/${key}.${Date.now()}.part`);
+function getTempPath(): string {
+	return `.trash/webdav-sync-temp/${crypto.randomUUID()}.part`;
 }
 
 function toArrayBuffer(chunk: Uint8Array): ArrayBuffer {
@@ -67,23 +61,23 @@ export default class ObsidianVaultFs implements VaultFsInterface {
 	constructor(private readonly vault: Vault) {}
 
 	getUid(): string {
-		return this.vault.getName();
+		return `obsidian-vault~${this.vault.getName()}`;
 	}
 
 	read(key: string): Promise<ArrayBuffer> {
-		return this.vault.adapter.readBinary(toNativePath(key));
+		return this.vault.adapter.readBinary(toVaultPath(key));
 	}
 
 	async write(key: string, value: ArrayBuffer): Promise<string> {
-		const nativePath = toNativePath(key);
+		const nativePath = toVaultPath(key);
 		await this.vault.adapter.writeBinary(nativePath, value);
 		return getFileUid(this, key);
 	}
 
 	async writeStream(key: string, value: ReadableStream): Promise<string> {
-		const nativePath = toNativePath(key);
-		const tempPath = getTrashTempPath(nativePath);
-		await ensureVaultDir(this.vault, vaultDirname(tempPath));
+		const nativePath = toVaultPath(key);
+		const tempPath = getTempPath();
+		await ensureKeyDir(this.vault, dirname(key));
 
 		const reader = value.getReader();
 		let hasWritten = false;
@@ -115,7 +109,7 @@ export default class ObsidianVaultFs implements VaultFsInterface {
 	}
 
 	async delete(key: string): Promise<void> {
-		const nativePath = toNativePath(key);
+		const nativePath = toVaultPath(key);
 		if (
 			getTrashOption(this.vault) === 'local' ||
 			!(await this.vault.adapter.trashSystem(nativePath))
@@ -124,26 +118,26 @@ export default class ObsidianVaultFs implements VaultFsInterface {
 	}
 
 	move(oldKey: string, newKey: string): Promise<void> {
-		return this.vault.adapter.rename(toNativePath(oldKey), toNativePath(newKey));
+		return this.vault.adapter.rename(toVaultPath(oldKey), toVaultPath(newKey));
 	}
 
 	async mkdir(key: string): Promise<void> {
-		const folderKey = toFolderKey(key);
+		const folderKey = toVaultPath(key);
 		if (folderKey === '/') return;
-		await this.vault.adapter.mkdir(folderKey.slice(0, -1));
+		await this.vault.adapter.mkdir(folderKey);
 	}
 
 	async stat(key: string): Promise<Stat> {
 		if (key === '/') return { isDir: true, key: '/' };
 
-		const nativePath = toNativePath(key);
+		const nativePath = toVaultPath(key);
 		const stat = await this.vault.adapter.stat(nativePath);
 		if (!stat) throw new Error(`Stat of ${key} not found!`);
 		return toStat(nativePath, stat);
 	}
 
 	async listAll(key: string): Promise<Array<Stat>> {
-		const rootKey = toFolderKey(key);
+		const rootKey = toVaultPath(key);
 		const queue = [rootKey];
 		const result: Array<Stat> = [];
 
@@ -155,10 +149,9 @@ export default class ObsidianVaultFs implements VaultFsInterface {
 					const contents = await this.vault.adapter.list(currentNativePath);
 					return await Promise.all(
 						[...contents.files, ...contents.folders].map(async (path) => {
-							const nativePath = toNativePath(path);
-							const stat = await this.vault.adapter.stat(nativePath);
+							const stat = await this.vault.adapter.stat(path);
 							if (!stat) throw new Error(`Stat of ${path} not found!`);
-							return toStat(nativePath, stat);
+							return toStat(path, stat);
 						}),
 					);
 				}),

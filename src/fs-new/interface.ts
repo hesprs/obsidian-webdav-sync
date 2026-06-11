@@ -28,7 +28,7 @@ export abstract class RemoteFs<T extends object = object> {
 		public options: T,
 		public request: typeof requestUrl = requestUrl,
 	) {}
-	abstract getUid(): string; // String whose inequality signifies the client is unique
+	abstract getUid(): string; // String whose inequality signifies the client is unique, must start with `<fs-type>`, use `~` as delimiter
 	abstract checkConnection(): MaybePromise<
 		{ success: true } | { success: false; reason: string }
 	>;
@@ -38,6 +38,7 @@ export abstract class RemoteFs<T extends object = object> {
 	abstract delete(key: string): MaybePromise<void>;
 	abstract mkdir(key: string, recursive?: boolean): MaybePromise<void>;
 	abstract stat(key: string): MaybePromise<Stat>;
+	abstract exists(key: string): MaybePromise<boolean>;
 	abstract list(key: string): MaybePromise<Array<Stat>>; // List direct children under one folder
 	abstract listAll(key: string, progress?: Ref<Progress>): MaybePromise<Array<Stat>>; // List recursive children under one folder
 }

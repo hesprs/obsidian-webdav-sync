@@ -9,7 +9,6 @@ import setupCommands from './services/command.setup';
 import ObservabilityService from './services/observability.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
-import { WebDAVService } from './services/webdav.service';
 import {
 	SyncSettingTab,
 	setPluginInstance,
@@ -114,7 +113,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	public baseTextStore = new IndexedDbBaseTextStore();
 	public fileChunkStore = new IndexedDbFileChunkStore();
 	public observabilityService = new ObservabilityService(this);
-	public webDAVService = new WebDAVService(this);
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
 	public ribbonManager = new SyncRibbonManager(this);
