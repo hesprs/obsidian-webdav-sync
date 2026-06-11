@@ -114,26 +114,20 @@ Then come to the traversal and syncing logic:
   - decrypt the chunk with _chunk nonce_ + _file key_ with `AES-GCM-256`, throw `data corrupted or wrong password` and skip the file if auth tag mismatch
 - Concatenate decrypted content
 
-## Ranged Decryption (for ranged downloading)
+## Streamed Decryption
 
-**Ranged downloading has 3 passes**:
+Streamed decryption receives a `ReadableStream`, generates another `ReadableStream`, and pipe decrypts it between streams.
 
-1. download the file in chunks and save to IndexedDB
-2. collect all chunk keys in IndexedDB, sort, decrypt and append one by one in temp file sequentially
-3. rename the file to destination and clean up IndexedDB
-
-**Part of decryption steps in pass 2**:
-
-- Input the decrypted file path, encrypted size in bytes, and accept a sequential stream (not a true stream, just a repeatedly called class method) of random-size binary
+- Input the decrypted file path, encrypted size in bytes, and accept a sequential binary stream of the file content
 - Split and concatenate the chunk internally
 - For example, if the first received binary is 2,000,000B in size, the range decrypter:
   - strips first 16B as _file salt_
   - add up counter for each chunk and strip next 1966380B as 15 _completed chunks_
   - save the last 33604B as an _incomplete chunk_ and save to a buffer
   - decrypt the 15 _completed chunks_ as one-pass decryption
-  - concatenate content, and return to caller. The caller should append the file and GC immediately
-  - next time the decrypter class method is called, it concatenates the content in the buffer with the first certain size of bytes in the new binary as the first _completed chunk_.
-  - repeat until a done call is received, the class treats the rest content in its buffer as a _completed chunk_, decrypt directly and return to the caller.
+  - concatenate content, and pipe to new stream.
+  - when next binary stream chunk arrives, it concatenates the content in the buffer with the first certain size of bytes in the new binary as the first _completed chunk_.
+  - repeat until the original stream finishes, the class treats the rest content in its buffer as a _completed chunk_, decrypt directly, pipe to the new stream, then end it.
 
 ## File / Folder Name Decryption
 
