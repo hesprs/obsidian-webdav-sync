@@ -3,7 +3,7 @@
  * @param options.maxConcurrent - The maximum number of concurrent requests.
  * @param options.minTime - The minimum time between requests.
  */
-export class ApiLimiter {
+export default class ApiLimiter {
 	private activeCount = 0;
 	private lastStartTime = 0;
 	private readonly queue: Array<() => void> = [];
@@ -60,6 +60,3 @@ export class ApiLimiter {
 		this.processQueue();
 	}
 }
-
-const apiLimiter = new ApiLimiter();
-export default apiLimiter;

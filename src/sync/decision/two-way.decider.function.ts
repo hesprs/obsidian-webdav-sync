@@ -1,6 +1,6 @@
 import type { FileStat, FolderStat, Stat } from '~/fs-new';
 import t from '~/i18n';
-import { ConflictStrategy, UnmergeableStrategy } from '~/settings';
+import { ConflictStrategy, UnmergeableStrategy } from '~/types';
 import logger from '~/utils/logger';
 import type { BaseTask } from '../tasks/task.interface';
 import type { SyncDecisionInput } from './sync-decision.interface';

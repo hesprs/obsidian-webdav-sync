@@ -1,6 +1,5 @@
 import type { FileStat, FolderStat, Stat } from '~/fs-new';
-import type { ConflictStrategy, UnmergeableStrategy } from '~/settings';
-import type { RecordStatsMap, StatsMap } from '~/types';
+import type { ConflictStrategy, UnmergeableStrategy, RecordStatsMap, StatsMap } from '~/types';
 import type { BaseTask } from '../tasks/task.interface';
 
 export type TaskOptions = {

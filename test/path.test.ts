@@ -7,7 +7,7 @@ import {
 	stripEndSlash,
 	basename,
 	dirname,
-} from '~/platform/path';
+} from '~/utils/path';
 
 test('normalizes path characters', () => {
 	expect(normalizeChar('/base/%E2%82%AC.md')).toBe('/base/€.md');

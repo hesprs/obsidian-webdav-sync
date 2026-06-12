@@ -1,5 +1,5 @@
 import { argon2id } from 'hash-wasm';
-import { sha256Digest } from '~/platform/crypto';
+import { sha256Digest } from '~/utils/crypto';
 import {
 	AES_GCM_TAG_LENGTH,
 	CONTENT_CHUNK_SIZE,

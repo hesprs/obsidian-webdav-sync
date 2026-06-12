@@ -1,5 +1,5 @@
 import type WebDAVSyncPlugin from '~';
-import waitUntil from '~/utils/wait-until';
+import { waitUntil } from '~/utils/sleep';
 
 let pluginInstance: WebDAVSyncPlugin | undefined;
 

@@ -3,9 +3,9 @@ import type { ProgressPatch } from '~/events';
 import type { Stat } from '~/fs-new';
 import type { SyncRecord } from '~/storage';
 import type { RecordStatsMap } from '~/types';
-import { useSettings } from '~/settings';
 import { SyncRunKind } from '~/types';
-import type SyncEngine from '..';
+import { useSettings } from '~/utils/plugin-instance';
+import type SyncEngine from '../engine';
 import type { BaseTask } from '../tasks/task.interface';
 import type {
 	OptionsWithBothFileStats,

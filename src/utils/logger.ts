@@ -2,9 +2,9 @@ import { apiVersion, Platform } from 'obsidian';
 import type { SyncRunSnapshot } from '~/events';
 import { VERSION } from '~/consts';
 import { syncRun } from '~/events';
-import formatDateTime from '~/utils/format-date';
+import { formatDateTime } from '~/utils/format-date';
 import { isNil } from './fns';
-import { formatTime } from './input-converters';
+import { formatTime } from './unit-converter';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
 

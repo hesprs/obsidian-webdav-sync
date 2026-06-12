@@ -1,6 +1,6 @@
 import type { App } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
-import type { SyncSettingTab } from '.';
+import type SyncSettingTab from '.';
 
 export default abstract class BaseSettings {
 	constructor(

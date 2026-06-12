@@ -1,6 +1,6 @@
 import { expect, test } from 'bun:test';
-import GlobMatch from '~/composable/glob-match';
 import { needIncludeFromGlobRules } from '~/utils/glob-match';
+import GlobMatch from '~/utils/glob-match-reusable';
 
 const options = { caseSensitive: false };
 

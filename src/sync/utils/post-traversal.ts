@@ -1,8 +1,7 @@
-import type { GlobMatchOptions } from '~/settings';
-import type { StatsMap } from '~/types';
-import { dirname } from '~/platform/path';
+import type { StatsMap, GlobMatchOptions } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import logger from '~/utils/logger';
+import { dirname } from '~/utils/path';
 
 // Apply inclusion / exclusion / file size rules and filter out invalid entries
 export default function postTraversal(

@@ -1,6 +1,6 @@
-import type { OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.interface';
-import { arrayBufferToText } from '~/platform/binary';
+import { arrayBufferToText } from '~/utils/binary';
 import logger from '~/utils/logger';
+import type { OptionsWithLocalFileStat } from '../decision/sync-decision.interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask, toTaskError } from './task.interface';
 

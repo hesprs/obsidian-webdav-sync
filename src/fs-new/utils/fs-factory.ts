@@ -1,14 +1,12 @@
 import type WebDAVSyncPlugin from '~';
-import {
-	baseDirShim,
-	encryptionShim,
-	rateLimiterShim,
-	RemoteFs,
-	retryShim,
-	VaultFs,
-	WebdavFs,
-} from '~/fs-new';
-import getCredential from './get-credential';
+import getCredential from '~/utils/get-credential';
+import { RemoteFs } from '../interface';
+import baseDirShim from '../shims/base-dir';
+import encryptionShim from '../shims/encryption';
+import rateLimiterShim from '../shims/rate-limiter';
+import retryShim from '../shims/retry';
+import VaultFs from '../vault/fs';
+import WebdavFs from '../webdav/fs';
 import isRetryableError from './is-retryable-error';
 
 export function createWebdavFs(plugin: WebDAVSyncPlugin, pure = false) {

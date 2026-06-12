@@ -1,26 +1,15 @@
 import { expect, test } from 'bun:test';
-
-const [
-	{ default: MkdirLocalTask },
-	{ default: MkdirRemoteTask },
-	{ default: PullTask },
-	{ default: PushTask },
-	{ default: RemoveLocalRecursivelyTask },
-	{ default: RemoveLocalTask },
-	{ default: RemoveRemoteRecursivelyTask },
-	{ default: RemoveRemoteTask },
-	{ default: optimizeTasks },
-] = await Promise.all([
-	import('~/sync/tasks/mkdir-local.task'),
-	import('~/sync/tasks/mkdir-remote.task'),
-	import('~/sync/tasks/pull.task'),
-	import('~/sync/tasks/push.task'),
-	import('~/sync/tasks/remove-local-recursively.task'),
-	import('~/sync/tasks/remove-local.task'),
-	import('~/sync/tasks/remove-remote-recursively.task'),
-	import('~/sync/tasks/remove-remote.task'),
-	import('~/sync/utils/optimize-tasks'),
-]);
+import {
+	MkdirLocalTask,
+	MkdirRemoteTask,
+	PullTask,
+	PushTask,
+	RemoveLocalRecursivelyTask,
+	RemoveLocalTask,
+	RemoveRemoteRecursivelyTask,
+	RemoveRemoteTask,
+} from '~/sync';
+import optimizeTasks from '~/sync/utils/optimize-tasks';
 
 const sharedOptions = {
 	local: {} as never,

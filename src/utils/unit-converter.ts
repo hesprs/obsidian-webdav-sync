@@ -1,4 +1,4 @@
-import createUnitConverter from '~/composable/unit-converter';
+import createUnitConverter from './unit-converter-resuable';
 
 const fileSizeConverter = createUnitConverter({
 	// This is academically inaccurate since the following units are actually KiB, MiB, GiB, etc.

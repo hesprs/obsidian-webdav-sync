@@ -1,7 +1,7 @@
 import type { LocalSpaceInstance } from 'localspace';
 import localspace from 'localspace';
-import isSub from '~/utils/is-sub';
 import logger from '~/utils/logger';
+import { isSub } from '~/utils/path';
 
 export function createStorageUnavailableError(cause: unknown): Error {
 	if (cause instanceof Error)

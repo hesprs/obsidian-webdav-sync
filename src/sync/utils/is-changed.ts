@@ -1,5 +1,5 @@
 import type { RecordStatsMap, StatsMap } from '~/types';
-import isSub from '~/utils/is-sub';
+import { isSub } from '~/utils/path';
 import type { BaseTask } from '../tasks/task.interface';
 import MergeTask from '../tasks/merge.task';
 import PullTask from '../tasks/pull.task';

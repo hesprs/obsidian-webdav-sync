@@ -7,3 +7,4 @@ void mock.module('~/settings', () => settings);
 void mock.module('~/utils/is-retryable-error', () => ({
 	default: mock(() => false),
 }));
+if (typeof window === 'undefined') globalThis.window = { setTimeout } as any;

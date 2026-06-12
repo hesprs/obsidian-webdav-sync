@@ -1,5 +1,5 @@
-import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
+import type { OptionsWithLocalFolderStat } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat> {

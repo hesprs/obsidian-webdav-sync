@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import createUnitConverter from '~/composable/unit-converter';
+import createUnitConverter from '~/utils/unit-converter-resuable';
 
 const converter = createUnitConverter({
 	defaultUnit: 's',

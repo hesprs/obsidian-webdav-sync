@@ -2,10 +2,10 @@ import type { TextComponent } from 'obsidian';
 import { Notice, SecretComponent, Setting } from 'obsidian';
 import EncryptionReminderModal from '~/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
+import { createWebdavFs } from '~/fs-new';
 import t from '~/i18n';
-import { normalizeBaseDir } from '~/platform/path';
-import { createWebdavFs } from '~/utils/fs-factory';
-import handleInput from '~/utils/handle-input';
+import { handleInput } from '~/settings/generate-setting-entry';
+import { normalizeBaseDir } from '~/utils/path';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
