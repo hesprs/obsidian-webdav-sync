@@ -6,7 +6,7 @@ import type {
 	SyncPlanSummary,
 	SyncResultSummary,
 } from '~/events';
-import type { RemoteFs, VaultFs } from '~/fs-new';
+import type { RemoteFs, VaultFs } from '~/fs';
 import type { SyncExecutionRequest } from '~/services/sync-executor.service';
 import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import { syncRun, syncCancel, updateSyncRunSnapshot } from '~/events';

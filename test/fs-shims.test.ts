@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'bun:test';
-import { baseDirShim, retryShim } from '~/fs-new';
+import { baseDirShim, retryShim } from '~/fs';
 import { ShimmedRemoteFs } from './utils';
 
 const sleepMock = mock(() => Promise.resolve());

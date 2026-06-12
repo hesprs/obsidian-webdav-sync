@@ -1,6 +1,6 @@
 # File System Abstraction
 
-The file systems the plugin will majorly be interacting with are the Obsidian Vault and the WebDAV. The plugin abstracts the file system interfaces into unified `Fs` as defined in `src/fs-new/interface.ts`. All abstractions are designed to be immutable and throw-away in each sync run.
+The file systems the plugin will majorly be interacting with are the Obsidian Vault and the WebDAV. The plugin abstracts the file system interfaces into unified `Fs` as defined in `src/fs/interface.ts`. All abstractions are designed to be immutable and throw-away in each sync run.
 
 ## Vault Abstraction
 

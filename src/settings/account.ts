@@ -2,7 +2,7 @@ import type { TextComponent } from 'obsidian';
 import { Notice, SecretComponent, Setting } from 'obsidian';
 import EncryptionReminderModal from '~/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
-import { createWebdavFs } from '~/fs-new';
+import { createWebdavFs } from '~/fs';
 import t from '~/i18n';
 import { handleInput } from '~/settings/generate-setting-entry';
 import { normalizeBaseDir } from '~/utils/path';

@@ -1,4 +1,4 @@
-import type { RemoteFs, VaultFs } from '~/fs-new';
+import type { RemoteFs, VaultFs } from '~/fs';
 import { hash } from '~/utils/crypto';
 
 export default function getStateKey(webdav: RemoteFs, vault: VaultFs): string {

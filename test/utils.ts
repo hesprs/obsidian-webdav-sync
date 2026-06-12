@@ -1,7 +1,7 @@
 import type { Ref } from 'synthkernel';
-import type { Progress, Stat } from '~/fs-new/interface';
+import type { Progress, Stat } from '~/fs/interface';
 import type { MaybePromise } from '~/types';
-import { RemoteFs } from '~/fs-new/interface';
+import { RemoteFs } from '~/fs/interface';
 
 export type RequestResponse = {
 	headers: Record<string, string>;

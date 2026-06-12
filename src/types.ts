@@ -1,4 +1,4 @@
-import type { Stat } from './fs-new';
+import type { Stat } from './fs';
 import type { UserOptions } from './utils/glob-match-reusable';
 
 export enum SyncRunKind {

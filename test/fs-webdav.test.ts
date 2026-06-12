@@ -1,7 +1,7 @@
 import { beforeEach, expect, mock, test } from 'bun:test';
 import { ref } from 'synthkernel';
-import { WebdavFs } from '~/fs-new';
-import { createWebDAVReadStream } from '~/fs-new/webdav/read-stream';
+import { WebdavFs } from '~/fs';
+import { createWebDAVReadStream } from '~/fs/webdav/read-stream';
 
 type RequestUrlParam = {
 	body?: string | ArrayBuffer;
@@ -31,7 +31,7 @@ let parsedResponse: ParsedResponse;
 void mock.module('obsidian', () => ({
 	requestUrl: requestUrlMock,
 }));
-void mock.module('~/fs-new/utils/parse-xml', () => ({
+void mock.module('~/fs/utils/parse-xml', () => ({
 	default: parseXMLMock,
 }));
 

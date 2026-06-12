@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import { For, Show, createEffect, createSignal } from 'solid-js';
-import type { FolderStat, RemoteFs, Stat } from '~/fs-new';
+import type { FolderStat, RemoteFs, Stat } from '~/fs';
 import { basename } from '~/utils/path';
 import File from './File';
 import Folder from './Folder';

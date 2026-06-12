@@ -1,4 +1,4 @@
-import type { RemoteFs, VaultFs } from '~/fs-new';
+import type { RemoteFs, VaultFs } from '~/fs';
 import type { TranslationShape } from '~/i18n';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';

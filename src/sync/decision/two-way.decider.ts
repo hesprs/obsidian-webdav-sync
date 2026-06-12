@@ -1,6 +1,6 @@
 import { ref } from 'synthkernel';
 import type { ProgressPatch } from '~/events';
-import type { Stat } from '~/fs-new';
+import type { Stat } from '~/fs';
 import type { SyncRecord } from '~/storage';
 import type { RecordStatsMap } from '~/types';
 import { SyncRunKind } from '~/types';

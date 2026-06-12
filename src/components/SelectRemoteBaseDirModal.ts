@@ -2,7 +2,7 @@ import type { App } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import { Modal } from 'obsidian';
 import mountWebDAVExplorer from '~/components/explorer';
-import { createWebdavFs } from '~/fs-new';
+import { createWebdavFs } from '~/fs';
 import { normalizeBaseDir } from '~/utils/path';
 
 export default class SelectRemoteBaseDirModal extends Modal {

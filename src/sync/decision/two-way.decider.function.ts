@@ -1,4 +1,4 @@
-import type { FileStat, FolderStat, Stat } from '~/fs-new';
+import type { FileStat, FolderStat, Stat } from '~/fs';
 import t from '~/i18n';
 import { ConflictStrategy, UnmergeableStrategy } from '~/types';
 import logger from '~/utils/logger';

@@ -2,13 +2,13 @@ import { beforeEach, expect, mock, test } from 'bun:test';
 import { ref } from 'synthkernel';
 import { ShimmedRemoteFs } from './utils';
 
-const actualContentModule = await import('../src/fs-new/shims/encryption/content');
+const actualContentModule = await import('../src/fs/shims/encryption/content');
 const actualDeriveMasterKey = actualContentModule.deriveMasterKey;
 const actualDeriveMasterSalt = actualContentModule.deriveMasterSalt;
 const actualDeriveNameKey = actualContentModule.deriveNameKey;
 const actualDeriveRootFileKey = actualContentModule.deriveRootFileKey;
 
-type ContentModule = typeof import('~/fs-new/shims/encryption/content');
+type ContentModule = typeof import('~/fs/shims/encryption/content');
 
 const derivationCalls = {
 	deriveMasterKey: 0,
@@ -17,7 +17,7 @@ const derivationCalls = {
 	deriveRootFileKey: 0,
 };
 
-await mock.module('~/fs-new/shims/encryption/content', () => ({
+await mock.module('~/fs/shims/encryption/content', () => ({
 	...actualContentModule,
 	deriveMasterKey: async (...args: Parameters<ContentModule['deriveMasterKey']>) => {
 		derivationCalls.deriveMasterKey += 1;
@@ -37,7 +37,7 @@ await mock.module('~/fs-new/shims/encryption/content', () => ({
 	},
 }));
 
-const { default: encryptionShim } = await import('~/fs-new/shims/encryption');
+const { default: encryptionShim } = await import('~/fs/shims/encryption');
 
 const PASSWORD = 'password';
 const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';

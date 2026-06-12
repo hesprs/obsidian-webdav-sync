@@ -1,4 +1,4 @@
-import type { FileStat, FolderStat, Stat } from '~/fs-new';
+import type { FileStat, FolderStat, Stat } from '~/fs';
 import type { ConflictStrategy, UnmergeableStrategy, RecordStatsMap, StatsMap } from '~/types';
 import type { BaseTask } from '../tasks/task.interface';
 

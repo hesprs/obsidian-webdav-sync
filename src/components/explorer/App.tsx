@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian';
 import { Show, createSignal } from 'solid-js';
-import type { RemoteFs } from '~/fs-new';
+import type { RemoteFs } from '~/fs';
 import t from '~/i18n';
 import { normalizeKey } from '~/utils/path';
 import { createFileList } from './FileList';

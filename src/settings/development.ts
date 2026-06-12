@@ -1,5 +1,5 @@
 import { Notice, Setting } from 'obsidian';
-import { createVaultFs, createWebdavFs } from '~/fs-new';
+import { createVaultFs, createWebdavFs } from '~/fs';
 import t from '~/i18n';
 import { getStateKey } from '~/sync';
 import logger from '~/utils/logger';

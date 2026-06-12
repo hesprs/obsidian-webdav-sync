@@ -1,6 +1,6 @@
 import type { Vault } from 'obsidian';
 import { expect, test } from 'bun:test';
-import { VaultFs } from '~/fs-new';
+import { VaultFs } from '~/fs';
 
 type NativeStat = {
 	type: 'file' | 'folder';

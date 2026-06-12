@@ -1,4 +1,4 @@
-import type { Stat } from '~/fs-new';
+import type { Stat } from '~/fs';
 import type { RecordStat } from '~/types';
 
 export { default as SyncRecord } from './sync-record';

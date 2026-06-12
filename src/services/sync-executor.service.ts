@@ -4,7 +4,7 @@ import type { BaseTask } from '~/sync';
 import type { SyncRunKind } from '~/types';
 import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import { createVaultFs, createWebdavFs } from '~/fs-new';
+import { createVaultFs, createWebdavFs } from '~/fs';
 import { SyncEngine, isSyncCancelledError } from '~/sync';
 import logger from '~/utils/logger';
 
