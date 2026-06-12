@@ -1,5 +1,5 @@
 import { expect, test } from 'bun:test';
-import { arrayBufferEquals, toArrayBuffer } from '~/platform/binary';
+import { arrayBufferEquals, toArrayBuffer } from '~/utils/binary';
 
 test('normalizes binary views into exact ArrayBuffer slices', async () => {
 	const source = new Uint8Array([1, 2, 3, 4, 5]);

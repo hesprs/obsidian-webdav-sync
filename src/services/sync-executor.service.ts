@@ -1,12 +1,11 @@
 import type WebDAVSyncPlugin from '~';
 import type { SyncRunSnapshot, SyncTrigger } from '~/events';
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync';
 import type { SyncRunKind } from '~/types';
 import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import SyncEngine from '~/sync';
-import { isSyncCancelledError } from '~/sync/errors';
-import { createVaultFs, createWebdavFs } from '~/utils/fs-factory';
+import { createVaultFs, createWebdavFs } from '~/fs-new';
+import { SyncEngine, isSyncCancelledError } from '~/sync';
 import logger from '~/utils/logger';
 
 export type SyncOptions = {

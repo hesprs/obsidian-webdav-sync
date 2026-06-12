@@ -4,7 +4,7 @@ import { ShimmedRemoteFs } from './utils';
 
 const sleepMock = mock(() => Promise.resolve());
 void mock.module('~/utils/sleep', () => ({
-	default: sleepMock,
+	sleep: sleepMock,
 }));
 
 test('base-dir shim rewrites keys relative to its base', async () => {

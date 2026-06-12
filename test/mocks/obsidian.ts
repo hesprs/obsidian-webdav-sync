@@ -32,6 +32,7 @@ export class TextComponent {}
 export class ButtonComponent {}
 
 export function setIcon() {}
+export function setTooltip() {}
 export function getLanguage() {
 	return 'en';
 }

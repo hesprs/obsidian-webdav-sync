@@ -1,21 +1,18 @@
 import './global.css';
 import { Plugin } from 'obsidian';
-import type { PluginSettings, GlobMatchOptions } from './settings';
+import { ConflictStrategy, UnmergeableStrategy } from '~/types';
+import type { PluginSettings, GlobMatchOptions } from './types';
 import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
-import { normalizeBaseDir } from './platform/path';
 import setupCommands from './services/command.setup';
 import ObservabilityService from './services/observability.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
-import {
-	SyncSettingTab,
-	setPluginInstance,
-	ConflictStrategy,
-	UnmergeableStrategy,
-} from './settings';
+import SyncSettingTab from './settings';
 import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import getCredential from './utils/get-credential';
+import { normalizeBaseDir } from './utils/path';
+import { setPluginInstance } from './utils/plugin-instance';
 
 function createGlobMatchOptions(expr: string) {
 	return {

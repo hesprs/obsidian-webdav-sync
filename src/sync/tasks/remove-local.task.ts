@@ -1,5 +1,5 @@
-import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
+import type { OptionsWithLocalStat } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask<OptionsWithLocalStat> {

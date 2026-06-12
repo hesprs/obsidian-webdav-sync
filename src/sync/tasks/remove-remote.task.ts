@@ -1,5 +1,5 @@
-import type { OptionsWithRemoteStat } from '~/sync/decision/sync-decision.interface';
 import logger from '~/utils/logger';
+import type { OptionsWithRemoteStat } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class RemoveRemoteTask extends BaseTask<OptionsWithRemoteStat> {

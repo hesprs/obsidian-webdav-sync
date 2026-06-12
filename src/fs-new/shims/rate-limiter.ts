@@ -1,6 +1,6 @@
 import type { requestUrl } from 'obsidian';
-import { ApiLimiter } from '~/composable/api-limiter';
 import type { RemoteFs } from '../interface';
+import ApiLimiter from '../utils/api-limiter';
 
 type RateLimiterShimOptions = {
 	maxConcurrency: number;

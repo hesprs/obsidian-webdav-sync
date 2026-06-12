@@ -1,12 +1,12 @@
 import { expect, test } from 'bun:test';
 import type { IntelligentMergeParams, LatestTimestampParams } from '~/sync/utils/merge';
-import { arrayBufferEquals } from '~/platform/binary';
 import {
 	LatestTimestampResolution,
 	resolveByIntelligentMerge,
 	resolveByLatestTimestamp,
 } from '~/sync/utils/merge';
-import mergeDigIn from '~/utils/merge-dig-in';
+import mergeDigIn from '~/sync/utils/merge-dig-in';
+import { arrayBufferEquals } from '~/utils/binary';
 
 function textToArrayBuffer(value: string): ArrayBuffer {
 	return new TextEncoder().encode(value).buffer;

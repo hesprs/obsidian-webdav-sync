@@ -1,11 +1,11 @@
 import type { Ref } from 'synthkernel';
 import { requestUrl } from 'obsidian';
-import parseXML from '~/composable/parse-xml';
-import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/platform/path';
 import { isNil } from '~/utils/fns';
-import getStatusFromError from '~/utils/get-status-from-error';
+import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/utils/path';
 import type { FolderStat, Progress, Stat } from '../interface';
 import { RemoteFs } from '../interface';
+import getStatusFromError from '../utils/get-status-from-error';
+import parseXML from '../utils/parse-xml';
 import { createWebDAVReadStream } from './read-stream';
 
 export type WebdavFsOptions = {

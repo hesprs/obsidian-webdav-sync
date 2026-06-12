@@ -45,3 +45,8 @@ export function stripEndSlash(key: string) {
 	if (key.endsWith('/')) return key.slice(0, -1);
 	return key;
 }
+
+export function isSub(parent: string, sub: string, include = false) {
+	if (sub === parent) return include;
+	return sub.startsWith(parent) && sub.length > parent.length;
+}

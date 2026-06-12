@@ -1,4 +1,4 @@
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync';
 import type { FileTreeData, FileTreeSelectionSnapshot } from './types';
 
 export default class FileTreeSelectionController {

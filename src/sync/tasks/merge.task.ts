@@ -1,10 +1,10 @@
-import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
-import { arrayBufferEquals, arrayBufferToText, textToArrayBuffer } from '~/platform/binary';
-import { useSettings } from '~/settings';
 import { toRecordStat } from '~/storage';
+import { arrayBufferEquals, arrayBufferToText, textToArrayBuffer } from '~/utils/binary';
 import logger from '~/utils/logger';
-import mergeDigIn from '~/utils/merge-dig-in';
+import { useSettings } from '~/utils/plugin-instance';
+import type { OptionsWithBothFileStats } from '../decision/sync-decision.interface';
 import { resolveByIntelligentMerge } from '../utils/merge';
+import mergeDigIn from '../utils/merge-dig-in';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {

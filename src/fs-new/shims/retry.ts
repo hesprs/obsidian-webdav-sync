@@ -1,5 +1,5 @@
 import { requestUrl } from 'obsidian';
-import sleep from '~/utils/sleep';
+import { sleep } from '~/utils/sleep';
 import type { RemoteFs } from '../interface';
 
 type RetryShimOptions = {

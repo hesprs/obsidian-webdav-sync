@@ -1,5 +1,5 @@
 import type { Vault } from 'obsidian';
-import { dirname, stripEndSlash } from '~/platform/path';
+import { dirname, stripEndSlash } from '~/utils/path';
 import type { Stat, VaultFsInterface } from '../interface';
 
 function toKey(vaultPath: string, isDir: boolean): string {

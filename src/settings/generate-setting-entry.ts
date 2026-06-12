@@ -1,7 +1,9 @@
+import type { TextComponent } from 'obsidian';
+import type WebDAVSyncPlugin from '~';
 import { Notice, Setting } from 'obsidian';
-import type { ToggleNumericSettingsField } from '~/types';
+import type { ToggleNumericSettingsField, PluginSettings } from '~/types';
 import t from '~/i18n';
-import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/input-converters';
+import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/unit-converter';
 
 export enum UserInputType {
 	Number = 'number',
@@ -11,7 +13,7 @@ export enum UserInputType {
 
 const MAX_32BIT_VALUE = 2 ** 31 - 1;
 
-export default function generateSettingEntry({
+export function generateSettingEntry({
 	container,
 	name,
 	desc,
@@ -71,6 +73,35 @@ export default function generateSettingEntry({
 				}
 			});
 		});
+}
+
+export function handleInput<T extends keyof PluginSettings>({
+	text,
+	plugin,
+	field,
+	processValue,
+	stringify = (value: PluginSettings[T]) =>
+		typeof value === 'string'
+			? value
+			: typeof value === 'boolean' || typeof value === 'number'
+				? value.toString()
+				: '',
+}: {
+	text: TextComponent;
+	plugin: WebDAVSyncPlugin;
+	field: T;
+	processValue: (value: string) => PluginSettings[T] | false;
+	stringify?: (value: PluginSettings[T]) => string;
+}) {
+	text.inputEl.addEventListener('blur', () => {
+		const value = processValue(text.getValue());
+		if (value === false) new Notice(t('settings.invalidValue'));
+		else if (plugin.settings[field] !== value) {
+			plugin.settings[field] = value;
+			void plugin.saveSettings();
+		}
+		text.setValue(stringify(plugin.settings[field]));
+	});
 }
 
 function format(value: number, type: UserInputType): string {

@@ -31,7 +31,7 @@ let parsedResponse: ParsedResponse;
 void mock.module('obsidian', () => ({
 	requestUrl: requestUrlMock,
 }));
-void mock.module('~/composable/parse-xml', () => ({
+void mock.module('~/fs-new/utils/parse-xml', () => ({
 	default: parseXMLMock,
 }));
 

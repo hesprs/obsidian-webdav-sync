@@ -1,5 +1,5 @@
-import type { UserOptions } from '~/composable/glob-match';
-import GlobMatch from '~/composable/glob-match';
+import type { UserOptions } from './glob-match-reusable';
+import GlobMatch from './glob-match-reusable';
 
 export function buildRules(
 	rules: Array<{ expr: string; options?: UserOptions }> = [],

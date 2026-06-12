@@ -1,7 +1,7 @@
 import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
-import { normalizeBaseDir } from '~/platform/path';
+import { normalizeBaseDir } from '~/utils/path';
 import type { Progress, Stat } from '../interface';
 import { RemoteFs } from '../interface';
 

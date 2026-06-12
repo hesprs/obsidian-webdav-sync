@@ -2,13 +2,13 @@ import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
 import type { FileTreeSelectionController } from '~/components/fileTree';
 import type { SyncRunSnapshot, SyncRunStage, SyncFailedTaskInfo } from '~/events';
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync';
 import { mount as mountFileTree } from '~/components/fileTree';
 import renderFailedTasks from '~/components/render-failed-tasks';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
 import { TERMINAL_STAGES } from '~/services/observability.service';
-import { getTaskName } from '~/utils/get-task-info';
+import { getTaskName } from '~/sync';
 
 type ManualConfirmationSession = {
 	onConfirm: () => void;

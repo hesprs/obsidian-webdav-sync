@@ -1,7 +1,7 @@
 import { Setting } from 'obsidian';
 import t from '~/i18n';
-import { ConflictStrategy, UnmergeableStrategy } from '.';
-import generateSettingEntry, { UserInputType } from './generate-setting-entry';
+import { ConflictStrategy, UnmergeableStrategy } from '~/types';
+import { UserInputType, generateSettingEntry } from './generate-setting-entry';
 import BaseSettings from './settings.base';
 
 export default class CommonSettings extends BaseSettings {

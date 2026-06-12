@@ -1,4 +1,4 @@
-import isSub from '~/utils/is-sub';
+import { isSub } from '~/utils/path';
 import type RemoveLocalTask from '../tasks/remove-local.task';
 import type RemoveRemoteTask from '../tasks/remove-remote.task';
 import type { BaseTask } from '../tasks/task.interface';

@@ -1,6 +1,6 @@
 import { setIcon, setTooltip } from 'obsidian';
 import type { SyncFailedTaskInfo } from '~/events';
-import { getTaskIcon, getTaskName } from '~/utils/get-task-info';
+import { getTaskIcon, getTaskName } from '~/sync';
 
 function renderFailedTaskRow(itemEl: HTMLDivElement, task: SyncFailedTaskInfo) {
 	const row = itemEl.createDiv();

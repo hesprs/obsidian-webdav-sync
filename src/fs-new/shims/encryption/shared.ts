@@ -1,4 +1,4 @@
-import { sha256Digest } from '~/platform/crypto';
+import { sha256Digest } from '~/utils/crypto';
 
 const textEncoder = new TextEncoder();
 const EMPTY_SALT = ownedBytes(new Uint8Array());

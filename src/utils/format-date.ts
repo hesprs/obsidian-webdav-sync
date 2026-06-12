@@ -1,3 +1,5 @@
+import t from '~/i18n';
+
 function pad2(value: number): string {
 	return value.toString().padStart(2, '0');
 }
@@ -14,7 +16,22 @@ function getDateParts(input: number | Date) {
 	};
 }
 
-export default function formatDateTime(input: number | Date): string {
+export function formatDateTime(input: number | Date): string {
 	const { year, month, day, hour, minute, second } = getDateParts(input);
 	return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
+export function formatRelativeTime(timestamp: number): string {
+	const now = Date.now();
+	const diffMs = now - timestamp;
+	const diffSeconds = Math.floor(diffMs / 1000);
+	const diffMinutes = Math.floor(diffSeconds / 60);
+	const diffHours = Math.floor(diffMinutes / 60);
+	const diffDays = Math.floor(diffHours / 24);
+
+	if (diffSeconds < 60) return t('time.justNow');
+	else if (diffMinutes < 60) return t('time.minutesAgo', { count: diffMinutes });
+	else if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
+	else if (diffDays < 30) return t('time.daysAgo', { count: diffDays });
+	else return t('time.longAgo');
 }

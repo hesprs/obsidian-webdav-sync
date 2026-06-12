@@ -1,7 +1,6 @@
 import { Setting } from 'obsidian';
-import apiLimiter from '~/composable/api-limiter';
 import t from '~/i18n';
-import generateSettingEntry, { UserInputType } from './generate-setting-entry';
+import { UserInputType, generateSettingEntry } from './generate-setting-entry';
 import BaseSettings from './settings.base';
 
 export default class ControlsSettings extends BaseSettings {
@@ -25,7 +24,6 @@ export default class ControlsSettings extends BaseSettings {
 			desc: t('settings.maxWebDAVConcurrency.desc'),
 			field: this.plugin.settings.maxWebDAVConcurrency,
 			name: t('settings.maxWebDAVConcurrency.name'),
-			onChange: (value) => (apiLimiter.maxConcurrency = value),
 			placeholder: t('settings.maxWebDAVConcurrency.placeholder'),
 			rejectZero: true,
 			saveSettings: this.plugin.saveSettings,
@@ -48,7 +46,6 @@ export default class ControlsSettings extends BaseSettings {
 			desc: t('settings.minWebDAVRequestInterval.desc'),
 			field: this.plugin.settings.minWebDAVRequestInterval,
 			name: t('settings.minWebDAVRequestInterval.name'),
-			onChange: (value) => (apiLimiter.minInterval = value),
 			placeholder: t('settings.minWebDAVRequestInterval.placeholder'),
 			saveSettings: this.plugin.saveSettings,
 			type: UserInputType.Time,
