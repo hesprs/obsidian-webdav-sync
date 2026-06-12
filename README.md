@@ -24,8 +24,8 @@
     <a href="https://community.obsidian.md/plugins/webdav-sync">
         <strong>Plugin Store</strong>
     </a> • 
-    <a href="#ongoing-polling">
-        <strong>Polling</strong>
+    <a href="#notices">
+        <strong>Notices</strong>
     </a> • 
     <a href="#license-copyright-and-originality">
         <strong>License</strong>
@@ -46,9 +46,17 @@ There's already a lot of plugins to sync your notes between devices. But when we
 
 Acknowledging that WebDAV would be the most convenient DIY solution for syncing, this plugin comes to provide a balanced experience of day-to-day convenience, easy setup, and the robustness that doesn't make your notes into a chaos.
 
-## Ongoing Polling
+## Notices
 
-📢 Here's ongoing polling about new directions in development! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
+### 📢 V3 is Coming
+
+An **extremely huge update** V3 is [being actively developed](https://github.com/hesprs/obsidian-webdav-sync/pull/155) and will released soon. It is completely rewritten and will achieve noticeably better sync performance, much shorter load time, and revolutionary extensibility. More crucially, the support for other cloud services such as S3 and GDrive would become effortless in the new paradigm.
+
+**However, the plugin in V3 is fundamentally incompatible with current V2. Existing users may suffer breakage when updating.** A guide will be written later, before the release of V3, to elaborate the changes and how to safely upgrade from V2 to V3.
+
+### 📢 Here is a Voting
+
+Here's ongoing polling about new directions in development! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
 
 - 🗳️ [Is `Smart Merge` worth the overhead?](https://github.com/hesprs/obsidian-webdav-sync/discussions/117)
 
@@ -175,12 +183,7 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] v2.4: Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
 - [x] v2.4, v2.5.5: Refurbish sync selection UI
 - [x] v2.5: Implement encryption like the one in Remotely Save
-- [ ] v2.6: Unify remote and local file CRUD interface with Uni-CRUD
-- [ ] v2.7: Overhaul encryption as a Uni-CRUD wrapper
-- [ ] v2.8: Redesign smart merge and unify storage layer using Uni-KV
-- [ ] v2.9: Refactor core sync routine for extensibility, and batch operations with Uni-CRUD
-- [ ] v2.10: Refactor the entire architecture to SynthKernel
-- [ ] v3.0: Dynamic module loading, module store, asymmetric storage, and rebrand
+- [ ] v3.0: Rewrite entirely, dynamic module loading, module store, asymmetric storage, and rebrand
 
 ## License, Copyright, and Originality
 
@@ -188,6 +191,6 @@ Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/
 
 <!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 103124, ratio contributed: 32% -->
 
-Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 32% (till June 2 2026) of the effort is contributed by Nutstore.
+Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 28% (till June 12 2026) of the effort is contributed by Nutstore.
 
 Copyright ©️ 2026 Hesprs (Hēsperus), 2025-2026 Nutstore
