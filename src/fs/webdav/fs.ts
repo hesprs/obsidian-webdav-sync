@@ -222,10 +222,8 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		return response.arrayBuffer;
 	}
 
-	async readStream(key: string, totalSize?: number) {
-		let size: number;
-		if (!isNil(totalSize)) size = totalSize;
-		else {
+	async readStream(key: string, size?: number) {
+		if (isNil(size)) {
 			const stat = await this.stat(key);
 			if (stat.isDir) throw new Error('Cannot stream a folder');
 			size = stat.size;

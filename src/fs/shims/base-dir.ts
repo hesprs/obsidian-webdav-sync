@@ -46,8 +46,8 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 		return this.original.read(joinUnifiedKey(this.baseDir, key));
 	}
 
-	readStream(key: string, totalSize?: number) {
-		return this.original.readStream(joinUnifiedKey(this.baseDir, key), totalSize);
+	readStream(key: string, size?: number) {
+		return this.original.readStream(joinUnifiedKey(this.baseDir, key), size);
 	}
 
 	write(key: string, value: ArrayBuffer) {

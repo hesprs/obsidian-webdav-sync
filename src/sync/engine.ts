@@ -12,7 +12,7 @@ import DeleteConfirmModal from '~/components/DeleteConfirmModal';
 import { syncRun, syncCancel, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
 import t from '~/i18n';
-import { SyncRecord } from '~/storage';
+import { SyncRecord, getStorageDatabase } from '~/storage';
 import { SyncRunKind } from '~/types';
 import logger from '~/utils/logger';
 import type WebDAVSyncPlugin from '..';
@@ -52,7 +52,7 @@ export default class SyncEngine {
 		onProgress?: (progress: ProgressPatch) => void,
 	): Promise<Array<BaseTask>> {
 		this.runKind = runKind;
-		const syncRecord = this.createSyncRecord();
+		const syncRecord = await this.createSyncRecord();
 		await this.ensureRemoteBaseDirReady(syncRecord);
 		this.throwIfCancelled();
 
@@ -261,12 +261,9 @@ export default class SyncEngine {
 		return !(task instanceof CleanRecordTask) && !(task instanceof AddRecordTask);
 	}
 
-	private createSyncRecord() {
-		return new SyncRecord(
-			this.getStateKey(),
-			this.plugin.syncStateStore,
-			this.plugin.baseTextStore,
-		);
+	private async createSyncRecord() {
+		const db = await getStorageDatabase();
+		return new SyncRecord(this.getStateKey(), db);
 	}
 
 	private async ensureRemoteBaseDirReady(syncRecord: SyncRecord) {

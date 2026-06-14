@@ -9,7 +9,6 @@ import ObservabilityService from './services/observability.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import SyncSettingTab from './settings';
-import { IndexedDbBaseTextStore, IndexedDbSyncStateStore } from './storage';
 import getCredential from './utils/get-credential';
 import { normalizeBaseDir } from './utils/path';
 import { setPluginInstance } from './utils/plugin-instance';
@@ -98,8 +97,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 		useGitStyle: false,
 	};
 
-	public syncStateStore = new IndexedDbSyncStateStore();
-	public baseTextStore = new IndexedDbBaseTextStore();
 	public observabilityService = new ObservabilityService(this);
 	public syncExecutorService = new SyncExecutorService(this);
 	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
@@ -107,8 +104,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	async onload() {
 		Object.assign(this.settings, await this.loadData());
-		await this.syncStateStore.initialize();
-		await this.baseTextStore.initialize();
 		this.addSettingTab(new SyncSettingTab(this.app, this));
 		setPluginInstance(this);
 		setupCommands(this);
@@ -117,8 +112,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 
 	onunload() {
 		setPluginInstance(this);
-		void this.syncStateStore.unload();
-		void this.baseTextStore.unload();
 		syncCancel();
 		this.syncSchedulerService.unload();
 		this.observabilityService.unload();

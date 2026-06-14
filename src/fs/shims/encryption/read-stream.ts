@@ -10,8 +10,7 @@ import {
 	ownedBytes,
 } from './shared';
 
-// oxlint-disable-next-line import/prefer-default-export
-export function createDecryptedReadableStream(
+export default function createDecryptedReadableStream(
 	source: ReadableStream,
 	rootFileKey: Uint8Array,
 	key: string,

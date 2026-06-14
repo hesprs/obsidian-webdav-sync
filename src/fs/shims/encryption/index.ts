@@ -1,6 +1,7 @@
 import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
+import { isNil } from '~/utils/fns';
 import type { Progress, Stat } from '../../interface';
 import type { EncryptionPathCache } from './path';
 import { RemoteFs } from '../../interface';
@@ -13,7 +14,7 @@ import {
 	encryptFileContent,
 } from './content';
 import { decryptPathSegments, encryptPathSegments } from './path';
-import { createDecryptedReadableStream } from './read-stream';
+import createDecryptedReadableStream from './read-stream';
 import { toArrayBuffer } from './shared';
 
 type DerivedKeys = {
@@ -55,17 +56,16 @@ class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
 		return decryptFileContent(rootFileKey, key, encryptedContent, encryptedContent.byteLength);
 	}
 
-	async readStream(key: string, totalSize?: number) {
+	async readStream(key: string, size?: number) {
 		const encryptedKey = await this.encryptKey(key);
 		const { rootFileKey } = await this.getKeys();
-		let encryptedSize = totalSize;
-		if (encryptedSize === undefined) {
+		if (isNil(size)) {
 			const stat = await this.original.stat(encryptedKey);
 			if (stat.isDir) throw new Error('Cannot stream a folder');
-			encryptedSize = stat.size;
+			size = stat.size;
 		}
-		const source = await this.original.readStream(encryptedKey, encryptedSize);
-		return createDecryptedReadableStream(source, rootFileKey, key, encryptedSize);
+		const source = await this.original.readStream(encryptedKey, size);
+		return createDecryptedReadableStream(source, rootFileKey, key, size);
 	}
 
 	async write(key: string, value: ArrayBuffer) {

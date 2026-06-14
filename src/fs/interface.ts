@@ -5,13 +5,14 @@ import type { MaybePromise } from '~/types';
 // oxlint-disable typescript/method-signature-style
 // oxlint-disable typescript/consistent-type-definitions
 
+/**
+ * All keys use unified format:
+ * - root: `/`
+ * - file: `note.md`, `folder/note.md`
+ * - folder: `folder/`, `folder/nested/`
+ */
+
 export interface VaultFsInterface {
-	/**
-	 * All keys use unified format:
-	 * - root: `/`
-	 * - file: `note.md`, `folder/note.md`
-	 * - folder: `folder/`, `folder/nested/`
-	 */
 	getUid(): string; // String whose inequality signifies the client is unique
 	read(key: string): MaybePromise<ArrayBuffer>;
 	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
@@ -33,7 +34,7 @@ export abstract class RemoteFs<T extends object = object> {
 		{ success: true } | { success: false; reason: string }
 	>;
 	abstract read(key: string): MaybePromise<ArrayBuffer>;
-	abstract readStream(key: string, totalSize?: number): MaybePromise<ReadableStream>;
+	abstract readStream(key: string, size?: number): MaybePromise<ReadableStream>;
 	abstract write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
 	abstract delete(key: string): MaybePromise<void>;
 	abstract mkdir(key: string, recursive?: boolean): MaybePromise<void>;
