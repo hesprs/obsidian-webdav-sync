@@ -1,4 +1,5 @@
 import { hook, ref } from 'synthkernel';
+import type { Progress } from '~/fs';
 import type { TaskNames } from '~/sync';
 import type { SyncRunKind } from '~/types';
 
@@ -26,19 +27,12 @@ export type SyncPlanSummary = {
 	warnings: Array<SyncRunWarning>;
 };
 
-export type RemoteWalkSummary = {
-	total: number;
-	completed: number;
-};
+export type RemoteWalkSummary = Progress;
 
-export type SyncProgressSummary = {
-	total: number;
-	completed: number;
-	completedTasks: Array<{
-		taskName: TaskNames;
-		path: string;
-	}>;
-};
+export type SyncProgressSummary = Progress<{
+	taskName: TaskNames;
+	path: string;
+}>;
 
 export type SyncFailedTaskInfo = {
 	name: TaskNames;
@@ -96,7 +90,6 @@ export function createQueuedSyncRunSnapshot(input: {
 	return {
 		progressSummary: {
 			completed: 0,
-			completedTasks: [],
 			total: 0,
 		},
 		runId: input.runId,

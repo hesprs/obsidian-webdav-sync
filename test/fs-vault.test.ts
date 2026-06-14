@@ -134,10 +134,10 @@ test('writeStream should append to temp file then rename into place', async () =
 			'note.md': { mtime: 999, size: 6, type: 'file' },
 		},
 	});
-	const stream = new ReadableStream<Uint8Array>({
+	const stream = new ReadableStream<ArrayBuffer>({
 		start(controller) {
-			controller.enqueue(new TextEncoder().encode('ab'));
-			controller.enqueue(new TextEncoder().encode('cdef'));
+			controller.enqueue(new TextEncoder().encode('ab').buffer);
+			controller.enqueue(new TextEncoder().encode('cdef').buffer);
 			controller.close();
 		},
 	});
@@ -145,9 +145,12 @@ test('writeStream should append to temp file then rename into place', async () =
 	const uid = await fs.writeStream('note.md', stream);
 
 	expect(uid).toBe('999');
-	expect(calls.writeBinary[0]?.[0]).toContain('.trash/webdav-sync-temp/');
-	expect(calls.appendBinary).toHaveLength(1);
-	expect(calls.appendBinary[0]?.[1]).toBe('cdef');
+	expect(calls.writeBinary).toStrictEqual([]);
+	expect(calls.appendBinary).toHaveLength(2);
+	expect(calls.appendBinary[0]?.[0]).toStartWith('.trash/webdav-sync-temp/');
+	expect(calls.appendBinary[0]?.[1]).toBe('ab');
+	expect(calls.appendBinary[1]?.[0]).toStartWith('.trash/webdav-sync-temp/');
+	expect(calls.appendBinary[1]?.[1]).toBe('cdef');
 	expect(calls.rename[0]).toBeDefined();
 	expect(calls.rename[0]?.[1]).toBe('note.md');
 });

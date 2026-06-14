@@ -42,10 +42,6 @@ function getTempPath(): string {
 	return `.trash/webdav-sync-temp/${crypto.randomUUID()}.part`;
 }
 
-function toArrayBuffer(chunk: Uint8Array): ArrayBuffer {
-	return Uint8Array.from(chunk).buffer;
-}
-
 function getTrashOption(vault: Vault): 'local' | undefined {
 	const configuredVault = vault as { config?: { trashOption?: 'local' } };
 	return configuredVault.config?.trashOption;
@@ -74,29 +70,20 @@ export default class ObsidianVaultFs implements VaultFsInterface {
 		return getFileUid(this, key);
 	}
 
-	async writeStream(key: string, value: ReadableStream): Promise<string> {
+	async writeStream(key: string, value: ReadableStream<ArrayBuffer>): Promise<string> {
 		const nativePath = toVaultPath(key);
 		const tempPath = getTempPath();
 		await ensureKeyDir(this.vault, dirname(key));
 
 		const reader = value.getReader();
-		let hasWritten = false;
 
 		try {
 			while (true) {
 				const result = await reader.read();
 				if (result.done) break;
 				const chunk = result.value;
-				if (!(chunk instanceof Uint8Array)) continue;
-				const data = toArrayBuffer(chunk);
-				if (hasWritten) await this.vault.adapter.appendBinary(tempPath, data);
-				else {
-					await this.vault.adapter.writeBinary(tempPath, data);
-					hasWritten = true;
-				}
+				await this.vault.adapter.appendBinary(tempPath, chunk);
 			}
-
-			if (!hasWritten) await this.vault.adapter.writeBinary(tempPath, new ArrayBuffer(0));
 			await removeVaultFileIfExists(this.vault, nativePath);
 			await this.vault.adapter.rename(tempPath, nativePath);
 			return getFileUid(this, key);

@@ -1,4 +1,3 @@
-import type { Ref } from 'synthkernel';
 import { requestUrl } from 'obsidian';
 import type { MaybePromise } from '~/types';
 
@@ -16,7 +15,7 @@ export interface VaultFsInterface {
 	getUid(): string; // String whose inequality signifies the client is unique
 	read(key: string): MaybePromise<ArrayBuffer>;
 	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
-	writeStream(key: string, value: ReadableStream): MaybePromise<string>; // Returns uid
+	writeStream(key: string, value: ReadableStream<ArrayBuffer>): MaybePromise<string>; // Returns uid
 	delete(key: string): MaybePromise<void>;
 	move(oldKey: string, newKey: string): MaybePromise<void>;
 	mkdir(key: string): MaybePromise<void>;
@@ -34,17 +33,33 @@ export abstract class RemoteFs<T extends object = object> {
 		{ success: true } | { success: false; reason: string }
 	>;
 	abstract read(key: string): MaybePromise<ArrayBuffer>;
-	abstract readStream(key: string, size?: number): MaybePromise<ReadableStream>;
+	abstract readStream(key: string, size?: number): MaybePromise<ReadableStream<ArrayBuffer>>;
 	abstract write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
 	abstract delete(key: string): MaybePromise<void>;
 	abstract mkdir(key: string, recursive?: boolean): MaybePromise<void>;
 	abstract stat(key: string): MaybePromise<Stat>;
 	abstract exists(key: string): MaybePromise<boolean>;
 	abstract list(key: string): MaybePromise<Array<Stat>>; // List direct children under one folder
-	abstract listAll(key: string, progress?: Ref<Progress>): MaybePromise<Array<Stat>>; // List recursive children under one folder
+	abstract listAll(
+		key: string,
+		progress?: (progress: Progress) => void,
+	): MaybePromise<Array<Stat>>; // List recursive children under one folder
 }
 
 export type RemoteFsShim = (original: RemoteFs, ...args: Array<unknown>) => RemoteFs;
+
+export type ReadOperation = {
+	type: 'read';
+	key: string;
+	start: () => MaybePromise<void>;
+	finish: (content: ArrayBuffer) => MaybePromise<void>;
+};
+export type ReadStreamOperation = {
+	type: 'readStream';
+	key: string;
+	start: () => MaybePromise<void>;
+	callback: (content: ReadableStream<ArrayBuffer>) => MaybePromise<void>;
+};
 
 export type FileStat = {
 	isDir: false;
@@ -59,7 +74,8 @@ export type FolderStat = {
 	key: string;
 };
 export type Stat = FileStat | FolderStat;
-export type Progress = {
+export type Progress<T = string> = {
 	total: number;
 	completed: number;
+	current?: T;
 };

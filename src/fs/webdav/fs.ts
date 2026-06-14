@@ -1,4 +1,3 @@
-import type { Ref } from 'synthkernel';
 import { requestUrl } from 'obsidian';
 import { isNil } from '~/utils/fns';
 import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/utils/path';
@@ -328,7 +327,7 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		return toDescendantStats(key, this.options.endpoint, items);
 	}
 
-	async listAll(key: string, progress?: Ref<Progress>) {
+	async listAll(key: string, progress?: (progress: Progress) => void) {
 		if (this.options.useInfinity) {
 			const items = await propfind(this.request, this.auth, this.endpoint, {
 				depth: 'infinity',
@@ -344,35 +343,29 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		const queue = [key];
 		let completed = 0;
 
-		progress?.({ completed: 0, total: 1 });
+		progress?.({ completed: 0, current: key, total: 1 });
 
 		while (queue.length > 0) {
 			const currentLevelKeys = queue.splice(0);
-			const nextLevelKeysByIndex: Array<Array<string>> = currentLevelKeys.map(() => []);
-			let discoveredCount = 0;
-			let remainingCurrentLevelCount = currentLevelKeys.length;
+			const nextLevelKeys: Array<string> = [];
 
-			const currentLevelResults = await Promise.all(
-				currentLevelKeys.map(async (currentKey, index) => {
+			await Promise.all(
+				currentLevelKeys.map(async (currentKey) => {
 					const items = await this.list(currentKey);
-					const nextLevelKeys: Array<string> = [];
-					for (const item of items) if (item.isDir) nextLevelKeys.push(item.key);
-
-					nextLevelKeysByIndex[index] = nextLevelKeys;
-					discoveredCount += nextLevelKeys.length;
+					for (const item of items) {
+						if (item.isDir) nextLevelKeys.push(item.key);
+						result.push(item);
+					}
 					completed++;
-					remainingCurrentLevelCount--;
 					progress?.({
 						completed,
-						total: completed + discoveredCount + remainingCurrentLevelCount,
+						current: currentKey,
+						total: completed + nextLevelKeys.length + queue.length,
 					});
-
 					return items;
 				}),
 			);
-
-			for (const items of currentLevelResults) for (const item of items) result.push(item);
-			for (const nextLevelKeys of nextLevelKeysByIndex) queue.push(...nextLevelKeys);
+			queue.push(...nextLevelKeys);
 		}
 
 		return result;

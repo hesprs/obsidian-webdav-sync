@@ -1,4 +1,3 @@
-import { ref } from 'synthkernel';
 import type { ProgressPatch } from '~/events';
 import type { Stat } from '~/fs';
 import type { SyncRecord } from '~/storage';
@@ -71,12 +70,12 @@ export default class TwoWaySyncDecider {
 			},
 			stage: 'walking_remote',
 		});
-		const progressRef = ref({ completed: 0, total: 0 });
-		progressRef.subscribe((progress) => onProgress({ remoteWalkSummary: progress }));
 		const currentRemoteStats = postProcess(
 			this.sync.runKind === SyncRunKind.fast
 				? extractRemoteRecords(records)
-				: await this.webdav.listAll('/', progressRef),
+				: await this.webdav.listAll('/', (progress) =>
+						onProgress({ remoteWalkSummary: progress }),
+					),
 		);
 
 		const commonTaskOptions = {

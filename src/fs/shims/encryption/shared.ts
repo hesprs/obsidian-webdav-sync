@@ -19,12 +19,10 @@ export async function deriveFileKey(
 	virtualPath: string,
 ): Promise<Uint8Array> {
 	const fileKeySalt = await sha256Digest(
-		toArrayBuffer(
-			concatUint8Arrays(
-				fileSalt,
-				encodeUInt96(encryptedFileSize),
-				ownedBytes(textEncoder.encode(virtualPath)),
-			),
+		concatArrayBuffer(
+			toArrayBuffer(fileSalt),
+			toArrayBuffer(encodeUInt96(encryptedFileSize)),
+			toArrayBuffer(ownedBytes(textEncoder.encode(virtualPath))),
 		),
 	);
 	return deriveHkdfKey(
@@ -68,16 +66,14 @@ export async function importAesGcmKey(key: Uint8Array): Promise<CryptoKey> {
 
 export async function decryptContentChunk(
 	key: CryptoKey,
-	encryptedChunk: Uint8Array,
+	encryptedChunk: ArrayBuffer,
 	chunkIndex: number,
-): Promise<Uint8Array> {
+): Promise<ArrayBuffer> {
 	try {
-		return new Uint8Array(
-			await crypto.subtle.decrypt(
-				{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
-				key,
-				toArrayBuffer(encryptedChunk),
-			),
+		return await crypto.subtle.decrypt(
+			{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
+			key,
+			encryptedChunk,
 		);
 	} catch {
 		throw new Error(DECRYPTION_ERROR_MESSAGE);
@@ -112,16 +108,16 @@ export function encodeUInt96(value: number): Uint8Array {
 	return ownedBytes(result);
 }
 
-export function concatUint8Arrays(...arrays: Array<Uint8Array>): Uint8Array {
-	const totalLength = arrays.reduce((sum, array) => sum + array.length, 0);
+export function concatArrayBuffer(...arrays: Array<ArrayBuffer>): ArrayBuffer {
+	const totalLength = arrays.reduce((sum, array) => sum + array.byteLength, 0);
 	const buffer = new ArrayBuffer(totalLength);
 	const result = new Uint8Array(buffer);
 	let offset = 0;
 	for (const array of arrays) {
-		result.set(array, offset);
-		offset += array.length;
+		result.set(new Uint8Array(array), offset);
+		offset += array.byteLength;
 	}
-	return result;
+	return buffer;
 }
 
 export function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {

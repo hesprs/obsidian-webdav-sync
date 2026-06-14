@@ -1,5 +1,6 @@
 import { beforeEach, expect, mock, test } from 'bun:test';
 import { ref } from 'synthkernel';
+import type { Progress } from '~/fs';
 import { WebdavFs } from '~/fs';
 import { createWebDAVReadStream } from '~/fs/webdav/read-stream';
 
@@ -307,7 +308,7 @@ test('listAll bfs updates progress when infinity is disabled', async () => {
 		username: 'alice',
 	});
 
-	const progress = ref({ completed: 0, total: 0 });
+	const progress = ref<Progress>({ completed: 0, total: 0 });
 	const list = await fs.listAll('Notes/', progress);
 
 	expect(list).toStrictEqual([
@@ -320,12 +321,13 @@ test('listAll bfs updates progress when infinity is disabled', async () => {
 			uid: String(new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf()),
 		},
 	]);
-	expect(progress()).toStrictEqual({ completed: 2, total: 2 });
+	expect(progress()).toStrictEqual({ completed: 2, current: 'Notes/Folder A/', total: 2 });
 });
 
 test('readStream reorders out-of-order ranged responses', async () => {
 	const requestRanges: Array<{ start: number; end: number }> = [];
 	const resolvers: Array<(buffer: ArrayBuffer) => void> = [];
+	const toBytes = (buffer: ArrayBuffer) => [...new Uint8Array(buffer)];
 
 	const stream = createWebDAVReadStream({
 		chunkSize: 2,
@@ -353,11 +355,11 @@ test('readStream reorders out-of-order ranged responses', async () => {
 	resolvers[1]?.(chunkBuffer(2, 2));
 
 	const firstResult = await firstRead;
-	const chunks = [...(firstResult.value ?? [])];
+	const chunks = firstResult.value ? toBytes(firstResult.value) : [];
 	while (true) {
 		const { done, value } = await reader.read();
 		if (done) break;
-		chunks.push(...value);
+		chunks.push(...toBytes(value));
 	}
 
 	expect(chunks).toStrictEqual([1, 1, 2, 2, 3, 3]);
@@ -380,6 +382,7 @@ test('readStream uses 2 MiB ranges from stat size', async () => {
 
 	const ranges: Array<string> = [];
 	const pending = new Map<string, (value: RequestUrlResponse) => void>();
+	const toBytes = (buffer: ArrayBuffer) => [...new Uint8Array(buffer)];
 
 	requestUrlMock.mockImplementation(async (params) => {
 		if (params.method === 'PROPFIND') return response;
@@ -404,7 +407,7 @@ test('readStream uses 2 MiB ranges from stat size', async () => {
 		while (true) {
 			const { done, value } = await reader.read();
 			if (done) break;
-			bytes.push(...value);
+			bytes.push(...toBytes(value));
 		}
 		return bytes;
 	})();

@@ -90,16 +90,19 @@ export default class SyncProgressModal extends Modal {
 		this.progressStats.setText(t('sync.progressStats', { completed, total }));
 
 		if (stage === 'pre_connecting') this.currentFile.setText(t('sync.preConnecting'));
-		else if (stage === 'walking_remote') this.currentFile.setText(t('sync.walkingRemote'));
+		else if (stage === 'walking_remote')
+			this.currentFile.setText(
+				`${t('sync.walkingRemote')} ${run.remoteWalkSummary?.current}`,
+			);
 		else if (stage === 'awaiting_confirmation')
 			this.currentFile.setText(t('sync.awaitingConfirmation'));
-		else if (stage === 'executing' && run.progressSummary.completedTasks.length === 0)
+		else if (stage === 'executing' && run.progressSummary.completed === 0)
 			this.currentFile.setText(t('sync.syncingFiles'));
 		else if (stage === 'cancelled') this.currentFile.setText(t('sync.cancelled'));
 		else if (stage === 'failed') this.currentFile.setText(t('sync.failedStatus'));
 		else if (stage === 'completed_noop') this.currentFile.setText(t('sync.alreadyUpToDate'));
-		else if (stage === 'executing' && run.progressSummary.completedTasks.length > 0) {
-			const lastFile = run.progressSummary.completedTasks.at(-1);
+		else if (stage === 'executing' && run.progressSummary.completed > 0) {
+			const lastFile = run.progressSummary.current;
 			if (lastFile)
 				this.currentFile.setText(`${getTaskName(lastFile.taskName)} ${lastFile.path}`);
 		} else this.currentFile.setText(t('sync.complete'));
@@ -201,7 +204,7 @@ export default class SyncProgressModal extends Modal {
 
 		if (this.stage === 'syncing' || this.stage === 'walking')
 			setting.addButton((button) => {
-				button.setButtonText(t('sync.stopButton')).setWarning().onClick(syncCancel);
+				button.setButtonText(t('sync.stopButton')).setDestructive().onClick(syncCancel);
 			});
 	}
 

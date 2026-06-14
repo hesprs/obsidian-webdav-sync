@@ -10,7 +10,7 @@ export type RequestResponse = {
 };
 
 function createEmptyReadableStream() {
-	return new ReadableStream<Uint8Array>({
+	return new ReadableStream<ArrayBuffer>({
 		start(controller) {
 			controller.close();
 		},
@@ -48,7 +48,7 @@ export class ShimmedRemoteFs extends RemoteFs<Record<string, never>> {
 	public readStreamResponse: (
 		key: string,
 		totalSize?: number,
-	) => MaybePromise<ReadableStream<Uint8Array>> = async () => createEmptyReadableStream();
+	) => MaybePromise<ReadableStream<ArrayBuffer>> = async () => createEmptyReadableStream();
 
 	public writeResponse: (key: string, value: ArrayBuffer) => MaybePromise<string> = async () =>
 		'written';

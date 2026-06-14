@@ -5,33 +5,29 @@ export type CreateWebDAVReadStreamOptions = {
 	requestRange: (start: number, endInclusive: number) => Promise<ArrayBuffer>;
 };
 
-function toBytes(buffer: ArrayBuffer) {
-	return new Uint8Array(buffer);
-}
-
 export function createWebDAVReadStream({
 	size,
 	chunkSize,
 	maxConcurrent,
 	requestRange,
-}: CreateWebDAVReadStreamOptions): ReadableStream<Uint8Array> {
+}: CreateWebDAVReadStreamOptions): ReadableStream<ArrayBuffer> {
 	const totalChunks = size === 0 ? 0 : Math.ceil(size / chunkSize);
 	const maxBufferedBytes = chunkSize * maxConcurrent;
 	if (totalChunks === 0)
-		return new ReadableStream<Uint8Array>({
+		return new ReadableStream<ArrayBuffer>({
 			start(controller) {
 				controller.close();
 			},
 		});
 
-	let controllerRef: ReadableStreamDefaultController<Uint8Array> | undefined;
+	let controllerRef: ReadableStreamDefaultController<ArrayBuffer> | undefined;
 	let nextChunkIndex = 0;
 	let nextPendingIndex = 0;
 	let inFlight = 0;
 	let closed = false;
 	let consumerReady = false;
 	let pendingBytes = 0;
-	const pending = new Map<number, Uint8Array>();
+	const pending = new Map<number, ArrayBuffer>();
 
 	const closeIfDone = () => {
 		if (closed || !controllerRef) return;
@@ -71,9 +67,8 @@ export function createWebDAVReadStream({
 		void requestRange(start, endInclusive)
 			.then((buffer) => {
 				if (closed) return;
-				const chunk = toBytes(buffer);
-				pending.set(currentIndex, chunk);
-				pendingBytes += chunk.byteLength;
+				pending.set(currentIndex, buffer);
+				pendingBytes += buffer.byteLength;
 				inFlight--;
 				flush();
 				schedule();
@@ -93,7 +88,7 @@ export function createWebDAVReadStream({
 		}
 	};
 
-	return new ReadableStream<Uint8Array>(
+	return new ReadableStream<ArrayBuffer>(
 		{
 			cancel() {
 				closed = true;

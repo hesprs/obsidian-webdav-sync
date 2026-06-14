@@ -329,12 +329,15 @@ export default class SyncEngine {
 		totalDisplayableTasks: Array<BaseTask>,
 		allCompletedTasks: Array<BaseTask>,
 	): SyncProgressSummary {
+		const lastTask = allCompletedTasks.at(-1);
 		return {
 			completed: allCompletedTasks.length,
-			completedTasks: allCompletedTasks.map((task) => ({
-				path: task.key,
-				taskName: task.name ?? 'sync',
-			})),
+			current: lastTask
+				? {
+						path: lastTask.key,
+						taskName: lastTask.name,
+					}
+				: undefined,
 			total: totalDisplayableTasks.length,
 		};
 	}

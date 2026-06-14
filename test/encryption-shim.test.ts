@@ -55,20 +55,20 @@ function bytes(value: string) {
 }
 
 function splitBytes(source: Uint8Array, sizes: Array<number>) {
-	const chunks: Array<Uint8Array> = [];
+	const chunks: Array<ArrayBuffer> = [];
 	let offset = 0;
 	for (const size of sizes) {
 		if (offset >= source.length) break;
 		const end = Math.min(source.length, offset + size);
-		chunks.push(source.slice(offset, end));
+		chunks.push(source.slice(offset, end).buffer);
 		offset = end;
 	}
-	if (offset < source.length) chunks.push(source.slice(offset));
+	if (offset < source.length) chunks.push(source.slice(offset).buffer);
 	return chunks;
 }
 
-function createStreamFromChunks(chunks: Array<Uint8Array>) {
-	return new ReadableStream<Uint8Array>({
+function createStreamFromChunks(chunks: Array<ArrayBuffer>): ReadableStream<ArrayBuffer> {
+	return new ReadableStream<ArrayBuffer>({
 		start(controller) {
 			for (const chunk of chunks) controller.enqueue(chunk);
 			controller.close();
@@ -76,9 +76,9 @@ function createStreamFromChunks(chunks: Array<Uint8Array>) {
 	});
 }
 
-async function readStreamBytes(stream: ReadableStream<Uint8Array>) {
+async function readStreamBytes(stream: ReadableStream<ArrayBuffer>) {
 	const reader = stream.getReader();
-	const chunks: Array<Uint8Array> = [];
+	const chunks: Array<ArrayBuffer> = [];
 	while (true) {
 		const { done, value } = await reader.read();
 		if (done) break;
@@ -88,7 +88,7 @@ async function readStreamBytes(stream: ReadableStream<Uint8Array>) {
 	const result = new Uint8Array(totalLength);
 	let offset = 0;
 	for (const chunk of chunks) {
-		result.set(chunk, offset);
+		result.set(new Uint8Array(chunk), offset);
 		offset += chunk.byteLength;
 	}
 	return result.buffer;
@@ -150,8 +150,7 @@ test('ReadStream uses provided encrypted size without extra stat', async () => {
 
 	await shim.write('Folder/file.md', plaintext);
 	const encryptedContent = original.writePayloads.at(-1)?.[1] as ArrayBuffer;
-	const encryptedBytes = new Uint8Array(encryptedContent);
-	original.readStreamResponse = async () => createStreamFromChunks([encryptedBytes]);
+	original.readStreamResponse = async () => createStreamFromChunks([encryptedContent]);
 
 	const decryptedStream = await shim.readStream('Folder/file.md', encryptedContent.byteLength);
 
@@ -168,7 +167,6 @@ test('ReadStream falls back to encrypted stat when size is missing', async () =>
 
 	await shim.write('Folder/file.md', plaintext);
 	const encryptedContent = original.writePayloads.at(-1)?.[1] as ArrayBuffer;
-	const encryptedBytes = new Uint8Array(encryptedContent);
 	original.statResponse = (key) => ({
 		isDir: false,
 		key,
@@ -177,7 +175,9 @@ test('ReadStream falls back to encrypted stat when size is missing', async () =>
 		uid: 'uid',
 	});
 	original.readStreamResponse = async () =>
-		createStreamFromChunks(splitBytes(encryptedBytes, [1, 7, 3, 64, 4096, 9999]));
+		createStreamFromChunks(
+			splitBytes(new Uint8Array(encryptedContent), [1, 7, 3, 64, 4096, 9999]),
+		);
 
 	const decryptedStream = await shim.readStream('Folder/file.md');
 
@@ -194,9 +194,10 @@ test('ReadStream handles arbitrary source chunk boundaries', async () => {
 
 	await shim.write('Folder/file.md', plaintext);
 	const encryptedContent = original.writePayloads.at(-1)?.[1] as ArrayBuffer;
-	const encryptedBytes = new Uint8Array(encryptedContent);
 	original.readStreamResponse = async () =>
-		createStreamFromChunks(splitBytes(encryptedBytes, [1, 7, 3, 4096, 11, 8192]));
+		createStreamFromChunks(
+			splitBytes(new Uint8Array(encryptedContent), [1, 7, 3, 4096, 11, 8192]),
+		);
 
 	const decryptedStream = await shim.readStream('Folder/file.md', encryptedContent.byteLength);
 
