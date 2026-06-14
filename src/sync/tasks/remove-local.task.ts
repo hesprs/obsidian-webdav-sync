@@ -1,6 +1,5 @@
-import type { OptionsWithLocalStat } from '~/sync/decision/sync-decision.interface';
-import { trashFile } from '~/fs/vault';
 import logger from '~/utils/logger';
+import type { OptionsWithLocalStat } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class RemoveLocalTask extends BaseTask<OptionsWithLocalStat> {
@@ -8,14 +7,11 @@ export default class RemoveLocalTask extends BaseTask<OptionsWithLocalStat> {
 
 	async exec() {
 		try {
-			const exists = await this.vault.adapter.exists(this.localPath);
-			if (!exists) return { success: true } as const;
-
-			await trashFile(this.vault, this.localPath);
-			await this.syncRecord.removeRecords(this.localPath);
+			await this.vault.delete(this.key);
+			await this.syncRecord.removeRecords(this.key);
 			return { success: true } as const;
 		} catch (error) {
-			logger.error(`Failed to remove local file: ${this.localPath}`, error);
+			logger.error(`Failed to remove local file: \`${this.key}\``, error);
 			return { error: toTaskError(error, this), success: false };
 		}
 	}

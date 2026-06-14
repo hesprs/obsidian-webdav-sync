@@ -1,6 +1,8 @@
 import { Notice, Setting } from 'obsidian';
+import { createVaultFs, createWebdavFs } from '~/fs';
 import t from '~/i18n';
-import { getSyncStateKey } from '~/utils/get-sync-state-key';
+import { clearAllStorage, clearStorageNamespace } from '~/storage';
+import { getStateKey } from '~/sync';
 import logger from '~/utils/logger';
 import BaseSettings from './settings.base';
 
@@ -34,25 +36,13 @@ export default class DevelopmentSettings extends BaseSettings {
 	}
 
 	private async clearVaultRecords() {
-		const { account, remoteDir, serverUrl } = this.plugin.settings;
-		const namespace = getSyncStateKey({
-			account,
-			remoteBaseDir: remoteDir,
-			serverUrl,
-			vaultName: this.plugin.app.vault.getName(),
-		});
-		await Promise.all([
-			this.plugin.syncStateStore.removeNamespace(namespace),
-			this.plugin.baseTextStore.removeNamespace(namespace),
-		]);
+		const namespace = getStateKey(createWebdavFs(this.plugin), createVaultFs(this.plugin));
+		await clearStorageNamespace(namespace);
 		new Notice(t('settings.clearRecords.vaultCleared'));
 	}
 
 	private async clearAllRecords() {
-		await Promise.all([
-			this.plugin.syncStateStore.removeAll(),
-			this.plugin.baseTextStore.removeAll(),
-		]);
+		await clearAllStorage();
 		new Notice(t('settings.clearRecords.allCleared'));
 	}
 

@@ -1,28 +1,19 @@
 import { Notice } from 'obsidian';
 import { Show, createSignal } from 'solid-js';
+import type { RemoteFs } from '~/fs';
 import t from '~/i18n';
-import { normalizeRemotePath } from '~/platform/path';
-import type { FileStat } from './components/FileList';
-import { createFileList } from './components/FileList';
-import NewFolder from './components/NewFolder';
-
-function joinRemotePath(...parts: Array<string>): `/${string}` {
-	return normalizeRemotePath(parts.join('/')) as `/${string}`;
-}
-
-export type fs = {
-	ls: (path: string) => Promise<Array<FileStat>> | Array<FileStat>;
-	mkdirs: (path: string) => Promise<void> | void;
-};
+import { normalizeKey } from '~/utils/path';
+import { createFileList } from './FileList';
+import NewFolder from './NewFolder';
 
 export type AppProps = {
-	fs: fs;
+	fs: RemoteFs;
 	onConfirm: (path: string) => void;
 	onClose: () => void;
 };
 
 type SingleColProps = {
-	fs: fs;
+	fs: RemoteFs;
 	showNewFolder: () => boolean;
 	setShowNewFolder: (value: boolean) => void;
 	cwd: () => string | undefined;
@@ -45,16 +36,16 @@ function SingleCol(props: SingleColProps) {
 			<list.FileList
 				fs={props.fs}
 				path={props.cwd() ?? ''}
-				onClick={(f) => props.enter(f.path)}
+				onClick={(f) => props.enter(f.key)}
 			/>
 		</div>
 	);
 }
 
 async function createFolder(props: SingleColProps, refresh: () => void, name: string) {
-	const target = joinRemotePath(props.cwd() ?? '/', name);
+	const target = normalizeKey(`${props.cwd()}${name}`, true);
 	try {
-		await Promise.resolve(props.fs.mkdirs(target));
+		await Promise.resolve(props.fs.mkdir(target));
 		props.setShowNewFolder(false);
 		refresh();
 	} catch (error) {

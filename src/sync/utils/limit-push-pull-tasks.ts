@@ -1,7 +1,7 @@
 import type { ToggleNumericSettingsField } from '~/types';
+import { getAndDeleteAt, getLast } from '~/utils/fns';
 import type PushTask from '../tasks/push.task';
 import PullTask from '../tasks/pull.task';
-import { getAndDeleteAt, getLast } from './array-utils';
 
 type ArrayOfTasks = Array<PushTask | PullTask>;
 

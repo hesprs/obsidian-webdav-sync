@@ -1,10 +1,9 @@
 import type { App } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import { Modal } from 'obsidian';
-import { getDirectoryContents } from '~/fs/webdav/api';
-import { mkdirsWebDAV } from '~/fs/webdav/utils';
-import { normalizeBaseDir, remoteBasename } from '~/platform/path';
-import mountWebDAVExplorer from './explorer';
+import mountWebDAVExplorer from '~/components/explorer';
+import { createWebdavFs } from '~/fs';
+import { normalizeBaseDir } from '~/utils/path';
 
 export default class SelectRemoteBaseDirModal extends Modal {
 	constructor(
@@ -17,30 +16,11 @@ export default class SelectRemoteBaseDirModal extends Modal {
 
 	onOpen() {
 		const explorer = this.contentEl.createDiv();
-		const webdav = this.plugin.webDAVService.createWebDAVClient();
+		const webdav = createWebdavFs(this.plugin, false);
 
 		mountWebDAVExplorer(explorer, {
-			fs: {
-				ls: async (target) => {
-					const token = this.plugin.getToken();
-					const items = await getDirectoryContents(
-						this.plugin.settings.serverUrl,
-						token,
-						target,
-					);
-					return items.map((stat) => ({
-						basename: remoteBasename(stat.path),
-						isDir: stat.isDir,
-						path: stat.path,
-					}));
-				},
-				mkdirs: async (path) => {
-					await mkdirsWebDAV(webdav, path);
-				},
-			},
-			onClose: () => {
-				this.close();
-			},
+			fs: webdav,
+			onClose: this.close.bind(this),
 			onConfirm: (path) => {
 				this.onConfirm(normalizeBaseDir(path));
 				this.close();

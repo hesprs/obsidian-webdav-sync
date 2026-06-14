@@ -2,13 +2,13 @@ import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
 import type { FileTreeSelectionController } from '~/components/fileTree';
 import type { SyncRunSnapshot, SyncRunStage, SyncFailedTaskInfo } from '~/events';
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync';
 import { mount as mountFileTree } from '~/components/fileTree';
 import renderFailedTasks from '~/components/render-failed-tasks';
 import { syncCancel } from '~/events';
 import t from '~/i18n';
 import { TERMINAL_STAGES } from '~/services/observability.service';
-import { getTaskName } from '~/utils/get-task-info';
+import { getTaskName } from '~/sync';
 
 type ManualConfirmationSession = {
 	onConfirm: () => void;
@@ -47,13 +47,13 @@ export default class SyncProgressModal extends Modal {
 		const stage = run.stage;
 		if (stage === 'walking_remote')
 			return {
-				completed: run.remoteWalkSummary?.completedItems || 0,
-				total: run.remoteWalkSummary?.totalItems || 1,
+				completed: run.remoteWalkSummary?.completed || 0,
+				total: run.remoteWalkSummary?.total || 1,
 			};
 		if (stage === 'executing' || stage === 'completed')
 			return {
-				completed: run.progressSummary.completedTasks,
-				total: run.progressSummary.totalTasks,
+				completed: run.progressSummary.completed,
+				total: run.progressSummary.total,
 			};
 		if (stage === 'completed_noop') return { completed: 0, percentage: 100, total: 0 };
 		return { completed: 0, total: 1 };
@@ -90,19 +90,16 @@ export default class SyncProgressModal extends Modal {
 		this.progressStats.setText(t('sync.progressStats', { completed, total }));
 
 		if (stage === 'pre_connecting') this.currentFile.setText(t('sync.preConnecting'));
-		else if (stage === 'walking_remote')
-			this.currentFile.setText(
-				`${t('sync.walkingRemote')} ${run.remoteWalkSummary?.currentItem}`,
-			);
+		else if (stage === 'walking_remote') this.currentFile.setText(t('sync.walkingRemote'));
 		else if (stage === 'awaiting_confirmation')
 			this.currentFile.setText(t('sync.awaitingConfirmation'));
-		else if (stage === 'executing' && run.progressSummary.completed.length === 0)
+		else if (stage === 'executing' && run.progressSummary.completedTasks.length === 0)
 			this.currentFile.setText(t('sync.syncingFiles'));
 		else if (stage === 'cancelled') this.currentFile.setText(t('sync.cancelled'));
 		else if (stage === 'failed') this.currentFile.setText(t('sync.failedStatus'));
 		else if (stage === 'completed_noop') this.currentFile.setText(t('sync.alreadyUpToDate'));
-		else if (stage === 'executing' && run.progressSummary.completed.length > 0) {
-			const lastFile = run.progressSummary.completed.at(-1);
+		else if (stage === 'executing' && run.progressSummary.completedTasks.length > 0) {
+			const lastFile = run.progressSummary.completedTasks.at(-1);
 			if (lastFile)
 				this.currentFile.setText(`${getTaskName(lastFile.taskName)} ${lastFile.path}`);
 		} else this.currentFile.setText(t('sync.complete'));

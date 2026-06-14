@@ -1,86 +1,106 @@
-import type { RecordStatsMap, StatModel } from '~/types';
-import { isNil } from '~/utils/fns';
-import type IndexedDbFileChunkStore from './file-chunk.store';
-import type IndexedDbSyncStateStore from './sync-record.store';
-import IndexedDbBaseTextStore from './base-text.store';
+import type { Store } from 'uni-kv';
+import type { RecordStat, RecordStatsMap } from '~/types';
+import { isSub } from '~/utils/path';
+import type { StorageDatabase } from './database';
+import {
+	BASE_TEXT_STORE_NAME,
+	SYNC_STATE_STORE_NAME,
+	clearStorageNamespace,
+	parseKey,
+} from './database';
 
 export default class SyncRecord {
+	private readonly getSyncRecordStorePromise: Promise<Store<RecordStat>>;
+	private readonly getBaseTextStorePromise: Promise<Store<string>>;
+
 	constructor(
 		private readonly namespace: string,
-		private readonly stateStore: IndexedDbSyncStateStore,
-		private readonly textStore: IndexedDbBaseTextStore,
-		private readonly fileStore: IndexedDbFileChunkStore,
-	) {}
+		private readonly db: StorageDatabase,
+	) {
+		this.getSyncRecordStorePromise = Promise.resolve(this.db.getStore(SYNC_STATE_STORE_NAME));
+		this.getBaseTextStorePromise = Promise.resolve(this.db.getStore(BASE_TEXT_STORE_NAME));
+	}
 
 	async removeRecords(path: string): Promise<void> {
+		const [stateStore, baseTextStore] = await Promise.all([
+			this.getSyncRecordStorePromise,
+			this.getBaseTextStorePromise,
+		]);
 		await Promise.all([
-			this.stateStore.removeEntry(this.namespace, path),
-			this.textStore.removeEntry(this.namespace, path),
-			this.fileStore.removeEntry(this.namespace, path),
+			stateStore.delete(this.getKey(path)),
+			baseTextStore.delete(this.getKey(path)),
 		]);
 	}
 
 	async removeRecordSubtree(path: string): Promise<void> {
+		const [stateStore, baseTextStore] = await Promise.all([
+			this.getSyncRecordStorePromise,
+			this.getBaseTextStorePromise,
+		]);
 		await Promise.all([
-			this.stateStore.removeSubDir(this.namespace, path),
-			this.textStore.removeSubDir(this.namespace, path),
-			this.fileStore.removeSubDir(this.namespace, path),
+			this.removeSubtree(stateStore, path),
+			this.removeSubtree(baseTextStore, path),
 		]);
 	}
 
 	async upsertRecords({
 		key,
-		local,
-		remote,
+		record,
 		baseText,
 	}: {
 		key: string;
-		local: StatModel;
-		remote: StatModel;
+		record: RecordStat;
 		baseText?: string;
 	}): Promise<void> {
+		const [stateStore, baseTextStore] = await Promise.all([
+			this.getSyncRecordStorePromise,
+			this.getBaseTextStorePromise,
+		]);
 		await Promise.all([
-			this.stateStore.set(this.namespace, key, { local, remote }),
-			(async () => {
-				if (!isNil(baseText)) await this.textStore.set(this.namespace, key, baseText);
-			})(),
+			stateStore.set(this.getKey(key), record),
+			baseText === undefined
+				? Promise.resolve()
+				: baseTextStore.set(this.getKey(key), baseText),
 		]);
 	}
 
 	async getBaseText(path: string): Promise<string | undefined> {
-		return await this.textStore.get(this.namespace, path);
+		const store = await this.getBaseTextStorePromise;
+		return await store.get(this.getKey(path));
 	}
 
-	async getFileChunkKeys(options: { path: string; size: number }) {
-		return await this.fileStore.getFileChunkKeys({ namespace: this.namespace, ...options });
-	}
-
-	async setFileChunk(
-		chunk: ArrayBuffer,
-		options: {
-			path: string;
-			start: number;
-			size: number;
-			end: number;
-		},
-	) {
-		await this.fileStore.setFileChunk(chunk, { namespace: this.namespace, ...options });
-	}
-
-	async getFileChunk(key: string) {
-		return await this.fileStore.getFileChunk(key);
-	}
-
-	async removeFileChunk(key: string) {
-		await this.fileStore.removeEntry(this.namespace, key);
+	async setBaseText(path: string, baseText: string): Promise<void> {
+		const store = await this.getBaseTextStorePromise;
+		await store.set(this.getKey(path), baseText);
 	}
 
 	async getRecords(): Promise<RecordStatsMap> {
-		return await this.stateStore.getAll(this.namespace);
+		const store = await this.getSyncRecordStorePromise;
+		const result: RecordStatsMap = new Map();
+		const records = await store.batch(
+			(await store.keys())
+				.filter((key) => parseKey(key).namespace === this.namespace)
+				.map((key) => ({ key, type: 'get' })),
+		);
+		for (const { key, value } of records)
+			if (value !== undefined) result.set(parseKey(key).path, value);
+		return result;
 	}
 
 	async drop() {
-		await this.stateStore.removeNamespace(this.namespace);
-		await this.textStore.removeNamespace(this.namespace);
+		await clearStorageNamespace(this.namespace, this.db);
+	}
+
+	private getKey(path: string) {
+		return `${this.namespace}:${path}`;
+	}
+
+	private async removeSubtree<T>(store: Store<T>, path: string) {
+		const keys = (await store.keys()).filter((key) => {
+			const parsed = parseKey(key);
+			return parsed.namespace === this.namespace && isSub(path, parsed.path, true);
+		});
+		if (keys.length === 0) return;
+		await store.batch(keys.map((key) => ({ key, type: 'delete' })));
 	}
 }

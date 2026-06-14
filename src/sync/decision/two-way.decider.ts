@@ -1,12 +1,11 @@
+import { ref } from 'synthkernel';
 import type { ProgressPatch } from '~/events';
+import type { Stat } from '~/fs';
 import type { SyncRecord } from '~/storage';
-import type { RecordStatsMap, StatsMap } from '~/types';
-import postTraversal from '~/fs/post-traversal';
-import { traverseVault } from '~/fs/vault';
-import { traverseWebDAV } from '~/fs/webdav';
-import { useSettings } from '~/settings';
+import type { RecordStatsMap } from '~/types';
 import { SyncRunKind } from '~/types';
-import type SyncEngine from '..';
+import { useSettings } from '~/utils/plugin-instance';
+import type SyncEngine from '../engine';
 import type { BaseTask } from '../tasks/task.interface';
 import type {
 	OptionsWithBothFileStats,
@@ -30,6 +29,7 @@ import PullTask from '../tasks/pull.task';
 import PushTask from '../tasks/push.task';
 import RemoveLocalTask from '../tasks/remove-local.task';
 import RemoveRemoteTask from '../tasks/remove-remote.task';
+import postTraversal from '../utils/post-traversal';
 import twoWayDecider from './two-way.decider.function';
 
 export default class TwoWaySyncDecider {
@@ -47,47 +47,39 @@ export default class TwoWaySyncDecider {
 		return this.sync.vault;
 	}
 
-	get remoteBaseDir() {
-		return this.sync.remoteBaseDir;
-	}
-
 	async decide(options?: {
 		onProgress?: (progress: ProgressPatch) => void;
 		throwIfCancelled?: () => void;
 	}): Promise<Array<BaseTask>> {
 		const onProgress = (progress: ProgressPatch) => options?.onProgress?.(progress);
 
-		const records = await this.syncRecordStorage.getRecords();
+		const { filterRules, skipLargeFiles } = await useSettings();
+		const postProcess = (stats: Array<Stat>) =>
+			postTraversal(
+				toMap(stats),
+				filterRules,
+				skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
+			);
 
-		const currentLocalStats = await traverseVault({ vault: this.vault });
+		const records = await this.syncRecordStorage.getRecords();
+		const currentLocalStats = postProcess(await this.vault.listAll('/'));
 
 		onProgress({
 			remoteWalkSummary: {
-				completedItems: 0,
-				currentItem: this.remoteBaseDir,
-				totalItems: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
+				completed: 0,
+				total: this.sync.runKind === SyncRunKind.fast ? 1 : 0,
 			},
 			stage: 'walking_remote',
 		});
-		const currentRemoteStats =
+		const progressRef = ref({ completed: 0, total: 0 });
+		progressRef.subscribe((progress) => onProgress({ remoteWalkSummary: progress }));
+		const currentRemoteStats = postProcess(
 			this.sync.runKind === SyncRunKind.fast
-				? await extractRemoteRecords(records)
-				: await traverseWebDAV({
-						onProgress: (progress) =>
-							onProgress({
-								remoteWalkSummary: {
-									completedItems: progress.processedDirectories,
-									currentItem: progress.currentDirectory ?? this.remoteBaseDir,
-									totalItems: progress.totalDirectories,
-								},
-								stage: 'walking_remote',
-							}),
-						throwIfCancelled: options?.throwIfCancelled,
-						token: this.token,
-					});
+				? extractRemoteRecords(records)
+				: await this.webdav.listAll('/', progressRef),
+		);
 
 		const commonTaskOptions = {
-			remoteBaseDir: this.remoteBaseDir,
 			syncRecord: this.syncRecordStorage,
 			vault: this.vault,
 			webdav: this.webdav,
@@ -118,7 +110,6 @@ export default class TwoWaySyncDecider {
 			currentLocalStats,
 			currentRemoteStats,
 			records,
-			remoteBaseDir: this.remoteBaseDir,
 			settings: {
 				conflictStrategy: this.sync.settings.conflictStrategy,
 				unmergeableStrategy: this.sync.settings.unmergeableStrategy,
@@ -130,13 +121,19 @@ export default class TwoWaySyncDecider {
 	}
 }
 
-async function extractRemoteRecords(records: RecordStatsMap): Promise<StatsMap> {
-	const res: StatsMap = new Map();
-	const { filterRules, skipLargeFiles } = await useSettings();
-	for (const [path, record] of records) res.set(path, record.remote);
-	return postTraversal(
-		res,
-		filterRules,
-		skipLargeFiles.enabled ? skipLargeFiles.value : undefined,
-	);
+function extractRemoteRecords(records: RecordStatsMap): Array<Stat> {
+	const res: Array<Stat> = [];
+	for (const [key, record] of records)
+		res.push(
+			record.isDir
+				? { isDir: true, key }
+				: { isDir: false, key, mtime: 0, size: 0, uid: record.remote },
+		);
+	return res;
+}
+
+function toMap(stats: Array<Stat>): Map<string, Stat> {
+	const res = new Map<string, Stat>();
+	for (const stat of stats) res.set(stat.key, stat);
+	return res;
 }

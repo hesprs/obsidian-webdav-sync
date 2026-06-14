@@ -1,6 +1,5 @@
-import type { OptionsWithLocalFolderStat } from '~/sync/decision/sync-decision.interface';
-import { resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
+import type { OptionsWithLocalFolderStat } from '../decision/sync-decision.interface';
 import { BaseTask, toTaskError } from './task.interface';
 
 export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat> {
@@ -8,18 +7,15 @@ export default class MkdirRemoteTask extends BaseTask<OptionsWithLocalFolderStat
 
 	async exec() {
 		try {
-			const executionRemotePath = await resolveRemoteExecutionPath(this.remotePath);
-			await this.webdav.createDirectory(executionRemotePath);
-
+			await this.webdav.mkdir(this.key);
 			await this.syncRecord.upsertRecords({
-				key: this.localPath,
-				local: this.local,
-				remote: { isDir: true, path: this.remotePath },
+				key: this.key,
+				record: { isDir: true },
 			});
 
 			return { success: true } as const;
 		} catch (error) {
-			logger.error(`Failed to create remote directory: ${this.remotePath}`, error);
+			logger.error(`Failed to create remote directory: \`${this.key}\``, error);
 			return { error: toTaskError(error, this), success: false };
 		}
 	}

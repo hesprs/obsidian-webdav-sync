@@ -1,13 +1,12 @@
 import type WebDAVSyncPlugin from '~';
 import type { SyncRunSnapshot, SyncTrigger } from '~/events';
-import type { BaseTask } from '~/sync/tasks/task.interface';
+import type { BaseTask } from '~/sync';
 import type { SyncRunKind } from '~/types';
 import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import SyncEngine from '~/sync';
-import { isSyncCancelledError } from '~/sync/errors';
+import { createVaultFs, createWebdavFs } from '~/fs';
+import { SyncEngine, isSyncCancelledError } from '~/sync';
 import logger from '~/utils/logger';
-import waitUntil from '~/utils/wait-until';
 
 export type SyncOptions = {
 	runKind: SyncRunKind;
@@ -31,16 +30,13 @@ export default class SyncExecutorService {
 	async executeSync(request: SyncExecutionRequest): Promise<SyncExecutionResult> {
 		if (this.plugin.isSyncing) return { executed: false };
 		if (!this.plugin.isAccountConfigured()) return { executed: false };
-		await waitUntil(() => !this.plugin.isSyncing, 500);
 		logger.pushRunId(request.runId);
 
 		try {
-			this.plugin.prepareSyncEncryptionKeys();
-
 			const sync = new SyncEngine(this.plugin, {
 				token: this.plugin.getToken(),
-				vault: this.plugin.app.vault,
-				webdav: this.plugin.webDAVService.createWebDAVClient(),
+				vaultFs: createVaultFs(this.plugin),
+				webdavFs: createWebdavFs(this.plugin),
 			});
 
 			let run = createQueuedSyncRunSnapshot({
@@ -86,7 +82,6 @@ export default class SyncExecutorService {
 
 			return { executed: true, run };
 		} finally {
-			this.plugin.clearSyncEncryptionKeys();
 			logger.popRunId();
 		}
 	}

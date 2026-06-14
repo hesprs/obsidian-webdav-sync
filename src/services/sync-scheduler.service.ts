@@ -4,7 +4,7 @@ import type { SyncTrigger } from '~/events';
 import { syncRun } from '~/events';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
-import waitUntil from '~/utils/wait-until';
+import { waitUntil } from '~/utils/sleep';
 import type {
 	default as SyncExecutorService,
 	SyncExecutionRequest,

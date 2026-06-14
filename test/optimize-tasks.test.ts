@@ -1,26 +1,15 @@
 import { expect, test } from 'bun:test';
-
-const [
-	{ default: MkdirLocalTask },
-	{ default: MkdirRemoteTask },
-	{ default: PullTask },
-	{ default: PushTask },
-	{ default: RemoveLocalRecursivelyTask },
-	{ default: RemoveLocalTask },
-	{ default: RemoveRemoteRecursivelyTask },
-	{ default: RemoveRemoteTask },
-	{ default: optimizeTasks },
-] = await Promise.all([
-	import('~/sync/tasks/mkdir-local.task'),
-	import('~/sync/tasks/mkdir-remote.task'),
-	import('~/sync/tasks/pull.task'),
-	import('~/sync/tasks/push.task'),
-	import('~/sync/tasks/remove-local-recursively.task'),
-	import('~/sync/tasks/remove-local.task'),
-	import('~/sync/tasks/remove-remote-recursively.task'),
-	import('~/sync/tasks/remove-remote.task'),
-	import('~/sync/utils/optimize-tasks'),
-]);
+import {
+	MkdirLocalTask,
+	MkdirRemoteTask,
+	PullTask,
+	PushTask,
+	RemoveLocalRecursivelyTask,
+	RemoveLocalTask,
+	RemoveRemoteRecursivelyTask,
+	RemoveRemoteTask,
+} from '~/sync';
+import optimizeTasks from '~/sync/utils/optimize-tasks';
 
 const sharedOptions = {
 	local: {} as never,
@@ -38,38 +27,14 @@ const dummyOption = {
 test('merges removals and orders directory creation before file tasks', () => {
 	const tasks = optimizeTasks(
 		[
-			new PushTask({
-				...sharedOptions,
-				localPath: 'folder/file.md',
-				remotePath: 'folder/file.md',
-			}),
-			new PullTask({
-				...sharedOptions,
-				localPath: 'notes/file.md',
-				remotePath: 'notes/file.md',
-			}),
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'old/file.md',
-				remotePath: 'old/file.md',
-			}),
-			new RemoveRemoteTask({
-				...sharedOptions,
-				localPath: 'gone/file.md',
-				remotePath: 'gone/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'folder',
-				remotePath: 'folder',
-			}),
-			new MkdirLocalTask({
-				...sharedOptions,
-				localPath: 'notes',
-				remotePath: 'notes',
-			}),
-			new RemoveLocalTask({ ...sharedOptions, localPath: 'old', remotePath: 'old' }),
-			new RemoveRemoteTask({ ...sharedOptions, localPath: 'gone', remotePath: 'gone' }),
+			new PushTask({ ...sharedOptions, key: 'folder/file.md' }),
+			new PullTask({ ...sharedOptions, key: 'notes/file.md' }),
+			new RemoveLocalTask({ ...sharedOptions, key: 'old/file.md' }),
+			new RemoveRemoteTask({ ...sharedOptions, key: 'gone/file.md' }),
+			new MkdirRemoteTask({ ...sharedOptions, key: 'folder/' }),
+			new MkdirLocalTask({ ...sharedOptions, key: 'notes/' }),
+			new RemoveLocalTask({ ...sharedOptions, key: 'old/' }),
+			new RemoveRemoteTask({ ...sharedOptions, key: 'gone/' }),
 		],
 		dummyOption,
 		dummyOption,
@@ -82,27 +47,15 @@ test('merges removals and orders directory creation before file tasks', () => {
 	expect(tasks[4]).toBeInstanceOf(PushTask);
 	expect(tasks[5]).toBeInstanceOf(PullTask);
 	expect(tasks).toHaveLength(6);
-	expect(tasks[1].localPath).toBe('old');
+	expect(tasks[1].key).toBe('old/');
 });
 
 test('keeps remote reupload steps ahead of local deletion', () => {
 	const tasks = optimizeTasks(
 		[
-			new RemoveLocalTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new PushTask({
-				...sharedOptions,
-				localPath: 'archive/file.md',
-				remotePath: 'archive/file.md',
-			}),
-			new MkdirRemoteTask({
-				...sharedOptions,
-				localPath: 'archive',
-				remotePath: 'archive',
-			}),
+			new RemoveLocalTask({ ...sharedOptions, key: 'archive/file.md' }),
+			new PushTask({ ...sharedOptions, key: 'archive/file.md' }),
+			new MkdirRemoteTask({ ...sharedOptions, key: 'archive/' }),
 		],
 		dummyOption,
 		dummyOption,

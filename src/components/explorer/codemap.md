@@ -32,5 +32,5 @@ Errors from remote operations are surfaced as Obsidian notices.
   - `App.tsx` types: `fs`, `AppProps`
   - `FileList.tsx` exports: `FileStat`, `FileListProps`, `createFileList`
 - Depends on SolidJS for rendering/state and Obsidian `Notice` for user-facing errors.
-- Uses the shared i18n helper for button labels and `~/platform/path` for remote path normalization.
+- Uses the shared i18n helper for button labels and `~/utils/path` for remote path normalization.
 - Consumes a minimal `fs` contract from the parent: `ls(path)` and `mkdirs(path)`.

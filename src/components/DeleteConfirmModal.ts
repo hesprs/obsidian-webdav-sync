@@ -1,7 +1,7 @@
 import type { App } from 'obsidian';
 import { Modal, Setting } from 'obsidian';
 import type { FileTreeSelectionController } from '~/components/fileTree';
-import type RemoveLocalTask from '~/sync/tasks/remove-local.task';
+import type { RemoveLocalTask } from '~/sync';
 import { mount as mountFileTree } from '~/components/fileTree';
 import t from '~/i18n';
 
