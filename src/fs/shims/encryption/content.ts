@@ -13,7 +13,6 @@ import {
 	encodeUInt96,
 	getEncryptedChunkSize,
 	importAesGcmKey,
-	ownedBytes,
 	toArrayBuffer,
 } from './shared';
 
@@ -23,47 +22,46 @@ const NAME_KEY_INFO = 'name-key-v1';
 
 export const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';
 
-export async function deriveMasterSalt(remoteUid: string): Promise<Uint8Array> {
+export async function deriveMasterSalt(remoteUid: string): Promise<ArrayBuffer> {
 	const digest = await sha256Digest(textEncoder.encode(remoteUid));
-	return ownedBytes(new Uint8Array(digest.slice(0, MASTER_SALT_LENGTH)));
+	return digest.slice(0, MASTER_SALT_LENGTH);
 }
 
 export async function deriveMasterKey(
-	password: string | Uint8Array,
-	masterSalt: Uint8Array,
-): Promise<Uint8Array> {
-	return ownedBytes(
-		await argon2id({
-			hashLength: MASTER_KEY_LENGTH,
-			iterations: 3,
-			memorySize: 32 * 1024,
-			outputType: 'binary',
-			parallelism: 1,
-			password,
-			salt: masterSalt,
-		}),
-	);
+	password: string | ArrayBuffer,
+	masterSalt: ArrayBuffer,
+): Promise<ArrayBuffer> {
+	const derived = await argon2id({
+		hashLength: MASTER_KEY_LENGTH,
+		iterations: 3,
+		memorySize: 32 * 1024,
+		outputType: 'binary',
+		parallelism: 1,
+		password: typeof password === 'string' ? password : new Uint8Array(password),
+		salt: new Uint8Array(masterSalt),
+	});
+	return toArrayBuffer(derived);
 }
 
-export async function deriveRootFileKey(masterKey: BufferSource): Promise<Uint8Array> {
+export async function deriveRootFileKey(masterKey: ArrayBuffer): Promise<ArrayBuffer> {
 	return deriveHkdfKey(masterKey, ROOT_FILE_KEY_INFO);
 }
 
-export async function deriveNameKey(masterKey: BufferSource): Promise<Uint8Array> {
+export async function deriveNameKey(masterKey: ArrayBuffer): Promise<ArrayBuffer> {
 	return deriveHkdfKey(masterKey, NAME_KEY_INFO);
 }
 
 export async function encryptFileContent(
-	rootFileKey: Uint8Array,
+	rootFileKey: ArrayBuffer,
 	key: string,
 	plaintext: ArrayBuffer,
 ): Promise<ArrayBuffer> {
 	const encryptedFileSize = getEncryptedFileSize(plaintext.byteLength);
-	const fileSalt = ownedBytes(crypto.getRandomValues(new Uint8Array(FILE_SALT_LENGTH)));
+	const fileSalt = crypto.getRandomValues(new Uint8Array(FILE_SALT_LENGTH)).buffer;
 	const fileKey = await importAesGcmKey(
 		await deriveFileKey(rootFileKey, fileSalt, encryptedFileSize, key),
 	);
-	const encryptedChunks: Array<ArrayBuffer> = [toArrayBuffer(fileSalt)];
+	const encryptedChunks: Array<ArrayBuffer> = [fileSalt];
 
 	for (
 		let offset = 0, chunkIndex = 0;
@@ -78,32 +76,34 @@ export async function encryptFileContent(
 }
 
 export async function decryptFileContent(
-	rootFileKey: Uint8Array,
+	rootFileKey: ArrayBuffer,
 	key: string,
 	encryptedContent: ArrayBuffer,
 	encryptedFileSize: number,
 ): Promise<ArrayBuffer> {
-	const encryptedBytes = new Uint8Array(encryptedContent);
-	if (encryptedBytes.length !== encryptedFileSize || encryptedBytes.length < FILE_SALT_LENGTH)
+	if (
+		encryptedContent.byteLength !== encryptedFileSize ||
+		encryptedContent.byteLength < FILE_SALT_LENGTH
+	)
 		throw new Error(DECRYPTION_ERROR_MESSAGE);
 
-	const fileSalt = ownedBytes(encryptedBytes.slice(0, FILE_SALT_LENGTH));
+	const fileSalt = encryptedContent.slice(0, FILE_SALT_LENGTH);
 	const fileKey = await importAesGcmKey(
 		await deriveFileKey(rootFileKey, fileSalt, encryptedFileSize, key),
 	);
 	const plaintextChunks: Array<ArrayBuffer> = [];
 	let offset = FILE_SALT_LENGTH;
 
-	for (let chunkIndex = 0; offset < encryptedBytes.length; chunkIndex += 1) {
+	for (let chunkIndex = 0; offset < encryptedContent.byteLength; chunkIndex += 1) {
 		const encryptedChunkSize = getEncryptedChunkSize(chunkIndex, encryptedFileSize);
-		const encryptedChunk = encryptedBytes.slice(offset, offset + encryptedChunkSize).buffer;
+		const encryptedChunk = encryptedContent.slice(offset, offset + encryptedChunkSize);
 		if (encryptedChunk.byteLength !== encryptedChunkSize)
 			throw new Error(DECRYPTION_ERROR_MESSAGE);
 		plaintextChunks.push(await decryptContentChunk(fileKey, encryptedChunk, chunkIndex));
 		offset += encryptedChunkSize;
 	}
 
-	if (offset !== encryptedBytes.length) throw new Error(DECRYPTION_ERROR_MESSAGE);
+	if (offset !== encryptedContent.byteLength) throw new Error(DECRYPTION_ERROR_MESSAGE);
 	return concatArrayBuffer(...plaintextChunks);
 }
 
@@ -112,11 +112,7 @@ async function encryptContentChunk(
 	chunk: ArrayBuffer,
 	chunkIndex: number,
 ): Promise<ArrayBuffer> {
-	return crypto.subtle.encrypt(
-		{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
-		key,
-		chunk,
-	);
+	return crypto.subtle.encrypt({ iv: encodeUInt96(chunkIndex), name: 'AES-GCM' }, key, chunk);
 }
 
 function getEncryptedFileSize(rawFileSize: number): number {

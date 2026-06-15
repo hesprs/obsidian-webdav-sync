@@ -26,7 +26,6 @@ import PushTask from './tasks/push.task';
 import RemoveLocalTask from './tasks/remove-local.task';
 import { TaskError, getTaskName } from './tasks/task.interface';
 import getStateKey from './utils/get-state-key';
-import optimizeTasks from './utils/optimize-tasks';
 
 export default class SyncEngine {
 	isCancelled = false;
@@ -167,22 +166,10 @@ export default class SyncEngine {
 				}
 			}
 
-			const optimizedTaskGroups = optimizeTasks(
-				tasks,
-				settings.maxSyncTaskConcurrency,
-				settings.maxThroughputConcurrency,
-			);
-			const optimizedTasks = optimizedTaskGroups.flat();
-			const allTasksResult: Array<TaskResult> = [];
-
-			const totalDisplayableTasks = optimizedTasks.filter((task) =>
-				this.isDisplayableTask(task),
-			);
-
-			// Track all completed tasks across all batches
+			const totalDisplayableTasks = tasks.filter((task) => this.isDisplayableTask(task));
 			const allCompletedTasks: Array<BaseTask> = [];
 			currentRun = updateSyncRunSnapshot(currentRun, {
-				planSummary: this.summarizePlan(optimizedTasks),
+				planSummary: this.summarizePlan(tasks),
 				progressSummary: this.createProgressSummary(
 					totalDisplayableTasks,
 					allCompletedTasks,
@@ -192,20 +179,38 @@ export default class SyncEngine {
 			});
 			syncRun(currentRun);
 
-			for (const taskGroup of optimizedTaskGroups) {
-				if (this.isCancelled) break;
+			const taskResults = await Promise.all(
+				tasks.map(async (task) => {
+					try {
+						const result = await task.exec();
+						if (this.isDisplayableTask(task)) {
+							allCompletedTasks.push(task);
+							currentRun = updateSyncRunSnapshot(currentRun, {
+								progressSummary: this.createProgressSummary(
+									totalDisplayableTasks,
+									allCompletedTasks,
+								),
+							});
+							syncRun(currentRun);
+						}
+						return result;
+					} catch (error) {
+						const taskError = new TaskError(
+							error instanceof Error ? error.message : String(error),
+							task,
+							error instanceof Error ? error : undefined,
+						);
+						logger.warn('Task execution failed', {
+							error: taskError,
+							key: task.key,
+							taskName: getTaskName(task.name),
+						});
+						return { error: taskError, success: false };
+					}
+				}),
+			);
 
-				const groupExecution = await this.execTaskGroup(
-					currentRun,
-					taskGroup,
-					totalDisplayableTasks,
-					allCompletedTasks,
-				);
-				currentRun = groupExecution.run;
-				allTasksResult.push(...groupExecution.results);
-			}
-
-			const resultSummary = this.createResultSummary(allTasksResult);
+			const resultSummary = this.createResultSummary(taskResults);
 			const failedCount = resultSummary.failed;
 			currentRun = finalizeSyncRun(currentRun, {
 				patch: {
@@ -272,57 +277,6 @@ export default class SyncEngine {
 		await syncRecord.drop();
 		this.throwIfCancelled();
 		await webdav.mkdir('/', true);
-	}
-
-	private async execTaskGroup(
-		run: SyncRunSnapshot,
-		tasks: Array<BaseTask>,
-		totalDisplayableTasks: Array<BaseTask>,
-		allCompletedTasks: Array<BaseTask>,
-	) {
-		let currentRun = run;
-		const settledResults = await Promise.allSettled(
-			tasks.map(async (task) => {
-				const result = await task.exec();
-				if (this.isDisplayableTask(task)) {
-					allCompletedTasks.push(task);
-					currentRun = updateSyncRunSnapshot(currentRun, {
-						progressSummary: this.createProgressSummary(
-							totalDisplayableTasks,
-							allCompletedTasks,
-						),
-					});
-					syncRun(currentRun);
-				}
-				return result;
-			}),
-		);
-		const results: Array<TaskResult> = settledResults.map((result, index) => {
-			if (result.status === 'fulfilled') return result.value;
-			const reason = result.reason;
-			return {
-				error: new TaskError(
-					reason instanceof Error ? reason.message : String(reason),
-					tasks[index],
-					reason instanceof Error ? reason : undefined,
-				),
-				success: false,
-			};
-		});
-
-		for (let i = 0; i < tasks.length; ++i) {
-			const task = tasks[i];
-			const taskResult = results[i];
-			const taskName = getTaskName(task.name);
-			if (!taskResult.success)
-				logger.warn('Task execution failed', {
-					error: taskResult.error,
-					key: task.key,
-					taskName,
-				});
-		}
-
-		return { results, run: currentRun };
 	}
 
 	private createProgressSummary(

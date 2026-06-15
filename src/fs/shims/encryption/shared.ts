@@ -1,7 +1,7 @@
 import { sha256Digest } from '~/utils/crypto';
 
 const textEncoder = new TextEncoder();
-const EMPTY_SALT = ownedBytes(new Uint8Array());
+const EMPTY_SALT = new ArrayBuffer(0);
 
 const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';
 export const MASTER_KEY_LENGTH = 32;
@@ -13,55 +13,43 @@ const ENCRYPTED_CONTENT_CHUNK_SIZE = CONTENT_CHUNK_SIZE + AES_GCM_TAG_LENGTH;
 const FILE_KEY_INFO = 'file-key-v1';
 
 export async function deriveFileKey(
-	rootFileKey: Uint8Array,
-	fileSalt: Uint8Array,
+	rootFileKey: ArrayBuffer,
+	fileSalt: ArrayBuffer,
 	encryptedFileSize: number,
 	virtualPath: string,
-): Promise<Uint8Array> {
+): Promise<ArrayBuffer> {
 	const fileKeySalt = await sha256Digest(
 		concatArrayBuffer(
-			toArrayBuffer(fileSalt),
-			toArrayBuffer(encodeUInt96(encryptedFileSize)),
-			toArrayBuffer(ownedBytes(textEncoder.encode(virtualPath))),
+			fileSalt,
+			encodeUInt96(encryptedFileSize),
+			toArrayBuffer(textEncoder.encode(virtualPath)),
 		),
 	);
-	return deriveHkdfKey(
-		toArrayBuffer(rootFileKey),
-		FILE_KEY_INFO,
-		ownedBytes(new Uint8Array(fileKeySalt)),
-	);
+	return deriveHkdfKey(rootFileKey, FILE_KEY_INFO, fileKeySalt);
 }
 
 export async function deriveHkdfKey(
-	masterKey: BufferSource,
+	masterKey: ArrayBuffer,
 	info: string,
-	salt: Uint8Array = EMPTY_SALT,
-): Promise<Uint8Array> {
-	const keyMaterial = await crypto.subtle.importKey(
-		'raw',
-		toBufferSource(masterKey),
-		'HKDF',
-		false,
-		['deriveBits'],
-	);
-	const derivedBits = await crypto.subtle.deriveBits(
+	salt: ArrayBuffer = EMPTY_SALT,
+): Promise<ArrayBuffer> {
+	const keyMaterial = await crypto.subtle.importKey('raw', masterKey, 'HKDF', false, [
+		'deriveBits',
+	]);
+	return await crypto.subtle.deriveBits(
 		{
 			hash: 'SHA-256',
 			info: textEncoder.encode(info),
 			name: 'HKDF',
-			salt: toArrayBuffer(salt),
+			salt,
 		},
 		keyMaterial,
 		MASTER_KEY_LENGTH * 8,
 	);
-	return ownedBytes(new Uint8Array(derivedBits));
 }
 
-export async function importAesGcmKey(key: Uint8Array): Promise<CryptoKey> {
-	return await crypto.subtle.importKey('raw', toArrayBuffer(key), 'AES-GCM', false, [
-		'encrypt',
-		'decrypt',
-	]);
+export async function importAesGcmKey(key: ArrayBuffer): Promise<CryptoKey> {
+	return await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt', 'decrypt']);
 }
 
 export async function decryptContentChunk(
@@ -71,7 +59,7 @@ export async function decryptContentChunk(
 ): Promise<ArrayBuffer> {
 	try {
 		return await crypto.subtle.decrypt(
-			{ iv: toArrayBuffer(encodeUInt96(chunkIndex)), name: 'AES-GCM' },
+			{ iv: encodeUInt96(chunkIndex), name: 'AES-GCM' },
 			key,
 			encryptedChunk,
 		);
@@ -96,7 +84,7 @@ export function getEncryptedChunkSize(chunkIndex: number, encryptedFileSize: num
 	return encryptedPayloadSize - ENCRYPTED_CONTENT_CHUNK_SIZE * (chunkCount - 1);
 }
 
-export function encodeUInt96(value: number): Uint8Array {
+export function encodeUInt96(value: number): ArrayBuffer {
 	if (!Number.isSafeInteger(value) || value < 0)
 		throw new Error('Value must be a non-negative safe integer');
 	let remainder = value;
@@ -105,7 +93,7 @@ export function encodeUInt96(value: number): Uint8Array {
 		result[index] = remainder & 0xff;
 		remainder = Math.floor(remainder / 256);
 	}
-	return ownedBytes(result);
+	return result.buffer;
 }
 
 export function concatArrayBuffer(...arrays: Array<ArrayBuffer>): ArrayBuffer {
@@ -123,17 +111,5 @@ export function concatArrayBuffer(...arrays: Array<ArrayBuffer>): ArrayBuffer {
 export function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
 	const result = new ArrayBuffer(bytes.byteLength);
 	new Uint8Array(result).set(bytes);
-	return result;
-}
-
-export function toBufferSource(source: BufferSource): BufferSource {
-	if (source instanceof ArrayBuffer) return source;
-	return toArrayBuffer(new Uint8Array(source.buffer, source.byteOffset, source.byteLength));
-}
-
-export function ownedBytes(bytes: Uint8Array): Uint8Array {
-	const buffer = new ArrayBuffer(bytes.byteLength);
-	const result = new Uint8Array(buffer);
-	result.set(bytes);
 	return result;
 }

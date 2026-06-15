@@ -67,7 +67,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		},
 		maxWebDAVConcurrency: {
 			enabled: true,
-			value: 100,
+			value: 50,
 		},
 		minWebDAVRequestInterval: {
 			enabled: false,

@@ -7,12 +7,11 @@ import {
 	getEncryptedChunkCount,
 	getEncryptedChunkSize,
 	importAesGcmKey,
-	ownedBytes,
 } from './shared';
 
 export default function createDecryptedReadableStream(
 	source: ReadableStream<ArrayBuffer>,
-	rootFileKey: Uint8Array,
+	rootFileKey: ArrayBuffer,
 	key: string,
 	encryptedFileSize: number,
 ): ReadableStream<ArrayBuffer> {
@@ -30,17 +29,15 @@ export default function createDecryptedReadableStream(
 		pending = concatArrayBuffer(pending, chunk);
 
 		const totalChunkCount = getEncryptedChunkCount(encryptedFileSize);
-		let pendingBytes = new Uint8Array(pending);
 
 		if (!fileKeyPromise) {
-			if (pendingBytes.byteLength < FILE_SALT_LENGTH) {
+			if (pending.byteLength < FILE_SALT_LENGTH) {
 				if (isFinal) throw new Error(DECRYPTION_ERROR_MESSAGE);
 				return;
 			}
 
-			const fileSalt = ownedBytes(pendingBytes.slice(0, FILE_SALT_LENGTH));
-			pending = pendingBytes.slice(FILE_SALT_LENGTH).buffer;
-			pendingBytes = new Uint8Array(pending);
+			const fileSalt = pending.slice(0, FILE_SALT_LENGTH);
+			pending = pending.slice(FILE_SALT_LENGTH);
 			fileKeyPromise = importAesGcmKey(
 				await deriveFileKey(rootFileKey, fileSalt, encryptedFileSize, key),
 			);
@@ -50,9 +47,8 @@ export default function createDecryptedReadableStream(
 			const expectedSize = getEncryptedChunkSize(chunkIndex, encryptedFileSize);
 			if (pending.byteLength < expectedSize) break;
 
-			const encryptedChunk = pendingBytes.slice(0, expectedSize).buffer;
-			pendingBytes = pendingBytes.slice(expectedSize);
-			pending = pendingBytes.buffer;
+			const encryptedChunk = pending.slice(0, expectedSize);
+			pending = pending.slice(expectedSize);
 			controller.enqueue(
 				await decryptContentChunk(await fileKeyPromise, encryptedChunk, chunkIndex),
 			);

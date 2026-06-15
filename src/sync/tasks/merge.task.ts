@@ -12,17 +12,18 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 
 	async exec() {
 		try {
-			let localBuffer: ArrayBuffer;
+			let localBuffer, remoteBuffer: ArrayBuffer;
+
 			try {
-				localBuffer = await this.vault.read(this.key);
+				[localBuffer, remoteBuffer] = await Promise.all([
+					this.vault.read(this.key),
+					this.webdav.read(this.key),
+				]);
 			} catch {
 				// Ignore if local not found (which indicates that it has been deleted or renamed, common in case of fast local change)
-				logger.warn(`Failed to get local content at path \`${this.key}\``);
+				logger.warn(`Failed to get local or remote content at path \`${this.key}\``);
 				return { success: true } as const;
 			}
-
-			const settings = await useSettings();
-			const remoteBuffer = await this.webdav.read(this.key);
 
 			if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 				await this.syncRecord.upsertRecords({
@@ -52,10 +53,11 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 				return { success: true } as const;
 			}
 
+			const { useGitStyle } = await useSettings();
 			if (!mergeResult.success) {
 				const mergeDigInResult = mergeDigIn(localText, baseText, remoteText, {
 					stringSeparator: '\n',
-					useGitStyle: settings.useGitStyle,
+					useGitStyle,
 				});
 				mergedText = mergeDigInResult.result.join('\n');
 			} else mergedText = mergeResult.mergedText as string;

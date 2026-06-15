@@ -13,7 +13,7 @@ import type { MaybePromise } from '~/types';
 
 export interface VaultFsInterface {
 	getUid(): string; // String whose inequality signifies the client is unique
-	read(key: string): MaybePromise<ArrayBuffer>;
+	read(key: string, size?: number): MaybePromise<ArrayBuffer>;
 	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
 	writeStream(key: string, value: ReadableStream<ArrayBuffer>): MaybePromise<string>; // Returns uid
 	delete(key: string): MaybePromise<void>;
@@ -32,7 +32,7 @@ export abstract class RemoteFs<T extends object = object> {
 	abstract checkConnection(): MaybePromise<
 		{ success: true } | { success: false; reason: string }
 	>;
-	abstract read(key: string): MaybePromise<ArrayBuffer>;
+	abstract read(key: string, size?: number): MaybePromise<ArrayBuffer>;
 	abstract readStream(key: string, size?: number): MaybePromise<ReadableStream<ArrayBuffer>>;
 	abstract write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
 	abstract delete(key: string): MaybePromise<void>;
@@ -47,19 +47,6 @@ export abstract class RemoteFs<T extends object = object> {
 }
 
 export type RemoteFsShim = (original: RemoteFs, ...args: Array<unknown>) => RemoteFs;
-
-export type ReadOperation = {
-	type: 'read';
-	key: string;
-	start: () => MaybePromise<void>;
-	finish: (content: ArrayBuffer) => MaybePromise<void>;
-};
-export type ReadStreamOperation = {
-	type: 'readStream';
-	key: string;
-	start: () => MaybePromise<void>;
-	callback: (content: ReadableStream<ArrayBuffer>) => MaybePromise<void>;
-};
 
 export type FileStat = {
 	isDir: false;

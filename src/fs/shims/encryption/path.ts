@@ -1,4 +1,5 @@
 import { gcmsiv } from '@noble/ciphers/aes.js';
+import { toArrayBuffer } from './shared';
 
 export type EncryptionPathCache = {
 	decryptedToEncrypted: Map<string, string>;
@@ -8,10 +9,10 @@ export type EncryptionPathCache = {
 const BASENAME_CACHE_LIMIT = 10_000;
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
-const FILE_NAME_NONCE = ownedBytes(textEncoder.encode('file-name-v1'));
+const FILE_NAME_NONCE = textEncoder.encode('file-name-v1').buffer;
 
 export function encryptPathSegments(
-	nameKey: Uint8Array,
+	nameKey: ArrayBuffer,
 	key: string,
 	cache: EncryptionPathCache,
 ): string {
@@ -19,7 +20,7 @@ export function encryptPathSegments(
 }
 
 export function decryptPathSegments(
-	nameKey: Uint8Array,
+	nameKey: ArrayBuffer,
 	key: string,
 	cache: EncryptionPathCache,
 ): string {
@@ -34,7 +35,7 @@ function transformPathSegments(key: string, transformSegment: (segment: string) 
 }
 
 function encryptPathSegment(
-	nameKey: Uint8Array,
+	nameKey: ArrayBuffer,
 	segment: string,
 	cache: EncryptionPathCache,
 ): string {
@@ -47,7 +48,7 @@ function encryptPathSegment(
 }
 
 function decryptPathSegment(
-	nameKey: Uint8Array,
+	nameKey: ArrayBuffer,
 	segment: string,
 	cache: EncryptionPathCache,
 ): string {
@@ -59,17 +60,19 @@ function decryptPathSegment(
 	return decrypted;
 }
 
-function encryptBasename(nameKey: Uint8Array, basename: string): string {
+function encryptBasename(nameKey: ArrayBuffer, basename: string): string {
 	const normalizedBasename = normalizeBasename(basename);
-	const ciphertext = gcmsiv(nameKey, FILE_NAME_NONCE).encrypt(
-		ownedBytes(textEncoder.encode(normalizedBasename)),
+	const ciphertext = gcmsiv(new Uint8Array(nameKey), new Uint8Array(FILE_NAME_NONCE)).encrypt(
+		textEncoder.encode(normalizedBasename),
 	);
-	return encodeBase64Url(ciphertext);
+	return encodeBase64Url(toArrayBuffer(ciphertext));
 }
 
-function decryptBasename(nameKey: Uint8Array, encryptedBasename: string): string {
+function decryptBasename(nameKey: ArrayBuffer, encryptedBasename: string): string {
 	if (encryptedBasename === '') throw new Error('Encrypted basename cannot be empty');
-	const plaintext = gcmsiv(nameKey, FILE_NAME_NONCE).decrypt(decodeBase64Url(encryptedBasename));
+	const plaintext = gcmsiv(new Uint8Array(nameKey), new Uint8Array(FILE_NAME_NONCE)).decrypt(
+		new Uint8Array(decodeBase64Url(encryptedBasename)),
+	);
 	return normalizeBasename(textDecoder.decode(plaintext));
 }
 
@@ -93,22 +96,16 @@ function normalizeBasename(basename: string) {
 	return basename;
 }
 
-function encodeBase64Url(bytes: Uint8Array): string {
-	const binary = Array.from(bytes, (byte) => String.fromCharCode(byte)).join('');
+function encodeBase64Url(bytes: ArrayBuffer): string {
+	const binary = Array.from(new Uint8Array(bytes), (byte) => String.fromCharCode(byte)).join('');
 	return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/u, '');
 }
 
-function decodeBase64Url(value: string): Uint8Array {
+function decodeBase64Url(value: string): ArrayBuffer {
 	const padding = value.length % 4;
 	const normalized =
 		value.replace(/-/g, '+').replace(/_/g, '/') +
 		(padding === 0 ? '' : '='.repeat(4 - padding));
 	const binary = atob(normalized);
-	return ownedBytes(Uint8Array.from(binary, (char) => char.charCodeAt(0)));
-}
-
-function ownedBytes(bytes: Uint8Array): Uint8Array {
-	const result = new Uint8Array(bytes.byteLength);
-	result.set(bytes);
-	return result;
+	return Uint8Array.from(binary, (char) => char.charCodeAt(0)).buffer;
 }

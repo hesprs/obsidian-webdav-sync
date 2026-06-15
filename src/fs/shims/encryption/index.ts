@@ -15,11 +15,10 @@ import {
 } from './content';
 import { decryptPathSegments, encryptPathSegments } from './path';
 import createDecryptedReadableStream from './read-stream';
-import { toArrayBuffer } from './shared';
 
 type DerivedKeys = {
-	nameKey: Uint8Array;
-	rootFileKey: Uint8Array;
+	nameKey: ArrayBuffer;
+	rootFileKey: ArrayBuffer;
 };
 
 class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
@@ -114,8 +113,8 @@ class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
 		const masterSalt = await deriveMasterSalt(this.original.getUid());
 		const masterKey = await deriveMasterKey(this.password, masterSalt);
 		const [rootFileKey, nameKey] = await Promise.all([
-			deriveRootFileKey(toArrayBuffer(masterKey)),
-			deriveNameKey(toArrayBuffer(masterKey)),
+			deriveRootFileKey(masterKey),
+			deriveNameKey(masterKey),
 		]);
 		return { nameKey, rootFileKey };
 	}
