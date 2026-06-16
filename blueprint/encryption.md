@@ -148,7 +148,7 @@ The encryption function will be cleanly integrated as a wrapper class as a wrapp
 
 `read()`: encrypt key before relaying to original, and decrypt when original returns.
 
-`readStream()`: encrypt key before relaying to original, creates a new stream that relay consumes the original stream.
+`readStream()`: encrypt key before relaying to original, creates a new `transformStream` that relays the original stream.
 
 `write()`: encrypt the key and the content before relying to original.
 

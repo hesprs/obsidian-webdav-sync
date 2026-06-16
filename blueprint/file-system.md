@@ -36,11 +36,7 @@ Different types of [wrappers](./file-system-wrappers.md) can be applied above th
 
 ## WebDAV Abstraction
 
-The WebDAV abstraction should not use any external libraries. Only use Obsidian `requestUrl`-like API with custom request handling. `delete()`, `mkdir()`, `write()` are coalesce-optimized, other methods execute directly, principles:
-
-1. Merge and execute `delete()` calls to the shallowest parent that is also deleted.
-2. Sort and reorder `mkdir()`, execute from shallowest to deepest sequentially, each level concurrently.
-3. `write()` goes last concurrently.
+The WebDAV abstraction should not use any external libraries. Only use Obsidian `requestUrl`-like API with custom request handling.
 
 `constructor()`: receives an options object including `requestUrl()` injection (default to the Obsidian export), user username, WebDAV endpoint, password, and `useInfinity` boolean option.
 

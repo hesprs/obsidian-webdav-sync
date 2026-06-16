@@ -48,8 +48,9 @@ Separate wrappers for `RootRemoteFs` and `RootVaultFs`, both check and modify sh
 
 Only intercept `read`, `readStream`, `write`, `writeStream` calls:
 
-1. When `read` and `readStream` arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise.
-2. When `write` arrives and finishes, or `writeStream` arrives and `ReadableStream.closed` resolves, decrement the consumption, check the pool, resume reads when memory allows.
+1. When `read` and `readStream` (`RemoteFs` only) arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise.
+2. When `write` arrives and finishes, or `writeStream` (`VaultFs` only) arrives and the stream is fully consumed, decrement the consumption, check the pool, resume reads when memory allows.
+3. Inspect whether a stream is fully consumed by create a new `TransformStream` and pipe the original stream through.
 
 ### Encryption Wrapper
 
@@ -63,19 +64,19 @@ Detail see `./encryption.md`.
 ## Common FS Optimization Wrapper
 
 Target: `RemoteFs`
-Type: overlay wrapper, but as an optimization wrapper, it must be applied first among overlay wrappers.
+Type: overlay wrapper, but as an optimization wrapper, it must be applied nearest the root among overlay wrappers.
 
 Coalesce `delete()`, `mkdir()`, `write()` in each microtask drain cycle, other methods slip through directly, principles:
 
 1. Merge and execute `delete()` calls to the shallowest parent that is also deleted, all concurrently.
 2. Sort and reorder `mkdir()`, execute from shallowest to deepest sequentially, each level concurrently.
-3. `write()` and `writeStream()` go last concurrently.
+3. `write()` go last concurrently.
 4. If only one call is coalesced, let go directly.
-5. Special case: if `write()` and `writeStream()` call arrives while some `mkdir()` tasks are delayed by the wrapper, must check if the delayed `mkdir()` calls contain the parents of the write calls. If contains, delay the write call until parents are done.
+5. Special case: if `write()` call arrives while some `mkdir()` tasks are delayed by the wrapper, must check if the delayed `mkdir()` calls contain the parents of the write calls. If contains, delay the write call until parents are done.
 
 ## Vault FS Optimization Wrapper
 
 Target: `VaultFs`
-Type: overlay wrapper, but as an optimization wrapper, it must be applied first among overlay wrappers.
+Type: overlay wrapper, but as an optimization wrapper, it must be applied nearest the root among overlay wrappers.
 
 Similar to Common FS Optimization Wrapper, the only difference if that it coalesces `delete()`, `mkdir()`, `write()`, and `writeStream()` calls.
