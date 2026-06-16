@@ -1,5 +1,5 @@
 import { expect, mock, test } from 'bun:test';
-import { baseDirShim, retryShim } from '~/fs';
+import { baseDirWrapper, retryWrapper } from '~/fs';
 import { ShimmedRemoteFs } from './utils';
 
 const sleepMock = mock(() => Promise.resolve());
@@ -9,7 +9,7 @@ void mock.module('~/utils/sleep', () => ({
 
 test('base-dir shim rewrites keys relative to its base', async () => {
 	const original = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const shim = baseDirShim(original, '/base');
+	const shim = baseDirWrapper(original, '/base');
 
 	expect(shim.getUid()).toBe('remote~base/');
 
@@ -39,7 +39,7 @@ test('retry shim retries matching request statuses and waits between attempts', 
 		return { headers: {}, status: 200, text: '' };
 	});
 
-	retryShim(original, {
+	retryWrapper(original, {
 		isRetryable: () => true,
 		maxRetry: 2,
 		retryDelayMs: 25,
@@ -61,7 +61,7 @@ test('retry shim stops after max retry count and ignores other statuses', async 
 		throw { res: { status: 404 } };
 	});
 
-	retryShim(original, {
+	retryWrapper(original, {
 		isRetryable: () => false,
 		maxRetry: 3,
 		retryDelayMs: 25,

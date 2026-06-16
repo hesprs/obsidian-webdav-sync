@@ -1,7 +1,7 @@
+import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
-import type { Progress, Stat } from '~/fs/interface';
+import type { Progress, Stat, RootRemoteFs } from '~/fs/interface';
 import type { MaybePromise } from '~/types';
-import { RemoteFs } from '~/fs/interface';
 
 export type RequestResponse = {
 	headers: Record<string, string>;
@@ -17,9 +17,7 @@ function createEmptyReadableStream() {
 	});
 }
 
-export class ShimmedRemoteFs extends RemoteFs<Record<string, never>> {
-	public readonly requestImpl: (input: string) => Promise<RequestResponse>;
-
+export class ShimmedRemoteFs implements RootRemoteFs {
 	public calls = {
 		checkConnection: 0,
 		delete: [] as Array<string>,
@@ -86,11 +84,10 @@ export class ShimmedRemoteFs extends RemoteFs<Record<string, never>> {
 			} as Stat,
 		];
 
-	constructor(requestImpl: (input: string) => Promise<RequestResponse>) {
-		const request = (input: string) => requestImpl(input);
-		super({}, request as never);
-		this.requestImpl = requestImpl;
+	constructor(request: (input: string) => Promise<RequestResponse>) {
+		this.request = request as typeof requestUrl;
 	}
+	public request: typeof requestUrl;
 
 	getUid() {
 		return 'remote';

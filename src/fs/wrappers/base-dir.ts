@@ -1,9 +1,7 @@
-import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
 import { normalizeBaseDir } from '~/utils/path';
-import type { Progress, Stat } from '../interface';
-import { RemoteFs } from '../interface';
+import type { Progress, RemoteFs, RemoteFsWrapper, Stat, WrappedRemoteFs } from '../interface';
 
 function joinUnifiedKey(baseDir: string, key: string) {
 	const joined = `${baseDir}${key}`;
@@ -22,17 +20,11 @@ function stripBaseDirFromStats(baseDir: string, stats: Array<Stat>) {
 	return stats.map((stat) => stripBaseDir(baseDir, stat)).filter((stat) => stat.key !== '/');
 }
 
-class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
+class BaseDirRemoteFs implements WrappedRemoteFs {
 	constructor(
-		private readonly original: RemoteFs<T>,
+		public readonly original: RemoteFs | WrappedRemoteFs,
 		private readonly baseDir: string,
-	) {
-		this.options = original.options;
-		this.request = original.request;
-	}
-
-	options: T;
-	request: typeof requestUrl;
+	) {}
 
 	checkConnection(): MaybePromise<{ success: true } | { success: false; reason: string }> {
 		return this.original.checkConnection();
@@ -42,8 +34,8 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 		return `${this.original.getUid()}~${this.baseDir}`;
 	}
 
-	read(key: string) {
-		return this.original.read(joinUnifiedKey(this.baseDir, key));
+	read(key: string, size?: number) {
+		return this.original.read(joinUnifiedKey(this.baseDir, key), size);
 	}
 
 	readStream(key: string, size?: number) {
@@ -85,10 +77,9 @@ class BaseDirRemoteFs<T extends object> implements RemoteFs<T> {
 	}
 }
 
-export default function applyBaseDirShim<T extends object>(
-	original: RemoteFs<T>,
-	baseDir: string,
-): RemoteFs<T> {
+function baseDirWrapper(original: RemoteFs, baseDir: string): WrappedRemoteFs {
 	const normalizedBaseDir = normalizeBaseDir(baseDir);
 	return new BaseDirRemoteFs(original, normalizedBaseDir);
 }
+
+export default baseDirWrapper satisfies RemoteFsWrapper<string>;

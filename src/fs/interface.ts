@@ -1,8 +1,7 @@
-import { requestUrl } from 'obsidian';
+import { requestUrl, Vault } from 'obsidian';
 import type { MaybePromise } from '~/types';
 
 // oxlint-disable typescript/method-signature-style
-// oxlint-disable typescript/consistent-type-definitions
 
 /**
  * All keys use unified format:
@@ -11,7 +10,8 @@ import type { MaybePromise } from '~/types';
  * - folder: `folder/`, `folder/nested/`
  */
 
-export interface VaultFsInterface {
+export type RootVaultFs = {
+	vault: Vault;
 	getUid(): string; // String whose inequality signifies the client is unique
 	read(key: string, size?: number): MaybePromise<ArrayBuffer>;
 	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
@@ -21,32 +21,32 @@ export interface VaultFsInterface {
 	mkdir(key: string): MaybePromise<void>;
 	stat(key: string): MaybePromise<Stat>;
 	listAll(key: string): MaybePromise<Array<Stat>>; // List recursive children under one folder
-}
+};
 
-export abstract class RemoteFs<T extends object = object> {
-	constructor(
-		public options: T,
-		public request: typeof requestUrl = requestUrl,
-	) {}
-	abstract getUid(): string; // String whose inequality signifies the client is unique, must start with `<fs-type>`, use `~` as delimiter
-	abstract checkConnection(): MaybePromise<
-		{ success: true } | { success: false; reason: string }
-	>;
-	abstract read(key: string, size?: number): MaybePromise<ArrayBuffer>;
-	abstract readStream(key: string, size?: number): MaybePromise<ReadableStream<ArrayBuffer>>;
-	abstract write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
-	abstract delete(key: string): MaybePromise<void>;
-	abstract mkdir(key: string, recursive?: boolean): MaybePromise<void>;
-	abstract stat(key: string): MaybePromise<Stat>;
-	abstract exists(key: string): MaybePromise<boolean>;
-	abstract list(key: string): MaybePromise<Array<Stat>>; // List direct children under one folder
-	abstract listAll(
-		key: string,
-		progress?: (progress: Progress) => void,
-	): MaybePromise<Array<Stat>>; // List recursive children under one folder
-}
+export type RootRemoteFs = {
+	request: typeof requestUrl;
+	getUid(): string; // String whose inequality signifies the client is unique, must start with the file system type, use `~` as delimiter
+	checkConnection(): MaybePromise<{ success: true } | { success: false; reason: string }>;
+	read(key: string, size?: number): MaybePromise<ArrayBuffer>;
+	readStream(key: string, size?: number): MaybePromise<ReadableStream<ArrayBuffer>>;
+	write(key: string, value: ArrayBuffer): MaybePromise<string>; // Returns uid
+	delete(key: string): MaybePromise<void>;
+	mkdir(key: string, recursive?: boolean): MaybePromise<void>;
+	stat(key: string): MaybePromise<Stat>;
+	exists(key: string): MaybePromise<boolean>;
+	list(key: string): MaybePromise<Array<Stat>>; // List direct children under one folder
+	listAll(key: string, progress?: (progress: Progress) => void): MaybePromise<Array<Stat>>; // List recursive children under one folder
+};
 
-export type RemoteFsShim = (original: RemoteFs, ...args: Array<unknown>) => RemoteFs;
+export type RemoteFsCtor<O> = new (options: O, request?: typeof requestUrl) => RootRemoteFs;
+
+export type WrappedVaultFs = { original: VaultFs } & Omit<RootVaultFs, 'vault'>;
+export type WrappedRemoteFs = { original: RemoteFs } & Omit<RootRemoteFs, 'request'>;
+
+export type RemoteFs = WrappedRemoteFs | RootRemoteFs;
+export type VaultFs = WrappedVaultFs | RootVaultFs;
+
+export type RemoteFsWrapper<O> = (original: RemoteFs, option: O) => RemoteFs;
 
 export type FileStat = {
 	isDir: false;

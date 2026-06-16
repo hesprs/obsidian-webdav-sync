@@ -1,10 +1,8 @@
-import type { requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
 import { isNil } from '~/utils/fns';
-import type { Progress, Stat } from '../../interface';
+import type { Progress, Stat, RemoteFs, WrappedRemoteFs, RemoteFsWrapper } from '../../interface';
 import type { EncryptionPathCache } from './path';
-import { RemoteFs } from '../../interface';
 import {
 	decryptFileContent,
 	deriveMasterKey,
@@ -21,7 +19,7 @@ type DerivedKeys = {
 	rootFileKey: ArrayBuffer;
 };
 
-class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
+class EncryptionRemoteFs implements WrappedRemoteFs {
 	private readonly pathCache: EncryptionPathCache = {
 		decryptedToEncrypted: new Map(),
 		encryptedToDecrypted: new Map(),
@@ -30,15 +28,9 @@ class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
 	private keysPromise: Promise<DerivedKeys> | undefined;
 
 	constructor(
-		private readonly original: RemoteFs<T>,
+		public readonly original: RemoteFs | WrappedRemoteFs,
 		private readonly password: string,
-	) {
-		this.options = original.options;
-		this.request = original.request;
-	}
-
-	options: T;
-	request: typeof requestUrl;
+	) {}
 
 	checkConnection(): MaybePromise<{ success: true } | { success: false; reason: string }> {
 		return this.original.checkConnection();
@@ -48,10 +40,10 @@ class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
 		return this.original.getUid();
 	}
 
-	async read(key: string) {
+	async read(key: string, size?: number) {
 		const encryptedKey = await this.encryptKey(key);
 		const { rootFileKey } = await this.getKeys();
-		const encryptedContent = await this.original.read(encryptedKey);
+		const encryptedContent = await this.original.read(encryptedKey, size);
 		return decryptFileContent(rootFileKey, key, encryptedContent, encryptedContent.byteLength);
 	}
 
@@ -136,9 +128,8 @@ class EncryptionRemoteFs<T extends object> implements RemoteFs<T> {
 	}
 }
 
-export default function applyEncryptionShim<T extends object>(
-	original: RemoteFs<T>,
-	password: string,
-): RemoteFs<T> {
+function encryptionWrapper(original: RemoteFs, password: string): WrappedRemoteFs {
 	return new EncryptionRemoteFs(original, password);
 }
+
+export default encryptionWrapper satisfies RemoteFsWrapper<string>;

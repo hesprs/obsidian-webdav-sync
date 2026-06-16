@@ -1,14 +1,10 @@
 # File System Abstraction
 
-The file systems the plugin will majorly be interacting with are the Obsidian Vault and the WebDAV. The plugin abstracts the file system interfaces into unified `Fs` as defined in `src/fs/interface.ts`. All abstractions are designed to be immutable and throw-away in each sync run.
+The file systems the plugin will majorly be interacting with are the Obsidian Vault and the WebDAV. The plugin abstracts the file system interfaces into unified file system classes as defined in `src/fs/interface.ts`. All abstractions are designed to be immutable and throw-away in each sync run.
+
+Different types of [wrappers](./file-system-wrappers.md) can be applied above the unified interface. Their existence allows easy extensibility of file system functions.
 
 ## Vault Abstraction
-
-`delete()`, `mkdir()`, `write()`, `writeStream()` are coalesce-optimized, other methods execute directly, principles:
-
-1. Merge and execute `delete()` calls to the shallowest parent that is also deleted.
-2. Sort and reorder `mkdir()`, execute from shallowest to deepest sequentially, each level concurrently.
-3. `write()` and `writeStream()` go last concurrently.
 
 `constructor()`: receives an Obsidian vault instance.
 
@@ -70,23 +66,25 @@ The WebDAV abstraction should not use any external libraries. Only use Obsidian 
 
 `listAll()`: when `useInfinity` is true, use `PROPFIND` (depth `infinity`) request, parse and convert to `Stat` array. Otherwise BFS recursive depth 1 `PROPFIND`. When the `progress` argument is present, reactively update it.
 
+## Backend-Dependent Optimization
+
+This plugin is planned to extend beyond WebDAV to various backends like S3, GDrive, Yandex Drive, etc. For the same task, the real optimal operations needed to execute a sync is different in different backends. E.g, in WebDAV, a file must be uploaded after the creation of its parent directories; in S3-compatible backend, all files can be uploaded concurrently without caring about hierarchy.
+
+The core sync routines executed by the plugin must be backend-independent. And to achieve backend-dependent optimization, Optimization Wrappers are introduced, these wrappers are applied directly above certain type of root file systems. They coalesce intercept file system API calls and reorder / batch / schedule the real execution within the promise.
+
 ## File System Operation Coalescing
 
-Due to the difference in different file systems, the operations needed to execute a sync is different in different backends. E.g, in WebDAV, a file must be uploaded after the creation of its parent directories; in S3-compatible backend, all files can be uploaded concurrently without caring about hierarchy. The task optimization must be done at backend-side. The plugin must only give backends general and raw operations during the sync process.
+Coalescing is the fundamental trick that makes backend-dependent optimization wrappers possible.
 
-In practice, the plugin initiates all raw tasks in direct parallel. Due to how TypeScript (JavaScript) event loop works, the leading synchronous or resolved promise part in each task will still be executed immediately until requesting the first unresolved promise.
+In practice, the plugin initiates all raw tasks in direct parallel. Due to how TypeScript (JavaScript) event loop works, the leading synchronous or resolved promise part in each task will still be executed in the same microtask drain loop until requesting the first unresolved promise.
 
-The tasks can ensure that the first unresolved promise are file operations only (this requires: 1. Special code arrangement in tasks 2. All FS shims intercepting operations must be synchronous / asynchronous but fully resolved / asynchronous, unresolved, but all resolved in the same drain cycle). So when an FS abstraction coalesces the microtask drain cycle of task initiation. The FS can immediately obtain the full list of operations, and optimize them directly within the promises, such as batching (one operation resolves multiple promises) and reordering (delay resolution of the promises that are ordered later).
-
-Coalescing optimization is only limited to operations arriving at the same microtask drain cycle. And should be avoided when there's only one operation captured in one cycle.
-
-### WebDAV Coalescing
+Current code can ensure that the first unresolved promise are file operations only. So when a layer of wrapper coalesces the microtask drain cycle of task initiation, it can immediately obtain the full list of operations, and optimize them directly within the promises, such as batching (one operation resolves multiple promises) and reordering (delay resolution of the promises that are ordered later).
 
 ## Principles
 
 **Unified key schema**:
 
-`RemoteFs`s should use unified key (file path) format. All abstracted file systems should automatically convert between the unified key and their native file path.
+All abstracted file systems should automatically convert between the unified key and their native file path:
 
 - `/` stands for the root.
 - `file.md`, `folder/file.md` stand for files.
@@ -102,11 +100,13 @@ While WebDAV uses:
 File: `https://.../file.md`, `https://.../folder/file.md`
 Folder: `https://.../folder/`, `https://.../folder/folder/`
 
-**Error handling**: Except 404 errors explicitly documented above to swallow, other request errors should be thrown fast. No retry needed (which should be handled by the retry shim).
+**Error handling**: Except 404 errors explicitly documented above to swallow, other request errors should be thrown fast. No retry needed (which should be handled by the retry wrapper).
 
 **Local remote disparity**: The local vault has an intentionally different interface with remote. This is for specific reasons:
 
-- We don't need so many shims around vault FS.
+- We don't need so many wrappers around vault FS.
 - Obsidian doesn't support read stream. And thus, we don't need write stream in remote FS.
 
-**Behavioral purity**: Raw FS classes should not carry any additional functions, such as base dir config or retry, they should all be achieved via shims.
+**Behavioral purity**: Raw FS classes should not carry any additional functions, such as base dir config or retry, they should all be achieved via wrappers.
+
+**Beyond the interface**: Classes that implement `RootRemoteFs` can have more public methods beyond `RootRemoteFs` definition. This is often encouraged to achieve backend-specific optimization in companion of backend-dependent optimization wrappers.

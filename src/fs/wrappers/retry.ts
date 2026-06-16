@@ -1,18 +1,20 @@
 import { requestUrl } from 'obsidian';
 import { sleep } from '~/utils/sleep';
-import type { RemoteFs } from '../interface';
+import type { RootRemoteFs, RemoteFs, RemoteFsWrapper } from '../interface';
+import digOriginal from '../utils/dig-original';
 
-type RetryShimOptions = {
+type RetryOptions = {
 	maxRetry?: number;
 	isRetryable: (error: unknown) => boolean;
 	retryDelayMs?: number;
 };
 
-export default function applyRetryShim<T extends object>(
-	original: RemoteFs<T>,
-	{ maxRetry = 3, isRetryable, retryDelayMs = 1000 }: RetryShimOptions,
-): RemoteFs<T> {
-	const request = original.request;
+function retryWrapper(
+	original: RemoteFs,
+	{ maxRetry = 3, isRetryable, retryDelayMs = 1000 }: RetryOptions,
+): RemoteFs {
+	const root = digOriginal(original).at(-1) as RootRemoteFs;
+	const request = root.request;
 	type RequestParam = Parameters<typeof requestUrl>[0];
 
 	async function wrappedRequest(p: RequestParam, retryCount = 0) {
@@ -25,7 +27,8 @@ export default function applyRetryShim<T extends object>(
 		}
 	}
 
-	original.request = wrappedRequest as typeof requestUrl;
-
+	root.request = wrappedRequest as typeof requestUrl;
 	return original;
 }
+
+export default retryWrapper satisfies RemoteFsWrapper<RetryOptions>;

@@ -1,6 +1,6 @@
 import type { Vault } from 'obsidian';
 import { dirname, stripEndSlash } from '~/utils/path';
-import type { Stat, VaultFsInterface } from '../interface';
+import type { RootVaultFs, Stat, VaultFs } from '../interface';
 
 function toKey(vaultPath: string, isDir: boolean): string {
 	if (vaultPath === '/') return '/';
@@ -47,14 +47,14 @@ function getTrashOption(vault: Vault): 'local' | undefined {
 	return configuredVault.config?.trashOption;
 }
 
-async function getFileUid(fs: VaultFsInterface, key: string): Promise<string> {
+async function getFileUid(fs: VaultFs, key: string): Promise<string> {
 	const stat = await fs.stat(key);
 	if (stat.isDir) throw new Error(`File ${key} not found!`);
 	return stat.uid;
 }
 
-export default class ObsidianVaultFs implements VaultFsInterface {
-	constructor(private readonly vault: Vault) {}
+export default class ObsidianVaultFs implements RootVaultFs {
+	constructor(public readonly vault: Vault) {}
 
 	getUid(): string {
 		return `obsidian-vault~${this.vault.getName()}`;

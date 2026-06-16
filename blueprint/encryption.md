@@ -142,7 +142,7 @@ The implementation should only use:
 - `argon2id` export from `hash-wasm`
 - `gcmsiv` export from `@noble/ciphers/aes.js`
 
-The encryption function will be cleanly integrated as a wrapper class as a shim layer above [`RemoteFs`](./file-system.md), similar to base dir shim:
+The encryption function will be cleanly integrated as a wrapper class as a wrapper layer above [`RemoteFs`](./file-system.md):
 
 `getUid()`, `checkConnection()`, `options`, `request`: keep as-is.
 

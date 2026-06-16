@@ -1,8 +1,7 @@
 import { requestUrl } from 'obsidian';
 import { isNil } from '~/utils/fns';
 import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/utils/path';
-import type { FolderStat, Progress, Stat } from '../interface';
-import { RemoteFs } from '../interface';
+import type { FolderStat, Progress, Stat, RemoteFsCtor, RootRemoteFs } from '../interface';
 import getStatusFromError from '../utils/get-status-from-error';
 import parseXML from '../utils/parse-xml';
 import { createWebDAVReadStream } from './read-stream';
@@ -177,14 +176,16 @@ function getFileUid(stat: Stat, key: string) {
 	return stat.uid;
 }
 
-export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
+class WebdavFs implements RootRemoteFs {
 	private readonly auth: string;
 	private readonly endpoint: string;
 
-	constructor(options: WebdavFsOptions, request?: typeof requestUrl) {
-		super(options, request);
-		this.auth = getAuthorization(this.options.username, this.options.password);
-		this.endpoint = normalizeUrl(this.options.endpoint);
+	constructor(
+		private readonly options: WebdavFsOptions,
+		public request = requestUrl,
+	) {
+		this.auth = getAuthorization(options.username, options.password);
+		this.endpoint = normalizeUrl(options.endpoint);
 	}
 
 	getUid() {
@@ -371,3 +372,5 @@ export default class WebdavFs extends RemoteFs<WebdavFsOptions> {
 		return result;
 	}
 }
+
+export default WebdavFs satisfies RemoteFsCtor<WebdavFsOptions>;

@@ -1,14 +1,15 @@
 import { beforeEach, expect, mock, test } from 'bun:test';
 import { ref } from 'synthkernel';
+import { encryptionWrapper } from '~/fs';
 import { ShimmedRemoteFs } from './utils';
 
-const actualContentModule = await import('../src/fs/shims/encryption/content');
+const actualContentModule = await import('../src/fs/wrappers/encryption/content');
 const actualDeriveMasterKey = actualContentModule.deriveMasterKey;
 const actualDeriveMasterSalt = actualContentModule.deriveMasterSalt;
 const actualDeriveNameKey = actualContentModule.deriveNameKey;
 const actualDeriveRootFileKey = actualContentModule.deriveRootFileKey;
 
-type ContentModule = typeof import('~/fs/shims/encryption/content');
+type ContentModule = typeof import('~/fs/wrappers/encryption/content');
 
 const derivationCalls = {
 	deriveMasterKey: 0,
@@ -17,7 +18,7 @@ const derivationCalls = {
 	deriveRootFileKey: 0,
 };
 
-await mock.module('~/fs/shims/encryption/content', () => ({
+await mock.module('~/fs/wrappers/encryption/content', () => ({
 	...actualContentModule,
 	deriveMasterKey: async (...args: Parameters<ContentModule['deriveMasterKey']>) => {
 		derivationCalls.deriveMasterKey += 1;
@@ -36,8 +37,6 @@ await mock.module('~/fs/shims/encryption/content', () => ({
 		return await actualDeriveRootFileKey(...args);
 	},
 }));
-
-const { default: encryptionShim } = await import('~/fs/shims/encryption');
 
 const PASSWORD = 'password';
 const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';
@@ -102,7 +101,7 @@ function createRemote() {
 	}));
 	return {
 		original,
-		shim: encryptionShim(original, PASSWORD),
+		shim: encryptionWrapper(original, PASSWORD),
 	};
 }
 
@@ -231,7 +230,7 @@ test('List and listAll decrypt returned descendant keys', async () => {
 	const fileKey = await captureEncryptedKey('Folder/note.md');
 
 	const listRemote = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const listShim = encryptionShim(listRemote, PASSWORD);
+	const listShim = encryptionWrapper(listRemote, PASSWORD);
 	listRemote.listResponse = async () => [
 		{ isDir: true, key: folderKey } as never,
 		{ isDir: false, key: fileKey, mtime: 11, size: 6, uid: 'note' } as never,
@@ -245,7 +244,7 @@ test('List and listAll decrypt returned descendant keys', async () => {
 	]);
 
 	const listAllRemote = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const listAllShim = encryptionShim(listAllRemote, PASSWORD);
+	const listAllShim = encryptionWrapper(listAllRemote, PASSWORD);
 	let forwardedProgress: unknown;
 	listAllRemote.listAllResponse = async (_key, progress) => {
 		forwardedProgress = progress;
@@ -308,7 +307,7 @@ test('Wrong password or malformed content throws data corrupted or wrong passwor
 	const encryptedContent = original.writePayloads.at(-1)?.[1] as ArrayBuffer;
 
 	const wrongRemote = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const wrongShim = encryptionShim(wrongRemote, 'wrong-password');
+	const wrongShim = encryptionWrapper(wrongRemote, 'wrong-password');
 	wrongRemote.readResponse = async () => encryptedContent;
 
 	expect(wrongShim.read('Folder/file.md')).rejects.toThrow(DECRYPTION_ERROR_MESSAGE);
