@@ -10,7 +10,7 @@ import type { MaybePromise } from '~/types';
  * - folder: `folder/`, `folder/nested/`
  */
 
-export type RootVaultFs = {
+export type RootLocalFs = {
 	vault: Vault;
 	getUid(): string; // String whose inequality signifies the client is unique
 	read(key: string, size?: number): MaybePromise<ArrayBuffer>;
@@ -40,13 +40,14 @@ export type RootRemoteFs = {
 
 export type RemoteFsCtor<O> = new (options: O, request?: typeof requestUrl) => RootRemoteFs;
 
-export type WrappedVaultFs = { original: VaultFs } & Omit<RootVaultFs, 'vault'>;
+export type WrappedLocalFs = { original: LocalFs } & Omit<RootLocalFs, 'vault'>;
 export type WrappedRemoteFs = { original: RemoteFs } & Omit<RootRemoteFs, 'request'>;
 
 export type RemoteFs = WrappedRemoteFs | RootRemoteFs;
-export type VaultFs = WrappedVaultFs | RootVaultFs;
+export type LocalFs = WrappedLocalFs | RootLocalFs;
 
-export type RemoteFsWrapper<O> = (original: RemoteFs, option: O) => RemoteFs;
+export type RemoteFsWrapper<O = undefined> = (original: RemoteFs, option: O) => RemoteFs;
+export type LocalFsWrapper<O = undefined> = (original: LocalFs, option: O) => LocalFs;
 
 export type FileStat = {
 	isDir: false;

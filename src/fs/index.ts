@@ -1,10 +1,12 @@
 export { default as baseDirWrapper } from './wrappers/base-dir';
 export { default as commonOptimizationWrapper } from './wrappers/optimization/common-optimization';
 export { default as encryptionWrapper } from './wrappers/encryption';
+export { remoteMemoryControlWrapper, localMemoryControlWrapper } from './wrappers/memory-control';
 export { default as rateLimiterWrapper } from './wrappers/rate-limiter';
 export { default as retryWrapper } from './wrappers/retry';
-export { default as vaultOptimizationWrapper } from './wrappers/optimization/vault-optimization';
+export { default as localOptimizationWrapper } from './wrappers/optimization/vault-optimization';
 export { default as VaultFs } from './vault/fs';
 export { default as WebdavFs } from './webdav/fs';
+export type { MemoryControlSharedState } from './wrappers/memory-control';
 export type * from './interface';
 export * from './utils/fs-factory';

@@ -1,6 +1,6 @@
-import type { requestUrl } from 'obsidian';
+import type { Vault, requestUrl } from 'obsidian';
 import type { Ref } from 'synthkernel';
-import type { Progress, Stat, RootRemoteFs } from '~/fs/interface';
+import type { RootLocalFs, Stat, RootRemoteFs, Progress } from '~/fs';
 import type { MaybePromise } from '~/types';
 
 export type RequestResponse = {
@@ -149,4 +149,163 @@ export class ShimmedRemoteFs implements RootRemoteFs {
 		this.calls.listAll.push(key);
 		return await this.listAllResponse(key, progress);
 	}
+}
+
+export function createVaultFs() {
+	const calls = {
+		delete: [] as Array<string>,
+		listAll: [] as Array<string>,
+		mkdir: [] as Array<string>,
+		move: [] as Array<[string, string]>,
+		read: [] as Array<[string, number | undefined]>,
+		stat: [] as Array<string>,
+		write: [] as Array<[string, number]>,
+		writeStream: [] as Array<string>,
+	};
+
+	const control = {
+		deleteResponse: async (_key: string): Promise<void> => undefined,
+		listAllResponse: async (_key: string): Promise<Array<Stat>> => [],
+		mkdirResponse: async (_key: string): Promise<void> => undefined,
+		moveResponse: async (_oldKey: string, _newKey: string): Promise<void> => undefined,
+		readResponse: async (_key: string, _size?: number): Promise<ArrayBuffer> =>
+			new ArrayBuffer(0),
+		statResponse: async (key: string): Promise<Stat> =>
+			key.endsWith('/')
+				? ({ isDir: true, key } as Stat)
+				: ({ isDir: false, key, mtime: 1, size: 1, uid: 'uid' } as Stat),
+		writeResponse: async (_key: string, _value: ArrayBuffer): Promise<string> => 'write-uid',
+		writeStreamResponse: async (
+			_key: string,
+			_value: ReadableStream<ArrayBuffer>,
+		): Promise<string> => 'stream-uid',
+	};
+
+	const original: RootLocalFs = {
+		delete: async (key: string) => {
+			calls.delete.push(key);
+			return await control.deleteResponse(key);
+		},
+		getUid: () => 'vault',
+		listAll: async (key: string) => {
+			calls.listAll.push(key);
+			return await control.listAllResponse(key);
+		},
+		mkdir: async (key: string) => {
+			calls.mkdir.push(key);
+			return await control.mkdirResponse(key);
+		},
+		move: async (oldKey: string, newKey: string) => {
+			calls.move.push([oldKey, newKey]);
+			return await control.moveResponse(oldKey, newKey);
+		},
+		read: async (key: string, size?: number) => {
+			calls.read.push([key, size]);
+			return await control.readResponse(key, size);
+		},
+		stat: async (key: string) => {
+			calls.stat.push(key);
+			return await control.statResponse(key);
+		},
+		vault: { getName: () => 'Vault' } as Vault,
+		write: async (key: string, value: ArrayBuffer) => {
+			calls.write.push([key, value.byteLength]);
+			return await control.writeResponse(key, value);
+		},
+		writeStream: async (key: string, value: ReadableStream<ArrayBuffer>) => {
+			calls.writeStream.push(key);
+			return await control.writeStreamResponse(key, value);
+		},
+	};
+
+	return { calls, control, original };
+}
+
+export function createVaultStub() {
+	const calls = {
+		delete: [] as Array<string>,
+		listAll: [] as Array<string>,
+		mkdir: [] as Array<string>,
+		move: [] as Array<[string, string]>,
+		read: [] as Array<[string, number | undefined]>,
+		stat: [] as Array<string>,
+		write: [] as Array<[string, number]>,
+		writeStream: [] as Array<string>,
+	};
+
+	const control = {
+		deleteResponse: async (_key: string): Promise<void> => undefined,
+		listAllResponse: async (_key: string): Promise<Array<Stat>> => [],
+		mkdirResponse: async (_key: string): Promise<void> => undefined,
+		moveResponse: async (_oldKey: string, _newKey: string): Promise<void> => undefined,
+		readResponse: async (_key: string, _size?: number): Promise<ArrayBuffer> =>
+			new ArrayBuffer(0),
+		statResponse: async (key: string): Promise<Stat> =>
+			key.endsWith('/')
+				? ({ isDir: true, key } as Stat)
+				: ({ isDir: false, key, mtime: 1, size: 1, uid: key } as Stat),
+		writeResponse: async (_key: string, _value: ArrayBuffer): Promise<string> => 'write-uid',
+		writeStreamResponse: async (
+			_key: string,
+			_value: ReadableStream<ArrayBuffer>,
+		): Promise<string> => 'stream-uid',
+	};
+
+	const original: RootLocalFs = {
+		delete: async (key: string) => {
+			calls.delete.push(key);
+			return await control.deleteResponse(key);
+		},
+		getUid: () => 'vault',
+		listAll: async (key: string) => {
+			calls.listAll.push(key);
+			return await control.listAllResponse(key);
+		},
+		mkdir: async (key: string) => {
+			calls.mkdir.push(key);
+			return await control.mkdirResponse(key);
+		},
+		move: async (oldKey: string, newKey: string) => {
+			calls.move.push([oldKey, newKey]);
+			return await control.moveResponse(oldKey, newKey);
+		},
+		read: async (key: string, size?: number) => {
+			calls.read.push([key, size]);
+			return await control.readResponse(key, size);
+		},
+		stat: async (key: string) => {
+			calls.stat.push(key);
+			return await control.statResponse(key);
+		},
+		vault: { getName: () => 'Vault' } as Vault,
+		write: async (key: string, value: ArrayBuffer) => {
+			calls.write.push([key, value.byteLength]);
+			return await control.writeResponse(key, value);
+		},
+		writeStream: async (key: string, value: ReadableStream<ArrayBuffer>) => {
+			calls.writeStream.push(key);
+			return await control.writeStreamResponse(key, value);
+		},
+	};
+
+	return { calls, control, original };
+}
+
+export function toBuffer(value: string) {
+	return new TextEncoder().encode(value).buffer;
+}
+
+export function createDeferred<T>() {
+	let resolve!: (value: T | PromiseLike<T>) => void;
+	let reject!: (reason?: unknown) => void;
+	const promise = new Promise<T>((nextResolve, nextReject) => {
+		resolve = nextResolve;
+		reject = nextReject;
+	});
+	return { promise, reject, resolve };
+}
+
+export async function flushMicrotasks(turns = 4) {
+	for (let index = 0; index < turns; index += 1)
+		await new Promise<void>((resolve) => queueMicrotask(resolve));
 }

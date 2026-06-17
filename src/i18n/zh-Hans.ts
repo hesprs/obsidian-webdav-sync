@@ -116,24 +116,19 @@ const translation: typeof en = {
 			saveToNote: '导出到笔记',
 			savedToNote: '支持报告已保存到笔记: {{fileName}}',
 		},
-		maxSyncTaskConcurrency: {
-			desc: '同步任务是原子性的同步操作，例如下载文件或移除目录。此设置限制同时执行的最大任务数，有助于降低 CPU 和磁盘占用。请在输入框中设置该限制。',
-			name: '最大并发同步任务数',
-			placeholder: '输入数量',
+		maxMemoryConsumption: {
+			desc: '限制同步过程中的最大内存占用。此选项适用于内存受限的服务环境，请在输入框中调整限制值。',
+			name: '最大内存占用',
+			placeholder: '请输入大小限制（例如 100MB、0.5GB）',
 		},
-		maxThroughputConcurrency: {
-			desc: '限制同时上传或下载的文件总大小上限。此选项有助于控制内存使用并防止崩溃。请在输入框中设置该大小限制。',
-			name: '最大并发吞吐量',
-			placeholder: '输入文件大小（例如 100MB、0.5GB）',
-		},
-		maxWebDAVConcurrency: {
+		maxRequestConcurrency: {
 			desc: '限制最大并发 WebDAV 请求数量。此选项适用于具有速率限制的服务。请在输入框中设置允许的最大并发数。',
-			name: '最大并发 WebDAV 请求数',
+			name: '最大并发请求数',
 			placeholder: '输入数量',
 		},
-		minWebDAVRequestInterval: {
+		minRequestInterval: {
 			desc: '限制 WebDAV 请求之间的最小时间间隔。此选项适用于具有速率限制的服务。请在输入框中设置该间隔。',
-			name: 'WebDAV 请求最小间隔时间',
+			name: '请求最小间隔时间',
 			placeholder: '输入间隔时间（例如 1s、300ms）',
 		},
 		realtimeSync: {

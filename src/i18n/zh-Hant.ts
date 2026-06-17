@@ -117,24 +117,19 @@ const zhHant: typeof en = {
 			saveToNote: '匯出至筆記',
 			savedToNote: '支援報告已儲存至筆記：{{fileName}}',
 		},
-		maxSyncTaskConcurrency: {
-			desc: '同步任務是指原子性的同步操作，例如下載檔案或移除目錄。此設定可限制同時執行的最大任務數，有助於降低 CPU 和磁碟使用率。請在欄位中調整限制值。',
-			name: '最大同步任務併發數',
-			placeholder: '輸入數量',
+		maxMemoryConsumption: {
+			desc: '限制同步過程中的最大記憶體使用量。此選項對於記憶體有限的服務相當實用。請在欄位中調整限制值。',
+			name: '最大記憶體使用量',
+			placeholder: '輸入大小限制（例如 100MB、0.5GB）',
 		},
-		maxThroughputConcurrency: {
-			desc: '限制同時上傳或下載的檔案總大小上限。此選項有助於控制記憶體使用量並防止當機。請在欄位中調整大小限制。',
-			name: '最大併發傳輸量',
-			placeholder: '輸入檔案大小（例如 100MB、0.5GB）',
-		},
-		maxWebDAVConcurrency: {
+		maxRequestConcurrency: {
 			desc: '限制同時發出的 WebDAV 請求數量上限。此選項對於有速率限制的服務相當實用。請在欄位中調整允許的最大併發數。',
-			name: '最大 WebDAV 請求併發數',
+			name: '最大請求併發數',
 			placeholder: '輸入數量',
 		},
-		minWebDAVRequestInterval: {
+		minRequestInterval: {
 			desc: '限制 WebDAV 請求之間的最短間隔時間。此選項對於有速率限制的服務相當實用。請在欄位中調整間隔時間。',
-			name: 'WebDAV 請求最短間隔',
+			name: '請求最短間隔',
 			placeholder: '輸入間隔（例如 1s、300ms）',
 		},
 		realtimeSync: {

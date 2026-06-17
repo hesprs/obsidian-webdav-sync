@@ -21,42 +21,31 @@ export default class ControlsSettings extends BaseSettings {
 
 		generateSettingEntry({
 			container: this.containerEl,
-			desc: t('settings.maxWebDAVConcurrency.desc'),
-			field: this.plugin.settings.maxWebDAVConcurrency,
-			name: t('settings.maxWebDAVConcurrency.name'),
-			placeholder: t('settings.maxWebDAVConcurrency.placeholder'),
+			desc: t('settings.maxRequestConcurrency.desc'),
+			field: this.plugin.settings.maxRequestConcurrency,
+			name: t('settings.maxRequestConcurrency.name'),
+			placeholder: t('settings.maxRequestConcurrency.placeholder'),
 			rejectZero: true,
 			saveSettings: this.plugin.saveSettings,
-			type: UserInputType.Number,
+			type: UserInputType.FileSize,
 		});
 
 		generateSettingEntry({
 			container: this.containerEl,
-			desc: t('settings.maxSyncTaskConcurrency.desc'),
-			field: this.plugin.settings.maxSyncTaskConcurrency,
-			name: t('settings.maxSyncTaskConcurrency.name'),
-			placeholder: t('settings.maxSyncTaskConcurrency.placeholder'),
-			rejectZero: true,
-			saveSettings: this.plugin.saveSettings,
-			type: UserInputType.Number,
-		});
-
-		generateSettingEntry({
-			container: this.containerEl,
-			desc: t('settings.minWebDAVRequestInterval.desc'),
-			field: this.plugin.settings.minWebDAVRequestInterval,
-			name: t('settings.minWebDAVRequestInterval.name'),
-			placeholder: t('settings.minWebDAVRequestInterval.placeholder'),
+			desc: t('settings.minRequestInterval.desc'),
+			field: this.plugin.settings.minRequestInterval,
+			name: t('settings.minRequestInterval.name'),
+			placeholder: t('settings.minRequestInterval.placeholder'),
 			saveSettings: this.plugin.saveSettings,
 			type: UserInputType.Time,
 		});
 
 		generateSettingEntry({
 			container: this.containerEl,
-			desc: t('settings.maxThroughputConcurrency.desc'),
-			field: this.plugin.settings.maxThroughputConcurrency,
-			name: t('settings.maxThroughputConcurrency.name'),
-			placeholder: t('settings.maxThroughputConcurrency.placeholder'),
+			desc: t('settings.maxMemoryConsumption.desc'),
+			field: this.plugin.settings.maxMemoryConsumption,
+			name: t('settings.maxMemoryConsumption.name'),
+			placeholder: t('settings.maxMemoryConsumption.placeholder'),
 			rejectZero: true,
 			saveSettings: this.plugin.saveSettings,
 			type: UserInputType.FileSize,

@@ -1,4 +1,4 @@
-import type { VaultFs, WrappedVaultFs } from '../../interface';
+import type { LocalFs, LocalFsWrapper, WrappedLocalFs } from '../../interface';
 import {
 	collapseDeleteGroups,
 	countQueuedJobs,
@@ -33,7 +33,7 @@ type WriteStreamTask = {
 	reject: (reason: unknown) => void;
 };
 
-class VaultOptimizationFs implements WrappedVaultFs {
+class VaultOptimizationFs implements WrappedLocalFs {
 	private readonly deleteQueue: Array<DeleteTask> = [];
 	private readonly mkdirQueue: Array<MkdirTask> = [];
 	private readonly writeQueue: Array<WriteTask> = [];
@@ -41,7 +41,7 @@ class VaultOptimizationFs implements WrappedVaultFs {
 	private flushScheduled = false;
 	private flushing = false;
 
-	constructor(public readonly original: VaultFs) {}
+	constructor(public readonly original: LocalFs) {}
 
 	getUid(): string {
 		return this.original.getUid();
@@ -242,8 +242,8 @@ class VaultOptimizationFs implements WrappedVaultFs {
 	}
 }
 
-function vaultOptimizationWrapper(original: VaultFs): WrappedVaultFs {
+function localOptimizationWrapper(original: LocalFs): WrappedLocalFs {
 	return new VaultOptimizationFs(original);
 }
 
-export default vaultOptimizationWrapper;
+export default localOptimizationWrapper satisfies LocalFsWrapper;

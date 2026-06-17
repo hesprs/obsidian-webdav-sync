@@ -1,4 +1,4 @@
-import type { Progress, RemoteFs, WrappedRemoteFs } from '../../interface';
+import type { Progress, RemoteFs, RemoteFsWrapper, WrappedRemoteFs } from '../../interface';
 import {
 	collapseDeleteGroups,
 	countQueuedJobs,
@@ -219,4 +219,4 @@ function commonOptimizationWrapper(original: RemoteFs): WrappedRemoteFs {
 	return new CommonOptimizationRemoteFs(original);
 }
 
-export default commonOptimizationWrapper;
+export default commonOptimizationWrapper satisfies RemoteFsWrapper;

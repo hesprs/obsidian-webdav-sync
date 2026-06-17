@@ -4,7 +4,7 @@ import type { BaseTask } from '~/sync';
 import type { SyncRunKind } from '~/types';
 import { createQueuedSyncRunSnapshot, syncRun, updateSyncRunSnapshot } from '~/events';
 import finalizeSyncRun from '~/events/sync-terminate';
-import { createVaultFs, createWebdavFs } from '~/fs';
+import { clearMemoryStates, createVaultFs, createWebdavFs } from '~/fs';
 import { SyncEngine, isSyncCancelledError } from '~/sync';
 import logger from '~/utils/logger';
 
@@ -33,6 +33,7 @@ export default class SyncExecutorService {
 		logger.pushRunId(request.runId);
 
 		try {
+			clearMemoryStates();
 			const sync = new SyncEngine(this.plugin, {
 				token: this.plugin.getToken(),
 				vaultFs: createVaultFs(this.plugin),

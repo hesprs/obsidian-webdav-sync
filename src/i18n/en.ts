@@ -115,24 +115,19 @@ const en = {
 			saveToNote: 'Export to note',
 			savedToNote: 'Support report saved to note: {{fileName}}',
 		},
-		maxSyncTaskConcurrency: {
-			desc: 'Sync tasks are atomic sync operations, such as download a file or remove a directory. This setting limits the maximum number of tasks to be executed concurrently, which is useful to reduce CPU and disk usage. Alter the limit in the field.',
-			name: 'Max concurrent sync tasks',
-			placeholder: 'Enter number',
+		maxMemoryConsumption: {
+			desc: 'Limit the maximum memory consumption during sync process. This option is useful for services with limited memory. Alter the limit in the field.',
+			name: 'Max memory consumption',
+			placeholder: 'Enter size limit (e.g. 100MB, 0.5GB)',
 		},
-		maxThroughputConcurrency: {
-			desc: 'Limit the maximum total size of files that are uploaded or downloaded concurrently. This option is useful to control memory usage and prevent crashes. Alter the size in the field.',
-			name: 'Max concurrent throughput',
-			placeholder: 'Enter file size (e.g. 100MB, 0.5GB)',
-		},
-		maxWebDAVConcurrency: {
+		maxRequestConcurrency: {
 			desc: 'Limit the maximum number of concurrent WebDAV requests. This option is useful for services with rate limits. Alter the maximum concurrency allowed in the field.',
-			name: 'Max concurrent WebDAV requests',
+			name: 'Max concurrent requests',
 			placeholder: 'Enter number',
 		},
-		minWebDAVRequestInterval: {
+		minRequestInterval: {
 			desc: 'Limit the minimum time between WebDAV requests. This option is useful for services with rate limits. Alter the interval in the field.',
-			name: 'Min time between WebDAV requests',
+			name: 'Min time between requests',
 			placeholder: 'Enter interval (e.g. 1s, 300ms)',
 		},
 		realtimeSync: {

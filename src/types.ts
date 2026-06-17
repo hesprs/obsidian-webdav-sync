@@ -48,6 +48,7 @@ export type PluginSettings = {
 	};
 	exhaustiveRemoteTraversal: boolean;
 	remoteDir: string;
+
 	showSyncStatusInNotificationOnMobile: boolean;
 	useGitStyle: boolean;
 	conflictStrategy: ConflictStrategy;
@@ -61,10 +62,9 @@ export type PluginSettings = {
 	};
 	skipLargeFiles: ToggleNumericSettingsField; // Value is max size
 	realtimeSync: ToggleNumericSettingsField; // Value is delay
-	maxWebDAVConcurrency: ToggleNumericSettingsField; // Value is max
-	maxThroughputConcurrency: ToggleNumericSettingsField; // Value is max
-	maxSyncTaskConcurrency: ToggleNumericSettingsField; // Value is max
-	minWebDAVRequestInterval: ToggleNumericSettingsField; // Value is min
 	startupSync: ToggleNumericSettingsField; // Value is delay
 	scheduledSync: ToggleNumericSettingsField; // Value is interval
+	maxRequestConcurrency: ToggleNumericSettingsField; // Value is max
+	minRequestInterval: ToggleNumericSettingsField; // Value is min
+	maxMemoryConsumption: ToggleNumericSettingsField; // Value is max
 };

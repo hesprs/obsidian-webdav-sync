@@ -1,8 +1,8 @@
-import type { RemoteFs, WrappedRemoteFs } from '../interface';
+import type { RemoteFs, WrappedRemoteFs, LocalFs, WrappedLocalFs } from '../interface';
 
-export default function digOriginal(wrapped: WrappedRemoteFs | RemoteFs) {
-	const stack: Array<RemoteFs | WrappedRemoteFs> = [wrapped];
-	while ('original' in (stack.at(-1) as RemoteFs | WrappedRemoteFs))
-		stack.push((stack.at(-1) as WrappedRemoteFs).original);
+export default function digOriginal(wrapped: RemoteFs | LocalFs) {
+	const stack: Array<RemoteFs | LocalFs> = [wrapped];
+	while ('original' in (stack.at(-1) as RemoteFs | LocalFs))
+		stack.push((stack.at(-1) as WrappedRemoteFs | WrappedLocalFs).original);
 	return stack;
 }

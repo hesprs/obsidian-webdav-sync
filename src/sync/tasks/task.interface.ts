@@ -1,4 +1,4 @@
-import type { RemoteFs, VaultFs } from '~/fs';
+import type { RemoteFs, LocalFs } from '~/fs';
 import type { TranslationShape } from '~/i18n';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
@@ -6,7 +6,7 @@ import t from '~/i18n';
 import type { TaskOptions } from '../decision/sync-decision.interface';
 
 export type BaseTaskOptions = {
-	vault: VaultFs;
+	vault: LocalFs;
 	webdav: RemoteFs;
 	syncRecord: SyncRecord;
 };
@@ -35,7 +35,7 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 	readonly key: string;
 	protected readonly webdav: RemoteFs;
 	protected readonly syncRecord: SyncRecord;
-	protected readonly vault: VaultFs;
+	protected readonly vault: LocalFs;
 	readonly local: (BaseTaskOptions & T)['local'];
 	readonly remote: (BaseTaskOptions & T)['remote'];
 

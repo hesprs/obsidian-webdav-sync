@@ -57,19 +57,15 @@ export default class WebDAVSyncPlugin extends Plugin {
 			].map(createGlobMatchOptions),
 			inclusionRules: [],
 		},
-		maxSyncTaskConcurrency: {
+		maxMemoryConsumption: {
 			enabled: true,
-			value: 100,
+			value: 104_857_600, // 100 MiB
 		},
-		maxThroughputConcurrency: {
-			enabled: true,
-			value: 52_428_800,
-		},
-		maxWebDAVConcurrency: {
+		maxRequestConcurrency: {
 			enabled: true,
 			value: 50,
 		},
-		minWebDAVRequestInterval: {
+		minRequestInterval: {
 			enabled: false,
 			value: 0,
 		},

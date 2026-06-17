@@ -4,11 +4,10 @@ A wrapper is a factory function around a `RemoteFs` instance that intercepts the
 
 The root FS without any wrappers are typed `RootRemoteFs` and `RootVaultFs`. Once a layer of wrapper is applied, it changes to `WrappedRemoteFs`, and `WrappedVaultFs`.
 
-There are three kinds of wrappers:
+There are two kinds of wrappers:
 
-- **Root injection wrapper**: only changes some methods of the original FS by direct re-assign some public members in the root file system. Does not produce new layers.
+- **Injection wrapper**: only changes some methods of the original FS by directly re-assigning some public members in the root file system. Does not produce new layers.
 - **Overlay wrapper**: most common, applies a new layer of wrapper at the top of original FS.
-- **Insertion wrapper**: travels across layers of wrapper layers and applies itself as a new layer inserting between two layers. Manipulates the layer chain so that it stays linear.
 
 ### Base Dir Wrapper
 
@@ -24,7 +23,7 @@ All other methods: prepend the base dir to the received key, relay to the origin
 ### Retry Wrapper
 
 Target: `RemoteFs`
-Type: root injection wrapper
+Type: injection wrapper
 
 Auto-retry requests. Receives an options object including `maxRetry` (number) and `retryableStatusCodes` (array of string).
 
@@ -33,7 +32,7 @@ Only re-assigns the `request` method in the original class by obtaining it, wrap
 ### Rate Limiter Wrapper
 
 Target: `RemoteFs`
-Type: root injection wrapper
+Type: injection wrapper
 
 Limit the max concurrency and request interval of remote requests. Receives `maxConcurrency` and `minInterval` as options in the second argument.
 
@@ -42,14 +41,16 @@ Only re-assigns the `request` method in the original class by obtaining it, wrap
 ### Memory Control Wrapper
 
 Target: `RemoteFs` & `VaultFs`
-Type: insertion wrapper that inserts between the root FS and the backend-specific optimization wrapper
+Type: overlay wrapper
 
 Separate wrappers for `RootRemoteFs` and `RootVaultFs`, both check and modify shared variables `memoryConsumption` counter and `hangingOperations` pool. Accept number `maxMemory` in the second parameter.
 
+`hangingOperations` pool should always be sorted in ascending order according to the file size of each operation.
+
 Only intercept `read`, `readStream`, `write`, `writeStream` calls:
 
-1. When `read` and `readStream` (`RemoteFs` only) arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise.
-2. When `write` arrives and finishes, or `writeStream` (`VaultFs` only) arrives and the stream is fully consumed, decrement the consumption, check the pool, resume reads when memory allows.
+1. When `read()` and `readStream()` (`RemoteFs` only) arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise. When `read()` or `readStream()` fails, decrement the memory consumption back, check the pool, resume reads.
+2. When `write` arrives and finishes, or `writeStream` (`VaultFs` only) arrives and the stream is fully consumed, or either of the `write()`, `writeStream()` fails, decrement the consumption, check the pool, resume reads when memory allows.
 3. Inspect whether a stream is fully consumed by create a new `TransformStream` and pipe the original stream through.
 
 ### Encryption Wrapper
@@ -64,7 +65,7 @@ Detail see `./encryption.md`.
 ## Common FS Optimization Wrapper
 
 Target: `RemoteFs`
-Type: overlay wrapper, but as an optimization wrapper, it must be applied nearest the root among overlay wrappers.
+Type: overlay wrapper
 
 This is an optimization wrapper targeting all folder-hierarchy sensitive backends. Coalesce `delete()`, `mkdir()`, `write()` in each microtask drain cycle, other methods slip through directly, principles:
 
@@ -77,6 +78,6 @@ This is an optimization wrapper targeting all folder-hierarchy sensitive backend
 ## Vault FS Optimization Wrapper
 
 Target: `VaultFs`
-Type: overlay wrapper, but as an optimization wrapper, it must be applied nearest the root among overlay wrappers.
+Type: overlay wrapper
 
 Similar to Common FS Optimization Wrapper, the only difference if that it coalesces `delete()`, `mkdir()`, `write()`, and `writeStream()` calls.
