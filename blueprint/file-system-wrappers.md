@@ -66,13 +66,13 @@ Detail see `./encryption.md`.
 Target: `RemoteFs`
 Type: overlay wrapper, but as an optimization wrapper, it must be applied nearest the root among overlay wrappers.
 
-Coalesce `delete()`, `mkdir()`, `write()` in each microtask drain cycle, other methods slip through directly, principles:
+This is an optimization wrapper targeting all folder-hierarchy sensitive backends. Coalesce `delete()`, `mkdir()`, `write()` in each microtask drain cycle, other methods slip through directly, principles:
 
 1. Merge and execute `delete()` calls to the shallowest parent that is also deleted, all concurrently.
 2. Sort and reorder `mkdir()`, execute from shallowest to deepest sequentially, each level concurrently.
 3. `write()` go last concurrently.
 4. If only one call is coalesced, let go directly.
-5. Special case: if `write()` call arrives while some `mkdir()` tasks are delayed by the wrapper, must check if the delayed `mkdir()` calls contain the parents of the write calls. If contains, delay the write call until parents are done.
+5. Special case: if `write()` call arrives while some `mkdir()` or `delete()` calls are being delayed / executed by the wrapper, must delay the write call until deletes and directory creation are done.
 
 ## Vault FS Optimization Wrapper
 
