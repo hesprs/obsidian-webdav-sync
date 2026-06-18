@@ -39,7 +39,7 @@ export async function getStorageDatabase() {
 }
 
 export function parseKey(key: string) {
-	const i = key.indexOf(':');
+	const i = key.indexOf('~');
 	return { namespace: key.slice(0, i), path: key.slice(i + 1) };
 }
 

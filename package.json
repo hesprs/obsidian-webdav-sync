@@ -30,7 +30,7 @@
 		"oxlint-tsgolint": "^0.23.0",
 		"postcss-merge-rules": "^8.0.0",
 		"solid-js": "^1.9.13",
-		"synthkernel": "^0.0.2",
+		"synthkernel": "./synthkernel.tgz",
 		"tsdown": "^0.22.2",
 		"typescript": "^6.0.3",
 		"uni-kv": "./uni-kv.tgz",

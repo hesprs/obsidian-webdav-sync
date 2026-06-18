@@ -9,7 +9,6 @@ import ObservabilityService from './services/observability.service';
 import SyncExecutorService from './services/sync-executor.service';
 import SyncSchedulerService from './services/sync-scheduler.service';
 import SyncSettingTab from './settings';
-import getCredential from './utils/get-credential';
 import { normalizeBaseDir } from './utils/path';
 import { setPluginInstance } from './utils/plugin-instance';
 
@@ -118,11 +117,6 @@ export default class WebDAVSyncPlugin extends Plugin {
 	toggleSyncUI(isSyncing: boolean) {
 		this.isSyncing = isSyncing;
 		this.ribbonManager.update();
-	}
-
-	getToken() {
-		const { account, token } = this.settings;
-		return btoa(`${account}:${getCredential(this, token)}`);
 	}
 
 	/**

@@ -70,7 +70,16 @@ export default class AccountSettings extends BaseSettings {
 					}),
 			);
 
-		this.displayCheckConnection();
+		new Setting(this.containerEl)
+			.setName(t('settings.checkConnection.name'))
+			.setDesc(t('settings.checkConnection.desc'))
+			.addButton((button) => {
+				button.setButtonText(t('settings.checkConnection.name')).onClick((event) => {
+					const buttonEl = event.currentTarget;
+					if (!(buttonEl instanceof HTMLElement)) return;
+					void this.checkConnection(buttonEl);
+				});
+			});
 
 		new Setting(this.containerEl)
 			.setName(t('settings.remoteDir.name'))
@@ -126,19 +135,6 @@ export default class AccountSettings extends BaseSettings {
 							enabled ? 'enabled' : 'disabled',
 						).open();
 					}
-				});
-			});
-	}
-
-	private displayCheckConnection() {
-		new Setting(this.containerEl)
-			.setName(t('settings.checkConnection.name'))
-			.setDesc(t('settings.checkConnection.desc'))
-			.addButton((button) => {
-				button.setButtonText(t('settings.checkConnection.name')).onClick((event) => {
-					const buttonEl = event.currentTarget;
-					if (!(buttonEl instanceof HTMLElement)) return;
-					void this.checkConnection(buttonEl);
 				});
 			});
 	}

@@ -92,7 +92,7 @@ export default class SyncRecord {
 	}
 
 	private getKey(path: string) {
-		return `${this.namespace}:${path}`;
+		return `${this.namespace}~${path}`;
 	}
 
 	private async removeSubtree<T>(store: Store<T>, path: string) {

@@ -34,7 +34,6 @@ import twoWayDecider from './two-way.decider.function';
 export default class TwoWaySyncDecider {
 	constructor(
 		private readonly sync: SyncEngine,
-		private readonly token: string,
 		private readonly syncRecordStorage: SyncRecord,
 	) {}
 

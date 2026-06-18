@@ -34,11 +34,7 @@ export default class SyncEngine {
 
 	constructor(
 		private readonly plugin: WebDAVSyncPlugin,
-		private readonly options: {
-			vaultFs: LocalFs;
-			webdavFs: RemoteFs;
-			token: string;
-		},
+		private readonly options: { vaultFs: LocalFs; webdavFs: RemoteFs },
 	) {
 		this.options = Object.freeze(this.options);
 		this.unsubscribeSyncCancel = syncCancel.subscribe(() => (this.isCancelled = true));
@@ -55,7 +51,7 @@ export default class SyncEngine {
 		await this.ensureRemoteBaseDirReady(syncRecord);
 		this.throwIfCancelled();
 
-		const tasks = await new TwoWaySyncDecider(this, this.options.token, syncRecord).decide({
+		const tasks = await new TwoWaySyncDecider(this, syncRecord).decide({
 			onProgress,
 			throwIfCancelled: this.throwIfCancelled,
 		});

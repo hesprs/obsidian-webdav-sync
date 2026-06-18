@@ -35,7 +35,6 @@ export default class SyncExecutorService {
 		try {
 			clearMemoryStates();
 			const sync = new SyncEngine(this.plugin, {
-				token: this.plugin.getToken(),
 				vaultFs: createVaultFs(this.plugin),
 				webdavFs: createWebdavFs(this.plugin),
 			});

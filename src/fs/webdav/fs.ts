@@ -48,6 +48,10 @@ const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8"?>
     <getetag/>
   </prop>
 </propfind>`;
+const CHECK_CONNECTION_BODY = `<?xml version="1.0" encoding="utf-8"?>
+<D:propfind xmlns:D="DAV:">
+  <D:propname/>
+</D:propfind>`;
 
 const READ_CHUNK_SIZE = 1 * 1024 * 1024;
 const READ_MAX_CONCURRENT = 4;
@@ -194,7 +198,7 @@ class WebdavFs implements RootRemoteFs {
 	async checkConnection() {
 		try {
 			const response = await this.request({
-				body: '<D:propfind xmlns:D="DAV:"/>',
+				body: CHECK_CONNECTION_BODY,
 				headers: { Authorization: this.auth, Depth: '0' },
 				method: 'PROPFIND',
 				url: buildUrl(this.endpoint, '/'),
