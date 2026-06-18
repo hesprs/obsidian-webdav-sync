@@ -1,6 +1,6 @@
 import { requestUrl } from 'obsidian';
 import { sleep } from '~/utils/sleep';
-import type { RootRemoteFs, RemoteFs, RemoteFsWrapper } from '../interface';
+import type { RemoteFs, RemoteFsWrapper } from '../interface';
 import digOriginal from '../utils/dig-original';
 
 type RetryOptions = {
@@ -13,7 +13,7 @@ function retryWrapper(
 	original: RemoteFs,
 	{ maxRetry = 3, isRetryable, retryDelayMs = 1000 }: RetryOptions,
 ): RemoteFs {
-	const root = digOriginal(original).at(-1) as RootRemoteFs;
+	const root = digOriginal(original);
 	const request = root.request;
 	type RequestParam = Parameters<typeof requestUrl>[0];
 

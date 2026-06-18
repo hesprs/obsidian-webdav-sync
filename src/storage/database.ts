@@ -2,8 +2,8 @@ import type { Database, Store } from 'uni-kv';
 import { openIndexedDB } from 'uni-kv';
 import type { Stat } from '~/fs';
 import type { RecordStat } from '~/types';
+import { STORAGE_NAME } from '~/consts';
 
-export const STORAGE_NAME = 'obsidian-webdav-sync';
 export const SYNC_STATE_STORE_NAME = 'sync-state';
 export const BASE_TEXT_STORE_NAME = 'base-text';
 

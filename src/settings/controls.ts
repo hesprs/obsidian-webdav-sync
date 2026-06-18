@@ -27,7 +27,7 @@ export default class ControlsSettings extends BaseSettings {
 			placeholder: t('settings.maxRequestConcurrency.placeholder'),
 			rejectZero: true,
 			saveSettings: this.plugin.saveSettings,
-			type: UserInputType.FileSize,
+			type: UserInputType.Number,
 		});
 
 		generateSettingEntry({

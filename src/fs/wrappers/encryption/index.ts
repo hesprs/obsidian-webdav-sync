@@ -1,6 +1,5 @@
 import type { Ref } from 'synthkernel';
 import type { MaybePromise } from '~/types';
-import { isNil } from '~/utils/fns';
 import type { Progress, Stat, RemoteFs, WrappedRemoteFs, RemoteFsWrapper } from '../../interface';
 import type { EncryptionPathCache } from './path';
 import {
@@ -50,7 +49,7 @@ class EncryptionRemoteFs implements WrappedRemoteFs {
 	async readStream(key: string, size?: number) {
 		const encryptedKey = await this.encryptKey(key);
 		const { rootFileKey } = await this.getKeys();
-		if (isNil(size)) {
+		if (typeof size !== 'number') {
 			const stat = await this.original.stat(encryptedKey);
 			if (stat.isDir) throw new Error('Cannot stream a folder');
 			size = stat.size;

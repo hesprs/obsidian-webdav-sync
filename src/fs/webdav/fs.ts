@@ -1,5 +1,4 @@
 import { requestUrl } from 'obsidian';
-import { isNil } from '~/utils/fns';
 import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/utils/path';
 import type { FolderStat, Progress, Stat, RemoteFsCtor, RootRemoteFs } from '../interface';
 import getStatusFromError from '../utils/get-status-from-error';
@@ -223,7 +222,7 @@ class WebdavFs implements RootRemoteFs {
 	}
 
 	async readStream(key: string, size?: number) {
-		if (isNil(size)) {
+		if (typeof size !== 'number') {
 			const stat = await this.stat(key);
 			if (stat.isDir) throw new Error('Cannot stream a folder');
 			size = stat.size;

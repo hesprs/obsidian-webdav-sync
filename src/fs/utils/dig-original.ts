@@ -1,8 +1,15 @@
-import type { RemoteFs, WrappedRemoteFs, LocalFs, WrappedLocalFs } from '../interface';
+import type { RemoteFs, LocalFs, RootLocalFs, RootRemoteFs } from '../interface';
 
-export default function digOriginal(wrapped: RemoteFs | LocalFs) {
-	const stack: Array<RemoteFs | LocalFs> = [wrapped];
-	while ('original' in (stack.at(-1) as RemoteFs | LocalFs))
-		stack.push((stack.at(-1) as WrappedRemoteFs | WrappedLocalFs).original);
-	return stack;
+type DigOriginalResult<
+	FS extends RootRemoteFs | RootLocalFs | undefined,
+	WrappedFs extends RemoteFs | LocalFs,
+> = [FS] extends [undefined] ? (WrappedFs extends RemoteFs ? RootRemoteFs : RootLocalFs) : FS;
+
+export default function digOriginal<
+	FS extends RootRemoteFs | RootLocalFs | undefined = undefined,
+	WrappedFs extends RemoteFs | LocalFs = RemoteFs,
+>(wrapped: WrappedFs): DigOriginalResult<FS, WrappedFs> {
+	let original: RemoteFs | LocalFs = wrapped;
+	while ('original' in original) original = original.original;
+	return original as DigOriginalResult<FS, WrappedFs>;
 }

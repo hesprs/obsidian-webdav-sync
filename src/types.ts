@@ -18,6 +18,16 @@ export type ToggleNumericSettingsField = {
 	value: number;
 };
 
+export type MemoryStorageMeta = {
+	lastLocalContextUid: string;
+	lastRemoteContextUid: string;
+};
+
+export type MemoryStorageSchema = {
+	localStatContext: Stat;
+	remoteStatContext: Stat;
+};
+
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diffMatchPatch',
 	LatestTimeStamp = 'latestTimestamp',

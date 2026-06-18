@@ -3,7 +3,6 @@ import type { SyncRunSnapshot } from '~/events';
 import { VERSION } from '~/consts';
 import { syncRun } from '~/events';
 import { formatDateTime } from '~/utils/format-date';
-import { isNil } from './fns';
 import { formatTime } from './unit-converter';
 
 type LogLevel = 'info' | 'warn' | 'error' | 'debug';
@@ -38,7 +37,7 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function sanitizeLogValue(value: unknown, depth = 0): LogValue | undefined {
-	if (isNil(value)) return;
+	if (value === undefined || value === null) return;
 	if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean')
 		return value;
 

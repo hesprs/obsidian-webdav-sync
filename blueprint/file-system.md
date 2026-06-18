@@ -68,6 +68,8 @@ This plugin is planned to extend beyond WebDAV to various backends like S3, GDri
 
 The core sync routines executed by the plugin must be backend-independent. And to achieve backend-dependent optimization, Optimization Wrappers are introduced, these wrappers are applied directly above certain type of root file systems. They coalesce intercept file system API calls and reorder / batch / schedule the real execution within the promise.
 
+Optimization wrapper can also make their own requests by using the `request` method digged from the root FS.
+
 ## File System Operation Coalescing
 
 Coalescing is the fundamental trick that makes backend-dependent optimization wrappers possible.
@@ -104,5 +106,3 @@ Folder: `https://.../folder/`, `https://.../folder/folder/`
 - Obsidian doesn't support read stream. And thus, we don't need write stream in remote FS.
 
 **Behavioral purity**: Raw FS classes should not carry any additional functions, such as base dir config or retry, they should all be achieved via wrappers.
-
-**Beyond the interface**: Classes that implement `RootRemoteFs` can have more public methods beyond `RootRemoteFs` definition. This is often encouraged to achieve backend-specific optimization in companion of backend-dependent optimization wrappers.
