@@ -15,7 +15,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 			// 2 MiB
 			if (this.remote.size >= 2 ** 21) {
 				logger.debug(`Pulling large file \`${this.key}\` in stream.`);
-				const stream = await this.webdav.readStream(this.key, this.remote.size);
+				const stream = await this.webdav.readStream(this.key);
 				localUid = await this.vault.writeStream(this.key, stream);
 			} else {
 				remoteContent = await this.webdav.read(this.key);

@@ -4,6 +4,7 @@ import type { RemoteFs } from '../interface';
 import VaultFs from '../vault/fs';
 import WebdavFs from '../webdav/fs';
 import baseDirWrapper from '../wrappers/base-dir';
+import { remoteContextWrapper, localContextWrapper } from '../wrappers/context';
 import encryptionWrapper from '../wrappers/encryption';
 import { localMemoryControlWrapper, remoteMemoryControlWrapper } from '../wrappers/memory-control';
 import commonOptimizationWrapper from '../wrappers/optimization/common-optimization';
@@ -46,18 +47,21 @@ export function createWebdavFs(plugin: WebDAVSyncPlugin, pure = false) {
 		fs = baseDirWrapper(fs, remoteDir);
 		if (encryption.enabled) fs = encryptionWrapper(fs, getCredential(plugin, encryption.value));
 	}
+	fs = remoteContextWrapper(fs);
 	return fs;
 }
 
 export function createVaultFs(plugin: WebDAVSyncPlugin) {
 	const { maxMemoryConsumption } = plugin.settings;
 	const maxMemory = maxMemoryConsumption.enabled ? maxMemoryConsumption.value : Infinity;
-	return localOptimizationWrapper(
-		localMemoryControlWrapper(new VaultFs(plugin.app.vault), {
-			hangingOperations,
-			maxMemory,
-			memoryConsumption,
-		}),
+	return localContextWrapper(
+		localOptimizationWrapper(
+			localMemoryControlWrapper(new VaultFs(plugin.app.vault), {
+				hangingOperations,
+				maxMemory,
+				memoryConsumption,
+			}),
+		),
 	);
 }
 

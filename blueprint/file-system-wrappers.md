@@ -43,14 +43,14 @@ Only re-assigns the `request` method in the original class by obtaining it, wrap
 Target: `RemoteFs` & `LocalFs`
 Type: overlay wrapper
 
-Separate wrappers for `RootRemoteFs` and `RootVaultFs`, both check and modify shared variables `memoryConsumption` counter and `hangingOperations` pool. Accept number `maxMemory` in the second parameter.
+Separate wrappers for `RootRemoteFs` and `RootLocalFs`, both check and modify shared variables `memoryConsumption` counter and `hangingOperations` pool. Accept number `maxMemory` in the second parameter.
 
 `hangingOperations` pool should always be sorted in ascending order according to the file size of each operation.
 
 Only intercept `read`, `readStream`, `write`, `writeStream` calls:
 
 1. When `read()` and `readStream()` (`RemoteFs` only) arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise. When `read()` or `readStream()` fails, decrement the memory consumption back, check the pool, resume reads.
-2. When `write` arrives and finishes, or `writeStream` (`VaultFs` only) arrives and the stream is fully consumed, or either of the `write()`, `writeStream()` fails, decrement the consumption, check the pool, resume reads when memory allows.
+2. When `write` arrives and finishes, or `writeStream` (`LocalFs` only) arrives and the stream is fully consumed, or either of the `write()`, `writeStream()` fails, decrement the consumption, check the pool, resume reads when memory allows.
 3. Inspect whether a stream is fully consumed by create a new `TransformStream` and pipe the original stream through.
 
 ### Encryption Wrapper
@@ -87,7 +87,7 @@ Similar to Common FS Optimization Wrapper, the only difference if that it coales
 Target: `LocalFs` & `RemoteFs`
 Type: overlay wrapper
 
-Intercepts `list()` (`RemoteFS` only), `listAll()`, and `stat()` calls, obtain file & folder stats, and builds a copy of latest stat result in memory KV store using `uni-kv` that survives sync runs. Also completes the `size?` argument in `read()` or `readStream()` calls.
+Intercepts `list()` (`RemoteFS` only), `listAll()`, and `stat()` calls, obtain file & folder stats, and builds a copy of latest stat result in memory KV store using `uni-kv` that survives sync runs. Also completes the `size?` argument in `read()` or `readStream()` (`RemoteFS` only) calls.
 
 Constants (defined in `src/types.ts` and `src/consts.ts`):
 
