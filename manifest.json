@@ -1,5 +1,5 @@
 {
-	"id": "webdav-sync",
+	"id": "sync-engine",
 	"name": "Sync Engine",
 	"version": "3.0.0",
 	"minAppVersion": "1.12.3",

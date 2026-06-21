@@ -1,45 +1,43 @@
 import type { RemoteFs, LocalFs } from '~/fs';
-import type { TranslationShape } from '~/i18n';
 import type { SyncRecord } from '~/storage';
 import type { MaybePromise } from '~/types';
-import t from '~/i18n';
-import type { TaskOptions } from '../decision/sync-decision.interface';
+import type { TaskOptions } from '../decision/interface';
 
 export type BaseTaskOptions = {
-	vault: LocalFs;
-	webdav: RemoteFs;
-	syncRecord: SyncRecord;
+	localFs: LocalFs;
+	remoteFs: RemoteFs;
+	record: SyncRecord;
 };
 
-export type TaskResult =
-	| {
-			success: true;
-	  }
-	| {
-			success: false;
-			error: TaskError;
-	  };
-
-export type TaskNames = BaseTask['name'];
+export type TaskNames =
+	| 'addRecord'
+	| 'removeRecord'
+	| 'createLocalDir'
+	| 'createRemoteDir'
+	| 'download'
+	| 'merge'
+	| 'removeLocal'
+	| 'removeRemote'
+	| 'upload';
 
 export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 	constructor(readonly options: BaseTaskOptions & T) {
-		this.webdav = options.webdav;
-		this.vault = options.vault;
-		this.syncRecord = options.syncRecord;
+		this.remoteFs = options.remoteFs;
+		this.localFs = options.localFs;
+		this.record = options.record;
 		this.key = options.key;
 		this.local = options.local;
 		this.remote = options.remote;
 	}
-	abstract readonly name: keyof TranslationShape['sync']['fileOp'];
+	abstract readonly name: TaskNames;
 	readonly key: string;
-	protected readonly webdav: RemoteFs;
-	protected readonly syncRecord: SyncRecord;
-	protected readonly vault: LocalFs;
+	protected readonly remoteFs: RemoteFs;
+	protected readonly record: SyncRecord;
+	protected readonly localFs: LocalFs;
 	readonly local: (BaseTaskOptions & T)['local'];
 	readonly remote: (BaseTaskOptions & T)['remote'];
 
-	abstract exec(): MaybePromise<TaskResult>;
+	abstract exec(): MaybePromise<void>;
 }
 
 export class TaskError extends Error {
@@ -51,13 +49,6 @@ export class TaskError extends Error {
 		super(message);
 		this.name = 'TaskError';
 	}
-}
-
-export function toTaskError(e: unknown, task: BaseTask): TaskError {
-	if (e instanceof TaskError) return e;
-
-	const message = e instanceof Error ? e.message : String(e);
-	return new TaskError(message, task, e instanceof Error ? e : undefined);
 }
 
 const RED_COLOR = 'var(--color-red)';
@@ -81,12 +72,10 @@ export function getTaskIcon(taskName: TaskNames): string {
 		case 'merge': {
 			return 'combine';
 		}
-		case 'removeLocal':
-		case 'removeLocalRecursively': {
+		case 'removeLocal': {
 			return 'file-x';
 		}
-		case 'removeRemote':
-		case 'removeRemoteRecursively': {
+		case 'removeRemote': {
 			return 'archive-x';
 		}
 		default: {
@@ -101,9 +90,7 @@ export function getTaskColor(taskName: TaskNames): string {
 			return YELLOW_COLOR;
 		}
 		case 'removeLocal':
-		case 'removeLocalRecursively':
-		case 'removeRemote':
-		case 'removeRemoteRecursively': {
+		case 'removeRemote': {
 			return RED_COLOR;
 		}
 		case 'createRemoteDir':
@@ -114,9 +101,4 @@ export function getTaskColor(taskName: TaskNames): string {
 			return BLUE_COLOR;
 		}
 	}
-}
-
-export function getTaskName(taskName: TaskNames) {
-	if (taskName) return t(`sync.fileOp.${taskName}`);
-	return t('sync.fileOp.sync');
 }

@@ -1,6 +1,7 @@
+import type { PluginSettings } from '~';
 import type { FileStat, FolderStat, Stat } from '~/fs';
-import type { ConflictStrategy, UnmergeableStrategy, RecordStatsMap, StatsMap } from '~/types';
-import type { BaseTask } from '../tasks/task.interface';
+import type { RecordStatsMap, StatsMap } from '~/types';
+import type { BaseTask } from '../tasks/interface';
 
 export type TaskOptions = {
 	key: string;
@@ -37,15 +38,18 @@ export type OptionsWithBothStats = {
 	remote: Stat;
 } & TaskOptions;
 
-export type OptionsWithBothFileStats = {
+export type OptionsWithBothFileStatsAndSettings = {
 	local: FileStat;
 	remote: FileStat;
+	settings: PluginSettings;
 } & TaskOptions;
 
 export type TaskFactory = {
 	createPullTask: (options: OptionsWithRemoteFileStat) => BaseTask<OptionsWithRemoteFileStat>;
 	createPushTask: (options: OptionsWithLocalFileStat) => BaseTask<OptionsWithLocalFileStat>;
-	createMergeTask: (options: OptionsWithBothFileStats) => BaseTask<OptionsWithBothFileStats>;
+	createMergeTask: (
+		options: OptionsWithBothFileStatsAndSettings,
+	) => BaseTask<OptionsWithBothFileStatsAndSettings>;
 	createRemoveLocalTask: (options: OptionsWithLocalStat) => BaseTask<OptionsWithLocalStat>;
 	createRemoveRemoteTask: (options: OptionsWithRemoteStat) => BaseTask<OptionsWithRemoteStat>;
 	createMkdirLocalTask: (
@@ -58,13 +62,13 @@ export type TaskFactory = {
 	createAddRecordTask: (options: OptionsWithBothStats) => BaseTask<OptionsWithBothStats>;
 };
 
-export type SyncDecisionInput = {
-	currentLocalStats: StatsMap;
-	currentRemoteStats: StatsMap;
+export type Decider = (input: DeciderInput) => Array<BaseTask>;
+
+export type DeciderInput = {
+	localStats: StatsMap;
+	remoteStats: StatsMap;
 	records: RecordStatsMap;
 	taskFactory: TaskFactory;
-	settings: {
-		conflictStrategy: ConflictStrategy;
-		unmergeableStrategy: UnmergeableStrategy;
-	};
+	settings: PluginSettings;
+	logger: (log: string) => void;
 };

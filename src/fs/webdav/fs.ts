@@ -1,6 +1,6 @@
 import { requestUrl } from 'obsidian';
 import { dirname, normalizeChar, normalizeKey, normalizeUrl, stripEndSlash } from '~/utils/path';
-import type { FolderStat, Progress, Stat, RemoteFsCtor, RootRemoteFs } from '../interface';
+import type { FolderStat, Progress, Stat, RootRemoteFs, RootRemoteFsCtor } from '../interface';
 import getStatusFromError from '../utils/get-status-from-error';
 import parseXML from '../utils/parse-xml';
 import { createWebDAVReadStream } from './read-stream';
@@ -376,4 +376,4 @@ class WebdavFs implements RootRemoteFs {
 	}
 }
 
-export default WebdavFs satisfies RemoteFsCtor<WebdavFsOptions>;
+export default WebdavFs satisfies RootRemoteFsCtor<WebdavFsOptions>;

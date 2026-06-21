@@ -1,6 +1,7 @@
 import type { Database, Store } from 'uni-kv';
 import { openIndexedDB } from 'uni-kv';
 import type { Stat } from '~/fs';
+import type { IndexedDBMeta, IndexedDBSchema } from '~/modules/Storage';
 import type { RecordStat } from '~/types';
 import { STORAGE_NAME } from '~/consts';
 
@@ -10,21 +11,12 @@ export const BASE_TEXT_STORE_NAME = 'base-text';
 const STORAGE_VERSION = 1;
 const STORAGE_VERSION_KEY = 'version';
 
-export type StorageSchema = {
-	'base-text': string;
-	'sync-state': RecordStat;
-};
-
-type StorageMeta = {
-	version: number;
-};
-
-export type StorageDatabase = Database<StorageSchema, StorageMeta>;
+export type StorageDatabase = Database<IndexedDBSchema, IndexedDBMeta>;
 
 let storageDatabasePromise: Promise<StorageDatabase> | undefined;
 
 export async function getStorageDatabase() {
-	storageDatabasePromise ??= openIndexedDB<StorageSchema, StorageMeta>(STORAGE_NAME).then(
+	storageDatabasePromise ??= openIndexedDB<IndexedDBSchema, IndexedDBMeta>(STORAGE_NAME).then(
 		async (db) => {
 			const version = await db.getMeta(STORAGE_VERSION_KEY);
 			if (version !== STORAGE_VERSION) {

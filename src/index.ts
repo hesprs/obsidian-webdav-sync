@@ -1,16 +1,20 @@
 import './global.css';
-import { Plugin } from 'obsidian';
+import type { Command, EventRef } from 'obsidian';
+import type { Context, MergeSingleKey } from 'synthkernel';
+import { App, getLanguage, Plugin } from 'obsidian';
+import { createContext } from 'synthkernel';
 import { ConflictStrategy, UnmergeableStrategy } from '~/types';
-import type { PluginSettings, GlobMatchOptions } from './types';
-import SyncRibbonManager from './components/SyncRibbonManager';
-import { syncCancel } from './events';
-import setupCommands from './services/command.setup';
-import ObservabilityService from './services/observability.service';
-import SyncExecutorService from './services/sync-executor.service';
-import SyncSchedulerService from './services/sync-scheduler.service';
-import SyncSettingTab from './settings';
-import { normalizeBaseDir } from './utils/path';
-import { setPluginInstance } from './utils/plugin-instance';
+import type { ObsidianLanguageCode } from './modules/I18n';
+import type { AddRibbonIcon } from './modules/Observability';
+import type { GlobMatchOptions } from './types';
+import EventBus from './modules/EventBus';
+import I18n from './modules/I18n';
+import Observability from './modules/Observability';
+import ProgressModal from './modules/ProgressModal';
+import Scheduler from './modules/Scheduler';
+import Settings from './modules/Settings';
+import Storage from './modules/Storage';
+import Sync from './modules/Sync';
 
 function createGlobMatchOptions(expr: string) {
 	return {
@@ -21,117 +25,104 @@ function createGlobMatchOptions(expr: string) {
 	} satisfies GlobMatchOptions;
 }
 
-export default class WebDAVSyncPlugin extends Plugin {
-	public isSyncing = false;
-	public settings: PluginSettings = {
-		account: '',
-		confirmBeforeDeleteInAutoSync: true,
-		confirmBeforeSync: true,
+const allModules = [
+	EventBus,
+	Settings,
+	Storage,
+	I18n,
+	Sync,
+	Observability,
+	Scheduler,
+	ProgressModal,
+] as const;
+type AllModules = typeof allModules;
+export type PluginContext = Context<
+	AllModules,
+	'settings' | 'root' | 'events' | 'i18n',
+	{
+		app: App;
+		addCommand: (command: Command) => void;
+		registerEvent: (ref: EventRef) => void;
+		addRibbonIcon: AddRibbonIcon;
+		addStatusBarItem: () => HTMLElement;
+	}
+>;
+export type EventMap = MergeSingleKey<AllModules, 'events'>;
+export type PluginSettings = MergeSingleKey<AllModules, 'settings'>;
+export type Translations = MergeSingleKey<AllModules, 'i18n'>;
+
+export default class SyncEngine extends Plugin {
+	context?: PluginContext;
+	readonly settings: PluginSettings = {
+		confirmDeleteInAutoSync: true,
+		confirmTasksInSync: true,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
-		encryption: {
-			enabled: false,
-			value: '',
-		},
-		exhaustiveRemoteTraversal: false,
-		fastRealtimeSync: true,
-		filterRules: {
-			exclusionRules: [
-				'**/.git',
-				'**/.github',
-				'**/.gitlab',
-				'**/.svn',
-				'**/node_modules',
-				'**/.DS_Store',
-				'**/__MACOSX',
-				'**/desktop.ini',
-				'**/Thumbs.db',
-				'**/.trash',
-				'**/~$*.doc',
-				'**/~$*.docx',
-				'**/~$*.ppt',
-				'**/~$*.pptx',
-				'**/~$*.xls',
-				'**/~$*.xlsx',
-				this.app.vault.configDir,
-			].map(createGlobMatchOptions),
-			inclusionRules: [],
-		},
-		maxMemoryConsumption: {
-			enabled: true,
-			value: 104_857_600, // 100 MiB
-		},
-		maxRequestConcurrency: {
-			enabled: true,
-			value: 50,
-		},
-		minRequestInterval: {
-			enabled: false,
-			value: 0,
-		},
-		realtimeSync: {
-			enabled: false,
-			value: 5000,
-		},
-		remoteDir: normalizeBaseDir(this.app.vault.getName()),
-		scheduledSync: {
-			enabled: false,
-			value: 6000,
-		},
-		serverUrl: '',
-		showSyncStatusInNotificationOnMobile: true,
-		skipLargeFiles: {
-			enabled: false,
-			value: 31_457_280,
-		},
-		startupSync: {
-			enabled: false,
-			value: 0,
-		},
-		token: '',
+		decider: 'twoWay',
+		exclusionRules: [
+			'**/.git',
+			'**/.github',
+			'**/.gitlab',
+			'**/.svn',
+			'**/node_modules',
+			'**/.DS_Store',
+			'**/__MACOSX',
+			'**/desktop.ini',
+			'**/Thumbs.db',
+			'**/.trash',
+			'**/~$*.doc',
+			'**/~$*.docx',
+			'**/~$*.ppt',
+			'**/~$*.pptx',
+			'**/~$*.xls',
+			'**/~$*.xlsx',
+			this.app.vault.configDir,
+		].map(createGlobMatchOptions),
+		inclusionRules: [],
+		maxFileSize: 31_457_280,
+		maxFileSizeEnabled: false,
+		noticeStatusOnMobile: true,
+		realtimeSyncDelay: 5000,
+		realtimeSyncEnabled: false,
+		realtimeSyncFastMode: true,
+		remoteFs: '',
+		scheduledSyncEnabled: false,
+		scheduledSyncInterval: 5000,
+		startupSyncDelay: 5000,
+		startupSyncEnabled: false,
 		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
 		useGitStyle: false,
 	};
 
-	public observabilityService = new ObservabilityService(this);
-	public syncExecutorService = new SyncExecutorService(this);
-	public syncSchedulerService = new SyncSchedulerService(this, this.syncExecutorService);
-	public ribbonManager = new SyncRibbonManager(this);
-
 	async onload() {
 		Object.assign(this.settings, await this.loadData());
-		this.addSettingTab(new SyncSettingTab(this.app, this));
-		setPluginInstance(this);
-		setupCommands(this);
-		this.syncSchedulerService.start();
+		this.context = createContext(allModules, {
+			assign: { settings: this.settings },
+			injectKeys: ['settings', 'i18n'],
+			mergeKeys: ['settings', 'root', 'events', 'i18n'],
+			preMerge: {
+				addCommand: this.addCommand.bind(this),
+				addRibbonIcon: this.addRibbonIcon.bind(this),
+				addStatusBarItem: this.addStatusBarItem.bind(this),
+				app: this.app,
+				registerEvent: this.registerEvent.bind(this),
+			},
+		});
+		this.context.loadI18n(getLanguage() as ObsidianLanguageCode);
+		this.context.addSettingTab(this);
+		for (const module of allModules) {
+			const instance = this.context.__getModule__(module);
+			if ('start' in instance) instance.start();
+		}
 	}
 
 	onunload() {
-		setPluginInstance(this);
-		syncCancel();
-		this.syncSchedulerService.unload();
-		this.observabilityService.unload();
+		if (!this.context) return;
+		for (const module of allModules.toReversed()) {
+			const instance = this.context.__getModule__(module);
+			if ('dispose' in instance) instance.dispose();
+		}
+		this.context = undefined;
 	}
 
-	saveSettings = async () => await this.saveData(this.settings);
-
-	toggleSyncUI(isSyncing: boolean) {
-		this.isSyncing = isSyncing;
-		this.ribbonManager.update();
-	}
-
-	/**
-	 * 检查账号配置是否完整
-	 * @returns true 表示配置完整，false 表示未配置或配置不完整
-	 */
-	isAccountConfigured(): boolean {
-		return (
-			Boolean(this.settings.serverUrl) &&
-			this.settings.serverUrl.trim() !== '' &&
-			Boolean(this.settings.account) &&
-			this.settings.account.trim() !== '' &&
-			Boolean(this.settings.token) &&
-			this.settings.token.trim() !== '' &&
-			Boolean(this.app.secretStorage.getSecret(this.settings.token))
-		);
-	}
+	readonly saveSettings = async () => await this.saveData(this.settings);
 }

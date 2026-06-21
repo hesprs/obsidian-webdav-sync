@@ -1,53 +1,28 @@
-import { openMemoryDB } from 'uni-kv';
-import type { MemoryStorageMeta, MemoryStorageSchema } from '~/types';
-import { STORAGE_NAME } from '~/consts';
+import type { MemoryDatabase, MemoryStore } from 'uni-kv';
+import type { MemoryDBMeta, MemoryDBSchema } from '~/modules/Storage';
 import type { LocalFs, RemoteFs, Stat, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 
-const db = openMemoryDB<MemoryStorageSchema, MemoryStorageMeta>(STORAGE_NAME);
+type DB = MemoryDatabase<MemoryDBSchema, MemoryDBMeta>;
 
-function alignRemoteContext(uid: string) {
-	const store = db.getStore('remoteStatContext');
-	if (db.getMeta('lastRemoteContextUid') !== uid) {
-		store.clear();
-		db.setMeta('lastRemoteContextUid', uid);
-	}
-	return store;
-}
-
-function alignLocalContext(uid: string) {
-	const store = db.getStore('localStatContext');
-	if (db.getMeta('lastLocalContextUid') !== uid) {
-		store.clear();
-		db.setMeta('lastLocalContextUid', uid);
-	}
-	return store;
-}
-
-function getCachedReadSize(store: ReturnType<typeof db.getStore<Stat>>, key: string) {
+function getCachedReadSize(store: MemoryStore<Stat>, key: string) {
 	const stat = store.get(key);
 	if (stat === undefined || stat.isDir) return undefined;
 	return stat.size;
 }
 
-async function cacheStat(store: ReturnType<typeof db.getStore<Stat>>, stat: Promise<Stat> | Stat) {
+async function cacheStat(store: MemoryStore<Stat>, stat: Promise<Stat> | Stat) {
 	const resolvedStat = await stat;
 	store.set(resolvedStat.key, resolvedStat);
 	return resolvedStat;
 }
 
-async function cacheStats(
-	store: ReturnType<typeof db.getStore<Stat>>,
-	stats: Promise<Array<Stat>> | Array<Stat>,
-) {
+async function cacheStats(store: MemoryStore<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
 	const resolvedStats = await stats;
 	for (const stat of resolvedStats) store.set(stat.key, stat);
 	return resolvedStats;
 }
 
-async function replaceStats(
-	store: ReturnType<typeof db.getStore<Stat>>,
-	stats: Promise<Array<Stat>> | Array<Stat>,
-) {
+async function replaceStats(store: MemoryStore<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
 	const resolvedStats = await stats;
 	store.clear();
 	for (const stat of resolvedStats) store.set(stat.key, stat);
@@ -55,10 +30,18 @@ async function replaceStats(
 }
 
 class ContextRemoteFs implements WrappedRemoteFs {
-	private readonly statStore: ReturnType<typeof db.getStore<Stat>>;
+	private readonly statStore: MemoryStore<Stat>;
 
-	constructor(public readonly original: RemoteFs) {
-		this.statStore = alignRemoteContext(original.getUid());
+	constructor(
+		public readonly original: RemoteFs,
+		db: DB,
+	) {
+		const uid = original.getUid();
+		this.statStore = db.getStore('remoteStatContext');
+		if (db.getMeta('lastRemoteContextUid') !== uid) {
+			this.statStore.clear();
+			db.setMeta('lastRemoteContextUid', uid);
+		}
 	}
 
 	checkConnection() {
@@ -107,10 +90,18 @@ class ContextRemoteFs implements WrappedRemoteFs {
 }
 
 class ContextLocalFs implements WrappedLocalFs {
-	private readonly statStore: ReturnType<typeof db.getStore<Stat>>;
+	private readonly statStore: MemoryStore<Stat>;
 
-	constructor(public readonly original: LocalFs) {
-		this.statStore = alignLocalContext(original.getUid());
+	constructor(
+		public readonly original: LocalFs,
+		db: DB,
+	) {
+		const uid = original.getUid();
+		this.statStore = db.getStore('localStatContext');
+		if (db.getMeta('lastLocalContextUid') !== uid) {
+			this.statStore.clear();
+			db.setMeta('lastLocalContextUid', uid);
+		}
 	}
 
 	getUid() {
@@ -150,10 +141,10 @@ class ContextLocalFs implements WrappedLocalFs {
 	}
 }
 
-export function remoteContextWrapper(original: RemoteFs): WrappedRemoteFs {
-	return new ContextRemoteFs(original);
+export function remoteContextWrapper(original: RemoteFs, db: DB): WrappedRemoteFs {
+	return new ContextRemoteFs(original, db);
 }
 
-export function localContextWrapper(original: LocalFs): WrappedLocalFs {
-	return new ContextLocalFs(original);
+export function localContextWrapper(original: LocalFs, db: DB): WrappedLocalFs {
+	return new ContextLocalFs(original, db);
 }

@@ -1,28 +1,35 @@
 import { setIcon, setTooltip } from 'obsidian';
-import type { SyncFailedTaskInfo } from '~/events';
-import { getTaskIcon, getTaskName } from '~/sync';
+import type { FailedTaskInfo } from '~/modules/Sync';
+import type { TaskNames } from '~/sync';
+import { getTaskIcon } from '~/sync';
 
-function renderFailedTaskRow(itemEl: HTMLDivElement, task: SyncFailedTaskInfo) {
+function renderFailedTaskRow(
+	itemEl: HTMLDivElement,
+	{ name, key, error }: FailedTaskInfo,
+	prettyName: string,
+) {
 	const row = itemEl.createDiv();
-	const taskName = getTaskName(task.name);
 
 	const main = row.createDiv({ cls: 'break-words flex items-center gap-2' });
 	const icon = main.createSpan({ cls: 'webdav-sync-task__icon color-[var(--color-red)]' });
-	setIcon(icon, getTaskIcon(task.name));
-	setTooltip(icon, taskName);
+	setIcon(icon, getTaskIcon(name));
+	setTooltip(icon, prettyName);
 
-	main.createSpan({ cls: 'font-semibold', text: taskName });
-	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: task.key });
+	main.createSpan({ cls: 'font-semibold', text: prettyName });
+	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: key });
 
-	row.createDiv({ cls: 'text-[var(--text-muted)] break-words mt-1', text: task.errorMessage });
+	row.createDiv({ cls: 'text-[var(--text-muted)] break-words mt-1', text: error });
 }
 
 export default function renderFailedTasks(
 	detailContainer: HTMLDivElement,
-	failedTasks: Array<SyncFailedTaskInfo>,
+	failedTasks: Array<FailedTaskInfo>,
+	getTaskName: (name: TaskNames) => string,
 ): void {
 	detailContainer.empty();
 	const tasksContainer = detailContainer.createDiv({ cls: 'w-100% flex flex-col gap-3 p-1.5' });
 	detailContainer.removeClass('hidden');
-	failedTasks.forEach((task) => renderFailedTaskRow(tasksContainer, task));
+	failedTasks.forEach((task) =>
+		renderFailedTaskRow(tasksContainer, task, getTaskName(task.name)),
+	);
 }

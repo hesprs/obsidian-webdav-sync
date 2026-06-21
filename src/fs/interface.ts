@@ -38,7 +38,11 @@ export type RootRemoteFs = {
 	listAll(key: string, progress?: (progress: Progress) => void): MaybePromise<Array<Stat>>; // List recursive children under one folder
 };
 
-export type RemoteFsCtor<O> = new (options: O, request?: typeof requestUrl) => RootRemoteFs;
+export type RootLocalFsCtor<O = undefined> = new (options: O) => RootLocalFs;
+export type RootRemoteFsCtor<O = undefined> = new (
+	options: O,
+	request?: typeof requestUrl,
+) => RootRemoteFs;
 
 export type WrappedLocalFs = { original: LocalFs } & Omit<RootLocalFs, 'vault'>;
 export type WrappedRemoteFs = { original: RemoteFs } & Omit<RootRemoteFs, 'request'>;

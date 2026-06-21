@@ -10,4 +10,3 @@ export { default as VaultFs } from './vault/fs';
 export { default as WebdavFs } from './webdav/fs';
 export type { MemoryControlSharedState } from './wrappers/memory-control';
 export type * from './interface';
-export * from './utils/fs-factory';

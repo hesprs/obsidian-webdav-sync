@@ -1,12 +1,12 @@
 import { beforeEach, expect, test } from 'bun:test';
 import { openMemoryDB } from 'uni-kv';
 import type { Stat } from '~/fs';
-import type { MemoryStorageMeta, MemoryStorageSchema } from '~/types';
+import type { MemoryDBMeta, MemoryDBSchema } from '~/modules/Storage';
 import { STORAGE_NAME } from '~/consts';
 import { localContextWrapper, remoteContextWrapper } from '~/fs';
 import { createVaultFs, ShimmedRemoteFs, toBuffer } from './utils';
 
-const db = openMemoryDB<MemoryStorageSchema, MemoryStorageMeta>(STORAGE_NAME);
+const db = openMemoryDB<MemoryDBSchema, MemoryDBMeta>(STORAGE_NAME);
 
 function getLocalStore() {
 	return db.getStore('localStatContext');
@@ -62,7 +62,7 @@ test('remote wrapper clears stale context when uid changes at creation', async (
 	getLocalStore().set('keep.md', fileStat('keep.md'));
 	db.setMeta('lastRemoteContextUid', 'old-remote');
 
-	remoteContextWrapper(new ContextTestRemoteFs('new-remote'));
+	remoteContextWrapper(new ContextTestRemoteFs('new-remote'), db);
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({});
 	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
@@ -73,7 +73,7 @@ test('remote wrapper keeps context when uid matches at creation', async () => {
 	getRemoteStore().set('keep.md', fileStat('keep.md'));
 	db.setMeta('lastRemoteContextUid', 'same-remote');
 
-	remoteContextWrapper(new ContextTestRemoteFs('same-remote'));
+	remoteContextWrapper(new ContextTestRemoteFs('same-remote'), db);
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
 	expect(db.getMeta('lastRemoteContextUid')).toBe('same-remote');
@@ -86,7 +86,7 @@ test('local wrapper clears stale context when uid changes at creation', async ()
 	getRemoteStore().set('keep.md', fileStat('keep.md'));
 	db.setMeta('lastLocalContextUid', 'old-local');
 
-	localContextWrapper(original);
+	localContextWrapper(original, db);
 
 	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({});
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
@@ -95,9 +95,9 @@ test('local wrapper clears stale context when uid changes at creation', async ()
 
 test('stat caches returned file stat', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	const remoteResult = fileStat('remote.md', 7, 'remote-file');
 	const localResult = fileStat('local.md', 9, 'local-file');
 	remoteOriginal.statResponse = async () => remoteResult;
@@ -112,7 +112,7 @@ test('stat caches returned file stat', async () => {
 
 test('remote list upserts returned stats without clearing unrelated context', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const preserved = fileStat('preserved.md', 3, 'preserved');
 	const listedFolder = folderStat('folder/');
 	const listedFile = fileStat('folder/note.md', 8, 'listed');
@@ -130,9 +130,9 @@ test('remote list upserts returned stats without clearing unrelated context', as
 
 test('listAll replaces previous context snapshot', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	const remoteStats = [folderStat('remote/'), fileStat('remote/file.md', 11, 'remote-list-all')];
 	const localStats = [folderStat('local/'), fileStat('local/file.md', 12, 'local-list-all')];
 	getRemoteStore().set('old-remote.md', fileStat('old-remote.md'));
@@ -155,9 +155,9 @@ test('listAll replaces previous context snapshot', async () => {
 
 test('read uses cached file size when caller omits size', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { calls, control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	remoteOriginal.statResponse = async () => fileStat('remote.md', 13, 'remote-size');
 	control.statResponse = async () => fileStat('local.md', 17, 'local-size');
 
@@ -172,7 +172,7 @@ test('read uses cached file size when caller omits size', async () => {
 
 test('remote readStream uses cached file size when caller omits size', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	remoteOriginal.statResponse = async () => fileStat('stream.md', 23, 'stream-size');
 
 	await remoteWrapper.stat('stream.md');
@@ -183,9 +183,9 @@ test('remote readStream uses cached file size when caller omits size', async () 
 
 test('read-through keeps undefined size on cache miss or folder stat', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { calls, control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	remoteOriginal.statResponse = async () => folderStat('folder/');
 	control.statResponse = async () => folderStat('folder/');
 
@@ -208,9 +208,9 @@ test('read-through keeps undefined size on cache miss or folder stat', async () 
 
 test('stat and traversal failures do not mutate context', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	const remoteSeed = fileStat('seed-remote.md', 3, 'seed-remote');
 	const localSeed = fileStat('seed-local.md', 4, 'seed-local');
 	getRemoteStore().set(remoteSeed.key, remoteSeed);
@@ -243,9 +243,9 @@ test('stat and traversal failures do not mutate context', async () => {
 
 test('mutating calls do not update or clear context', async () => {
 	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal);
+	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
 	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal);
+	const localWrapper = localContextWrapper(localOriginal, db);
 	const remoteSeed = fileStat('remote.md', 3, 'remote-seed');
 	const localSeed = fileStat('local.md', 4, 'local-seed');
 	getRemoteStore().set(remoteSeed.key, remoteSeed);

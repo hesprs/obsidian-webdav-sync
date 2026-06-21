@@ -1,6 +1,6 @@
 import type { Vault } from 'obsidian';
 import { dirname, stripEndSlash } from '~/utils/path';
-import type { RootLocalFs, Stat, LocalFs } from '../interface';
+import type { RootLocalFs, Stat, LocalFs, RootLocalFsCtor } from '../interface';
 
 function toKey(vaultPath: string, isDir: boolean): string {
 	if (vaultPath === '/') return '/';
@@ -53,7 +53,7 @@ async function getFileUid(fs: LocalFs, key: string): Promise<string> {
 	return stat.uid;
 }
 
-export default class ObsidianVaultFs implements RootLocalFs {
+class VaultFs implements RootLocalFs {
 	constructor(public readonly vault: Vault) {}
 
 	getUid(): string {
@@ -154,3 +154,5 @@ export default class ObsidianVaultFs implements RootLocalFs {
 		return result;
 	}
 }
+
+export default VaultFs satisfies RootLocalFsCtor<Vault>;

@@ -1,32 +1,28 @@
 import type { StatsMap, GlobMatchOptions } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
-import logger from '~/utils/logger';
 import { dirname } from '~/utils/path';
 
 // Apply inclusion / exclusion / file size rules and filter out invalid entries
-export default function postTraversal(
-	stats: StatsMap,
-	filterRules?: {
-		exclusionRules?: Array<GlobMatchOptions>;
-		inclusionRules?: Array<GlobMatchOptions>;
-	},
-	maxSize?: number,
-) {
+export default function postTraversal({
+	stats,
+	exclusionRules,
+	inclusionRules,
+	maxSize,
+}: {
+	stats: StatsMap;
+	exclusionRules?: Array<GlobMatchOptions>;
+	inclusionRules?: Array<GlobMatchOptions>;
+	maxSize?: number;
+}) {
 	const includedStats: StatsMap = new Map();
 	if (stats.size === 0) return includedStats;
-	const exclusions = buildRules(filterRules?.exclusionRules);
-	const inclusions = buildRules(filterRules?.inclusionRules);
+	const exclusions = buildRules(exclusionRules);
+	const inclusions = buildRules(inclusionRules);
 
 	for (const [path, stat] of stats) {
 		if (path.length === 0) continue;
-		if (!needIncludeFromGlobRules(path, inclusions, exclusions)) {
-			logger.debug(`Skipping ${stat.key} due to exclusion rules.`);
-			continue;
-		}
-		if (!stat.isDir && maxSize && stat.size > maxSize) {
-			logger.debug(`Skipping ${stat.key} due to file size limit.`);
-			continue;
-		}
+		if (!needIncludeFromGlobRules(path, inclusions, exclusions)) continue;
+		if (!stat.isDir && maxSize && stat.size > maxSize) continue;
 		includedStats.set(path, stat);
 	}
 	completeLostDir(stats, includedStats);

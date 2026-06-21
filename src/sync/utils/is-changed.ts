@@ -1,9 +1,9 @@
 import type { RecordStatsMap, StatsMap } from '~/types';
 import { isSub } from '~/utils/path';
-import type { BaseTask } from '../tasks/task.interface';
-import MergeTask from '../tasks/merge.task';
-import PullTask from '../tasks/pull.task';
-import PushTask from '../tasks/push.task';
+import type { BaseTask } from '../tasks/interface';
+import MergeTask from '../tasks/merge';
+import PullTask from '../tasks/pull';
+import PushTask from '../tasks/push';
 
 export default function isChanged({
 	key,
