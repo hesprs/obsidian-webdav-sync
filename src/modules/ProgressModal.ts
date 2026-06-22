@@ -3,7 +3,7 @@ import { App, Modal, Setting } from 'obsidian';
 import { computed } from 'synthkernel';
 import type { FileTreeSelectionController } from '~/components/fileTree';
 import type { Progress } from '~/fs';
-import type { BaseTask, RemoveLocalTask, TaskNames } from '~/sync';
+import type { BaseTask, RemoveLocalTask } from '~/sync';
 import { mount as mountFileTree } from '~/components/fileTree';
 import renderFailedTasks from '~/components/render-failed-tasks';
 import type { Dispatch, On } from './EventBus';
@@ -60,11 +60,7 @@ export default class ProgressModal extends Modal {
 					this.renderDone();
 				}
 				this.description?.setText(this.t('failedTasksDescription'));
-				renderFailedTasks(
-					this.detailContainer as HTMLDivElement,
-					failedTasks,
-					this.getTaskName,
-				);
+				renderFailedTasks(this.detailContainer as HTMLDivElement, failedTasks);
 				this.showDetails();
 			}),
 			ctx.on('requestConfirmDelete', (tasks) => {
@@ -208,9 +204,7 @@ export default class ProgressModal extends Modal {
 				const { completed, current, total } = this.ctx.executionProgress();
 				return {
 					completed,
-					current: current
-						? `${this.getTaskName(current.name)} ${current.key}`
-						: undefined,
+					current: current ? `${this.t(current.name)} ${current.key}` : undefined,
 					percent: roundPercent(completed, total),
 					total,
 				};
@@ -272,13 +266,14 @@ export default class ProgressModal extends Modal {
 		this.opening = true;
 	}
 
-	private readonly getTaskName = (name: TaskNames) => this.t(name);
-
 	private readonly cleanup = (callbacks: Array<() => void>) => {
 		while (callbacks.length) callbacks.shift()?.();
 	};
 
-	root = { getTaskName: this.getTaskName, hideProgress: this.close, showProgress: this.open };
+	root = {
+		hideProgress: this.close.bind(this),
+		showProgress: this.open.bind(this),
+	};
 
 	onClose() {
 		this.opening = false;

@@ -1,5 +1,4 @@
 import type { LocalFs, Progress, Stat } from '~/fs';
-import type { TaskFactory, TaskNames } from '~/sync';
 import type {
 	Decider,
 	OptionsWithBothFileStatsAndSettings,
@@ -11,6 +10,8 @@ import type {
 	OptionsWithRemoteFolderStat,
 	OptionsWithRemoteStat,
 	TaskOptions,
+	TaskFactory,
+	TaskNames,
 } from '~/sync';
 import type {
 	ConflictStrategy,
@@ -30,10 +31,11 @@ import {
 	RemoveRecordTask,
 	MergeTask,
 	BaseTask,
+	postTraversal,
 } from '~/sync';
-import { postTraversal } from '~/sync';
 import type { PluginSettings } from '..';
 import type { Dispatch, On } from './EventBus';
+import type { Translate } from './I18n';
 import type { DeleteConfirmReturn } from './ProgressModal';
 import type { Infras } from './Storage';
 
@@ -44,7 +46,7 @@ type SyncTerminateReason =
 	| { result: 'noop' };
 
 export type SyncTrigger = 'manual' | 'nonInteractiveManual' | 'startup' | 'interval' | 'realtime';
-export type TaskInfo = { name: TaskNames; key: string };
+export type TaskInfo = { name: TaskNames; key: string; prettyName: string };
 export type FailedTaskInfo = TaskInfo & { error: string };
 
 const syncCancelledError = new Error('Sync cancelled by user.');
@@ -59,6 +61,7 @@ export default class Sync {
 			initializeSync: () => Promise<Infras>;
 			getDecider: () => Decider;
 			on: On;
+			translate: Translate;
 		},
 	) {
 		this.dispatch = ctx.dispatch;
@@ -140,8 +143,7 @@ export default class Sync {
 			this.on('syncCanceled', () => {
 				cancelled = true;
 			});
-			const infras = await this.ctx.initializeSync();
-			const { record, localFs, remoteFs } = infras;
+			const { record, localFs, remoteFs } = await this.ctx.initializeSync();
 			const [localList, remoteList, records] = await Promise.all([
 				localFs.listAll('/'),
 				this.settings.realtimeSyncFastMode && trigger === 'realtime'
@@ -166,7 +168,12 @@ export default class Sync {
 				`Local ${localStats.size} items, remote ${remoteStats.size} items, record ${records.size} items.`,
 			);
 
-			const taskFactory = createTaskFactory(infras);
+			const taskFactory = createTaskFactory({
+				localFs,
+				record,
+				remoteFs,
+				translate: this.ctx.translate,
+			});
 			let tasks = this.ctx.getDecider()({
 				localStats,
 				logger: (log: string) => this.dispatch('log', log),
@@ -264,23 +271,28 @@ function toMap(stats: Array<Stat>): StatsMap {
 	return res;
 }
 
-function createTaskFactory(infras: Infras): TaskFactory {
+function createTaskFactory(
+	baseOptions: Infras & { translate: (key: TaskNames) => string },
+): TaskFactory {
 	return {
 		createAddRecordTask: (opts: OptionsWithBothStats) =>
-			new AddRecordTask({ ...infras, ...opts }),
-		createCleanRecordTask: (opts: TaskOptions) => new RemoveRecordTask({ ...infras, ...opts }),
+			new AddRecordTask({ ...baseOptions, ...opts }),
+		createCleanRecordTask: (opts: TaskOptions) =>
+			new RemoveRecordTask({ ...baseOptions, ...opts }),
 		createMergeTask: (opts: OptionsWithBothFileStatsAndSettings) =>
-			new MergeTask({ ...infras, ...opts }),
+			new MergeTask({ ...baseOptions, ...opts }),
 		createMkdirLocalTask: (opts: OptionsWithRemoteFolderStat) =>
-			new MkdirLocalTask({ ...infras, ...opts }),
+			new MkdirLocalTask({ ...baseOptions, ...opts }),
 		createMkdirRemoteTask: (opts: OptionsWithLocalFolderStat) =>
-			new MkdirRemoteTask({ ...infras, ...opts }),
-		createPullTask: (opts: OptionsWithRemoteFileStat) => new PullTask({ ...infras, ...opts }),
-		createPushTask: (opts: OptionsWithLocalFileStat) => new PushTask({ ...infras, ...opts }),
+			new MkdirRemoteTask({ ...baseOptions, ...opts }),
+		createPullTask: (opts: OptionsWithRemoteFileStat) =>
+			new PullTask({ ...baseOptions, ...opts }),
+		createPushTask: (opts: OptionsWithLocalFileStat) =>
+			new PushTask({ ...baseOptions, ...opts }),
 		createRemoveLocalTask: (opts: OptionsWithLocalStat) =>
-			new RemoveLocalTask({ ...infras, ...opts }),
+			new RemoveLocalTask({ ...baseOptions, ...opts }),
 		createRemoveRemoteTask: (opts: OptionsWithRemoteStat) =>
-			new RemoveRemoteTask({ ...infras, ...opts }),
+			new RemoveRemoteTask({ ...baseOptions, ...opts }),
 	};
 }
 
@@ -300,7 +312,7 @@ function partition<T>(
 }
 
 function toTaskInfo(task: BaseTask): TaskInfo {
-	return { key: task.key, name: task.name };
+	return { key: task.key, name: task.name, prettyName: task.prettyName };
 }
 
 function extractRemoteRecords(records: RecordStatsMap): Array<Stat> {

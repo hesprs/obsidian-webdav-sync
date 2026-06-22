@@ -2,7 +2,7 @@
 	"name": "obsidian-sync-engine",
 	"version": "3.0.0",
 	"private": true,
-	"license": "AGPL-3.0",
+	"license": "MIT",
 	"type": "module",
 	"scripts": {
 		"dev": "MODE=dev tsdown",
@@ -10,12 +10,9 @@
 		"build": "tsdown",
 		"ver": "bun scripts/version-bump.ts",
 		"lint": "oxlint --fix --silent && oxfmt",
-		"check": "tsc && oxlint --format agent && oxfmt --check",
+		"check": "tsgo && oxlint --format agent && oxfmt --check",
 		"notes": "bun scripts/release-notes.ts",
 		"tests": "bun --preload=./test/mocks test"
-	},
-	"dependencies": {
-		"uni-kv": "./uni-kv.tgz"
 	},
 	"devDependencies": {
 		"@noble/ciphers": "^2.2.0",
@@ -36,6 +33,7 @@
 		"synthkernel": "./synthkernel.tgz",
 		"tsdown": "^0.22.3",
 		"typescript": "^6.0.3",
+		"uni-kv": "./uni-kv.tgz",
 		"unocss": "66.7.2",
 		"unplugin-solid": "^1.0.0"
 	},

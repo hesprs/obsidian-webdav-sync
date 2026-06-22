@@ -1,15 +1,8 @@
 import type { App } from 'obsidian';
 import { deleteMemoryDB, openIndexedDB, openMemoryDB } from 'uni-kv';
-import type {
-	LocalFs,
-	LocalFsWrapper,
-	RemoteFs,
-	RemoteFsWrapper,
-	RootRemoteFsCtor,
-	Stat,
-} from '~/fs';
+import type { LocalFs, RemoteFs, RootRemoteFs, Stat } from '~/fs';
 import type { Decider } from '~/sync';
-import type { General, RecordStat } from '~/types';
+import type { RecordStat } from '~/types';
 import { STORAGE_NAME } from '~/consts';
 import { VaultFs } from '~/fs';
 import { SyncRecord } from '~/storage';
@@ -34,17 +27,15 @@ export type IndexedDBMeta = {
 	version: number;
 };
 
-type LocalFsWrapperEntry<O> = {
+type LocalFsWrapperEntry = {
 	order: number;
-	wrapper: LocalFsWrapper<O>;
-	options: O;
+	apply: (fs: LocalFs) => LocalFs;
 };
-type RemoteFsWrapperEntry<O> = {
+type RemoteFsWrapperEntry = {
 	order: number;
-	wrapper: RemoteFsWrapper<O>;
-	options: O;
+	apply: (fs: RemoteFs) => RemoteFs;
 };
-type RemoteFsEntry<O> = { fs: RootRemoteFsCtor<O>; prettyName: string; options: O };
+type RemoteFsEntry = { instantiate: () => RootRemoteFs; prettyName: string };
 type DeciderEntry = { decider: Decider; prettyName: string };
 
 export type Infras = Awaited<ReturnType<Storage['initializeSync']>>;
@@ -59,21 +50,21 @@ export default class Storage {
 	private readonly memoryDB = openMemoryDB<MemoryDBSchema, MemoryDBMeta>(STORAGE_NAME);
 	private readonly indexedDB = openIndexedDB<IndexedDBSchema, IndexedDBMeta>(STORAGE_NAME);
 
-	private readonly localFsWrapperRegistry = new Set<LocalFsWrapperEntry<General>>();
-	private readonly remoteFsWrapperRegistry = new Set<RemoteFsWrapperEntry<General>>();
-	private readonly remoteFsRegistry = new Map<string, RemoteFsEntry<General>>();
+	private readonly localFsWrapperRegistry = new Set<LocalFsWrapperEntry>();
+	private readonly remoteFsWrapperRegistry = new Set<RemoteFsWrapperEntry>();
+	private readonly remoteFsRegistry = new Map<string, RemoteFsEntry>();
 	private readonly deciderRegistry = new Map<string, DeciderEntry>();
 	declare readonly settings: { remoteFs: string; decider: string };
 
-	private readonly registerLocalFsWrapper = <O>(entry: LocalFsWrapperEntry<O>) => {
+	private readonly registerLocalFsWrapper = (entry: LocalFsWrapperEntry) => {
 		this.localFsWrapperRegistry.add(entry);
 		return () => this.localFsWrapperRegistry.delete(entry);
 	};
-	private readonly registerRemoteFsWrapper = <O>(entry: RemoteFsWrapperEntry<O>) => {
+	private readonly registerRemoteFsWrapper = (entry: RemoteFsWrapperEntry) => {
 		this.remoteFsWrapperRegistry.add(entry);
 		return () => this.remoteFsWrapperRegistry.delete(entry);
 	};
-	private readonly registerRemoteFs = <O>(id: string, entry: RemoteFsEntry<O>) => {
+	private readonly registerRemoteFs = (id: string, entry: RemoteFsEntry) => {
 		this.remoteFsRegistry.set(id, entry);
 		return () => this.remoteFsRegistry.delete(id);
 	};
@@ -83,23 +74,20 @@ export default class Storage {
 	};
 
 	private readonly createLocalFs = () => {
-		const wrappers: Record<number, { wrapper: LocalFsWrapper<General>; options: unknown }> = {};
-		for (const { options, order, wrapper } of this.localFsWrapperRegistry)
-			wrappers[order] = { options, wrapper };
+		const wrappers: Record<number, (fs: LocalFs) => LocalFs> = {};
+		for (const { apply, order } of this.localFsWrapperRegistry) wrappers[order] = apply;
 		let fs: LocalFs = new VaultFs(this.ctx.app.vault);
-		for (const { options, wrapper } of Object.values(wrappers)) fs = wrapper(fs, options);
+		for (const apply of Object.values(wrappers)) fs = apply(fs);
 		return fs;
 	};
 
 	private readonly createRemoteFs = () => {
-		const wrappers: Record<number, { wrapper: RemoteFsWrapper<General>; options: unknown }> =
-			{};
-		for (const { options, order, wrapper } of this.remoteFsWrapperRegistry)
-			wrappers[order] = { options, wrapper };
+		const wrappers: Record<number, (fs: RemoteFs) => RemoteFs> = {};
+		for (const { apply, order } of this.remoteFsWrapperRegistry) wrappers[order] = apply;
 		const entry = this.remoteFsRegistry.get(this.settings.remoteFs);
 		if (!entry) throw new Error(`Backend "${this.settings.remoteFs}" not installed!`);
-		let fs: RemoteFs = new entry.fs(entry.options);
-		for (const { options, wrapper } of Object.values(wrappers)) fs = wrapper(fs, options);
+		let fs: RemoteFs = entry.instantiate();
+		for (const apply of Object.values(wrappers)) fs = apply(fs);
 		return fs;
 	};
 

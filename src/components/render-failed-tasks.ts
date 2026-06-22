@@ -1,12 +1,10 @@
 import { setIcon, setTooltip } from 'obsidian';
 import type { FailedTaskInfo } from '~/modules/Sync';
-import type { TaskNames } from '~/sync';
 import { getTaskIcon } from '~/sync';
 
 function renderFailedTaskRow(
 	itemEl: HTMLDivElement,
-	{ name, key, error }: FailedTaskInfo,
-	prettyName: string,
+	{ name, key, error, prettyName }: FailedTaskInfo,
 ) {
 	const row = itemEl.createDiv();
 
@@ -24,12 +22,9 @@ function renderFailedTaskRow(
 export default function renderFailedTasks(
 	detailContainer: HTMLDivElement,
 	failedTasks: Array<FailedTaskInfo>,
-	getTaskName: (name: TaskNames) => string,
 ): void {
 	detailContainer.empty();
 	const tasksContainer = detailContainer.createDiv({ cls: 'w-100% flex flex-col gap-3 p-1.5' });
 	detailContainer.removeClass('hidden');
-	failedTasks.forEach((task) =>
-		renderFailedTaskRow(tasksContainer, task, getTaskName(task.name)),
-	);
+	failedTasks.forEach((task) => renderFailedTaskRow(tasksContainer, task));
 }

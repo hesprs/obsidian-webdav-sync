@@ -28,12 +28,8 @@ function getPathSegments(path: string): Array<string> {
 
 function isFolderTask(task: BaseTask): boolean {
 	if (task.name === 'createLocalDir' || task.name === 'createRemoteDir') return true;
-	if (task.name === 'removeLocal' || task.name === 'removeLocalRecursively')
-		return task.local?.isDir === true;
-
-	if (task.name === 'removeRemote' || task.name === 'removeRemoteRecursively')
-		return task.remote?.isDir === true;
-
+	if (task.name === 'removeLocal') return task.local?.isDir === true;
+	if (task.name === 'removeRemote') return task.remote?.isDir === true;
 	return false;
 }
 
@@ -42,12 +38,8 @@ function isCreateFolderTask(task: BaseTask): boolean {
 }
 
 function isDeleteFolderTask(task: BaseTask): boolean {
-	if (task.name === 'removeLocal' || task.name === 'removeLocalRecursively')
-		return task.local?.isDir === true;
-
-	if (task.name === 'removeRemote' || task.name === 'removeRemoteRecursively')
-		return task.remote?.isDir === true;
-
+	if (task.name === 'removeLocal') return task.local?.isDir === true;
+	if (task.name === 'removeRemote') return task.remote?.isDir === true;
 	return false;
 }
 

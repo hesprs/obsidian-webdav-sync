@@ -149,7 +149,7 @@ export default class EventBus {
 			if (failedTasks) lines.push(`Failed: ${failedTasks}`);
 			if (outcome) lines.push(`Outcome: ${failedTasks}`);
 			lines.push('');
-			for (const log in logs) lines.push(log);
+			for (const log of logs) lines.push(log);
 			lines.push('');
 		}
 		return lines.join('\n');

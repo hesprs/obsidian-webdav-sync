@@ -65,7 +65,10 @@
 			"warn",
 			{ "allow": ["**/*.css", "**/*.scss", "**/*.less"] }
 		],
-		"eslint/no-underscore-dangle": ["warn", { "allow": ["__root__"] }],
+		"eslint/no-underscore-dangle": [
+			"warn",
+			{ "allow": ["__root__", "__assign__", "__getModule__"] }
+		],
 		"unicorn/number-literal-case": "off",
 		"eslint/no-multi-assign": "off",
 		"react/jsx-handler-names": "off",

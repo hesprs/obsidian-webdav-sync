@@ -66,7 +66,7 @@ export default function App(props: FileTreeAppProps) {
 										setIcon(element, icon.icon);
 										element.style.color = icon.color;
 										if (!task) return;
-										setTooltip(element, getTaskName(task.name), { delay: 100 });
+										setTooltip(element, task.prettyName, { delay: 100 });
 									}}
 								/>
 								<div class="webdav-sync-file-tree__label">

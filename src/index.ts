@@ -41,7 +41,7 @@ export type PluginContext = Context<
 	'settings' | 'root' | 'events' | 'i18n',
 	{
 		app: App;
-		addCommand: (command: Command) => void;
+		addCommand: (command: Command) => Command;
 		registerEvent: (ref: EventRef) => void;
 		addRibbonIcon: AddRibbonIcon;
 		addStatusBarItem: () => HTMLElement;
@@ -95,18 +95,19 @@ export default class SyncEngine extends Plugin {
 
 	async onload() {
 		Object.assign(this.settings, await this.loadData());
+		// https://github.com/microsoft/TypeScript/issues/62995
+		const preMerge = {
+			addCommand: this.addCommand.bind(this),
+			addRibbonIcon: this.addRibbonIcon.bind(this),
+			addStatusBarItem: this.addStatusBarItem.bind(this),
+			app: this.app,
+			registerEvent: this.registerEvent.bind(this),
+		};
 		this.context = createContext(allModules, {
-			assign: { settings: this.settings },
 			injectKeys: ['settings', 'i18n'],
 			mergeKeys: ['settings', 'root', 'events', 'i18n'],
-			preMerge: {
-				addCommand: this.addCommand.bind(this),
-				addRibbonIcon: this.addRibbonIcon.bind(this),
-				addStatusBarItem: this.addStatusBarItem.bind(this),
-				app: this.app,
-				registerEvent: this.registerEvent.bind(this),
-			},
-		});
+			preMerge,
+		}).__assign__({ settings: this.settings });
 		this.context.loadI18n(getLanguage() as ObsidianLanguageCode);
 		this.context.addSettingTab(this);
 		for (const module of allModules) {

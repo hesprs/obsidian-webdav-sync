@@ -87,7 +87,7 @@ export default class Observability {
 			dispatch: Dispatch;
 			requestSync: (trigger: SyncTrigger) => Promise<void>;
 			showProgress: () => void;
-			addCommand: (command: Command) => void;
+			addCommand: (command: Command) => Command;
 			addRibbonIcon: AddRibbonIcon;
 		},
 	) {
