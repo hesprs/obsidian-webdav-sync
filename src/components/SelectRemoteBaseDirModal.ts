@@ -27,6 +27,8 @@ export default class SelectRemoteBaseDirModal extends Modal {
 						this.plugin.settings.serverUrl,
 						token,
 						target,
+						false,
+						this.plugin.settings.customHeaders,
 					);
 					return items.map((stat) => ({
 						basename: remoteBasename(stat.path),

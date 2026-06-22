@@ -64,6 +64,11 @@ const en = {
 			name: 'Credential',
 			placeholder: 'Enter your credential',
 		},
+		customHeaders: {
+			desc: 'Optional. One per line, as "Header-Name: value". Sent on every WebDAV request.',
+			name: 'Custom headers',
+			placeholder: 'X-Api-Key: abc123',
+		},
 		encryption: {
 			desc: 'Encrypt files before upload and decrypt files when download. Encryption password will be stored in Obsidian keychain.',
 			name: 'Encryption',

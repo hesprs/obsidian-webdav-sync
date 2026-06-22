@@ -35,6 +35,7 @@ export type PluginSettings = {
 	serverUrl: string;
 	account: string;
 	token: string;
+	customHeaders: Record<string, string>;
 	encryption: {
 		enabled: boolean;
 		value: string;

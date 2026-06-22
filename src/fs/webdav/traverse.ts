@@ -28,13 +28,25 @@ export default async function traverse({
 	token,
 	throwIfCancelled,
 }: TraverseWebDAVOptions) {
-	const { filterRules, skipLargeFiles, serverUrl, remoteDir, exhaustiveRemoteTraversal } =
-		await useSettings();
+	const {
+		filterRules,
+		skipLargeFiles,
+		serverUrl,
+		remoteDir,
+		exhaustiveRemoteTraversal,
+		customHeaders,
+	} = await useSettings();
 	const encrypted = (await useSettings()).encryption.enabled;
 	const result: StatsMap = new Map();
 
 	const getContentFunc = (path: string) =>
-		apiLimiter.wrap(getDirectoryContents)(serverUrl, token, path, exhaustiveRemoteTraversal);
+		apiLimiter.wrap(getDirectoryContents)(
+			serverUrl,
+			token,
+			path,
+			exhaustiveRemoteTraversal,
+			customHeaders,
+		);
 
 	const getContent = async (path: string) => {
 		let retryCount = 0;

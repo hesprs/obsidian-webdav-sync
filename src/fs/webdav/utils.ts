@@ -6,9 +6,17 @@ import { getStat } from './api';
 
 export async function statItem(path: string, statPath = path) {
 	const plugin = await usePlugin();
-	return Object.assign(await getStat(plugin.settings.serverUrl, plugin.getToken(), path), {
-		statPath,
-	});
+	return Object.assign(
+		await getStat(
+			plugin.settings.serverUrl,
+			plugin.getToken(),
+			path,
+			plugin.settings.customHeaders,
+		),
+		{
+			statPath,
+		},
+	);
 }
 
 export async function getContent(webdav: WebDAVClient, path: string) {

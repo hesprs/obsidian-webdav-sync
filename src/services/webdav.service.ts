@@ -22,6 +22,7 @@ export class WebDAVService {
 
 	createWebDAVClient(): WebDAVClient {
 		const client = createClient(this.plugin.settings.serverUrl, {
+			headers: this.plugin.settings.customHeaders,
 			password: getCredential(this.plugin),
 			username: this.plugin.settings.account,
 		});

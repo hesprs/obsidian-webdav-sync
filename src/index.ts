@@ -42,6 +42,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		confirmBeforeDeleteInAutoSync: true,
 		confirmBeforeSync: true,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
+		customHeaders: {},
 		encryption: {
 			enabled: false,
 			value: '',

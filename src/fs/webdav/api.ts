@@ -136,11 +136,13 @@ const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8"?>
   </prop>
 </propfind>`;
 
+// oxlint-disable-next-line max-params
 async function propfind(
 	endpoint: string,
 	token: string,
 	url: string,
 	depth: '0' | '1' | 'infinity',
+	customHeaders: Record<string, string> = {},
 ) {
 	let retries = 0;
 	while (true)
@@ -148,6 +150,7 @@ async function propfind(
 			const response = await requestUrl({
 				body: PROPFIND_BODY,
 				headers: {
+					...customHeaders,
 					Authorization: `Basic ${token}`,
 					'Content-Type': 'application/xml',
 					Depth: depth,
@@ -179,12 +182,18 @@ async function propfind(
 		}
 }
 
-export async function getStat(endpoint: string, token: string, path: string): Promise<StatModel> {
+export async function getStat(
+	endpoint: string,
+	token: string,
+	path: string,
+	customHeaders: Record<string, string> = {},
+): Promise<StatModel> {
 	const { items, stripPrefixes } = await propfind(
 		endpoint,
 		token,
 		buildItemUrl(endpoint, path),
 		'0',
+		customHeaders,
 	);
 	const normalizedTargetPath = normalizeRemotePath(path);
 
@@ -197,11 +206,13 @@ export async function getStat(endpoint: string, token: string, path: string): Pr
 	throw new Error(`WebDAV stat not found for ${path}`);
 }
 
+// oxlint-disable-next-line max-params
 export async function getDirectoryContents(
 	endpoint: string,
 	token: string,
 	path: string,
 	infinity = false,
+	customHeaders: Record<string, string> = {},
 ): Promise<Array<StatModel>> {
 	const contents: Array<StatModel> = [];
 	let currentUrl = buildDirectoryUrl(endpoint, path);
@@ -214,6 +225,7 @@ export async function getDirectoryContents(
 				token,
 				currentUrl,
 				infinity ? 'infinity' : '1',
+				customHeaders,
 			);
 
 			const parsedItems = items

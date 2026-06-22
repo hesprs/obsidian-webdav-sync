@@ -24,6 +24,7 @@ test('uses remote-base-aware path when traversing child directories', async () =
 		'token',
 		'/test/',
 		false,
+		undefined,
 	);
 	expect(getDirectoryContentsMock).toHaveBeenNthCalledWith(
 		2,
@@ -31,6 +32,7 @@ test('uses remote-base-aware path when traversing child directories', async () =
 		'token',
 		'/test/webdav-sync/',
 		false,
+		undefined,
 	);
 });
 
@@ -50,5 +52,6 @@ test('skips missing directories during traversal', async () => {
 		'token',
 		'/test/missing/',
 		false,
+		undefined,
 	);
 });

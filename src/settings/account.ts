@@ -5,6 +5,7 @@ import SelectRemoteBaseDirModal from '~/components/SelectRemoteBaseDirModal';
 import t from '~/i18n';
 import { normalizeBaseDir } from '~/platform/path';
 import handleInput from '~/utils/handle-input';
+import parseHeaders from '~/utils/parse-headers';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {
@@ -68,6 +69,28 @@ export default class AccountSettings extends BaseSettings {
 						}
 					}),
 			);
+
+		new Setting(this.containerEl)
+			.setName(t('settings.customHeaders.name'))
+			.setDesc(t('settings.customHeaders.desc'))
+			.addTextArea((textarea) => {
+				const stringify = (h: Record<string, string>) =>
+					Object.entries(h)
+						.map(([k, v]) => `${k}: ${v}`)
+						.join('\n');
+				textarea
+					.setPlaceholder(t('settings.customHeaders.placeholder'))
+					.setValue(stringify(this.plugin.settings.customHeaders));
+				textarea.inputEl.addEventListener('blur', () => {
+					const parsed = parseHeaders(textarea.getValue());
+					if (parsed === false) new Notice(t('settings.invalidValue'));
+					else {
+						this.plugin.settings.customHeaders = parsed;
+						void this.plugin.saveSettings();
+					}
+					textarea.setValue(stringify(this.plugin.settings.customHeaders));
+				});
+			});
 
 		this.displayCheckConnection();
 
