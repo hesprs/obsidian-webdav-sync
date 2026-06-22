@@ -66,6 +66,11 @@ const translation: typeof en = {
 			name: '凭证',
 			placeholder: '输入你的凭证',
 		},
+		customHeaders: {
+			desc: '可选。每行一个，格式为“Header-Name: value”。随每个 WebDAV 请求发送。',
+			name: '自定义标头',
+			placeholder: 'X-Api-Key: abc123',
+		},
 		encryption: {
 			desc: '在上传前加密文件，并在下载时解密文件。密码将存储在 Obsidian 的密钥链中。',
 			name: '加密',

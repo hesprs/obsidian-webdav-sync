@@ -66,6 +66,11 @@ const zhHant: typeof en = {
 			name: '憑證',
 			placeholder: '請輸入憑證',
 		},
+		customHeaders: {
+			desc: '可選。每行一個，格式為「Header-Name: value」。隨每個 WebDAV 請求發送。',
+			name: '自訂標頭',
+			placeholder: 'X-Api-Key: abc123',
+		},
 		encryption: {
 			desc: '上傳前加密檔案，下載時解密檔案。加密密碼將儲存於 Obsidian 鑰匙圈中。',
 			name: '加密',
