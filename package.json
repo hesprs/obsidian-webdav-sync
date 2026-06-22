@@ -10,7 +10,7 @@
 		"build": "tsdown",
 		"ver": "bun scripts/version-bump.ts",
 		"lint": "oxlint --fix --silent && oxfmt",
-		"check": "tsgo && oxlint --format agent && oxfmt --check",
+		"check": "tsc && oxlint --format agent && oxfmt --check",
 		"notes": "bun scripts/release-notes.ts",
 		"tests": "bun --preload=./test/mocks test"
 	},
