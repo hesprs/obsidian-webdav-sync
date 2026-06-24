@@ -111,7 +111,7 @@ Type: both overlay wrapper + injection wrapper for `RemoteFs`
 
 Behavior:
 
-- Receive `() => boolean` in the second argument to detect sync cancellation.
+- Receive `isCancelled: () => boolean` in the second argument to detect sync cancellation.
 - Intercept all methods except `checkConnection()` in `RemoteFs` and `getUid()`.
-- Wrap all method calls with a throw if cancelled at before and after relaying.
-- Wrap `request` in `RemoteFs` with a throw if cancelled at before requests.
+- Wrap all method calls with a throw if cancelled at before and after relaying. Special cases: only check cancellation **before** `read()` & `readStream()` and **after** `write()` & `writeStream()` to prevent cancellation race blocking memory control counter release.
+- Wrap `request` in `RemoteFs` with a throw if cancelled at before and after requests.

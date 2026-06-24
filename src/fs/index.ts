@@ -2,6 +2,7 @@ export { default as baseDirWrapper } from './wrappers/base-dir';
 export { default as commonOptimizationWrapper } from './wrappers/optimization/common-optimization';
 export { remoteContextWrapper, localContextWrapper } from './wrappers/context';
 export { default as encryptionWrapper } from './wrappers/encryption';
+export { localCancellationWrapper, remoteCancellationWrapper } from './wrappers/cancellation';
 export { remoteMemoryControlWrapper, localMemoryControlWrapper } from './wrappers/memory-control';
 export { default as rateLimiterWrapper } from './wrappers/rate-limiter';
 export { default as retryWrapper } from './wrappers/retry';

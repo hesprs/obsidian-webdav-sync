@@ -1,4 +1,4 @@
-This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian and a WebDAV server.
+This is a general-purpose Obsidian syncing plugin to sync vault files between Obsidian and various backends. Extensible via modules.
 
 ## Commands
 

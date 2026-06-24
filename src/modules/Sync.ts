@@ -34,6 +34,7 @@ import {
 	MergeTask,
 	BaseTask,
 	postTraversal,
+	syncCancelledError,
 } from '~/sync';
 import type { Dispatch, On } from './EventBus';
 import type { Translate } from './I18n';
@@ -49,8 +50,6 @@ type SyncTerminateReason =
 export type SyncTrigger = 'manual' | 'nonInteractiveManual' | 'startup' | 'interval' | 'realtime';
 export type TaskInfo = { name: TaskNames; key: string; prettyName: string };
 export type FailedTaskInfo = TaskInfo & { error: string };
-
-const syncCancelledError = new Error('Sync cancelled by user.');
 
 export default class Sync {
 	dispatch: Dispatch;

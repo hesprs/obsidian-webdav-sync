@@ -2,10 +2,12 @@ import type { MemoryDatabase } from 'uni-kv';
 import type { TogglableValue } from '~/types';
 import {
 	commonOptimizationWrapper,
+	localCancellationWrapper,
 	localContextWrapper,
 	localMemoryControlWrapper,
 	localOptimizationWrapper,
 	rateLimiterWrapper,
+	remoteCancellationWrapper,
 	remoteContextWrapper,
 	remoteMemoryControlWrapper,
 	retryWrapper,
@@ -29,6 +31,7 @@ export default class Bootstrap {
 		size: number;
 		resume: () => void;
 	}> = [];
+	private isCancelled = () => false;
 	private memoryConsumption = 0;
 
 	declare readonly i18n: {
@@ -73,6 +76,10 @@ export default class Bootstrap {
 			order: 1000,
 		});
 		registerLocalFsWrapper({ apply: (fs) => localOptimizationWrapper(fs), order: 2000 });
+		registerLocalFsWrapper({
+			apply: (fs) => localCancellationWrapper(fs, this.isCancelled),
+			order: 3000,
+		});
 		registerLocalFsWrapper({ apply: (fs) => localContextWrapper(fs, memoryDB), order: 10_000 });
 
 		registerRemoteFsWrapper({
@@ -85,14 +92,18 @@ export default class Bootstrap {
 			order: 1000,
 		});
 		registerRemoteFsWrapper({ apply: (fs) => commonOptimizationWrapper(fs), order: 2000 });
-		registerRemoteFsWrapper({ apply: (fs) => retryWrapper(fs), order: 3000 });
+		registerRemoteFsWrapper({
+			apply: (fs) => remoteCancellationWrapper(fs, this.isCancelled),
+			order: 3000,
+		});
+		registerRemoteFsWrapper({ apply: (fs) => retryWrapper(fs), order: 4000 });
 		registerRemoteFsWrapper({
 			apply: (fs) =>
 				rateLimiterWrapper(fs, {
 					maxConcurrency: getMaxConcurrency(),
 					minInterval: getMinInterval(),
 				}),
-			order: 4000,
+			order: 5000,
 		});
 		registerRemoteFsWrapper({
 			apply: (fs) => remoteContextWrapper(fs, memoryDB),
@@ -100,8 +111,12 @@ export default class Bootstrap {
 		});
 
 		this.cleanupCallbacks.push(
-			on('syncStarted', () => {
+			on('syncStarted', ({ isCancelled: syncIsCancelled }) => {
+				this.isCancelled = syncIsCancelled;
 				this.hangingOperations.length = this.memoryConsumption = 0;
+			}),
+			on('syncTerminate', () => {
+				this.isCancelled = () => false;
 			}),
 		);
 	}
