@@ -1,8 +1,19 @@
 @unocss;
 
+.scrollbar-hide {
+	scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
 .view-action[aria-disabled='true'] {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.background-none {
+	background: none;
 }
 
 @keyframes webdav-sync-spin {
@@ -131,13 +142,13 @@
 }
 
 @container (max-width: 340px) {
-	.numeric-toggle {
+	.sync-engine-togglable-value {
 		flex-direction: column;
 	}
 }
 
 @container (max-width: 500px) {
-	.is-phone .numeric-toggle {
+	.sync-engine-togglable-value {
 		flex-direction: column;
 	}
 }

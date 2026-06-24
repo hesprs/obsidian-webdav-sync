@@ -92,8 +92,8 @@ Intercepts `list()` (`RemoteFS` only), `listAll()`, and `stat()` calls, obtain f
 Constants (defined in `src/types.ts` and `src/consts.ts`):
 
 - Database name: `STORAGE_NAME`
-- Store meta: `MemoryStorageMeta`
-- Storage schema: `MemoryStorageSchema`
+- Store meta: `MemoryDBMeta`
+- Storage schema: `MemoryDBSchema`
 - Scope: `localStatContext` and `remoteStatContext` stores
 
 Behavior:
@@ -103,3 +103,15 @@ Behavior:
 - On `listAll()`, clear the store and reset according to list result
 - Only once when the wrapper is activated: check if store meta `lastLocalContextUid` or `lastRemoteContextUid` is aligned with the current FS uid, if not, clear target store, and update the meta to the current uid.
 - Intercept `read()` and `readStream()` (`RemoteFs` only) calls, when finding the optional `size?: number` argument is not defined, try to retrieve the size from the store and pass it down. If file even not found in store, keep undefined.
+
+## Cancellation Wrapper
+
+Target: `LocalFs` & `RemoteFs`
+Type: both overlay wrapper + injection wrapper for `RemoteFs`
+
+Behavior:
+
+- Receive `() => boolean` in the second argument to detect sync cancellation.
+- Intercept all methods except `checkConnection()` in `RemoteFs` and `getUid()`.
+- Wrap all method calls with a throw if cancelled at before and after relaying.
+- Wrap `request` in `RemoteFs` with a throw if cancelled at before requests.

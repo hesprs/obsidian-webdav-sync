@@ -7,6 +7,7 @@ import { ConflictStrategy, UnmergeableStrategy } from '~/types';
 import type { ObsidianLanguageCode } from './modules/I18n';
 import type { AddRibbonIcon } from './modules/Observability';
 import type { GlobMatchOptions } from './types';
+import Bootstrap from './modules/Bootstrap';
 import EventBus from './modules/EventBus';
 import I18n from './modules/I18n';
 import Observability from './modules/Observability';
@@ -34,6 +35,7 @@ const allModules = [
 	Observability,
 	Scheduler,
 	ProgressModal,
+	Bootstrap,
 ] as const;
 type AllModules = typeof allModules;
 export type PluginContext = Context<
@@ -57,7 +59,7 @@ export default class SyncEngine extends Plugin {
 		confirmDeleteInAutoSync: true,
 		confirmTasksInSync: true,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,
-		decider: 'twoWay',
+		decider: 'bidirectional',
 		exclusionRules: [
 			'**/.git',
 			'**/.github',
@@ -78,17 +80,16 @@ export default class SyncEngine extends Plugin {
 			this.app.vault.configDir,
 		].map(createGlobMatchOptions),
 		inclusionRules: [],
-		maxFileSize: 31_457_280,
-		maxFileSizeEnabled: false,
+		maxFileSize: { enabled: false, value: 31_457_280 },
+		maxMemoryConsumption: { enabled: true, value: 100 * 1024 ** 2 },
+		maxRequestConcurrency: { enabled: true, value: 50 },
+		minRequestInterval: { enabled: false, value: 0 },
 		noticeStatusOnMobile: true,
-		realtimeSyncDelay: 5000,
-		realtimeSyncEnabled: false,
+		realtimeSync: { enabled: false, value: 5000 },
 		realtimeSyncFastMode: true,
 		remoteFs: '',
-		scheduledSyncEnabled: false,
-		scheduledSyncInterval: 5000,
-		startupSyncDelay: 5000,
-		startupSyncEnabled: false,
+		scheduledSync: { enabled: false, value: 5000 },
+		startupSync: { enabled: false, value: 5000 },
 		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
 		useGitStyle: false,
 	};

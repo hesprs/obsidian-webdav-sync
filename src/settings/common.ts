@@ -1,5 +1,5 @@
 import { Setting } from 'obsidian';
-import t from '~/i18n';
+import t from '~/i18n-old';
 import { ConflictStrategy, UnmergeableStrategy } from '~/types';
 import { UserInputType, generateSettingEntry } from './generate-setting-entry';
 import BaseSettings from './settings.base';

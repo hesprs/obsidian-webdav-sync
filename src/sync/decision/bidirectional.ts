@@ -5,7 +5,7 @@ import type { DeciderInput } from './interface';
 import isChanged from '../utils/is-changed';
 import isMergeablePath from '../utils/is-mergeable-path';
 
-export default function twoWayDecider(input: DeciderInput): Array<BaseTask> {
+export default function bidirectionalDecider(input: DeciderInput): Array<BaseTask> {
 	const { localStats, remoteStats, records, taskFactory, settings, logger } = input;
 
 	const tasks: Array<BaseTask> = [];

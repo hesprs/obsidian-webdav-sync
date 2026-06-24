@@ -11,3 +11,4 @@ export type * from './tasks/interface';
 export type * from './decision/interface';
 export { BaseTask, getTaskColor, getTaskIcon } from './tasks/interface';
 export { default as postTraversal } from './utils/post-traversal';
+export { default as bidirectionalDecider } from './decision/bidirectional';

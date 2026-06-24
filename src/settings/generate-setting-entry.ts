@@ -1,15 +1,11 @@
 import type { TextComponent } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
 import { Notice, Setting } from 'obsidian';
-import type { ToggleNumericSettingsField, PluginSettings } from '~/types';
-import t from '~/i18n';
+import type { TogglableValue, PluginSettings } from '~/types';
+import t from '~/i18n-old';
 import { formatFileSize, formatTime, parseFileSize, parseTime } from '~/utils/unit-converter';
 
-export enum UserInputType {
-	Number = 'number',
-	Time = 'time',
-	FileSize = 'fileSize',
-}
+export type InputType = 'number' | 'time' | 'fileSize';
 
 const MAX_32BIT_VALUE = 2 ** 31 - 1;
 
@@ -29,7 +25,7 @@ export function generateSettingEntry({
 	name: string;
 	desc: string;
 	placeholder: string;
-	field: ToggleNumericSettingsField;
+	field: TogglableValue;
 	type: UserInputType;
 	saveSettings: () => Promise<void>;
 	rejectZero?: boolean;
@@ -37,7 +33,7 @@ export function generateSettingEntry({
 	onToggle?: (value: boolean) => void;
 }) {
 	new Setting(container)
-		.setClass('numeric-toggle')
+		.setClass('sync-engine-togglable-value')
 		.setName(name)
 		.setDesc(desc)
 		.addText((text) => {

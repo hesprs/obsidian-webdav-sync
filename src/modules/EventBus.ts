@@ -74,7 +74,6 @@ export default class EventBus {
 				),
 			),
 			this.on('syncTerminate', (reason) => {
-				this.isIdle(true);
 				const { result } = reason;
 				const thisSync = this.getThisSync();
 				thisSync.outcome = result;
@@ -82,6 +81,7 @@ export default class EventBus {
 				if (result === 'failed')
 					this.putLog(`Sync ended with error: \`${reason.error}\`.`, 'error');
 				else this.putLog(`Sync ended with result: \`${result}\`.`);
+				this.isIdle(true);
 			}),
 		);
 	}
@@ -111,12 +111,10 @@ export default class EventBus {
 		this.subscribers[event]?.forEach((listener) => listener(payload as never));
 	};
 
-	private readonly exportLog = () => {
+	private readonly getLogs = () => {
 		const operatingSystem =
 			Object.entries(OS).find(([, isActive]) => isActive)?.[0] ?? 'Unknown';
 		const lines: Array<string> = [
-			'# Sync Engine Logs',
-			'',
 			`Generated at: ${formatDateTime(Date.now())}`,
 			`Plugin version: ${VERSION}`,
 			`Obsidian API version: ${apiVersion}`,
@@ -147,11 +145,13 @@ export default class EventBus {
 			if (totalTasks) lines.push(`Total tasks: ${totalTasks}`);
 			if (succeededTasks) lines.push(`Succeed: ${succeededTasks}`);
 			if (failedTasks) lines.push(`Failed: ${failedTasks}`);
-			if (outcome) lines.push(`Outcome: ${failedTasks}`);
-			lines.push('');
+			if (outcome) lines.push(`Outcome: \`${outcome}\``);
+			lines.push('Logs:', '');
 			for (const log of logs) lines.push(log);
 			lines.push('');
 		}
+		if (this.generalLogs.length)
+			lines.push('---', '', 'General logs:', '', ...this.generalLogs, '');
 		return lines.join('\n');
 	};
 
@@ -160,5 +160,5 @@ export default class EventBus {
 		if (!this.isIdle()) this.dispatch('syncCanceled');
 	};
 
-	root = { dispatch: this.dispatch, exportLog: this.exportLog, isIdle: this.isIdle, on: this.on };
+	root = { dispatch: this.dispatch, getLogs: this.getLogs, isIdle: this.isIdle, on: this.on };
 }

@@ -27,24 +27,18 @@ export type IndexedDBMeta = {
 	version: number;
 };
 
-type LocalFsWrapperEntry = {
+export type LocalFsWrapperEntry = {
 	order: number;
 	apply: (fs: LocalFs) => LocalFs;
 };
-type RemoteFsWrapperEntry = {
+export type RemoteFsWrapperEntry = {
 	order: number;
 	apply: (fs: RemoteFs) => RemoteFs;
 };
-type RemoteFsEntry = { instantiate: () => RootRemoteFs; prettyName: string };
-type DeciderEntry = { decider: Decider; prettyName: string };
+export type RemoteFsEntry = { instantiate: () => RootRemoteFs; prettyName: string };
+export type DeciderEntry = { decider: Decider; prettyName: string };
 
 export type Infras = Awaited<ReturnType<Storage['initializeSync']>>;
-
-// Private readonly memoryConsumption = 0;
-// 	Private readonly hangingOperations: Array<{
-// 		Size: number;
-// 		Resume: () => void;
-// 	}> = [];
 
 export default class Storage {
 	private readonly memoryDB = openMemoryDB<MemoryDBSchema, MemoryDBMeta>(STORAGE_NAME);
@@ -85,7 +79,7 @@ export default class Storage {
 		const wrappers: Record<number, (fs: RemoteFs) => RemoteFs> = {};
 		for (const { apply, order } of this.remoteFsWrapperRegistry) wrappers[order] = apply;
 		const entry = this.remoteFsRegistry.get(this.settings.remoteFs);
-		if (!entry) throw new Error(`Backend "${this.settings.remoteFs}" not installed!`);
+		if (!entry) throw new Error(`Backend "${this.settings.remoteFs}" is not installed!`);
 		let fs: RemoteFs = entry.instantiate();
 		for (const apply of Object.values(wrappers)) fs = apply(fs);
 		return fs;

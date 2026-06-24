@@ -2,13 +2,12 @@ import type { Stat } from './fs';
 import type { UserOptions } from './utils/glob-match-reusable';
 
 export type General = any;
+export type MaybePromise<T> = Promise<T> | T;
+export type TogglableValue<T = number> = { enabled: boolean; value: T };
 
 export type RecordStat = { isDir: false; local: string; remote: string } | { isDir: true };
-
 export type StatsMap = Map<string, Stat>;
 export type RecordStatsMap = Map<string, RecordStat>;
-
-export type MaybePromise<T> = Promise<T> | T;
 
 export enum ConflictStrategy {
 	DiffMatchPatch = 'diffMatchPatch',

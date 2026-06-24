@@ -2,17 +2,16 @@ import { requestUrl } from 'obsidian';
 import { sleep } from '~/utils/sleep';
 import type { RemoteFs, RemoteFsWrapper } from '../interface';
 import digOriginal from '../utils/dig-original';
+import isRetryableError from '../utils/is-retryable-error';
 
 type RetryOptions = {
 	maxRetry?: number;
-	isRetryable: (error: unknown) => boolean;
+	isRetryable?: (error: unknown) => boolean;
 	retryDelayMs?: number;
 };
 
-function retryWrapper(
-	original: RemoteFs,
-	{ maxRetry = 3, isRetryable, retryDelayMs = 1000 }: RetryOptions,
-): RemoteFs {
+function retryWrapper(original: RemoteFs, options?: RetryOptions): RemoteFs {
+	const { maxRetry = 3, isRetryable = isRetryableError, retryDelayMs = 1000 } = options ?? {};
 	const root = digOriginal(original);
 	const request = root.request;
 	type RequestParam = Parameters<typeof requestUrl>[0];

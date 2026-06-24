@@ -1,6 +1,6 @@
 import type { App, EventRef, TAbstractFile } from 'obsidian';
 import type { Ref } from 'synthkernel';
-import type { GlobMatchOptions } from '~/types';
+import type { GlobMatchOptions, TogglableValue } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import { waitUntil } from '~/utils/sleep';
 import type { SyncStage } from './Observability';
@@ -29,12 +29,9 @@ export default class Scheduler {
 	) {}
 
 	declare settings: {
-		startupSyncEnabled: boolean;
-		startupSyncDelay: number;
-		scheduledSyncEnabled: boolean;
-		scheduledSyncInterval: number;
-		realtimeSyncEnabled: boolean;
-		realtimeSyncDelay: number;
+		startupSync: TogglableValue;
+		scheduledSync: TogglableValue;
+		realtimeSync: TogglableValue;
 		exclusionRules: Array<GlobMatchOptions>;
 		inclusionRules: Array<GlobMatchOptions>;
 	};
@@ -53,13 +50,14 @@ export default class Scheduler {
 			this.ctx.registerEvent(vault.on('modify', this.onChange));
 			this.ctx.registerEvent(vault.on('rename', this.onChange));
 		});
+		const { scheduledSync, startupSync } = this.settings;
 		const schedule = () => {
-			if (this.settings.scheduledSyncEnabled) this.startScheduledSync();
+			if (scheduledSync.enabled) this.startScheduledSync();
 		};
-		if (this.settings.startupSyncEnabled)
+		if (startupSync.enabled)
 			this.startupSyncTimer = window.setTimeout(() => {
 				void this.requestSync('startup').finally(schedule);
-			}, this.settings.startupSyncDelay);
+			}, startupSync.value);
 		else schedule();
 	};
 
@@ -83,7 +81,7 @@ export default class Scheduler {
 		if (this.scheduledSyncTimer) window.clearInterval(this.scheduledSyncTimer);
 		this.scheduledSyncTimer = window.setInterval(
 			() => void this.requestSync('interval'),
-			this.settings.scheduledSyncInterval,
+			this.settings.scheduledSync.value,
 		);
 	};
 
@@ -96,9 +94,8 @@ export default class Scheduler {
 
 	private readonly onChange = (file: TAbstractFile, old?: string) => {
 		if (this.ctx.syncStage() === 'executing') return;
-		const { realtimeSyncDelay, realtimeSyncEnabled, exclusionRules, inclusionRules } =
-			this.settings;
-		if (!realtimeSyncEnabled) return;
+		const { realtimeSync, exclusionRules, inclusionRules } = this.settings;
+		if (!realtimeSync.enabled) return;
 
 		const exclusions = buildRules(exclusionRules);
 		const inclusions = buildRules(inclusionRules);
@@ -111,7 +108,7 @@ export default class Scheduler {
 		if (this.realtimeSyncTimer) window.clearTimeout(this.realtimeSyncTimer);
 		this.realtimeSyncTimer = window.setTimeout(
 			() => void this.requestSync('realtime'),
-			realtimeSyncDelay,
+			realtimeSync.value,
 		);
 	};
 

@@ -1,5 +1,4 @@
-import { defineConfig, presetIcons } from 'unocss';
-import { presetWind3 } from 'unocss/preset-wind3';
+import { defineConfig, presetIcons, presetWind4 } from 'unocss';
 
 export default defineConfig({
 	content: {
@@ -14,19 +13,6 @@ export default defineConfig({
 				},
 			},
 		}),
-		presetWind3(),
-	],
-	rules: [
-		[
-			/^scrollbar-hide$/,
-			([_]) => `.scrollbar-hide{scrollbar-width:none}
-  .scrollbar-hide::-webkit-scrollbar{display:none}`,
-		],
-		[
-			/^scrollbar-default$/,
-			([_]) => `.scrollbar-default{scrollbar-width:auto}
-  .scrollbar-default::-webkit-scrollbar{display:block}`,
-		],
-		[/^background-none$/, () => ({ background: 'none' })],
+		presetWind4({ preflights: { reset: false } }),
 	],
 });

@@ -1,6 +1,6 @@
 import type WebDAVSyncPlugin from '~';
 import { Modal, Setting } from 'obsidian';
-import t from '~/i18n';
+import t from '~/i18n-old';
 import { launchManualSync } from '~/sync';
 
 export default class SyncConfirmModal extends Modal {

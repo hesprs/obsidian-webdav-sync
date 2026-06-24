@@ -1,6 +1,6 @@
 import { Notice, Setting } from 'obsidian';
 import { createVaultFs, createWebdavFs } from '~/fs';
-import t from '~/i18n';
+import t from '~/i18n-old';
 import { clearAllStorage, clearStorageNamespace } from '~/storage';
 import { getStateKey } from '~/sync';
 import logger from '~/utils/logger';

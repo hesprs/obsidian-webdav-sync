@@ -52,9 +52,9 @@ export default class ProgressModal extends Modal {
 				this.renderHideStop();
 			}),
 			ctx.on('taskFailed', (task) => failedTasks.push(task)),
-			ctx.on('syncTerminate', ({ result }) => {
+			ctx.on('syncTerminate', () => {
 				this.renderDone();
-				if (result !== 'failed' || failedTasks.length === 0) return;
+				if (failedTasks.length === 0) return;
 				if (!this.opening) {
 					this.open();
 					this.renderDone();

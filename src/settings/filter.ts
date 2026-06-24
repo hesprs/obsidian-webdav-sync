@@ -1,6 +1,6 @@
 import { Setting } from 'obsidian';
 import FilterEditorModal from '~/components/FilterEditorModal';
-import t from '~/i18n';
+import t from '~/i18n-old';
 import BaseSettings from './settings.base';
 
 export default class FilterSettings extends BaseSettings {

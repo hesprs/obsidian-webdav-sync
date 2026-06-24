@@ -1,3 +1,4 @@
+import type { PluginSettings } from '~';
 import type { LocalFs, Progress, Stat } from '~/fs';
 import type {
 	Decider,
@@ -18,6 +19,7 @@ import type {
 	GlobMatchOptions,
 	RecordStatsMap,
 	StatsMap,
+	TogglableValue,
 	UnmergeableStrategy,
 } from '~/types';
 import {
@@ -33,7 +35,6 @@ import {
 	BaseTask,
 	postTraversal,
 } from '~/sync';
-import type { PluginSettings } from '..';
 import type { Dispatch, On } from './EventBus';
 import type { Translate } from './I18n';
 import type { DeleteConfirmReturn } from './ProgressModal';
@@ -82,8 +83,7 @@ export default class Sync {
 
 	declare readonly settings: {
 		realtimeSyncFastMode: boolean;
-		maxFileSize: number;
-		maxFileSizeEnabled: boolean;
+		maxFileSize: TogglableValue;
 		exclusionRules: Array<GlobMatchOptions>;
 		inclusionRules: Array<GlobMatchOptions>;
 		conflictStrategy: ConflictStrategy;
@@ -97,7 +97,9 @@ export default class Sync {
 		postTraversal({
 			exclusionRules: this.settings.exclusionRules,
 			inclusionRules: this.settings.inclusionRules,
-			maxSize: this.settings.maxFileSizeEnabled ? this.settings.maxFileSize : undefined,
+			maxSize: this.settings.maxFileSize.enabled
+				? this.settings.maxFileSize.value
+				: undefined,
 			stats: toMap(stats),
 		});
 
@@ -137,12 +139,12 @@ export default class Sync {
 
 	private readonly executeSync = async (trigger: SyncTrigger) => {
 		let cancelled = false;
+		let failedCount = 0;
+		let tasks: Array<BaseTask>;
 		const isCancelled = () => cancelled;
 		try {
 			this.dispatch('syncStarted', { isCancelled, trigger });
-			this.on('syncCanceled', () => {
-				cancelled = true;
-			});
+			this.on('syncCanceled', () => (cancelled = true));
 			const { record, localFs, remoteFs } = await this.ctx.initializeSync();
 			const [localList, remoteList, records] = await Promise.all([
 				localFs.listAll('/'),
@@ -174,7 +176,7 @@ export default class Sync {
 				remoteFs,
 				translate: this.ctx.translate,
 			});
-			let tasks = this.ctx.getDecider()({
+			tasks = this.ctx.getDecider()({
 				localStats,
 				logger: (log: string) => this.dispatch('log', log),
 				records,
@@ -227,6 +229,7 @@ export default class Sync {
 						this.dispatch('taskCompleted', toTaskInfo(task));
 					} catch (error) {
 						if (cancelled) return;
+						failedCount++;
 						this.dispatch('taskFailed', {
 							...toTaskInfo(task),
 							error: toErrorMessage(error),
@@ -238,6 +241,11 @@ export default class Sync {
 			this.dispatch('syncTerminate', { result: 'completed' });
 		} catch (error) {
 			if (cancelled) this.dispatch('syncTerminate', { result: 'cancelled' });
+			else if (failedCount)
+				this.dispatch('syncTerminate', {
+					error: `Execution of ${failedCount} tasks failed.`,
+					result: 'failed',
+				});
 			else this.dispatch('syncTerminate', { error: toErrorMessage(error), result: 'failed' });
 		}
 	};
@@ -326,6 +334,6 @@ function extractRemoteRecords(records: RecordStatsMap): Array<Stat> {
 	return res;
 }
 
-function toErrorMessage(error: unknown) {
+export function toErrorMessage(error: unknown) {
 	return error instanceof Error ? error.message : String(error);
 }
