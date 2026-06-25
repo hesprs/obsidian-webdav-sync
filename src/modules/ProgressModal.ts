@@ -188,40 +188,48 @@ export default class ProgressModal extends Modal {
 			total?: number;
 			percent?: number;
 			current?: string;
-		}>(() => {
-			const stage = this.ctx.syncStage();
-			if (stage === 'walkingRemote') {
-				const { completed, current, total } = this.ctx.walkProgress();
-				return {
-					completed,
-					current: current
-						? `${this.t('walkingRemote')} ${current}`
-						: this.t('walkingRemote'),
-					percent: roundPercent(completed, total),
-					total,
-				};
-			} else if (stage === 'executing') {
-				const { completed, current, total } = this.ctx.executionProgress();
-				return {
-					completed,
-					current: current ? `${this.t(current.name)} ${current.key}` : undefined,
-					percent: roundPercent(completed, total),
-					total,
-				};
-			} else if (stage === 'awaitingConfirmation')
-				return {
-					completed: 0,
-					current: this.t('awaitingConfirmation'),
-					percent: 0,
-					total: 1,
-				};
-			else if (stage === 'none') return {};
-			else if (stage === 'cancelled') return { current: this.t('cancelled') };
-			else if (stage === 'completed') return { current: this.t('completed') };
-			else if (stage === 'completedNoop')
-				return { completed: 0, current: this.t('completedNoop'), percent: 100, total: 0 };
-			else return { current: this.t('failed') };
-		});
+		}>(
+			() => {
+				const stage = this.ctx.syncStage();
+				if (stage === 'walkingRemote') {
+					const { completed, current, total } = this.ctx.walkProgress();
+					return {
+						completed,
+						current: current
+							? `${this.t('walkingRemote')} ${current}`
+							: this.t('walkingRemote'),
+						percent: roundPercent(completed, total),
+						total,
+					};
+				} else if (stage === 'executing') {
+					const { completed, current, total } = this.ctx.executionProgress();
+					return {
+						completed,
+						current: current ? `${this.t(current.name)} ${current.key}` : undefined,
+						percent: roundPercent(completed, total),
+						total,
+					};
+				} else if (stage === 'awaitingConfirmation')
+					return {
+						completed: 0,
+						current: this.t('awaitingConfirmation'),
+						percent: 0,
+						total: 1,
+					};
+				else if (stage === 'none') return {};
+				else if (stage === 'cancelled') return { current: this.t('cancelled') };
+				else if (stage === 'completed') return { current: this.t('completed') };
+				else if (stage === 'completedNoop')
+					return {
+						completed: 0,
+						current: this.t('completedNoop'),
+						percent: 100,
+						total: 0,
+					};
+				else return { current: this.t('failed') };
+			},
+			{ deps: [this.ctx.walkProgress, this.ctx.syncStage, this.ctx.executionProgress] },
+		);
 
 		const container = contentEl.createDiv({
 			cls: 'flex flex-col gap-4 max-h-[75vh] pt-3 pb-3',

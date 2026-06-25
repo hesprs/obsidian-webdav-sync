@@ -3,6 +3,7 @@ import type { Translations } from '~';
 const en: Translations = {
 	addRecord: 'Add record',
 	awaitingConfirmation: 'Awaiting confirmation',
+	bidirectional: 'Bidirectional',
 	cancelled: 'Cancelled',
 	completed: 'Completed',
 	completedNoop: 'Already synced',
@@ -25,6 +26,7 @@ const en: Translations = {
 	removeRecord: 'Remove record',
 	removeRemote: 'Remove remote',
 	showProgress: 'Show progress',
+	startNonInteractiveSync: 'Start non-interactive sync',
 	startSync: 'Start sync',
 	stopSync: 'Stop sync',
 	syncProgress: 'Sync progress',

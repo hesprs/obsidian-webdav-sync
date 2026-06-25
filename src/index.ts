@@ -9,6 +9,7 @@ import type { AddRibbonIcon } from './modules/Observability';
 import type { GlobMatchOptions } from './types';
 import Bootstrap from './modules/Bootstrap';
 import EventBus from './modules/EventBus';
+import Extensibility from './modules/Extensibility';
 import I18n from './modules/I18n';
 import Observability from './modules/Observability';
 import ProgressModal from './modules/ProgressModal';
@@ -28,6 +29,7 @@ function createGlobMatchOptions(expr: string) {
 
 const allModules = [
 	EventBus,
+	Extensibility,
 	Settings,
 	Storage,
 	I18n,
@@ -84,6 +86,8 @@ export default class SyncEngine extends Plugin {
 		maxMemoryConsumption: { enabled: true, value: 100 * 1024 ** 2 },
 		maxRequestConcurrency: { enabled: true, value: 50 },
 		minRequestInterval: { enabled: false, value: 0 },
+		moduleSources: [],
+		modules: {},
 		noticeStatusOnMobile: true,
 		realtimeSync: { enabled: false, value: 5000 },
 		realtimeSyncFastMode: true,
@@ -113,7 +117,7 @@ export default class SyncEngine extends Plugin {
 		this.context.addSettingTab(this);
 		for (const module of allModules) {
 			const instance = this.context.__getModule__(module);
-			if ('start' in instance) instance.start();
+			if ('start' in instance) await instance.start();
 		}
 	}
 

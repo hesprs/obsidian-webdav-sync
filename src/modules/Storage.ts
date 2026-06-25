@@ -79,7 +79,10 @@ export default class Storage {
 		const wrappers: Record<number, (fs: RemoteFs) => RemoteFs> = {};
 		for (const { apply, order } of this.remoteFsWrapperRegistry) wrappers[order] = apply;
 		const entry = this.remoteFsRegistry.get(this.settings.remoteFs);
-		if (!entry) throw new Error(`Backend "${this.settings.remoteFs}" is not installed!`);
+		if (!entry) {
+			if (!this.settings.remoteFs) throw new Error(`Please install a backend!`);
+			throw new Error(`Backend "${this.settings.remoteFs}" is not installed!`);
+		}
 		let fs: RemoteFs = entry.instantiate();
 		for (const apply of Object.values(wrappers)) fs = apply(fs);
 		return fs;

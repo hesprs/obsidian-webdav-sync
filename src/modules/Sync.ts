@@ -306,16 +306,11 @@ function createTaskFactory(
 function partition<T, U extends T>(
 	items: ReadonlyArray<T>,
 	predicate: (item: T, index: number) => item is U,
-): [Array<U>, Array<Exclude<T, U>>];
-
-function partition<T>(
-	items: ReadonlyArray<T>,
-	predicate: (item: T, index: number) => boolean,
-): [Array<T>, Array<T>] {
+): [Array<U>, Array<Exclude<T, U>>] {
 	const truthy: Array<T> = [];
 	const falsy: Array<T> = [];
 	for (let i = 0; i < items.length; i++) (predicate(items[i], i) ? truthy : falsy).push(items[i]);
-	return [truthy, falsy];
+	return [truthy as Array<U>, falsy as Array<Exclude<T, U>>];
 }
 
 function toTaskInfo(task: BaseTask): TaskInfo {

@@ -75,6 +75,7 @@ export default class Observability {
 		cancelled: string;
 		failed: string;
 		startSync: string;
+		startNonInteractiveSync: string;
 		stopSync: string;
 		showProgress: string;
 		exportLogs: string;
@@ -204,9 +205,21 @@ export default class Observability {
 					}
 					void this.ctx.requestSync('manual');
 				},
-				icon: 'refresh-cw',
+				icon: 'refresh-ccw',
 				id: 'start-sync',
 				name: this.t('startSync'),
+			},
+			{
+				checkCallback: (checking: boolean) => {
+					if (checking) {
+						if (!this.ctx.isIdle()) return false;
+						return true;
+					}
+					void this.ctx.requestSync('nonInteractiveManual');
+				},
+				icon: 'refresh-ccw-dot',
+				id: 'start-non-interactive-sync',
+				name: this.t('startNonInteractiveSync'),
 			},
 			{
 				checkCallback: (checking: boolean) => {

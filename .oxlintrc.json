@@ -67,7 +67,7 @@
 		],
 		"eslint/no-underscore-dangle": [
 			"warn",
-			{ "allow": ["__root__", "__assign__", "__getModule__"] }
+			{ "allow": ["__root__", "__assign__", "__getModule__", "__addModule__"] }
 		],
 		"unicorn/number-literal-case": "off",
 		"eslint/no-multi-assign": "off",

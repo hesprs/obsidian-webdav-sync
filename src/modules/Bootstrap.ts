@@ -56,9 +56,19 @@ export default class Bootstrap {
 			translate: Translate;
 		},
 	) {
-		const { registerI18n, registerLocalFsWrapper, registerRemoteFsWrapper, on, memoryDB } = ctx;
+		ctx.registerI18n('en', en);
+	}
+
+	readonly start = () => {
+		const {
+			registerLocalFsWrapper,
+			registerRemoteFsWrapper,
+			on,
+			memoryDB,
+			registerDecider,
+			translate: t,
+		} = this.ctx;
 		const { maxMemoryConsumption, maxRequestConcurrency, minRequestInterval } = this.settings;
-		registerI18n('en', en);
 
 		const getMaxMemory = () =>
 			maxMemoryConsumption.enabled ? maxMemoryConsumption.value : Infinity;
@@ -111,18 +121,15 @@ export default class Bootstrap {
 		});
 
 		this.cleanupCallbacks.push(
-			on('syncStarted', ({ isCancelled: syncIsCancelled }) => {
-				this.isCancelled = syncIsCancelled;
+			on('syncStarted', ({ isCancelled }) => {
+				this.isCancelled = isCancelled;
 				this.hangingOperations.length = this.memoryConsumption = 0;
 			}),
 			on('syncTerminate', () => {
 				this.isCancelled = () => false;
 			}),
 		);
-	}
 
-	readonly start = () => {
-		const { registerDecider, translate: t } = this.ctx;
 		registerDecider('bidirectional', {
 			decider: bidirectionalDecider,
 			prettyName: t('bidirectional'),
