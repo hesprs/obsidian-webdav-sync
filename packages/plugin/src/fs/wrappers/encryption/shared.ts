@@ -1,0 +1,115 @@
+import { sha256Digest } from '@/utils/crypto';
+
+const textEncoder = new TextEncoder();
+const EMPTY_SALT = new ArrayBuffer(0);
+
+const DECRYPTION_ERROR_MESSAGE = 'data corrupted or wrong password';
+export const MASTER_KEY_LENGTH = 32;
+export const MASTER_SALT_LENGTH = 16;
+export const FILE_SALT_LENGTH = 16;
+export const AES_GCM_TAG_LENGTH = 16;
+export const CONTENT_CHUNK_SIZE = 128 * 1024;
+const ENCRYPTED_CONTENT_CHUNK_SIZE = CONTENT_CHUNK_SIZE + AES_GCM_TAG_LENGTH;
+const FILE_KEY_INFO = 'file-key-v1';
+
+export async function deriveFileKey(
+	rootFileKey: ArrayBuffer,
+	fileSalt: ArrayBuffer,
+	encryptedFileSize: number,
+	virtualPath: string,
+): Promise<ArrayBuffer> {
+	const fileKeySalt = await sha256Digest(
+		concatArrayBuffer(
+			fileSalt,
+			encodeUInt96(encryptedFileSize),
+			toArrayBuffer(textEncoder.encode(virtualPath)),
+		),
+	);
+	return deriveHkdfKey(rootFileKey, FILE_KEY_INFO, fileKeySalt);
+}
+
+export async function deriveHkdfKey(
+	masterKey: ArrayBuffer,
+	info: string,
+	salt: ArrayBuffer = EMPTY_SALT,
+): Promise<ArrayBuffer> {
+	const keyMaterial = await crypto.subtle.importKey('raw', masterKey, 'HKDF', false, [
+		'deriveBits',
+	]);
+	return await crypto.subtle.deriveBits(
+		{
+			hash: 'SHA-256',
+			info: textEncoder.encode(info),
+			name: 'HKDF',
+			salt,
+		},
+		keyMaterial,
+		MASTER_KEY_LENGTH * 8,
+	);
+}
+
+export async function importAesGcmKey(key: ArrayBuffer): Promise<CryptoKey> {
+	return await crypto.subtle.importKey('raw', key, 'AES-GCM', false, ['encrypt', 'decrypt']);
+}
+
+export async function decryptContentChunk(
+	key: CryptoKey,
+	encryptedChunk: ArrayBuffer,
+	chunkIndex: number,
+): Promise<ArrayBuffer> {
+	try {
+		return await crypto.subtle.decrypt(
+			{ iv: encodeUInt96(chunkIndex), name: 'AES-GCM' },
+			key,
+			encryptedChunk,
+		);
+	} catch {
+		throw new Error(DECRYPTION_ERROR_MESSAGE);
+	}
+}
+
+export function getEncryptedChunkCount(encryptedFileSize: number): number {
+	if (encryptedFileSize < FILE_SALT_LENGTH) throw new Error(DECRYPTION_ERROR_MESSAGE);
+	const encryptedPayloadSize = encryptedFileSize - FILE_SALT_LENGTH;
+	if (encryptedPayloadSize === 0) return 0;
+	return Math.ceil(encryptedPayloadSize / ENCRYPTED_CONTENT_CHUNK_SIZE);
+}
+
+export function getEncryptedChunkSize(chunkIndex: number, encryptedFileSize: number): number {
+	const chunkCount = getEncryptedChunkCount(encryptedFileSize);
+	if (chunkIndex < 0 || chunkIndex >= chunkCount) throw new Error(DECRYPTION_ERROR_MESSAGE);
+	if (chunkIndex < chunkCount - 1) return ENCRYPTED_CONTENT_CHUNK_SIZE;
+
+	const encryptedPayloadSize = encryptedFileSize - FILE_SALT_LENGTH;
+	return encryptedPayloadSize - ENCRYPTED_CONTENT_CHUNK_SIZE * (chunkCount - 1);
+}
+
+export function encodeUInt96(value: number): ArrayBuffer {
+	if (!Number.isSafeInteger(value) || value < 0)
+		throw new Error('Value must be a non-negative safe integer');
+	let remainder = value;
+	const result = new Uint8Array(12);
+	for (let index = result.length - 1; index >= 0; index -= 1) {
+		result[index] = remainder & 0xff;
+		remainder = Math.floor(remainder / 256);
+	}
+	return result.buffer;
+}
+
+export function concatArrayBuffer(...arrays: Array<ArrayBuffer>): ArrayBuffer {
+	const totalLength = arrays.reduce((sum, array) => sum + array.byteLength, 0);
+	const buffer = new ArrayBuffer(totalLength);
+	const result = new Uint8Array(buffer);
+	let offset = 0;
+	for (const array of arrays) {
+		result.set(new Uint8Array(array), offset);
+		offset += array.byteLength;
+	}
+	return buffer;
+}
+
+export function toArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+	const result = new ArrayBuffer(bytes.byteLength);
+	new Uint8Array(result).set(bytes);
+	return result;
+}

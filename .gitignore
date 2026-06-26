@@ -1,5 +1,5 @@
 plans
-
-node_modules
 .ignore
-dist
+**/dist
+**/.turbo
+**/node_modules

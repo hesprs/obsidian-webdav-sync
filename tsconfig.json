@@ -1,9 +1,5 @@
 {
 	"compilerOptions": {
-		"paths": {
-			"~/*": ["./src/*"],
-			"~": ["./src"]
-		},
 		"allowSyntheticDefaultImports": true,
 		"target": "ESNext",
 		"module": "ESNext",
@@ -20,8 +16,6 @@
 		"verbatimModuleSyntax": true,
 		"allowImportingTsExtensions": true,
 		"lib": ["ESNext", "DOM", "DOM.Iterable"],
-		"outDir": "dist",
 		"types": ["bun"]
 	},
-	"include": ["**/*.ts"]
 }

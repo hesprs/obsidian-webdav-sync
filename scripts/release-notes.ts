@@ -1,4 +1,4 @@
-const CHANGELOG_PATH = 'CHANGELOG.md';
+const CHANGELOG_PATH = 'packages/plugin/CHANGELOG.md';
 const OUTPUT_PATH = 'release-notes.md';
 
 function getSemVer(version: string): string {

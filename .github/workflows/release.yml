@@ -3,7 +3,7 @@ name: Release Plugin
 on:
   push:
     tags:
-      - '*'
+      - "*"
 
 permissions:
   contents: write
@@ -47,9 +47,9 @@ jobs:
         uses: actions/attest@v4.1.0
         with:
           subject-path: |
-            dist/main.js
-            dist/manifest.json
-            dist/styles.css
+            packages/plugin/dist/main.js
+            packages/plugin/dist/manifest.json
+            packages/plugin/dist/styles.css
 
       - name: Create release
         env:
@@ -65,4 +65,6 @@ jobs:
             --title="$tag" \
             --notes-file=release-notes.md \
             $prerelease_flag \
-            dist/main.js dist/manifest.json dist/styles.css
+            packages/plugin/dist/main.js\
+            packages/plugin/dist/manifest.json\
+            packages/plugin/dist/styles.css

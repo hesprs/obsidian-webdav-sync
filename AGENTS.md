@@ -1,19 +1,21 @@
-This is a general-purpose Obsidian syncing plugin to sync vault files between Obsidian and various backends. Extensible via modules.
+This is the monorepo for an extensible Obsidian syncing plugin to sync vault files between Obsidian and various backends. The plugin itself and modules are in `packages/`.
 
 ## Commands
 
 - `bun lint`: format and fix fixable lint errors (always run before `bun check`).
 - `bun check`: check types, lint and format (no file change).
 - `bun dev`: fast build for daily debug.
-- `bun tests`: run all tests. (automatically loads Obsidian mocks. It's `tests`, do not use `bun test`)
+- `bun tests`: run all tests.
 - `bun tests <test path>`: run tests in specific file.
+- `bun <command> -F <package-name>`: run command targeting a specific package.
+
+## Packages
+
+- Plugin & plugin SDK: `packages/plugin/`, package name `@hesprs/sync-engine-sdk`.
+- WebDAV module: `packages/webdav/`, package name `webdav`.
 
 ## Code Quality
 
 - For mobile compatibility, using any Node API is prohibited.
 - Use sentence case for UI text.
 - All Obsidian API mocks go `test/mocks/obsidian.ts`.
-
-## Repository Map
-
-A full codemap is available at `codemap.md` in the project root. Before working on any task, read `codemap.md` to understand the project. For deep work on a specific folder, also read that folder's `codemap.md`.

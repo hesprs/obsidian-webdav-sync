@@ -1,4 +1,6 @@
-const targetVersion = Bun.env.npm_package_version ?? '1.0.0';
+import pkg from '../packages/plugin/package.json' with { type: 'json' };
+
+const targetVersion = pkg.version;
 
 // Read minAppVersion from manifest.json and bump version to target version
 const manifest = JSON.parse(await Bun.file('manifest.json').text()) as {

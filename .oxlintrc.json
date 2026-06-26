@@ -38,7 +38,7 @@
 		],
 		"unicorn/prefer-global-this": "off",
 		"eslint/no-new": "off",
-		"eslint/sort-imports": "off", // disable temporarily since it is glitchy
+		"eslint/sort-imports": "off",
 		"eslint/no-duplicate-imports": ["warn", { "allowSeparateTypeImports": true }],
 		"eslint/new-cap": "off",
 		"typescript/consistent-type-imports": "off",
@@ -110,8 +110,5 @@
 			}
 		}
 	],
-	"ignorePatterns": ["**/node_modules/**", "**/dist/**"],
-	"options": {
-		"typeAware": true
-	}
+	"ignorePatterns": ["**/node_modules/**", "**/dist/**"]
 }
