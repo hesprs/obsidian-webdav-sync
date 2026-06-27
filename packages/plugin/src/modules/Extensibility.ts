@@ -94,7 +94,7 @@ export default class Extensibility {
 		await executeOperations();
 	};
 
-	private readonly loadModule = async <N extends string>(name: N) => {
+	private readonly loadModule = async <N extends string>(name: N, start = false) => {
 		const { dispatch, translate, app, __addModule__, __getModule__, allModules } = this.ctx;
 		dispatch('log', `Loading module \`${name}\`.`);
 		try {
@@ -111,6 +111,8 @@ export default class Extensibility {
 			} else settings[name] = instance.moduleSettings;
 			this.modules[name].ctor = module;
 			allModules.add(module);
+			if (start && 'start' in instance && typeof instance.start === 'function')
+				instance.start();
 		} catch (error) {
 			const message = toErrorMessage(error);
 			dispatch('log', `Module \`${name}\` failed to load: ${message}`);

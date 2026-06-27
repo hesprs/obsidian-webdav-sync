@@ -23,6 +23,15 @@ type DerivedKeys = {
 	rootFileKey: ArrayBuffer;
 };
 
+type EncryptionDBSchema = {
+	decryptedToEncrypted: string;
+	encryptedToDecrypted: string;
+};
+type EncryptionDBMeta = {
+	encryptionKeys: DerivedKeys;
+	lastEncryptionUid: string;
+};
+
 class EncryptionRemoteFs implements WrappedRemoteFs {
 	private readonly pathCache: EncryptionPathCache = {
 		decryptedToEncrypted: new Map(),

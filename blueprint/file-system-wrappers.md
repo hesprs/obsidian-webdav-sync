@@ -101,7 +101,7 @@ Behavior:
 - Eavesdrop on stat operations (`list()`, `listAll()`, `stat()`)
 - On `list()` or `stat()`, upsert the returned stat into the KV store
 - On `listAll()`, clear the store and reset according to list result
-- Only once when the wrapper is activated: check if store meta `lastLocalContextUid` or `lastRemoteContextUid` is aligned with the current FS uid, if not, clear target store, and update the meta to the current uid.
+- Only once when the wrapper is activated: check if store meta `lastLocalContextUid` or `lastRemoteContextUid` is aligned with the current FS uid. If not, clear target store, and update the meta to the current uid.
 - Intercept `read()` and `readStream()` (`RemoteFs` only) calls, when finding the optional `size?: number` argument is not defined, try to retrieve the size from the store and pass it down. If file even not found in store, keep undefined.
 
 ## Cancellation Wrapper

@@ -2,9 +2,9 @@
 	"id": "sync-engine",
 	"name": "Sync Engine",
 	"version": "3.0.0",
-	"minAppVersion": "1.12.3",
+	"minAppVersion": "1.13.0",
 	"authorUrl": "https://hesprs.github.io",
-	"description": "General-purpose & bidirectional WebDAV syncing for your vault. Designed for stability and robust file handling without vendor lock-in.",
+	"description": "Next generation syncing for your vault. Designed for maximum performance and extensibility.",
 	"author": "Hēsperus",
 	"isDesktopOnly": false
 }
