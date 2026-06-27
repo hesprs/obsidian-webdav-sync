@@ -2,6 +2,7 @@ import type { Context } from '@';
 
 export { default as testKit } from './test-utils';
 export { default as obsidianBridge } from './obsidian-bridge';
+export { default as digOriginal } from '@/fs/utils/dig-original';
 
 export type { Translate } from '@/modules/I18n';
 export type { Dispatch, On } from '@/modules/EventBus';
