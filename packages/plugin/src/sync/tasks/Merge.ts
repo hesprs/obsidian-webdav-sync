@@ -5,9 +5,7 @@ import { resolveByIntelligentMerge } from '../utils/merge';
 import mergeDigIn from '../utils/merge-dig-in';
 import { BaseTask } from './interface';
 
-export default class MergeTask extends BaseTask<OptionsWithBothFileStatsAndSettings> {
-	readonly name = 'merge';
-
+export default class Merge extends BaseTask<OptionsWithBothFileStatsAndSettings> {
 	async exec() {
 		let localBuffer, remoteBuffer: ArrayBuffer;
 

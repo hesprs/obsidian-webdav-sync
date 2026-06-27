@@ -46,19 +46,19 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 		function commonRoutes(strategy: UnmergeableStrategy | ConflictStrategy) {
 			if (strategy === UnmergeableStrategy.Skip) return;
 			if (strategy === UnmergeableStrategy.KeepLocal) {
-				tasks.push(taskFactory.createPushTask({ key, local }));
+				tasks.push(taskFactory('upload', { key, local }));
 				return true;
 			}
 			if (strategy === UnmergeableStrategy.KeepRemote) {
-				tasks.push(taskFactory.createPullTask({ key, remote }));
+				tasks.push(taskFactory('download', { key, remote }));
 				return true;
 			}
 			if (strategy === UnmergeableStrategy.LatestTimeStamp) {
 				if (local.mtime >= remote.mtime) {
-					tasks.push(taskFactory.createPushTask({ key, local }));
+					tasks.push(taskFactory('upload', { key, local }));
 					return true;
 				}
-				tasks.push(taskFactory.createPullTask({ key, remote }));
+				tasks.push(taskFactory('download', { key, remote }));
 				return true;
 			}
 			return false;
@@ -67,7 +67,7 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 		if (strategy === ConflictStrategy.DiffMatchPatch && !isMergeablePath(local.key))
 			commonRoutes(unmergeableStrategy);
 		else if (!commonRoutes(strategy))
-			tasks.push(taskFactory.createMergeTask({ key, local, remote, settings }));
+			tasks.push(taskFactory('merge', { key, local, remote, settings }));
 	};
 
 	// * Sync files
@@ -127,7 +127,7 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 			NORECORD_NOREMOTE_LOCAL_PUSH: () => {
 				if (!local) return;
 				logger(`Decider: push \`${key}\`, reason: local exists, no remote.`);
-				tasks.push(taskFactory.createPushTask({ key, local }));
+				tasks.push(taskFactory('upload', { key, local }));
 			},
 			NORECORD_REMOTE_LOCAL_CONFLICT: () => {
 				if (!remote || !local) return;
@@ -143,22 +143,22 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 			NORECORD_REMOTE_LOCAL_RECORD: () => {
 				if (!local || !remote) return;
 				logger(`Decider: add record \`${key}\`, reason: local remote exist, no record.`);
-				tasks.push(taskFactory.createAddRecordTask({ key, local, remote }));
+				tasks.push(taskFactory('addRecord', { key, local, remote }));
 			},
 			NORECORD_REMOTE_NOLOCAL_PULL: () => {
 				if (!remote) return;
 				logger(`Decider: pull \`${key}\`, reason: remote exists, no local.`);
-				tasks.push(taskFactory.createPullTask({ key, remote }));
+				tasks.push(taskFactory('download', { key, remote }));
 			},
 			RECORD_NOREMOTE_LOCAL_PUSH: () => {
 				if (!local) return;
 				logger(`Decider: push \`${key}\`, reason: local changed, no remote.`);
-				tasks.push(taskFactory.createPushTask({ key, local }));
+				tasks.push(taskFactory('upload', { key, local }));
 			},
 			RECORD_NOREMOTE_LOCAL_REMOVE: () => {
 				if (!local) return;
 				logger(`Decider: remove local \`${key}\`, reason: local exists, remote deleted.`);
-				tasks.push(taskFactory.createRemoveLocalTask({ key, local }));
+				tasks.push(taskFactory('removeLocal', { key, local }));
 				return;
 			},
 			RECORD_REMOTE_LOCAL_CONFLICT: () => {
@@ -175,22 +175,22 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 			RECORD_REMOTE_LOCAL_PULL: () => {
 				if (!remote || !local) return;
 				logger(`Decider: pull \`${key}\`, reason: remote changed.`);
-				tasks.push(taskFactory.createPullTask({ key, remote }));
+				tasks.push(taskFactory('download', { key, remote }));
 			},
 			RECORD_REMOTE_LOCAL_PUSH: () => {
 				if (!remote || !local) return;
 				logger(`Decider: push \`${key}\`, reason: local changed.`);
-				tasks.push(taskFactory.createPushTask({ key, local }));
+				tasks.push(taskFactory('upload', { key, local }));
 			},
 			RECORD_REMOTE_NOLOCAL_PULL: () => {
 				if (!remote) return;
 				logger(`Decider: pull \`${key}\`, reason: remote changed, no local.`);
-				tasks.push(taskFactory.createPullTask({ key, remote }));
+				tasks.push(taskFactory('download', { key, remote }));
 			},
 			RECORD_REMOTE_NOLOCAL_REMOVE: () => {
 				if (!remote) return;
 				logger(`Decider: remove remote \`${key}\`, reason: remote exists, local deleted.`);
-				tasks.push(taskFactory.createRemoveRemoteTask({ key, remote }));
+				tasks.push(taskFactory('removeRemote', { key, remote }));
 			},
 		};
 
@@ -239,38 +239,38 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 			LOCAL_NOREMOTE_NORECORD_PUSH: () => {
 				if (!local) return;
 				logger(`Decider: mkdir remote \`${key}\`, reason: local exists, no remote.`);
-				tasks.push(taskFactory.createMkdirRemoteTask({ key, local }));
+				tasks.push(taskFactory('createRemoteDir', { key, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_PUSH: () => {
 				if (!local) return;
 				logger(`Decider: mkdir remote \`${key}\`, reason: local folder content changed.`);
-				tasks.push(taskFactory.createMkdirRemoteTask({ key, local }));
+				tasks.push(taskFactory('createRemoteDir', { key, local }));
 			},
 			LOCAL_NOREMOTE_RECORD_REMOVE: () => {
 				if (!local) return;
 				logger(`Decider: rmdir local \`${key}\`, reason: local exists, remote deleted.`);
-				tasks.push(taskFactory.createRemoveLocalTask({ key, local }));
+				tasks.push(taskFactory('removeLocal', { key, local }));
 			},
 			LOCAL_REMOTE_NORECORD_RECORD: () => {
 				if (!local || !remote) return;
 				logger(`Decider: create record \`${key}\`, reason: local remote exist, no record.`);
-				tasks.push(taskFactory.createAddRecordTask({ key, local, remote }));
+				tasks.push(taskFactory('addRecord', { key, local, remote }));
 			},
 			NONE: () => {},
 			REMOTE_NOLOCAL_NORECORD_PULL: () => {
 				if (!remote) return;
 				logger(`Decider: mkdir local \`${key}\`, reason: remote exists, no local.`);
-				tasks.push(taskFactory.createMkdirLocalTask({ key, remote }));
+				tasks.push(taskFactory('createLocalDir', { key, remote }));
 			},
 			REMOTE_NOLOCAL_RECORD_PULL: () => {
 				if (!remote) return;
 				logger(`Decider: mkdir local \`${key}\`, reason: remote folder content changed.`);
-				tasks.push(taskFactory.createMkdirLocalTask({ key, remote }));
+				tasks.push(taskFactory('createLocalDir', { key, remote }));
 			},
 			REMOTE_NOLOCAL_RECORD_REMOVE: () => {
 				if (!remote) return;
 				logger(`Decider: rmdir remote \`${key}\`, reason: remote exists, no local.`);
-				tasks.push(taskFactory.createRemoveRemoteTask({ key, remote }));
+				tasks.push(taskFactory('removeRemote', { key, remote }));
 			},
 		};
 
@@ -314,8 +314,8 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 					`Decider: replace remote file \`${key}\` with local directory, reason: local changed, remote exists.`,
 				);
 				tasks.push(
-					taskFactory.createRemoveRemoteTask({ key, remote }),
-					taskFactory.createMkdirRemoteTask({ key, local }),
+					taskFactory('removeRemote', { key, remote }),
+					taskFactory('createRemoteDir', { key, local }),
 				);
 			},
 			LOCAL_FILE_PUSH: () => {
@@ -324,8 +324,8 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 					`Decider: replace remote directory \`${key}\` with local file, reason: local changed, remote exists.`,
 				);
 				tasks.push(
-					taskFactory.createRemoveRemoteTask({ key, remote }),
-					taskFactory.createPushTask({ key, local }),
+					taskFactory('removeRemote', { key, remote }),
+					taskFactory('upload', { key, local }),
 				);
 			},
 			REMOTE_DIR_PULL: () => {
@@ -334,8 +334,8 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 					`Decider: replace local file \`${key}\` with local directory, reason: remote changed, local exists.`,
 				);
 				tasks.push(
-					taskFactory.createRemoveLocalTask({ key, local }),
-					taskFactory.createMkdirLocalTask({ key, remote }),
+					taskFactory('removeLocal', { key, local }),
+					taskFactory('createLocalDir', { key, remote }),
 				);
 			},
 			REMOTE_FILE_PULL: () => {
@@ -344,8 +344,8 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 					`Decider: replace local directory \`${key}\` with remote file, reason: remote changed, local exists.`,
 				);
 				tasks.push(
-					taskFactory.createRemoveLocalTask({ key, local }),
-					taskFactory.createMkdirLocalTask({ key, remote }),
+					taskFactory('removeLocal', { key, local }),
+					taskFactory('createLocalDir', { key, remote }),
 				);
 			},
 		};
@@ -355,7 +355,7 @@ export default function bidirectionalDecider(input: DeciderInput): Array<BaseTas
 
 	for (const key of removeRecords) {
 		logger(`Decider: cleaning record ${key}, reason: local remote deleted.`);
-		tasks.push(taskFactory.createCleanRecordTask({ key }));
+		tasks.push(taskFactory('removeRecord', { key }));
 	}
 
 	return tasks;

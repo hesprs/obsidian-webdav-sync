@@ -1,8 +1,6 @@
 import { BaseTask } from './interface';
 
-export default class RemoveRecordTask extends BaseTask {
-	readonly name = 'removeRecord';
-
+export default class RemoveRecord extends BaseTask {
 	async exec() {
 		await this.record.removeRecords(this.key);
 	}

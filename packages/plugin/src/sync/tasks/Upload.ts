@@ -3,9 +3,7 @@ import type { OptionsWithLocalFileStat } from '../decision/interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask } from './interface';
 
-export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
-	readonly name = 'upload';
-
+export default class Upload extends BaseTask<OptionsWithLocalFileStat> {
 	async exec() {
 		let localContent: ArrayBuffer;
 		try {

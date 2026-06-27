@@ -1,19 +1,6 @@
 import type { Events, Settings, Translations } from '@';
 import type { LocalFs } from '@/fs';
-import type {
-	Decider,
-	OptionsWithBothFileStatsAndSettings,
-	OptionsWithBothStats,
-	OptionsWithLocalFileStat,
-	OptionsWithLocalFolderStat,
-	OptionsWithLocalStat,
-	OptionsWithRemoteFileStat,
-	OptionsWithRemoteFolderStat,
-	OptionsWithRemoteStat,
-	TaskOptions,
-	TaskFactory,
-	TaskNames,
-} from '@/sync';
+import type { Decider, TaskFactory, TaskNames, TaskOptionsMap } from '@/sync';
 import type {
 	ConflictStrategy,
 	GlobMatchOptions,
@@ -25,18 +12,15 @@ import type {
 	UnmergeableStrategy,
 } from '@/types';
 import {
-	RemoveLocalTask,
-	RemoveRemoteTask,
-	MkdirLocalTask,
-	MkdirRemoteTask,
-	PushTask,
-	PullTask,
-	AddRecordTask,
-	RemoveRecordTask,
-	MergeTask,
+	RemoveLocal,
+	CreateRemoteDir,
+	Upload,
+	AddRecord,
+	RemoveRecord,
 	BaseTask,
 	postTraversal,
 	syncCancelledError,
+	taskMap,
 } from '@/sync';
 import type { Dispatch, On } from './EventBus';
 import type { Translate } from './I18n';
@@ -74,7 +58,7 @@ export default class Sync {
 		syncStarted: { isCancelled: () => boolean; trigger: SyncTrigger };
 		remoteWalkProgress: Progress;
 		syncTerminate: SyncTerminateReason;
-		requestConfirmDelete: Array<RemoveLocalTask>;
+		requestConfirmDelete: Array<RemoveLocal>;
 		requestConfirmTasks: Array<BaseTask>;
 		syncCanceled: undefined;
 		taskCompleted: TaskInfo;
@@ -120,7 +104,7 @@ export default class Sync {
 			this.dispatch('requestConfirmTasks', tasks);
 		});
 
-	private readonly confirmDeletion = (tasks: Array<RemoveLocalTask>) =>
+	private readonly confirmDeletion = (tasks: Array<RemoveLocal>) =>
 		new Promise<DeleteConfirmReturn>((resolve, reject) => {
 			const unsub1 = this.on('deleteConfirmed', (result) => {
 				cleanup();
@@ -157,7 +141,7 @@ export default class Sync {
 								);
 							} catch (error) {
 								if (await remoteFs.exists('/')) throw error;
-								this.dispatch('log', 'Remote root deleted, recreating.')
+								this.dispatch('log', 'Remote root deleted, recreating.');
 								await Promise.all([remoteFs.mkdir('/', true), record.drop()]);
 								return [];
 							}
@@ -171,12 +155,10 @@ export default class Sync {
 				`Local ${localStats.size} items, remote ${remoteStats.size} items, record ${records.size} items.`,
 			);
 
-			const taskFactory = createTaskFactory({
-				localFs,
-				record,
-				remoteFs,
-				translate: this.ctx.translate,
-			});
+			const taskFactory = createTaskFactory(
+				{ localFs, record, remoteFs },
+				this.ctx.translate,
+			);
 			tasks = this.ctx.getDecider()({
 				localStats,
 				logger: (log: string) => this.dispatch('log', log),
@@ -193,7 +175,7 @@ export default class Sync {
 
 			const [nonDisplayableTasks, displayableTasks] = partition(
 				tasks,
-				(task) => task instanceof AddRecordTask || task instanceof RemoveRecordTask,
+				(task) => task instanceof AddRecord || task instanceof RemoveRecord,
 			);
 			if (
 				trigger === 'manual' &&
@@ -206,7 +188,7 @@ export default class Sync {
 
 			const [removeLocalTasks, otherTasks] = partition(
 				tasks,
-				(task) => task instanceof RemoveLocalTask,
+				(task) => task instanceof RemoveLocal,
 			);
 			if (
 				trigger !== 'manual' &&
@@ -239,20 +221,20 @@ export default class Sync {
 				}),
 			);
 
-			this.dispatch('syncTerminate', { result: 'completed' });
-		} catch (error) {
-			if (cancelled) this.dispatch('syncTerminate', { result: 'cancelled' });
-			else if (failedCount)
+			if (failedCount)
 				this.dispatch('syncTerminate', {
 					error: `Execution of ${failedCount} tasks failed.`,
 					result: 'failed',
 				});
+			else this.dispatch('syncTerminate', { result: 'completed' });
+		} catch (error) {
+			if (cancelled) this.dispatch('syncTerminate', { result: 'cancelled' });
 			else this.dispatch('syncTerminate', { error: toErrorMessage(error), result: 'failed' });
 		}
 	};
 
-	private async convertDeleteToUpload(tasks: Array<RemoveLocalTask>, localFs: LocalFs) {
-		const final: Array<PushTask | MkdirRemoteTask> = [];
+	private async convertDeleteToUpload(tasks: Array<RemoveLocal>, localFs: LocalFs) {
+		const final: Array<Upload | CreateRemoteDir> = [];
 		await Promise.all(
 			tasks.map(async (task) => {
 				const options = task.options;
@@ -264,8 +246,8 @@ export default class Sync {
 					);
 					return;
 				}
-				if (local.isDir) final.push(new MkdirRemoteTask({ ...options, local }));
-				else final.push(new PushTask({ ...options, local }));
+				if (local.isDir) final.push(new CreateRemoteDir({ ...options, local }));
+				else final.push(new Upload({ ...options, local }));
 			}),
 		);
 		return final;
@@ -281,28 +263,15 @@ function toMap(stats: Array<Stat>): StatsMap {
 }
 
 function createTaskFactory(
-	baseOptions: Infras & { translate: (key: TaskNames) => string },
+	baseOptions: Infras,
+	translate: (name: TaskNames) => string,
 ): TaskFactory {
-	return {
-		createAddRecordTask: (opts: OptionsWithBothStats) =>
-			new AddRecordTask({ ...baseOptions, ...opts }),
-		createCleanRecordTask: (opts: TaskOptions) =>
-			new RemoveRecordTask({ ...baseOptions, ...opts }),
-		createMergeTask: (opts: OptionsWithBothFileStatsAndSettings) =>
-			new MergeTask({ ...baseOptions, ...opts }),
-		createMkdirLocalTask: (opts: OptionsWithRemoteFolderStat) =>
-			new MkdirLocalTask({ ...baseOptions, ...opts }),
-		createMkdirRemoteTask: (opts: OptionsWithLocalFolderStat) =>
-			new MkdirRemoteTask({ ...baseOptions, ...opts }),
-		createPullTask: (opts: OptionsWithRemoteFileStat) =>
-			new PullTask({ ...baseOptions, ...opts }),
-		createPushTask: (opts: OptionsWithLocalFileStat) =>
-			new PushTask({ ...baseOptions, ...opts }),
-		createRemoveLocalTask: (opts: OptionsWithLocalStat) =>
-			new RemoveLocalTask({ ...baseOptions, ...opts }),
-		createRemoveRemoteTask: (opts: OptionsWithRemoteStat) =>
-			new RemoveRemoteTask({ ...baseOptions, ...opts }),
-	};
+	return (<N extends TaskNames>(name: N, options: TaskOptionsMap[N]) => {
+		const task = new taskMap[name]({ ...options, ...baseOptions } as never);
+		task.name = name;
+		task.prettyName = translate(name);
+		return task;
+	}) as TaskFactory;
 }
 
 function partition<T, U extends T>(

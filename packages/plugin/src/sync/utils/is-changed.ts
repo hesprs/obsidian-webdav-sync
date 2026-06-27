@@ -1,9 +1,9 @@
 import { isSub } from '@repo/shared';
 import type { RecordStatsMap, StatsMap } from '@/types';
 import type { BaseTask } from '../tasks/interface';
-import MergeTask from '../tasks/merge';
-import PullTask from '../tasks/pull';
-import PushTask from '../tasks/push';
+import PullTask from '../tasks/Donwload';
+import MergeTask from '../tasks/Merge';
+import PushTask from '../tasks/Upload';
 
 export default function isChanged({
 	key,

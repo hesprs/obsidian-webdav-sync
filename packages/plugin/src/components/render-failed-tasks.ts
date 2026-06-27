@@ -13,8 +13,8 @@ function renderFailedTaskRow(
 	setIcon(icon, getTaskIcon(name));
 	setTooltip(icon, prettyName);
 
-	main.createSpan({ cls: 'font-semibold', text: prettyName });
-	main.createSpan({ cls: 'text-[var(--text-muted)] truncate', text: key });
+	main.createSpan({ cls: 'text-[var(--text-muted)]', text: prettyName });
+	main.createSpan({ cls: 'font-semibold truncate', text: key });
 
 	row.createDiv({ cls: 'text-[var(--text-muted)] break-words mt-1', text: error });
 }

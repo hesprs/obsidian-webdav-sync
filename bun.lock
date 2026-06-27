@@ -631,7 +631,7 @@
 
     "undici-types": ["undici-types@8.3.0", "", {}, "sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ=="],
 
-    "uni-kv": ["uni-kv@../../uni-kv.tgz", { "dependencies": { "idb": "^8.0.3" } }, "sha512-bMxarWmFB7B+P8eI2pvO+0U6LdYlbBZoHJB6pUQ7GFjjdLm4cQlVwa54WxtnkKXLyIQHBMMny9cbgschuqFM1A=="],
+    "uni-kv": ["uni-kv@../../uni-kv.tgz", { "dependencies": { "idb": "^8.0.3" } }, "sha512-DLOAP+eoPS/DEjXQAsEmLORbDZom+vCKTP7pp31THHnxP4KFxgXoX2vsjwoDGguVEaaZZ3Lp+rzMpjtMN1QKJQ=="],
 
     "unocss": ["unocss@66.7.2", "", { "dependencies": { "@unocss/cli": "66.7.2", "@unocss/core": "66.7.2", "@unocss/preset-attributify": "66.7.2", "@unocss/preset-icons": "66.7.2", "@unocss/preset-mini": "66.7.2", "@unocss/preset-tagify": "66.7.2", "@unocss/preset-typography": "66.7.2", "@unocss/preset-uno": "66.7.2", "@unocss/preset-web-fonts": "66.7.2", "@unocss/preset-wind": "66.7.2", "@unocss/preset-wind3": "66.7.2", "@unocss/preset-wind4": "66.7.2", "@unocss/transformer-attributify-jsx": "66.7.2", "@unocss/transformer-compile-class": "66.7.2", "@unocss/transformer-directives": "66.7.2", "@unocss/transformer-variant-group": "66.7.2", "@unocss/vite": "66.7.2" }, "peerDependencies": { "@unocss/astro": "66.7.2", "@unocss/postcss": "66.7.2", "@unocss/webpack": "66.7.2" }, "optionalPeers": ["@unocss/astro", "@unocss/postcss", "@unocss/webpack"] }, "sha512-yB0yOpJTtlyGH/HAe4QdnjgjSP6z9ItTdrObvagc8ZEwRY1D2GbfUABwDKyZzXs19gXebqThMG9f+W0hPhDIPA=="],
 

@@ -3,9 +3,7 @@ import type { OptionsWithRemoteFileStat } from '../decision/interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask } from './interface';
 
-export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
-	readonly name = 'download';
-
+export default class Download extends BaseTask<OptionsWithRemoteFileStat> {
 	async exec() {
 		let remoteContent: ArrayBuffer | undefined;
 		let localUid: string;

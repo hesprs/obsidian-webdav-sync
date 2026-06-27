@@ -4,7 +4,7 @@ import type { Ref } from 'synthkernel';
 import { Modal, Setting } from 'obsidian';
 import { computed } from 'synthkernel';
 import type { FileTreeSelectionController } from '@/components/fileTree';
-import type { BaseTask, RemoveLocalTask, TaskNames } from '@/sync';
+import type { BaseTask, RemoveLocal, TaskNames } from '@/sync';
 import type { Progress } from '@/types';
 import { mount as mountFileTree } from '@/components/fileTree';
 import renderFailedTasks from '@/components/render-failed-tasks';
@@ -15,8 +15,8 @@ import type { FailedTaskInfo, TaskInfo } from './Sync';
 import { roundPercent } from './Observability';
 
 export type DeleteConfirmReturn = {
-	delete: Array<RemoveLocalTask>;
-	reupload: Array<RemoveLocalTask>;
+	delete: Array<RemoveLocal>;
+	reupload: Array<RemoveLocal>;
 };
 
 export default class ProgressModal extends Modal {
@@ -79,8 +79,8 @@ export default class ProgressModal extends Modal {
 					this.hideDetails();
 					unmount();
 					this.dispatch('deleteConfirmed', {
-						delete: selectedTasks as Array<RemoveLocalTask>,
-						reupload: unselectedTasks as Array<RemoveLocalTask>,
+						delete: selectedTasks as Array<RemoveLocal>,
+						reupload: unselectedTasks as Array<RemoveLocal>,
 					});
 				});
 			}),

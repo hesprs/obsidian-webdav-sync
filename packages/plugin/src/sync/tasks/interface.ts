@@ -7,7 +7,6 @@ export type BaseTaskOptions = {
 	localFs: LocalFs;
 	remoteFs: RemoteFs;
 	record: SyncRecord;
-	translate: (key: TaskNames) => string;
 };
 
 export type TaskNames =
@@ -29,13 +28,12 @@ export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 		this.key = options.key;
 		this.local = options.local;
 		this.remote = options.remote;
-		this.prettyName = options.translate(this.name);
 	}
 	protected readonly remoteFs: RemoteFs;
 	protected readonly localFs: LocalFs;
 	protected readonly record: SyncRecord;
-	readonly name!: TaskNames;
-	readonly prettyName: string;
+	declare name: TaskNames;
+	declare prettyName: string;
 	readonly key: string;
 	readonly local: (BaseTaskOptions & T)['local'];
 	readonly remote: (BaseTaskOptions & T)['remote'];

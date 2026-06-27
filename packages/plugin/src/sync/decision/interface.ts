@@ -1,6 +1,15 @@
 import type { Settings } from '@';
 import type { FileStat, FolderStat, Stat, RecordStatsMap, StatsMap } from '@/types';
-import type { BaseTask } from '../tasks/interface';
+import type { BaseTask, TaskNames } from '../tasks/interface';
+import AddRecord from '../tasks/AddRecord';
+import CreateLocalDir from '../tasks/CreateLocalDir';
+import CreateRemoteDir from '../tasks/CreateRemoteDir';
+import Download from '../tasks/Donwload';
+import Merge from '../tasks/Merge';
+import RemoveLocal from '../tasks/RemoveLocal';
+import RemoveRecord from '../tasks/RemoveRecord';
+import RemoveRemote from '../tasks/RemoveRemote';
+import Upload from '../tasks/Upload';
 
 export type TaskOptions = {
 	key: string;
@@ -43,23 +52,32 @@ export type OptionsWithBothFileStatsAndSettings = {
 	settings: Settings;
 } & TaskOptions;
 
-export type TaskFactory = {
-	createPullTask: (options: OptionsWithRemoteFileStat) => BaseTask<OptionsWithRemoteFileStat>;
-	createPushTask: (options: OptionsWithLocalFileStat) => BaseTask<OptionsWithLocalFileStat>;
-	createMergeTask: (
-		options: OptionsWithBothFileStatsAndSettings,
-	) => BaseTask<OptionsWithBothFileStatsAndSettings>;
-	createRemoveLocalTask: (options: OptionsWithLocalStat) => BaseTask<OptionsWithLocalStat>;
-	createRemoveRemoteTask: (options: OptionsWithRemoteStat) => BaseTask<OptionsWithRemoteStat>;
-	createMkdirLocalTask: (
-		options: OptionsWithRemoteFolderStat,
-	) => BaseTask<OptionsWithRemoteFolderStat>;
-	createMkdirRemoteTask: (
-		options: OptionsWithLocalFolderStat,
-	) => BaseTask<OptionsWithLocalFolderStat>;
-	createCleanRecordTask: (options: TaskOptions) => BaseTask;
-	createAddRecordTask: (options: OptionsWithBothStats) => BaseTask<OptionsWithBothStats>;
+export type TaskOptionsMap = {
+	download: OptionsWithRemoteFileStat;
+	upload: OptionsWithLocalFileStat;
+	merge: OptionsWithBothFileStatsAndSettings;
+	removeLocal: OptionsWithLocalStat;
+	removeRemote: OptionsWithRemoteStat;
+	createLocalDir: OptionsWithRemoteFolderStat;
+	createRemoteDir: OptionsWithLocalFolderStat;
+	removeRecord: TaskOptions;
+	addRecord: OptionsWithBothStats;
 };
+export const taskMap = {
+	addRecord: AddRecord,
+	createLocalDir: CreateLocalDir,
+	createRemoteDir: CreateRemoteDir,
+	download: Download,
+	merge: Merge,
+	removeLocal: RemoveLocal,
+	removeRecord: RemoveRecord,
+	removeRemote: RemoveRemote,
+	upload: Upload,
+} as const;
+export type TaskFactory = <N extends TaskNames>(
+	name: N,
+	options: TaskOptionsMap[N],
+) => InstanceType<(typeof taskMap)[N]>;
 
 export type Decider = (input: DeciderInput) => Array<BaseTask>;
 
