@@ -1,6 +1,7 @@
 import type { Events } from '@';
 import { apiVersion, Platform } from 'obsidian';
 import { ref } from 'synthkernel';
+import type { General } from '@/types';
 import { VERSION } from '@/consts';
 import { formatDateTime } from '@/utils/format-date';
 import { formatTime } from '@/utils/unit-converter';
@@ -18,8 +19,13 @@ const OS = {
 };
 const MAX_SYNC_LOGS = 100;
 
-export type Dispatch = EventBus['dispatch'];
-export type On = EventBus['on'];
+export type Dispatch<O extends object> = <K extends keyof O>(
+	...[key, payload]: undefined extends O[K] ? [K] : [K, O[K]]
+) => void;
+export type On<O extends object> = <K extends keyof O>(
+	key: K,
+	callback: (payload: O[K]) => void,
+) => () => void;
 type SyncStats = {
 	trigger: SyncTrigger;
 	started: number;
@@ -95,7 +101,7 @@ export default class EventBus {
 
 	private readonly subscribers: { [K in keyof Events]?: Set<(event: Events[K]) => void> } = {};
 
-	private readonly on = <E extends keyof Events>(
+	private readonly on: On<Events> = <E extends keyof Events>(
 		event: E,
 		callback: (payload: Events[E]) => void,
 	) => {
@@ -104,8 +110,8 @@ export default class EventBus {
 		return () => this.subscribers[event]?.delete(callback);
 	};
 
-	private readonly dispatch = <E extends keyof Events>(
-		...[event, payload]: undefined extends Events[E] ? [E] : [E, Events[E]]
+	private readonly dispatch: Dispatch<Events> = <E extends keyof Events>(
+		...[event, payload]: undefined extends Events[E] ? [E, Events[E]?] : [E, Events[E]]
 	) => {
 		this.subscribers[event]?.forEach((listener) => listener(payload as never));
 	};
@@ -154,10 +160,16 @@ export default class EventBus {
 		return lines.join('\n');
 	};
 
-	dispose = () => {
+	readonly dispose = () => {
 		this.cleanupCallbacks.forEach((cleanup) => cleanup());
+		this.cleanupCallbacks.length = 0;
 		if (!this.isIdle()) this.dispatch('syncCanceled');
 	};
 
-	root = { dispatch: this.dispatch, getLogs: this.getLogs, isIdle: this.isIdle, on: this.on };
+	readonly root = {
+		dispatch: this.dispatch as Dispatch<General>,
+		getLogs: this.getLogs,
+		isIdle: this.isIdle,
+		on: this.on as On<General>,
+	};
 }

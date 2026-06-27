@@ -1,3 +1,4 @@
+import type { Events, Translations } from '@';
 import type { App, Command, IconName } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import { Notice, Platform } from 'obsidian';
@@ -34,7 +35,7 @@ export default class Observability {
 	private readonly walkProgress = ref<Progress>({ completed: 0, total: 1 });
 	private readonly executionProgress = ref<Progress<TaskInfo>>({ completed: 0, total: 0 });
 	private readonly cleanupCallbacks: Array<() => void> = [];
-	private readonly t: Translate;
+	private readonly t: Translate<Translations>;
 	private startIcon?: HTMLElement;
 	private stopIcon?: HTMLElement;
 	private readonly progressText = computed(
@@ -67,13 +68,6 @@ export default class Observability {
 
 	declare readonly settings: { noticeStatusOnMobile: boolean };
 	declare readonly i18n: {
-		executing: string;
-		walkingRemote: string;
-		awaitingConfirmation: string;
-		completed: string;
-		completedNoop: string;
-		cancelled: string;
-		failed: string;
 		startSync: string;
 		startNonInteractiveSync: string;
 		stopSync: string;
@@ -85,10 +79,10 @@ export default class Observability {
 	constructor(
 		private readonly ctx: {
 			addStatusBarItem: () => HTMLElement;
-			on: On;
-			translate: Translate;
+			on: On<Events>;
+			translate: Translate<Translations>;
 			isIdle: Ref<boolean>;
-			dispatch: Dispatch;
+			dispatch: Dispatch<Events>;
 			requestSync: (trigger: SyncTrigger) => Promise<void>;
 			showProgress: () => void;
 			addCommand: (command: Command) => Command;
@@ -263,6 +257,7 @@ export default class Observability {
 
 	readonly dispose = () => {
 		for (const unsub of this.cleanupCallbacks) unsub();
+		this.cleanupCallbacks.length = 0;
 		this.progressText.dispose();
 		this.stopIcon = undefined;
 		this.startIcon = undefined;

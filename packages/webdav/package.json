@@ -1,0 +1,21 @@
+{
+	"name": "webdav",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"dev": "MODE=dev tsdown",
+		"build": "tsdown",
+		"lint": "oxlint --fix --silent --type-aware && oxfmt",
+		"check": "tsc && oxlint --format agent --type-aware && oxfmt --check",
+		"tests": "bun --preload=./test/mocks test"
+	},
+	"dependencies": {
+		"obsidian": "latest"
+	},
+	"devDependencies": {
+		"@hesprs/sync-engine-sdk": "workspace:*",
+		"@repo/shared": "workspace:*"
+	}
+}

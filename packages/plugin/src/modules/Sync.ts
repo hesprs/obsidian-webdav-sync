@@ -1,4 +1,4 @@
-import type { Settings } from '@';
+import type { Events, Settings, Translations } from '@';
 import type { LocalFs } from '@/fs';
 import type {
 	Decider,
@@ -54,16 +54,16 @@ export type TaskInfo = { name: TaskNames; key: string; prettyName: string };
 export type FailedTaskInfo = TaskInfo & { error: string };
 
 export default class Sync {
-	dispatch: Dispatch;
-	on: On;
+	dispatch: Dispatch<Events>;
+	on: On<Events>;
 
 	constructor(
 		private readonly ctx: {
-			dispatch: Dispatch;
+			dispatch: Dispatch<Events>;
 			initializeSync: () => Promise<Infras>;
 			getDecider: () => Decider;
-			on: On;
-			translate: Translate;
+			on: On<Events>;
+			translate: Translate<Translations>;
 		},
 	) {
 		this.dispatch = ctx.dispatch;
@@ -81,7 +81,6 @@ export default class Sync {
 		taskFailed: FailedTaskInfo;
 		executionStarted: Array<BaseTask>;
 	};
-
 	declare readonly settings: {
 		realtimeSyncFastMode: boolean;
 		maxFileSize: TogglableValue;

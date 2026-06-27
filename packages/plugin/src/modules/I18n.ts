@@ -1,4 +1,5 @@
 import type { Translations } from '@';
+import type { General } from '@/types';
 
 // https://github.com/obsidianmd/obsidian-translations
 export type ObsidianLanguageCode =
@@ -77,8 +78,11 @@ export type ObsidianLanguageCode =
 
 const DEFAULT_LANGUAGE: ObsidianLanguageCode = 'en';
 type Primitive = string | number | boolean | null | undefined;
-type InterpolationValues = Record<string, Primitive>;
-export type Translate = I18n['translate'];
+export type InterpolationValues = Record<string, Primitive>;
+export type Translate<O extends object> = (
+	key: keyof O,
+	interpolate?: InterpolationValues,
+) => string;
 
 export default class I18n {
 	private readonly i18nRegistry: Partial<
@@ -108,13 +112,17 @@ export default class I18n {
 		}
 	};
 
-	private readonly translate = (key: keyof Translations, params?: InterpolationValues) => {
+	private readonly translate: Translate<Translations> = (key, params?) => {
 		const i18n = this.i18n as Record<string, string>;
 		if (params) return interpolate(i18n[key], params);
 		return i18n[key];
 	};
 
-	root = { loadI18n: this.loadI18n, registerI18n: this.registerI18n, translate: this.translate };
+	root = {
+		loadI18n: this.loadI18n,
+		registerI18n: this.registerI18n,
+		translate: this.translate as Translate<General>,
+	};
 }
 
 function interpolate(template: string, params?: InterpolationValues): string {

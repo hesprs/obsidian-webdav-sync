@@ -1,4 +1,4 @@
-import { arrayBufferToText } from '@/utils/binary';
+import { arrayBufferToText } from '@repo/shared';
 import type { OptionsWithRemoteFileStat } from '../decision/interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask } from './interface';
@@ -22,7 +22,7 @@ export default class PullTask extends BaseTask<OptionsWithRemoteFileStat> {
 		await this.record.upsertRecords({
 			baseText:
 				isMergeablePath(this.key) && remoteContent
-					? await arrayBufferToText(remoteContent)
+					? arrayBufferToText(remoteContent)
 					: undefined,
 			key: this.key,
 			record: { isDir: false, local: localUid, remote: this.remote.uid },

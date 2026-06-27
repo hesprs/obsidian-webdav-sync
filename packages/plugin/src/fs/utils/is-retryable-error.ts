@@ -1,4 +1,5 @@
-import getStatusFromError from './get-status-from-error';
+import type { ErrorLike } from '@repo/shared';
+import { getStatus } from '@repo/shared';
 
 const RETRYABLE_STATUS_CODES = new Set([401, 408, 425, 429, 502, 503, 504]);
 
@@ -23,19 +24,6 @@ const RETRYABLE_MESSAGE_PATTERNS = [
 	/\btimed out\b/i,
 ];
 
-export type ErrorLike = {
-	message?: unknown;
-	status?: unknown;
-	res?: {
-		status?: unknown;
-	};
-	response?: {
-		status?: unknown;
-	};
-	cause?: unknown;
-	error?: unknown;
-};
-
 function hasRetryableMessage(message: string): boolean {
 	return RETRYABLE_MESSAGE_PATTERNS.some((pattern) => pattern.test(message));
 }
@@ -58,7 +46,7 @@ export default function isRetryableError(error: unknown): boolean {
 		visited.add(current);
 
 		const errorLike = current as ErrorLike;
-		const statusCode = getStatusFromError(errorLike);
+		const statusCode = getStatus(errorLike);
 		if (statusCode && RETRYABLE_STATUS_CODES.has(statusCode)) return true;
 
 		if (typeof errorLike.message === 'string')

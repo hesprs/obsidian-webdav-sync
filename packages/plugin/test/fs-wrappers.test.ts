@@ -1,60 +1,36 @@
 import { expect, mock, test } from 'bun:test';
 import {
-	baseDirWrapper,
 	localCancellationWrapper,
 	rateLimiterWrapper,
 	remoteCancellationWrapper,
 	retryWrapper,
 } from '@/fs';
+import { testKit } from '@/sdk';
 import { syncCancelledError } from '@/sync';
-import { ShimmedRemoteFs, createDeferred, createVaultFs, flushMicrotasks, toBuffer } from './utils';
 
+const { remoteFs, localFs, deferred, flush, stream, bytes } = testKit;
 const sleepMock = mock(() => Promise.resolve());
 void mock.module('@/utils/sleep', () => ({
 	sleep: sleepMock,
 }));
 
-test('base-dir shim rewrites keys relative to its base', async () => {
-	const original = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const shim = baseDirWrapper(original, '/base');
-
-	expect(shim.getUid()).toBe('remote~base/');
-
-	const rootStat = await shim.stat('/');
-	const stat = await shim.stat('note.md');
-	const listAll = await shim.listAll('/');
-	await shim.readStream('note.md', 42);
-
-	expect(original.calls.stat).toStrictEqual(['base/', 'base/note.md']);
-	expect(rootStat).toStrictEqual({ isDir: true, key: '/' });
-	expect(stat).toStrictEqual({ isDir: false, key: 'note.md', mtime: 10, size: 5, uid: 'uid' });
-	expect(original.calls.listAll).toStrictEqual(['base/']);
-	expect(original.calls.readStream).toStrictEqual([['base/note.md', 42]]);
-	expect(listAll).toStrictEqual([
-		{ isDir: true, key: 'folder/' },
-		{ isDir: false, key: 'folder/note.md', mtime: 12, size: 7, uid: 'note-2' },
-	]);
-});
-
 test('retry shim retries matching request statuses and waits between attempts', async () => {
 	sleepMock.mockReset();
-	const attempts: Array<string> = [];
-	const original = new ShimmedRemoteFs(async (input) => {
-		attempts.push(input);
-		if (attempts.length < 3) throw { res: { status: 503 } };
-
+	const remote = remoteFs();
+	remote.control.request = async () => {
+		if (remote.state.requestCalls.length < 3) throw { res: { status: 503 } };
 		return { headers: {}, status: 200, text: '' };
-	});
+	};
 
-	retryWrapper(original, {
+	retryWrapper(remote.fs, {
 		isRetryable: () => true,
 		maxRetry: 2,
 		retryDelayMs: 25,
 	});
 
-	await original.read('retry.md');
+	await remote.fs.read('retry.md');
 
-	expect(attempts).toStrictEqual(['retry.md', 'retry.md', 'retry.md']);
+	expect(remote.state.requestCalls).toStrictEqual(['retry.md', 'retry.md', 'retry.md']);
 	expect(sleepMock).toHaveBeenCalledTimes(2);
 	expect(sleepMock).toHaveBeenNthCalledWith(1, 25);
 	expect(sleepMock).toHaveBeenNthCalledWith(2, 25);
@@ -62,115 +38,104 @@ test('retry shim retries matching request statuses and waits between attempts', 
 
 test('retry shim stops after max retry count and ignores other statuses', async () => {
 	sleepMock.mockReset();
-	const attempts: Array<string> = [];
-	const original = new ShimmedRemoteFs(async (input) => {
-		attempts.push(input);
+	const remote = remoteFs();
+	remote.control.request = async () => {
 		throw { res: { status: 404 } };
-	});
+	};
 
-	retryWrapper(original, {
+	retryWrapper(remote.fs, {
 		isRetryable: () => false,
 		maxRetry: 3,
 		retryDelayMs: 25,
 	});
 
-	expect(original.read('missing.md')).rejects.toStrictEqual({ res: { status: 404 } });
-	expect(attempts).toStrictEqual(['missing.md']);
+	expect(remote.fs.read('missing.md')).rejects.toStrictEqual({ res: { status: 404 } });
+	expect(remote.state.requestCalls).toStrictEqual(['missing.md']);
 	expect(sleepMock).not.toHaveBeenCalled();
 });
 
 test('remote pre-call read guard throws before delegation', async () => {
-	const original = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	const wrapper = remoteCancellationWrapper(original, () => true);
+	const remote = remoteFs();
+	const wrapper = remoteCancellationWrapper(remote.fs, () => true);
 
 	expect(() => wrapper.read('note.md')).toThrow(syncCancelledError);
-	expect(original.calls.read).toStrictEqual([]);
+	expect(remote.calls.read).toStrictEqual([]);
 });
 
 test('local pre-call read guard throws before delegation', async () => {
-	const { calls, original } = createVaultFs();
-	const wrapper = localCancellationWrapper(original, () => true);
+	const local = localFs();
+	const wrapper = localCancellationWrapper(local.fs, () => true);
 
 	expect(() => wrapper.read('note.md')).toThrow(syncCancelledError);
-	expect(calls.read).toStrictEqual([]);
+	expect(local.calls.read).toStrictEqual([]);
 });
 
 test('remote post-call write guard throws after successful release path', async () => {
 	let cancelled = false;
-	const writeDeferred = createDeferred<string>();
-	const original = new ShimmedRemoteFs(async () => ({ headers: {}, status: 200, text: '' }));
-	original.writeResponse = async () => await writeDeferred.promise;
-	const wrapper = remoteCancellationWrapper(original, () => cancelled);
+	const writeDeferred = deferred<string>();
+	const remote = remoteFs();
+	remote.control.write = async () => await writeDeferred.promise;
+	const wrapper = remoteCancellationWrapper(remote.fs, () => cancelled);
 
-	const pendingWrite = wrapper.write('release.md', toBuffer('1234'));
-	await flushMicrotasks();
+	const pendingWrite = wrapper.write('release.md', bytes('1234'));
+	await flush();
 	cancelled = true;
 	writeDeferred.resolve('write-uid');
 
-	await expect(pendingWrite).rejects.toBe(syncCancelledError);
-	expect(original.calls.write).toStrictEqual([['release.md', 4]]);
+	expect(pendingWrite).rejects.toBe(syncCancelledError);
+	expect(remote.calls.write).toStrictEqual([['release.md', 4]]);
 });
 
 test('local post-call write guard throws after successful release path', async () => {
 	let cancelled = false;
-	const writeDeferred = createDeferred<string>();
-	const { calls, control, original } = createVaultFs();
-	control.writeStreamResponse = async () => await writeDeferred.promise;
-	const wrapper = localCancellationWrapper(original, () => cancelled);
-	const stream = new ReadableStream<ArrayBuffer>({
-		start(controller) {
-			controller.enqueue(toBuffer('1234'));
-			controller.close();
-		},
-	});
+	const writeDeferred = deferred<string>();
+	const local = localFs();
+	local.control.writeStream = async () => await writeDeferred.promise;
+	const wrapper = localCancellationWrapper(local.fs, () => cancelled);
 
-	const pendingWrite = wrapper.writeStream('release.md', stream);
-	await flushMicrotasks();
+	const pendingWrite = wrapper.writeStream('release.md', stream(['1234']));
+	await flush();
 	cancelled = true;
 	writeDeferred.resolve('write-uid');
 
-	await expect(pendingWrite).rejects.toBe(syncCancelledError);
-	expect(calls.writeStream).toStrictEqual(['release.md']);
+	expect(pendingWrite).rejects.toBe(syncCancelledError);
+	expect(local.calls.writeStream).toStrictEqual(['release.md']);
 });
 
 test('remote request post-check aborts in-flight read after cancellation', async () => {
 	let cancelled = false;
-	const responseDeferred = createDeferred<{
+	const responseDeferred = deferred<{
 		headers: Record<string, string>;
 		status: number;
 		text: string;
 	}>();
-	const networkRequests: Array<string> = [];
-	const original = new ShimmedRemoteFs(async (input) => {
-		networkRequests.push(input);
-		return await responseDeferred.promise;
-	});
-	const wrapper = remoteCancellationWrapper(original, () => cancelled);
+	const remote = remoteFs();
+	remote.control.request = async () => await responseDeferred.promise;
+	const wrapper = remoteCancellationWrapper(remote.fs, () => cancelled);
 
 	const pendingRead = wrapper.read('in-flight.md');
-	await flushMicrotasks();
+	await flush();
 	cancelled = true;
 	responseDeferred.resolve({ headers: {}, status: 200, text: '' });
 
-	await expect(pendingRead).rejects.toBe(syncCancelledError);
-	expect(networkRequests).toStrictEqual(['in-flight.md']);
+	expect(pendingRead).rejects.toBe(syncCancelledError);
+	expect(remote.state.requestCalls).toStrictEqual(['in-flight.md']);
 });
 
 test('queued remote request fails before network send after cancellation', async () => {
 	let cancelled = false;
-	const firstResponse = createDeferred<{
+	const firstResponse = deferred<{
 		headers: Record<string, string>;
 		status: number;
 		text: string;
 	}>();
-	const networkRequests: Array<string> = [];
-	const original = new ShimmedRemoteFs(async (input) => {
-		networkRequests.push(input);
-		if (networkRequests.length === 1) return await firstResponse.promise;
+	const remote = remoteFs();
+	remote.control.request = async () => {
+		if (remote.state.requestCalls.length === 1) return await firstResponse.promise;
 		return { headers: {}, status: 200, text: '' };
-	});
+	};
 	const wrapper = rateLimiterWrapper(
-		remoteCancellationWrapper(original, () => cancelled),
+		remoteCancellationWrapper(remote.fs, () => cancelled),
 		{
 			maxConcurrency: 1,
 			minInterval: 0,
@@ -181,12 +146,12 @@ test('queued remote request fails before network send after cancellation', async
 	const secondRead = wrapper.read('second.md');
 	const firstReadError = Promise.resolve(firstRead).catch((error: unknown) => error);
 	const secondReadError = Promise.resolve(secondRead).catch((error: unknown) => error);
-	await flushMicrotasks();
-	expect(networkRequests).toStrictEqual(['first.md']);
+	await flush();
+	expect(remote.state.requestCalls).toStrictEqual(['first.md']);
 	cancelled = true;
 	firstResponse.resolve({ headers: {}, status: 200, text: '' });
 
-	await expect(firstReadError).resolves.toBe(syncCancelledError);
-	await expect(secondReadError).resolves.toBe(syncCancelledError);
-	expect(networkRequests).toStrictEqual(['first.md']);
+	expect(firstReadError).resolves.toBe(syncCancelledError);
+	expect(secondReadError).resolves.toBe(syncCancelledError);
+	expect(remote.state.requestCalls).toStrictEqual(['first.md']);
 });

@@ -1,8 +1,10 @@
+import type { Events, Translations } from '@';
+import type { App } from 'obsidian';
 import type { Ref } from 'synthkernel';
-import { App, Modal, Setting } from 'obsidian';
+import { Modal, Setting } from 'obsidian';
 import { computed } from 'synthkernel';
 import type { FileTreeSelectionController } from '@/components/fileTree';
-import type { BaseTask, RemoveLocalTask } from '@/sync';
+import type { BaseTask, RemoveLocalTask, TaskNames } from '@/sync';
 import type { Progress } from '@/types';
 import { mount as mountFileTree } from '@/components/fileTree';
 import renderFailedTasks from '@/components/render-failed-tasks';
@@ -20,9 +22,9 @@ export type DeleteConfirmReturn = {
 export default class ProgressModal extends Modal {
 	private readonly modalCleanupCallbacks: Array<() => void> = [];
 	private readonly moduleCleanupCallbacks: Array<() => void> = [];
-	private readonly t: Translate;
+	private readonly t: Translate<Translations>;
 	private opening = false;
-	private readonly dispatch: Dispatch;
+	private readonly dispatch: Dispatch<Events>;
 	private description?: HTMLParagraphElement;
 	private detailContainer?: HTMLDivElement;
 	private controls?: HTMLElement;
@@ -30,9 +32,9 @@ export default class ProgressModal extends Modal {
 	constructor(
 		private readonly ctx: {
 			app: App;
-			translate: Translate;
-			on: On;
-			dispatch: Dispatch;
+			translate: Translate<Translations>;
+			on: On<Events>;
+			dispatch: Dispatch<Events>;
 			syncStage: Ref<SyncStage>;
 			walkProgress: Ref<Progress>;
 			executionProgress: Ref<Progress<TaskInfo>>;
@@ -109,22 +111,14 @@ export default class ProgressModal extends Modal {
 	declare readonly i18n: {
 		syncProgress: string;
 		completed: string;
-		addRecord: string;
-		removeRecord: string;
-		createLocalDir: string;
-		createRemoteDir: string;
-		download: string;
-		merge: string;
-		removeLocal: string;
-		removeRemote: string;
-		upload: string;
 		failedTasksDescription: string;
 		confirmDeleteDescription: string;
 		confirmTasksDescription: string;
 		hide: string;
 		confirm: string;
 		done: string;
-	};
+		stopSync: string;
+	} & Record<TaskNames | SyncStage, string>;
 
 	private readonly renderHideStop = () => {
 		if (!this.opening) return;

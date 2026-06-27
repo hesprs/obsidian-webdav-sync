@@ -1,5 +1,5 @@
+import { isSub } from '@repo/shared';
 import type { RecordStatsMap, StatsMap } from '@/types';
-import { isSub } from '@/utils/path';
 import type { BaseTask } from '../tasks/interface';
 import MergeTask from '../tasks/merge';
 import PullTask from '../tasks/pull';

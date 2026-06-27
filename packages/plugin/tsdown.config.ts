@@ -53,10 +53,8 @@ const pluginConfig = defineConfig({
 	inputOptions: {
 		resolve: {
 			alias: {
-				'hash-wasm': 'hash-wasm/dist/index.esm.js',
 				'solid-js/web': 'solid-js/web/dist/web.js',
 			},
-			conditionNames: ['browser', 'import', 'module', 'default'],
 		},
 	},
 	outDir: 'dist',
@@ -72,7 +70,7 @@ const sdkConfig = defineConfig({
 	...sharedConfig,
 	clean: false,
 	dts: true,
-	entry: 'src/module-sdk.ts',
+	entry: { 'module-sdk': 'src/sdk/index.ts' },
 	outDir: 'dist',
 });
 

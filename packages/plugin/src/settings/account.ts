@@ -1,11 +1,11 @@
 import type { TextComponent } from 'obsidian';
+import { normalizeBaseDir } from '@repo/shared';
 import { Notice, SecretComponent, Setting } from 'obsidian';
 import EncryptionReminderModal from '@/components/EncryptionReminderModal';
 import SelectRemoteBaseDirModal from '@/components/SelectRemoteBaseDirModal';
 import { createWebdavFs } from '@/fs';
 import t from '@/i18n-old';
 import { handleInput } from '@/settings/generate-setting-entry';
-import { normalizeBaseDir } from '@/utils/path';
 import BaseSettings from './settings.base';
 
 export default class AccountSettings extends BaseSettings {

@@ -1,0 +1,20 @@
+{
+	"name": "encryption",
+	"version": "0.0.1",
+	"private": true,
+	"license": "MIT",
+	"type": "module",
+	"scripts": {
+		"dev": "MODE=dev tsdown",
+		"build": "tsdown",
+		"lint": "oxlint --fix --silent --type-aware && oxfmt",
+		"check": "tsc && oxlint --format agent --type-aware && oxfmt --check",
+		"tests": "bun test"
+	},
+	"devDependencies": {
+		"@hesprs/sync-engine-sdk": "workspace:*",
+		"@noble/ciphers": "^2.2.0",
+		"@repo/shared": "workspace:*",
+		"hash-wasm": "^4.12.0"
+	}
+}

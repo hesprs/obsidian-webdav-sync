@@ -1,6 +1,6 @@
+import { dirname } from '@repo/shared';
 import type { StatsMap, GlobMatchOptions } from '@/types';
 import { buildRules, needIncludeFromGlobRules } from '@/utils/glob-match';
-import { dirname } from '@/utils/path';
 
 // Apply inclusion / exclusion / file size rules and filter out invalid entries
 export default function postTraversal({

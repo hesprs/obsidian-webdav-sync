@@ -1,4 +1,5 @@
 import type { App } from 'obsidian';
+import { hash } from '@repo/shared';
 import { deleteMemoryDB, openIndexedDB, openMemoryDB } from 'uni-kv';
 import type { LocalFs, RemoteFs, RootRemoteFs } from '@/fs';
 import type { Decider } from '@/sync';
@@ -6,7 +7,6 @@ import type { RecordStat, Stat } from '@/types';
 import { STORAGE_NAME } from '@/consts';
 import { VaultFs } from '@/fs';
 import { SyncRecord } from '@/storage';
-import { hash } from '@/utils/crypto';
 
 export type MemoryDBMeta = {
 	lastLocalContextUid: string;
@@ -51,11 +51,6 @@ export default class Storage {
 	declare readonly settings: { remoteFs: string; decider: string };
 
 	constructor(private readonly ctx: { app: App }) {}
-
-	declare readonly i18n: {
-		backendNotInstalled: string;
-		pleaseInstallBackend: string;
-	};
 
 	private readonly registerLocalFsWrapper = (entry: LocalFsWrapperEntry) => {
 		this.localFsWrapperRegistry.add(entry);

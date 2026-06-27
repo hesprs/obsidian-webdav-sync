@@ -1,6 +1,6 @@
 import type { Store } from 'uni-kv';
+import { isSub } from '@repo/shared';
 import type { RecordStat, RecordStatsMap } from '@/types';
-import { isSub } from '@/utils/path';
 import type { StorageDatabase } from './database';
 import {
 	BASE_TEXT_STORE_NAME,

@@ -1,4 +1,4 @@
-import { arrayBufferToText } from '@/utils/binary';
+import { arrayBufferToText } from '@repo/shared';
 import type { OptionsWithLocalFileStat } from '../decision/interface';
 import isMergeablePath from '../utils/is-mergeable-path';
 import { BaseTask } from './interface';
@@ -17,7 +17,7 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 		const remoteUid = await this.remoteFs.write(this.key, localContent);
 
 		await this.record.upsertRecords({
-			baseText: isMergeablePath(this.key) ? await arrayBufferToText(localContent) : undefined,
+			baseText: isMergeablePath(this.key) ? arrayBufferToText(localContent) : undefined,
 			key: this.key,
 			record: { isDir: false, local: this.local.uid, remote: remoteUid },
 		});

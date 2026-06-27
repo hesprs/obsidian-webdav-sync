@@ -81,7 +81,8 @@
 	"globals": {
 		"activeDocument": "readonly",
 		"Bun": "readonly",
-		"process": "readonly"
+		"process": "readonly",
+		"activeWindow": "readonly"
 	},
 	"overrides": [
 		{

@@ -1,7 +1,7 @@
 import './global.css';
-import type { Command, EventRef } from 'obsidian';
+import type { Command, EventRef, App } from 'obsidian';
 import type { Context as KernelContext, MergeSingleKey } from 'synthkernel';
-import { App, getLanguage, Plugin } from 'obsidian';
+import { getLanguage, Plugin } from 'obsidian';
 import { createContext } from 'synthkernel';
 import { ConflictStrategy, UnmergeableStrategy } from '@/types';
 import type { ObsidianLanguageCode } from './modules/I18n';
@@ -40,10 +40,11 @@ const internalModules = [
 	Bootstrap,
 ] as const;
 
-export type InternalModules = typeof internalModules;
+type InternalModules = typeof internalModules;
+export type MergeKeys = 'settings' | 'root' | 'events' | 'i18n';
 export type Context = KernelContext<
 	InternalModules,
-	'settings' | 'root' | 'events' | 'i18n',
+	MergeKeys,
 	{
 		app: App;
 		addCommand: (command: Command) => Command;
@@ -59,6 +60,7 @@ export type Translations = MergeSingleKey<InternalModules, 'i18n'>;
 
 export default class SyncEngine extends Plugin {
 	context?: Context;
+	readonly allModules = new Set(internalModules);
 	readonly settings: Settings = {
 		confirmDeleteInAutoSync: true,
 		confirmTasksInSync: true,
@@ -107,6 +109,7 @@ export default class SyncEngine extends Plugin {
 			addCommand: this.addCommand.bind(this),
 			addRibbonIcon: this.addRibbonIcon.bind(this),
 			addStatusBarItem: this.addStatusBarItem.bind(this),
+			allModules: this.allModules,
 			app: this.app,
 			registerEvent: this.registerEvent.bind(this),
 			saveSettings: this.saveSettings,
@@ -116,18 +119,19 @@ export default class SyncEngine extends Plugin {
 			mergeKeys: ['settings', 'root', 'events', 'i18n'],
 			preMerge,
 		}).__assign__({ settings: this.settings });
+		await this.context.loadAllModules();
 		this.context.loadI18n(getLanguage() as ObsidianLanguageCode);
 		this.context.addSettingTab(this);
-		for (const module of internalModules) {
+		for (const module of this.allModules) {
 			const instance = this.context.__getModule__(module);
-			if ('start' in instance) await instance.start();
+			if ('start' in instance) instance.start();
 		}
 	}
 
 	onunload() {
 		if (!this.context) return;
 		this.context.unloadAllModules();
-		for (const module of internalModules.toReversed()) {
+		for (const module of [...this.allModules].reverse()) {
 			const instance = this.context.__getModule__(module);
 			if ('dispose' in instance) instance.dispose();
 		}

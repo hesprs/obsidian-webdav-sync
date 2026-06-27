@@ -1,7 +1,7 @@
+import type { Context, Events, Translations } from '@';
 import type { App } from 'obsidian';
-import { Notice } from 'obsidian';
+import Obsidian, { Notice } from 'obsidian';
 import type { General, MaybePromise } from '@/types';
-import type { Context } from '..';
 import type { Dispatch } from './EventBus';
 import type { Translate } from './I18n';
 import { toErrorMessage } from './Sync';
@@ -14,13 +14,18 @@ type ModuleSourceSchema = Array<{
 }>;
 
 type NameVersion = { name: string; version: string };
-export type Module = new (ctx: Context) => object;
+type LoadedModuleInstance = {
+	moduleSettings: object;
+	dispose?: () => void;
+};
+type LoadedModuleConstructor = new (ctx: object) => LoadedModuleInstance;
 
 const MODULE_EXTENSION = '.js';
 
 export default class Extensibility {
 	private readonly moduleDir: string;
-	private readonly modules: Record<string, { version: string; ctor?: Module }> = {};
+	private readonly modules: Record<string, { version: string; ctor?: LoadedModuleConstructor }> =
+		{};
 	private readonly sourceCache: Record<string, ModuleSourceSchema> = {};
 
 	declare readonly settings: {
@@ -35,14 +40,16 @@ export default class Extensibility {
 			app: App;
 			__addModule__: Context['__addModule__'];
 			__getModule__: Context['__getModule__'];
-			dispatch: Dispatch;
-			translate: Translate;
+			dispatch: Dispatch<Events>;
+			translate: Translate<Translations>;
+			allModules: Set<General>;
 		},
 	) {
 		this.moduleDir = `${ctx.app.vault.configDir}/plugins/sync-engine/modules`;
+		if (!('syncEngineApiBridge' in window)) (window as General).syncEngineApiBridge = Obsidian;
 	}
 
-	readonly start = async () => {
+	private readonly loadAllModules = async () => {
 		const adapter = this.ctx.app.vault.adapter;
 		if (!(await adapter.exists(this.moduleDir))) {
 			await adapter.mkdir(this.moduleDir);
@@ -87,21 +94,30 @@ export default class Extensibility {
 		await executeOperations();
 	};
 
-	private readonly loadModule = async (name: string) => {
-		const { default: module }: { default: Module } = await import(
-			this.ctx.app.vault.adapter.getResourcePath(this.getModulePath(name))
-		);
+	private readonly loadModule = async <N extends string>(name: N) => {
+		const { dispatch, translate, app, __addModule__, __getModule__, allModules } = this.ctx;
+		dispatch('log', `Loading module \`${name}\`.`);
 		try {
-			this.ctx.__addModule__(module as never);
+			const { default: module } = await import(
+				app.vault.adapter.getResourcePath(this.getModulePath(name))
+			);
+			__addModule__(module);
+			const instance = __getModule__(module);
+			const settings = this.settings as Partial<Record<N, General>>;
+			const moduleSettings = settings[name];
+			if (moduleSettings) {
+				Object.entries(instance.moduleSettings).forEach(([key, value]) => {
+					if (!(key in moduleSettings)) moduleSettings[key] = value;
+				});
+				(instance as { moduleSettings: object }).moduleSettings = moduleSettings;
+			} else settings[name] = instance.moduleSettings;
+			this.modules[name].ctor = module;
+			allModules.add(module);
 		} catch (error) {
 			const message = toErrorMessage(error);
-			this.ctx.dispatch('log', `Module \`${name}\` failed to load: ${message}`);
-			new Notice(`${this.ctx.translate('failedToLoadModule')}: ${message}`);
-			return;
+			dispatch('log', `Module \`${name}\` failed to load: ${message}`);
+			new Notice(`${translate('failedToLoadModule')}: ${message}`);
 		}
-		this.modules[name].ctor = module;
-		const instance = this.ctx.__getModule__(module as General);
-		if ('start' in instance && typeof instance.start === 'function') instance.start();
 	};
 
 	private readonly unloadModule = (name: string) => {
@@ -110,6 +126,7 @@ export default class Extensibility {
 		const instance = this.ctx.__getModule__(ctor as General);
 		if ('dispose' in instance && typeof instance.dispose === 'function') instance.dispose();
 		this.modules[name].ctor = undefined;
+		this.ctx.allModules.delete(ctor);
 	};
 
 	private readonly unloadAllModules = () => {
@@ -129,6 +146,7 @@ export default class Extensibility {
 
 	root = {
 		customModules: this.modules,
+		loadAllModules: this.loadAllModules,
 		loadModule: this.loadModule,
 		unloadAllModules: this.unloadAllModules,
 		unloadModule: this.unloadModule,

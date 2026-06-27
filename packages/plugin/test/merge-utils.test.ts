@@ -1,3 +1,4 @@
+import { arrayBufferEquals, textToArrayBuffer } from '@repo/shared';
 import { expect, test } from 'bun:test';
 import type { IntelligentMergeParams, LatestTimestampParams } from '@/sync/utils/merge';
 import {
@@ -6,11 +7,6 @@ import {
 	resolveByLatestTimestamp,
 } from '@/sync/utils/merge';
 import mergeDigIn from '@/sync/utils/merge-dig-in';
-import { arrayBufferEquals } from '@/utils/binary';
-
-function textToArrayBuffer(value: string): ArrayBuffer {
-	return new TextEncoder().encode(value).buffer;
-}
 
 test('returns no change when timestamps are equal', () => {
 	const params: LatestTimestampParams = {

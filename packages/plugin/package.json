@@ -2,9 +2,6 @@
 	"name": "@hesprs/sync-engine-sdk",
 	"version": "3.0.0",
 	"license": "MIT",
-	"workspaces": [
-		"./packages/*"
-	],
 	"files": [
 		"./dist/module-sdk.js",
 		"./dist/module-sdk.d.ts"
@@ -23,11 +20,10 @@
 		"obsidian": "latest"
 	},
 	"devDependencies": {
-		"@noble/ciphers": "^2.2.0",
+		"@repo/shared": "workspace:*",
 		"@types/glob-to-regexp": "^0.4.4",
 		"@unocss/postcss": "66.7.2",
 		"glob-to-regexp": "^0.4.1",
-		"hash-wasm": "^4.12.0",
 		"node-diff3": "^3.2.1",
 		"postcss-merge-rules": "^8.0.1",
 		"solid-js": "^1.9.13",

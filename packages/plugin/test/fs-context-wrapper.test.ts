@@ -4,8 +4,9 @@ import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Storage';
 import type { Stat } from '@/types';
 import { STORAGE_NAME } from '@/consts';
 import { localContextWrapper, remoteContextWrapper } from '@/fs';
-import { createVaultFs, ShimmedRemoteFs, toBuffer } from './utils';
+import { testKit } from '@/sdk';
 
+const { file, remoteFs, localFs, folder, bytes, stream } = testKit;
 const db = openMemoryDB<MemoryDBSchema, MemoryDBMeta>(STORAGE_NAME);
 
 function getLocalStore() {
@@ -14,32 +15,6 @@ function getLocalStore() {
 
 function getRemoteStore() {
 	return db.getStore('remoteStatContext');
-}
-
-class ContextTestRemoteFs extends ShimmedRemoteFs {
-	public readCalls = [] as Array<[string, number | undefined]>;
-
-	constructor(private readonly uid = 'remote') {
-		super(async () => ({ headers: {}, status: 200, text: '' }));
-	}
-
-	getUid() {
-		return this.uid;
-	}
-
-	async read(key: string, size?: number) {
-		this.readCalls.push([key, size]);
-		await this.request(key as never);
-		return await this.readResponse(key);
-	}
-}
-
-function fileStat(key: string, size = 5, uid = `${key}-uid`): Stat {
-	return { isDir: false, key, mtime: 1, size, uid };
-}
-
-function folderStat(key: string): Stat {
-	return { isDir: true, key };
 }
 
 function getStoreSnapshot(store: ReturnType<typeof getLocalStore>) {
@@ -58,50 +33,49 @@ beforeEach(() => {
 });
 
 test('remote wrapper clears stale context when uid changes at creation', async () => {
-	getRemoteStore().set('stale.md', fileStat('stale.md'));
-	getLocalStore().set('keep.md', fileStat('keep.md'));
+	getRemoteStore().set('stale.md', file('stale.md'));
+	getLocalStore().set('keep.md', file('keep.md'));
 	db.setMeta('lastRemoteContextUid', 'old-remote');
 
-	remoteContextWrapper(new ContextTestRemoteFs('new-remote'), db);
+	remoteContextWrapper(remoteFs({ uid: 'new-remote' }).fs, db);
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({});
-	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
+	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'keep.md': file('keep.md') });
 	expect(db.getMeta('lastRemoteContextUid')).toBe('new-remote');
 });
 
 test('remote wrapper keeps context when uid matches at creation', async () => {
-	getRemoteStore().set('keep.md', fileStat('keep.md'));
+	getRemoteStore().set('keep.md', file('keep.md'));
 	db.setMeta('lastRemoteContextUid', 'same-remote');
 
-	remoteContextWrapper(new ContextTestRemoteFs('same-remote'), db);
+	remoteContextWrapper(remoteFs({ uid: 'same-remote' }).fs, db);
 
-	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
+	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': file('keep.md') });
 	expect(db.getMeta('lastRemoteContextUid')).toBe('same-remote');
 });
 
 test('local wrapper clears stale context when uid changes at creation', async () => {
-	const { original } = createVaultFs();
-	original.getUid = () => 'new-local';
-	getLocalStore().set('stale.md', fileStat('stale.md'));
-	getRemoteStore().set('keep.md', fileStat('keep.md'));
+	const local = localFs({ uid: 'new-local' });
+	getLocalStore().set('stale.md', file('stale.md'));
+	getRemoteStore().set('keep.md', file('keep.md'));
 	db.setMeta('lastLocalContextUid', 'old-local');
 
-	localContextWrapper(original, db);
+	localContextWrapper(local.fs, db);
 
 	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({});
-	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': fileStat('keep.md') });
+	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'keep.md': file('keep.md') });
 	expect(db.getMeta('lastLocalContextUid')).toBe('new-local');
 });
 
 test('stat caches returned file stat', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	const remoteResult = fileStat('remote.md', 7, 'remote-file');
-	const localResult = fileStat('local.md', 9, 'local-file');
-	remoteOriginal.statResponse = async () => remoteResult;
-	control.statResponse = async () => localResult;
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	const remoteResult = file('remote.md', { size: 7, uid: 'remote-file' });
+	const localResult = file('local.md', { size: 9, uid: 'local-file' });
+	remote.control.stat = async () => remoteResult;
+	local.control.stat = async () => localResult;
 
 	await remoteWrapper.stat('remote.md');
 	await localWrapper.stat('local.md');
@@ -111,13 +85,13 @@ test('stat caches returned file stat', async () => {
 });
 
 test('remote list upserts returned stats without clearing unrelated context', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const preserved = fileStat('preserved.md', 3, 'preserved');
-	const listedFolder = folderStat('folder/');
-	const listedFile = fileStat('folder/note.md', 8, 'listed');
+	const remote = remoteFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const preserved = file('preserved.md', { size: 3, uid: 'preserved' });
+	const listedFolder = folder('folder/');
+	const listedFile = file('folder/note.md', { size: 8, uid: 'listed' });
 	getRemoteStore().set(preserved.key, preserved);
-	remoteOriginal.listResponse = async () => [listedFolder, listedFile];
+	remote.control.list = async () => [listedFolder, listedFile];
 
 	await remoteWrapper.list('folder/');
 
@@ -129,16 +103,22 @@ test('remote list upserts returned stats without clearing unrelated context', as
 });
 
 test('listAll replaces previous context snapshot', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	const remoteStats = [folderStat('remote/'), fileStat('remote/file.md', 11, 'remote-list-all')];
-	const localStats = [folderStat('local/'), fileStat('local/file.md', 12, 'local-list-all')];
-	getRemoteStore().set('old-remote.md', fileStat('old-remote.md'));
-	getLocalStore().set('old-local.md', fileStat('old-local.md'));
-	remoteOriginal.listAllResponse = async () => remoteStats;
-	control.listAllResponse = async () => localStats;
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	const remoteStats = [
+		folder('remote/'),
+		file('remote/file.md', { size: 11, uid: 'remote-list-all' }),
+	];
+	const localStats = [
+		folder('local/'),
+		file('local/file.md', { size: 12, uid: 'local-list-all' }),
+	];
+	getRemoteStore().set('old-remote.md', file('old-remote.md'));
+	getLocalStore().set('old-local.md', file('old-local.md'));
+	remote.control.listAll = async () => remoteStats;
+	local.control.listAll = async () => localStats;
 
 	await remoteWrapper.listAll('/');
 	await localWrapper.listAll('/');
@@ -154,40 +134,40 @@ test('listAll replaces previous context snapshot', async () => {
 });
 
 test('read uses cached file size when caller omits size', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { calls, control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	remoteOriginal.statResponse = async () => fileStat('remote.md', 13, 'remote-size');
-	control.statResponse = async () => fileStat('local.md', 17, 'local-size');
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	remote.control.stat = async () => file('remote.md', { size: 13, uid: 'remote-size' });
+	local.control.stat = async () => file('local.md', { size: 17, uid: 'local-size' });
 
 	await remoteWrapper.stat('remote.md');
 	await localWrapper.stat('local.md');
 	await remoteWrapper.read('remote.md');
 	await localWrapper.read('local.md');
 
-	expect(remoteOriginal.readCalls).toStrictEqual([['remote.md', 13]]);
-	expect(calls.read).toStrictEqual([['local.md', 17]]);
+	expect(remote.calls.read).toStrictEqual([['remote.md', 13]]);
+	expect(local.calls.read).toStrictEqual([['local.md', 17]]);
 });
 
 test('remote readStream uses cached file size when caller omits size', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	remoteOriginal.statResponse = async () => fileStat('stream.md', 23, 'stream-size');
+	const remote = remoteFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	remote.control.stat = async () => file('stream.md', { size: 23, uid: 'stream-size' });
 
 	await remoteWrapper.stat('stream.md');
 	await remoteWrapper.readStream('stream.md');
 
-	expect(remoteOriginal.calls.readStream).toStrictEqual([['stream.md', 23]]);
+	expect(remote.calls.readStream).toStrictEqual([['stream.md', 23]]);
 });
 
 test('read-through keeps undefined size on cache miss or folder stat', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { calls, control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	remoteOriginal.statResponse = async () => folderStat('folder/');
-	control.statResponse = async () => folderStat('folder/');
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	remote.control.stat = async () => folder('folder/');
+	local.control.stat = async () => folder('folder/');
 
 	await remoteWrapper.read('missing.md');
 	await localWrapper.read('missing.md');
@@ -196,38 +176,38 @@ test('read-through keeps undefined size on cache miss or folder stat', async () 
 	await remoteWrapper.read('folder/');
 	await localWrapper.read('folder/');
 
-	expect(remoteOriginal.readCalls).toStrictEqual([
+	expect(remote.calls.read).toStrictEqual([
 		['missing.md', undefined],
 		['folder/', undefined],
 	]);
-	expect(calls.read).toStrictEqual([
+	expect(local.calls.read).toStrictEqual([
 		['missing.md', undefined],
 		['folder/', undefined],
 	]);
 });
 
 test('stat and traversal failures do not mutate context', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	const remoteSeed = fileStat('seed-remote.md', 3, 'seed-remote');
-	const localSeed = fileStat('seed-local.md', 4, 'seed-local');
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	const remoteSeed = file('seed-remote.md', { size: 3, uid: 'seed-remote' });
+	const localSeed = file('seed-local.md', { size: 4, uid: 'seed-local' });
 	getRemoteStore().set(remoteSeed.key, remoteSeed);
 	getLocalStore().set(localSeed.key, localSeed);
-	remoteOriginal.statResponse = async () => {
+	remote.control.stat = async () => {
 		throw new Error('remote stat failed');
 	};
-	remoteOriginal.listResponse = async () => {
+	remote.control.list = async () => {
 		throw new Error('remote list failed');
 	};
-	remoteOriginal.listAllResponse = async () => {
+	remote.control.listAll = async () => {
 		throw new Error('remote listAll failed');
 	};
-	control.statResponse = async () => {
+	local.control.stat = async () => {
 		throw new Error('local stat failed');
 	};
-	control.listAllResponse = async () => {
+	local.control.listAll = async () => {
 		throw new Error('local listAll failed');
 	};
 
@@ -242,29 +222,29 @@ test('stat and traversal failures do not mutate context', async () => {
 });
 
 test('mutating calls do not update or clear context', async () => {
-	const remoteOriginal = new ContextTestRemoteFs();
-	const remoteWrapper = remoteContextWrapper(remoteOriginal, db);
-	const { control, original: localOriginal } = createVaultFs();
-	const localWrapper = localContextWrapper(localOriginal, db);
-	const remoteSeed = fileStat('remote.md', 3, 'remote-seed');
-	const localSeed = fileStat('local.md', 4, 'local-seed');
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	const remoteSeed = file('remote.md', { size: 3, uid: 'remote-seed' });
+	const localSeed = file('local.md', { size: 4, uid: 'local-seed' });
 	getRemoteStore().set(remoteSeed.key, remoteSeed);
 	getLocalStore().set(localSeed.key, localSeed);
-	db.setMeta('lastRemoteContextUid', remoteOriginal.getUid());
-	db.setMeta('lastLocalContextUid', localOriginal.getUid());
-	control.writeStreamResponse = async () => 'stream-write-uid';
+	db.setMeta('lastRemoteContextUid', remote.fs.getUid());
+	db.setMeta('lastLocalContextUid', local.fs.getUid());
+	local.control.writeStream = async () => 'stream-write-uid';
 
-	await remoteWrapper.write('remote-write.md', toBuffer('123'));
+	await remoteWrapper.write('remote-write.md', bytes('123'));
 	await remoteWrapper.delete('remote-delete.md');
 	await remoteWrapper.mkdir('remote-folder/', true);
-	await localWrapper.write('local-write.md', toBuffer('1234'));
-	await localWrapper.writeStream('local-stream.md', new ReadableStream<ArrayBuffer>());
+	await localWrapper.write('local-write.md', bytes('1234'));
+	await localWrapper.writeStream('local-stream.md', stream());
 	await localWrapper.delete('local-delete.md');
 	await localWrapper.move('old.md', 'new.md');
 	await localWrapper.mkdir('local-folder/');
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'remote.md': remoteSeed });
 	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'local.md': localSeed });
-	expect(db.getMeta('lastRemoteContextUid')).toBe(remoteOriginal.getUid());
-	expect(db.getMeta('lastLocalContextUid')).toBe(localOriginal.getUid());
+	expect(db.getMeta('lastRemoteContextUid')).toBe(remote.fs.getUid());
+	expect(db.getMeta('lastLocalContextUid')).toBe(local.fs.getUid());
 });

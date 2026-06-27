@@ -1,5 +1,5 @@
+import { arrayBufferEquals, arrayBufferToText, textToArrayBuffer } from '@repo/shared';
 import { toRecordStat } from '@/storage';
-import { arrayBufferEquals, arrayBufferToText, textToArrayBuffer } from '@/utils/binary';
 import type { OptionsWithBothFileStatsAndSettings } from '../decision/interface';
 import { resolveByIntelligentMerge } from '../utils/merge';
 import mergeDigIn from '../utils/merge-dig-in';
@@ -23,18 +23,16 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStatsAndSetti
 
 		if (arrayBufferEquals(localBuffer, remoteBuffer)) {
 			await this.record.upsertRecords({
-				baseText: await arrayBufferToText(localBuffer),
+				baseText: arrayBufferToText(localBuffer),
 				key: this.key,
 				record: toRecordStat(this.local, this.remote),
 			});
 			return;
 		}
 
-		const [localText, remoteText, baseTextRaw] = await Promise.all([
-			arrayBufferToText(localBuffer),
-			arrayBufferToText(remoteBuffer),
-			this.record.getBaseText(this.key),
-		]);
+		const localText = arrayBufferToText(localBuffer);
+		const remoteText = arrayBufferToText(remoteBuffer);
+		const baseTextRaw = await this.record.getBaseText(this.key);
 		const baseText = baseTextRaw ?? remoteText;
 
 		let mergedText: string;
@@ -62,7 +60,7 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStatsAndSetti
 			mergedText = mergeDigInResult.result.join('\n');
 		} else mergedText = mergeResult.mergedText as string;
 
-		const mergedBuffer = await textToArrayBuffer(mergedText);
+		const mergedBuffer = textToArrayBuffer(mergedText);
 		const [remoteUid, localUid] = await Promise.all([
 			mergedText !== remoteText
 				? this.remoteFs.write(this.key, mergedBuffer)

@@ -8,7 +8,7 @@
 			"cache": true
 		},
 		"dev": {
-			"dependsOn": ["^build"],
+			"dependsOn": ["^dev"],
 			"outputs": ["dist/**"],
 			"cache": true
 		},
@@ -18,10 +18,10 @@
 		},
 		"check": {
 			"cache": true,
-			"dependsOn": ["^build"]
+			"dependsOn": ["^dev"]
 		},
 		"tests": {
-			"dependsOn": ["^build"],
+			"dependsOn": ["^dev"],
 			"cache": true
 		},
 	}

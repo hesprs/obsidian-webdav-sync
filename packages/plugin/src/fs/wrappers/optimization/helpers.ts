@@ -1,4 +1,4 @@
-import { isSub } from '@/utils/path';
+import { isSub } from '@repo/shared';
 
 function selectShallowestDeleteKeys(keys: Array<string>): Array<string> {
 	if (keys.length <= 1) return [...keys];
