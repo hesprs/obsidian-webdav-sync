@@ -130,7 +130,6 @@ export default class SyncEngine extends Plugin {
 
 	onunload() {
 		if (!this.context) return;
-		this.context.unloadAllModules();
 		for (const module of [...this.allModules].reverse()) {
 			const instance = this.context.__getModule__(module);
 			if ('dispose' in instance) instance.dispose();

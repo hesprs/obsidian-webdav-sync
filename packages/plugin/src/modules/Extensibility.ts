@@ -1,6 +1,6 @@
 import type { Context, Events, Translations } from '@';
 import type { App } from 'obsidian';
-import Obsidian, { Notice } from 'obsidian';
+import obsidian, { Notice } from 'obsidian';
 import type { General, MaybePromise } from '@/types';
 import type { Dispatch } from './EventBus';
 import type { Translate } from './I18n';
@@ -18,14 +18,12 @@ type LoadedModuleInstance = {
 	moduleSettings: object;
 	dispose?: () => void;
 };
-type LoadedModuleConstructor = new (ctx: object) => LoadedModuleInstance;
 
 const MODULE_EXTENSION = '.js';
 
 export default class Extensibility {
 	private readonly moduleDir: string;
-	private readonly modules: Record<string, { version: string; ctor?: LoadedModuleConstructor }> =
-		{};
+	private readonly modules: Record<string, string> = {}; // ID + version
 	private readonly sourceCache: Record<string, ModuleSourceSchema> = {};
 
 	declare readonly settings: {
@@ -46,7 +44,7 @@ export default class Extensibility {
 		},
 	) {
 		this.moduleDir = `${ctx.app.vault.configDir}/plugins/sync-engine/modules`;
-		if (!('syncEngineApiBridge' in window)) (window as General).syncEngineApiBridge = Obsidian;
+		(window as General).syncEngineApiBridge = obsidian;
 	}
 
 	private readonly loadAllModules = async () => {
@@ -76,12 +74,12 @@ export default class Extensibility {
 			} else foundModules.push(this.parseModulePath(path));
 		});
 		foundModules.forEach(({ name, version }) => {
-			if (!this.modules[name]) this.modules[name] = { version };
+			if (!this.modules[name]) this.modules[name] = version;
 			else {
 				const entry = this.modules[name];
-				if (compareVersions(version, entry.version) === 1) {
+				if (compareVersions(version, entry) === 1) {
 					factory.delete(this.getModulePath(name));
-					entry.version = version;
+					this.modules[name] = version;
 				} else factory.delete(this.getModulePath(name, version));
 			}
 		});
@@ -109,7 +107,6 @@ export default class Extensibility {
 				Object.assign(instance.moduleSettings, existingSettings);
 				settings[name] = instance.moduleSettings;
 			} else settings[name] = instance.moduleSettings;
-			this.modules[name].ctor = module;
 			allModules.add(module);
 			if (start && 'start' in instance && typeof instance.start === 'function')
 				instance.start();
@@ -120,22 +117,7 @@ export default class Extensibility {
 		}
 	};
 
-	private readonly unloadModule = (name: string) => {
-		const { ctor } = this.modules[name];
-		if (!ctor) return;
-		const instance = this.ctx.__getModule__(ctor as General);
-		if ('dispose' in instance && typeof instance.dispose === 'function') instance.dispose();
-		this.modules[name].ctor = undefined;
-		this.ctx.allModules.delete(ctor);
-	};
-
-	private readonly unloadAllModules = () => {
-		Object.entries(this.modules).forEach(([name, { ctor }]) => {
-			if (ctor) this.unloadModule(name);
-		});
-	};
-
-	private readonly getModulePath = (name: string, version = this.modules[name].version) =>
+	private readonly getModulePath = (name: string, version = this.modules[name]) =>
 		`${this.moduleDir}/${name}~${version}${MODULE_EXTENSION}`;
 
 	private readonly parseModulePath = (path: string): NameVersion => {
@@ -144,12 +126,14 @@ export default class Extensibility {
 		return { name: segments[0], version: segments[1] };
 	};
 
-	root = {
+	readonly dispose = () => {
+		(window as General).syncEngineApiBridge = undefined;
+	};
+
+	readonly root = {
 		customModules: this.modules,
 		loadAllModules: this.loadAllModules,
 		loadModule: this.loadModule,
-		unloadAllModules: this.unloadAllModules,
-		unloadModule: this.unloadModule,
 	};
 }
 
