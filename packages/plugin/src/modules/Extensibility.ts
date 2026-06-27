@@ -102,14 +102,12 @@ export default class Extensibility {
 				app.vault.adapter.getResourcePath(this.getModulePath(name))
 			);
 			__addModule__(module);
-			const instance = __getModule__(module);
+			const instance = __getModule__(module) as LoadedModuleInstance;
 			const settings = this.settings as Partial<Record<N, General>>;
-			const moduleSettings = settings[name];
-			if (moduleSettings) {
-				Object.entries(instance.moduleSettings).forEach(([key, value]) => {
-					if (!(key in moduleSettings)) moduleSettings[key] = value;
-				});
-				(instance as { moduleSettings: object }).moduleSettings = moduleSettings;
+			const existingSettings = settings[name];
+			if (existingSettings) {
+				Object.assign(instance.moduleSettings, existingSettings);
+				settings[name] = instance.moduleSettings;
 			} else settings[name] = instance.moduleSettings;
 			this.modules[name].ctor = module;
 			allModules.add(module);

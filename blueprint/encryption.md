@@ -142,7 +142,7 @@ The implementation should only use:
 - `argon2id` export from `hash-wasm`
 - `gcmsiv` export from `@noble/ciphers/aes.js`
 
-The encryption function will be cleanly integrated as a wrapper class as a wrapper layer above [`RemoteFs`](./file-system.md):
+The encryption function will be cleanly integrated inside the `encryption` package as a Sync Engine optional module, which ships a [`RemoteFsWrapper`](./file-system-wrappers.md):
 
 `getUid()`, `checkConnection()`, `options`, `request`: keep as-is.
 

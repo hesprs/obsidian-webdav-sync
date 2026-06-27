@@ -9,7 +9,7 @@ function renderFailedTaskRow(
 	const row = itemEl.createDiv();
 
 	const main = row.createDiv({ cls: 'break-words flex items-center gap-2' });
-	const icon = main.createSpan({ cls: 'webdav-sync-task__icon color-[var(--color-red)]' });
+	const icon = main.createSpan({ cls: 'sync-engine-task__icon color-[var(--color-red)]' });
 	setIcon(icon, getTaskIcon(name));
 	setTooltip(icon, prettyName);
 

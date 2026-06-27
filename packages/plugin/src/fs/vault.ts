@@ -40,7 +40,7 @@ async function removeVaultFileIfExists(vault: Vault, path: string): Promise<void
 }
 
 function getTempPath(): string {
-	return `.trash/webdav-sync-temp/${crypto.randomUUID()}.part`;
+	return `.trash/sync-engine-temp/${crypto.randomUUID()}.part`;
 }
 
 function getTrashOption(vault: Vault): 'local' | undefined {

@@ -195,9 +195,9 @@ test('writeStream should append to temp file then rename into place', async () =
 	expect(uid).toBe('999');
 	expect(vault.calls.writeBinary).toStrictEqual([]);
 	expect(vault.calls.appendBinary).toHaveLength(2);
-	expect(vault.calls.appendBinary[0]?.[0]).toStartWith('.trash/webdav-sync-temp/');
+	expect(vault.calls.appendBinary[0]?.[0]).toStartWith('.trash/sync-engine-temp/');
 	expect(vault.calls.appendBinary[0]?.[1]).toBe('ab');
-	expect(vault.calls.appendBinary[1]?.[0]).toStartWith('.trash/webdav-sync-temp/');
+	expect(vault.calls.appendBinary[1]?.[0]).toStartWith('.trash/sync-engine-temp/');
 	expect(vault.calls.appendBinary[1]?.[1]).toBe('cdef');
 	expect(vault.calls.rename[0]).toBeDefined();
 	expect(vault.calls.rename[0]?.[1]).toBe('note.md');

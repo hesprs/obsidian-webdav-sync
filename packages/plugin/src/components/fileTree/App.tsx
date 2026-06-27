@@ -22,7 +22,7 @@ export default function App(props: FileTreeAppProps) {
 	props.controllerRef?.(controller);
 
 	return (
-		<div class="webdav-sync-file-tree">
+		<div class="sync-engine-file-tree">
 			<For each={data.orderedNodeIds}>
 				{(nodeId) => {
 					const node = data.nodes[nodeId];
@@ -36,11 +36,11 @@ export default function App(props: FileTreeAppProps) {
 					const rowClass = task && !selectedById[nodeId] ? 'is-unselected' : '';
 					return (
 						<div
-							class={`webdav-sync-file-tree__row ${rowClass}`.trim()}
+							class={`sync-engine-file-tree__row ${rowClass}`.trim()}
 							style={{ 'padding-left': `${node.depth * 14}px` }}
 						>
 							<div
-								class="webdav-sync-file-tree__main"
+								class="sync-engine-file-tree__main"
 								onClick={() => {
 									const changed = controller.toggle(
 										nodeId,
@@ -58,7 +58,7 @@ export default function App(props: FileTreeAppProps) {
 								{task ? (
 									<input type="checkbox" checked={selectedById[nodeId]} />
 								) : (
-									<div class="webdav-sync-file-tree__checkbox-spacer" />
+									<div class="sync-engine-file-tree__checkbox-spacer" />
 								)}
 								<div
 									class="webdav-sync-task__icon"
@@ -69,7 +69,7 @@ export default function App(props: FileTreeAppProps) {
 										setTooltip(element, task.prettyName, { delay: 100 });
 									}}
 								/>
-								<div class="webdav-sync-file-tree__label">
+								<div class="sync-engine-file-tree__label">
 									{node.compressedLabel}
 								</div>
 							</div>

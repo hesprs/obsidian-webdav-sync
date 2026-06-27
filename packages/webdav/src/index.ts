@@ -29,6 +29,7 @@ export default class Webdav {
 
 	moduleSettings = {
 		baseDirectory: '',
+		depthInfinity: false,
 		endpoint: '',
 		password: '',
 		username: '',
@@ -48,17 +49,22 @@ export default class Webdav {
 		this.cleanup.push(
 			registerRemoteFs('webdav', {
 				instantiate: () => {
-					const { endpoint, username, password: pwd } = this.moduleSettings;
+					const {
+						endpoint,
+						username,
+						password: pwd,
+						depthInfinity: useInfinity,
+					} = this.moduleSettings;
 					const password = secretStorage.getSecret(pwd);
 					if (password === null || !endpoint)
 						throw new Error('Please configure WebDAV account!');
-					return new WebdavFs({ endpoint, password, username });
+					return new WebdavFs({ endpoint, password, useInfinity, username });
 				},
 				prettyName: translate('webdav'),
 			}),
 			registerRemoteFsWrapper({
 				apply: (fs) =>
-					this.settings.remoteFs !== 'webdav'
+					this.settings.remoteFs === 'webdav'
 						? baseDirWrapper(fs, this.moduleSettings.baseDirectory)
 						: fs,
 				order: 6318,

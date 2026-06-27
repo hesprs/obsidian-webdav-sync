@@ -250,7 +250,7 @@ export default class ProgressModal extends Modal {
 			cls: 'whitespace-pre-line hidden mt-2 mb-0',
 		});
 		this.detailContainer = container.createDiv({
-			cls: 'webdav-sync-detail-container hidden',
+			cls: 'sync-engine-detail-container hidden',
 		});
 
 		this.modalCleanupCallbacks.push(

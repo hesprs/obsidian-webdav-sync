@@ -36,8 +36,6 @@ export default class Observability {
 	private readonly executionProgress = ref<Progress<TaskInfo>>({ completed: 0, total: 0 });
 	private readonly cleanupCallbacks: Array<() => void> = [];
 	private readonly t: Translate<Translations>;
-	private startIcon?: HTMLElement;
-	private stopIcon?: HTMLElement;
 	private readonly progressText = computed(
 		() => {
 			const stage = this.syncStage();
@@ -157,20 +155,6 @@ export default class Observability {
 				status.setText(text);
 				mobileSyncNotice?.setMessage(text);
 			}),
-			this.ctx.isIdle.subscribe(
-				(idle) => {
-					if (idle) {
-						this.startIcon?.removeAttribute('aria-disabled');
-						this.startIcon?.removeClass('webdav-sync-spinning');
-						this.stopIcon?.classList.add('hidden');
-					} else {
-						this.startIcon?.setAttr('aria-disabled', 'true');
-						this.startIcon?.addClass('webdav-sync-spinning');
-						this.stopIcon?.classList.remove('hidden');
-					}
-				},
-				{ immediate: true },
-			),
 			() => {
 				window.clearInterval(updateInterval);
 				window.clearTimeout(noticeTimeout);
@@ -181,11 +165,27 @@ export default class Observability {
 
 	readonly start = () => {
 		this.setupCommands();
-		this.startIcon = this.ctx.addRibbonIcon('refresh-ccw', this.t('startSync'), () =>
+		const startIcon = this.ctx.addRibbonIcon('refresh-ccw', this.t('startSync'), () =>
 			this.ctx.requestSync('manual'),
 		);
-		this.stopIcon = this.ctx.addRibbonIcon('square', this.t('stopSync'), () =>
+		const stopIcon = this.ctx.addRibbonIcon('square', this.t('stopSync'), () =>
 			this.ctx.dispatch('syncCanceled'),
+		);
+		this.cleanupCallbacks.push(
+			this.ctx.isIdle.subscribe(
+				(idle) => {
+					if (idle) {
+						startIcon.removeAttribute('aria-disabled');
+						startIcon.removeClass('sync-engine-spinning');
+						stopIcon.classList.add('hidden');
+					} else {
+						startIcon.setAttr('aria-disabled', 'true');
+						startIcon.addClass('sync-engine-spinning');
+						stopIcon.classList.remove('hidden');
+					}
+				},
+				{ immediate: true },
+			),
 		);
 	};
 
@@ -259,8 +259,6 @@ export default class Observability {
 		for (const unsub of this.cleanupCallbacks) unsub();
 		this.cleanupCallbacks.length = 0;
 		this.progressText.dispose();
-		this.stopIcon = undefined;
-		this.startIcon = undefined;
 	};
 
 	root = {

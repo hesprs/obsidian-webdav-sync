@@ -11,13 +11,13 @@ This is the monorepo for an extensible Obsidian syncing plugin to sync vault fil
 
 ## Packages
 
-- Plugin & plugin SDK: `packages/plugin/`, package name `@hesprs/sync-engine-sdk`.
+- Plugin & module SDK: `packages/plugin/`, package name `@hesprs/sync-engine-sdk`.
 - WebDAV module: `packages/webdav/`, package name `webdav`.
 - Encryption module: `packages/encryption/`, package name `encryption`.
 - Shared utils: `packages/shared/`, package name `@repo/shared`.
 
 ## Code Quality
 
-- For mobile compatibility, using any Node API is prohibited.
-- Use sentence case for UI text.
-- All Obsidian API mocks go `test/mocks/obsidian.ts`.
+- For mobile compatibility, Node.js API prohibited.
+- Sentence case for UI text.
+- All Obsidian API mocks go `packages/shared/src/obsidian-mock.ts`.
