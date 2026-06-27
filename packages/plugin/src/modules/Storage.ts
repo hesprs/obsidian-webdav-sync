@@ -120,5 +120,6 @@ export default class Storage {
 
 	dispose() {
 		deleteMemoryDB(STORAGE_NAME);
+		this.indexedDB.then((db) => db.dispose());
 	}
 }

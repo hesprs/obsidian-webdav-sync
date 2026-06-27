@@ -1,10 +1,11 @@
+import type { StoreSync } from '@hesprs/sync-engine-sdk';
 import { gcmsiv } from '@noble/ciphers/aes.js';
 import { textToArrayBuffer, textToUint8Array, uint8ArrayToText } from '@repo/shared';
 import { toArrayBuffer } from './shared';
 
-export type EncryptionPathCache = {
-	decryptedToEncrypted: Map<string, string>;
-	encryptedToDecrypted: Map<string, string>;
+export type EncryptionStores = {
+	decryptedToEncrypted: StoreSync<string>;
+	encryptedToDecrypted: StoreSync<string>;
 };
 
 const BASENAME_CACHE_LIMIT = 10_000;
@@ -13,17 +14,17 @@ const FILE_NAME_NONCE = textToArrayBuffer('file-name-v1');
 export function encryptPathSegments(
 	nameKey: ArrayBuffer,
 	key: string,
-	cache: EncryptionPathCache,
+	stores: EncryptionStores,
 ): string {
-	return transformPathSegments(key, (segment) => encryptPathSegment(nameKey, segment, cache));
+	return transformPathSegments(key, (segment) => encryptPathSegment(nameKey, segment, stores));
 }
 
 export function decryptPathSegments(
 	nameKey: ArrayBuffer,
 	key: string,
-	cache: EncryptionPathCache,
+	stores: EncryptionStores,
 ): string {
-	return transformPathSegments(key, (segment) => decryptPathSegment(nameKey, segment, cache));
+	return transformPathSegments(key, (segment) => decryptPathSegment(nameKey, segment, stores));
 }
 
 function transformPathSegments(key: string, transformSegment: (segment: string) => string): string {
@@ -36,26 +37,26 @@ function transformPathSegments(key: string, transformSegment: (segment: string) 
 function encryptPathSegment(
 	nameKey: ArrayBuffer,
 	segment: string,
-	cache: EncryptionPathCache,
+	stores: EncryptionStores,
 ): string {
-	const cached = cache.decryptedToEncrypted.get(segment);
+	const cached = stores.decryptedToEncrypted.get(segment);
 	if (cached !== undefined) return cached;
 
 	const encrypted = encryptBasename(nameKey, segment);
-	cacheSegmentPair(cache, segment, encrypted);
+	cacheSegmentPair(stores, segment, encrypted);
 	return encrypted;
 }
 
 function decryptPathSegment(
 	nameKey: ArrayBuffer,
 	segment: string,
-	cache: EncryptionPathCache,
+	stores: EncryptionStores,
 ): string {
-	const cached = cache.encryptedToDecrypted.get(segment);
+	const cached = stores.encryptedToDecrypted.get(segment);
 	if (cached !== undefined) return cached;
 
 	const decrypted = decryptBasename(nameKey, segment);
-	cacheSegmentPair(cache, decrypted, segment);
+	cacheSegmentPair(stores, decrypted, segment);
 	return decrypted;
 }
 
@@ -75,18 +76,19 @@ function decryptBasename(nameKey: ArrayBuffer, encryptedBasename: string): strin
 	return normalizeBasename(uint8ArrayToText(plaintext));
 }
 
-function cacheSegmentPair(cache: EncryptionPathCache, decrypted: string, encrypted: string) {
-	cacheLimitedSet(cache.decryptedToEncrypted, decrypted, encrypted);
-	cacheLimitedSet(cache.encryptedToDecrypted, encrypted, decrypted);
+function cacheSegmentPair(stores: EncryptionStores, decrypted: string, encrypted: string) {
+	cacheLimitedSet(stores.decryptedToEncrypted, decrypted, encrypted);
+	cacheLimitedSet(stores.encryptedToDecrypted, encrypted, decrypted);
 }
 
-function cacheLimitedSet(map: Map<string, string>, key: string, value: string) {
-	if (map.has(key)) return;
-	if (map.size >= BASENAME_CACHE_LIMIT) {
-		const oldestKey = map.keys().next().value;
-		if (oldestKey !== undefined) map.delete(oldestKey);
+function cacheLimitedSet(store: StoreSync<string>, key: string, value: string) {
+	if (store.get(key) !== undefined) return;
+	const keys = store.keys();
+	if (keys.length >= BASENAME_CACHE_LIMIT) {
+		const oldestKey = keys[0];
+		if (oldestKey !== undefined) store.delete(oldestKey);
 	}
-	map.set(key, value);
+	store.set(key, value);
 }
 
 function normalizeBasename(basename: string) {

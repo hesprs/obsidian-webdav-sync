@@ -1,5 +1,5 @@
 import type { Events, Translations } from '@';
-import type { MemoryDatabase } from 'uni-kv';
+import type { DatabaseSync } from 'uni-kv';
 import type { TogglableValue } from '@/types';
 import {
 	commonOptimizationWrapper,
@@ -48,7 +48,7 @@ export default class Bootstrap {
 		private readonly ctx: {
 			registerI18n: (code: ObsidianLanguageCode, resource: Record<string, string>) => void;
 			on: On<Events>;
-			memoryDB: MemoryDatabase<MemoryDBSchema, MemoryDBMeta>;
+			memoryDB: DatabaseSync<MemoryDBSchema, MemoryDBMeta>;
 			registerDecider: (id: string, entry: DeciderEntry) => void;
 			registerLocalFsWrapper: (entry: LocalFsWrapperEntry) => void;
 			registerRemoteFs: (id: string, entry: RemoteFsEntry) => void;

@@ -6,7 +6,7 @@ This is the monorepo for an extensible Obsidian syncing plugin to sync vault fil
 - `bun check`: check types, lint and format (no file change).
 - `bun dev`: fast build for daily debug.
 - `bun tests`: run all tests.
-- `bun tests <test path>`: run tests in specific file.
+- `bun test <test path>`: run tests in specific file.
 - `bun <command> -F <package-name>`: run command targeting a specific package.
 
 ## Packages

@@ -1,12 +1,12 @@
 import type { Context } from '@';
 
-export type SelectFromContext<O extends object> = Context extends O ? O : never;
+export { default as testKit } from './test-utils';
 export { default as obsidianBridge } from './obsidian-bridge';
+
 export type { Translate } from '@/modules/I18n';
 export type { Dispatch, On } from '@/modules/EventBus';
 export type { Context, Settings, Events, Translations } from '@';
-export type * from 'uni-kv';
-export { default as testKit } from './test-utils';
+export type { StoreAsync, StoreSync, DatabaseAsync, DatabaseSync } from 'uni-kv';
 export type {
 	RecordStat,
 	RecordStatsMap,
@@ -28,3 +28,4 @@ export type {
 	RemoteFsWrapperEntry,
 } from '@/modules/Storage';
 export type * from '@/fs/interface';
+export type SelectFromContext<O extends object> = Context extends O ? O : never;

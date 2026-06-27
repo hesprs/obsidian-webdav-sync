@@ -1,4 +1,4 @@
-import type { Database, Store } from 'uni-kv';
+import type { DatabaseAsync, StoreAsync } from 'uni-kv';
 import { openIndexedDB } from 'uni-kv';
 import type { IndexedDBMeta, IndexedDBSchema } from '@/modules/Storage';
 import type { RecordStat, Stat } from '@/types';
@@ -10,7 +10,7 @@ export const BASE_TEXT_STORE_NAME = 'base-text';
 const STORAGE_VERSION = 1;
 const STORAGE_VERSION_KEY = 'version';
 
-export type StorageDatabase = Database<IndexedDBSchema, IndexedDBMeta>;
+export type StorageDatabase = DatabaseAsync<IndexedDBSchema, IndexedDBMeta>;
 
 let storageDatabasePromise: Promise<StorageDatabase> | undefined;
 
@@ -34,7 +34,7 @@ export function parseKey(key: string) {
 	return { namespace: key.slice(0, i), path: key.slice(i + 1) };
 }
 
-async function deleteMatchingKeys<T>(store: Store<T>, predicate: (key: string) => boolean) {
+async function deleteMatchingKeys<T>(store: StoreAsync<T>, predicate: (key: string) => boolean) {
 	const keys = (await store.keys()).filter(predicate);
 	if (keys.length === 0) return;
 	await store.batch(keys.map((key) => ({ key, type: 'delete' })));

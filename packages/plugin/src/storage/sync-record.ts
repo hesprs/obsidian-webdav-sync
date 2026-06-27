@@ -1,4 +1,4 @@
-import type { Store } from 'uni-kv';
+import type { StoreAsync } from 'uni-kv';
 import { isSub } from '@repo/shared';
 import type { RecordStat, RecordStatsMap } from '@/types';
 import type { StorageDatabase } from './database';
@@ -10,8 +10,8 @@ import {
 } from './database';
 
 export default class SyncRecord {
-	private readonly getSyncRecordStorePromise: Promise<Store<RecordStat>>;
-	private readonly getBaseTextStorePromise: Promise<Store<string>>;
+	private readonly getSyncRecordStorePromise: Promise<StoreAsync<RecordStat>>;
+	private readonly getBaseTextStorePromise: Promise<StoreAsync<string>>;
 
 	constructor(
 		private readonly namespace: string,
@@ -95,7 +95,7 @@ export default class SyncRecord {
 		return `${this.namespace}~${path}`;
 	}
 
-	private async removeSubtree<T>(store: Store<T>, path: string) {
+	private async removeSubtree<T>(store: StoreAsync<T>, path: string) {
 		const keys = (await store.keys()).filter((key) => {
 			const parsed = parseKey(key);
 			return parsed.namespace === this.namespace && isSub(path, parsed.path, true);

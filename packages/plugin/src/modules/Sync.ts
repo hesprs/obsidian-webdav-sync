@@ -146,7 +146,7 @@ export default class Sync {
 			this.dispatch('syncStarted', { isCancelled, trigger });
 			this.on('syncCanceled', () => (cancelled = true));
 			const { record, localFs, remoteFs } = await this.ctx.initializeSync();
-			const [localList, remoteList, records] = await Promise.all([
+			const [localList, remoteList] = await Promise.all([
 				localFs.listAll('/'),
 				this.settings.realtimeSyncFastMode && trigger === 'realtime'
 					? Promise.resolve(undefined)
@@ -157,12 +157,13 @@ export default class Sync {
 								);
 							} catch (error) {
 								if (await remoteFs.exists('/')) throw error;
+								this.dispatch('log', 'Remote root deleted, recreating.')
 								await Promise.all([remoteFs.mkdir('/', true), record.drop()]);
 								return [];
 							}
 						})(),
-				record.getRecords(),
 			]);
+			const records = await record.getRecords();
 			const localStats = this.postProcess(localList);
 			const remoteStats = this.postProcess(remoteList ?? extractRemoteRecords(records));
 			this.dispatch(

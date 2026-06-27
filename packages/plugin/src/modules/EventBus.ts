@@ -50,7 +50,7 @@ export default class EventBus {
 				this.isIdle(false);
 				this.syncLogs.push({ logs: [], started: Date.now(), trigger });
 				if (this.syncLogs.length > MAX_SYNC_LOGS) this.syncLogs.shift();
-				this.putLog(`Sync triggered by \`${trigger}\` started`);
+				this.putLog(`Sync triggered by \`${trigger}\` started.`);
 			}),
 			this.on('log', (log) => this.putLog(log)),
 			this.on('executionStarted', (tasks) => {

@@ -1,29 +1,29 @@
-import type { MemoryDatabase, MemoryStore } from 'uni-kv';
+import type { DatabaseSync, StoreSync } from 'uni-kv';
 import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Storage';
 import type { Stat } from '@/types';
 import type { LocalFs, RemoteFs, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 
-type DB = MemoryDatabase<MemoryDBSchema, MemoryDBMeta>;
+type DB = DatabaseSync<MemoryDBSchema, MemoryDBMeta>;
 
-function getCachedReadSize(store: MemoryStore<Stat>, key: string) {
+function getCachedReadSize(store: StoreSync<Stat>, key: string) {
 	const stat = store.get(key);
 	if (stat === undefined || stat.isDir) return undefined;
 	return stat.size;
 }
 
-async function cacheStat(store: MemoryStore<Stat>, stat: Promise<Stat> | Stat) {
+async function cacheStat(store: StoreSync<Stat>, stat: Promise<Stat> | Stat) {
 	const resolvedStat = await stat;
 	store.set(resolvedStat.key, resolvedStat);
 	return resolvedStat;
 }
 
-async function cacheStats(store: MemoryStore<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
+async function cacheStats(store: StoreSync<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
 	const resolvedStats = await stats;
 	for (const stat of resolvedStats) store.set(stat.key, stat);
 	return resolvedStats;
 }
 
-async function replaceStats(store: MemoryStore<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
+async function replaceStats(store: StoreSync<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
 	const resolvedStats = await stats;
 	store.clear();
 	for (const stat of resolvedStats) store.set(stat.key, stat);
@@ -31,7 +31,7 @@ async function replaceStats(store: MemoryStore<Stat>, stats: Promise<Array<Stat>
 }
 
 class ContextRemoteFs implements WrappedRemoteFs {
-	private readonly statStore: MemoryStore<Stat>;
+	private readonly statStore: StoreSync<Stat>;
 
 	constructor(
 		public readonly original: RemoteFs,
@@ -91,7 +91,7 @@ class ContextRemoteFs implements WrappedRemoteFs {
 }
 
 class ContextLocalFs implements WrappedLocalFs {
-	private readonly statStore: MemoryStore<Stat>;
+	private readonly statStore: StoreSync<Stat>;
 
 	constructor(
 		public readonly original: LocalFs,

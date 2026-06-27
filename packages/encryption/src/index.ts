@@ -1,14 +1,22 @@
-import type { RemoteFsWrapperEntry, SelectFromContext } from '@hesprs/sync-engine-sdk';
+import type {
+	DatabaseSync,
+	MemoryDBMeta,
+	MemoryDBSchema,
+	RemoteFsWrapperEntry,
+	SelectFromContext,
+} from '@hesprs/sync-engine-sdk';
 import type { App } from 'obsidian';
+import type { EncryptionDB } from '@/wrapper';
 import encryptionWrapper from '@/wrapper';
 
 export default class Encryption {
-	private readonly cleanup: Array<() => void> = [];
+	private readonly cleanup: Array<() => boolean> = [];
 
 	constructor(
 		private readonly ctx: SelectFromContext<{
-			registerRemoteFsWrapper: (entry: RemoteFsWrapperEntry) => () => void;
+			registerRemoteFsWrapper: (entry: RemoteFsWrapperEntry) => () => boolean;
 			app: App;
+			memoryDB: DatabaseSync<MemoryDBSchema, MemoryDBMeta>;
 		}>,
 	) {}
 
@@ -18,18 +26,16 @@ export default class Encryption {
 	};
 
 	readonly start = () => {
-		const {
-			registerRemoteFsWrapper,
-			app: { secretStorage },
-		} = this.ctx;
+		const { app, memoryDB, registerRemoteFsWrapper } = this.ctx;
+		const typedMemoryDB = memoryDB as unknown as EncryptionDB;
 		this.cleanup.push(
 			registerRemoteFsWrapper({
 				apply: (fs) => {
 					const { enabled, password: pwd } = this.moduleSettings;
 					if (!enabled) return fs;
-					const password = secretStorage.getSecret(pwd);
+					const password = app.secretStorage.getSecret(pwd);
 					if (!password) throw new Error('Please configure encryption password!');
-					return encryptionWrapper(fs, password);
+					return encryptionWrapper(fs, { memoryDB: typedMemoryDB, password });
 				},
 				order: 6919,
 			}),
