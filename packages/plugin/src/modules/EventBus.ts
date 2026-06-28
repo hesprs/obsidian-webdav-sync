@@ -38,57 +38,56 @@ type SyncStats = {
 };
 
 export default class EventBus {
-	declare readonly events: { log: string };
+	declare readonly events: { log: string; error: string };
 	private readonly cleanupCallbacks: Array<() => void> = [];
 	private readonly isIdle = ref(true);
 	private readonly syncLogs: Array<SyncStats> = [];
 	private readonly generalLogs: Array<string> = [];
 
 	constructor() {
-		this.cleanupCallbacks.push(
-			this.on('syncStarted', ({ trigger }) => {
-				this.isIdle(false);
-				this.syncLogs.push({ logs: [], started: Date.now(), trigger });
-				if (this.syncLogs.length > MAX_SYNC_LOGS) this.syncLogs.shift();
-				this.putLog(`Sync triggered by \`${trigger}\` started.`);
+		const { cleanupCallbacks, on, syncLogs, putLog, getThisSync, isIdle } = this;
+		cleanupCallbacks.push(
+			on('syncStarted', ({ trigger }) => {
+				isIdle(false);
+				syncLogs.push({ logs: [], started: Date.now(), trigger });
+				if (syncLogs.length > MAX_SYNC_LOGS) syncLogs.shift();
+				putLog(`Sync triggered by \`${trigger}\` started.`);
 			}),
-			this.on('log', (log) => this.putLog(log)),
-			this.on('executionStarted', (tasks) => {
-				this.getThisSync().totalTasks = tasks.length;
-				this.putLog(`Execution of ${tasks.length} sync tasks started.`);
+			on('log', (log) => putLog(log)),
+			on('error', (log) => putLog(log, 'error')),
+			on('executionStarted', (tasks) => {
+				getThisSync().totalTasks = tasks.length;
+				putLog(`Execution of ${tasks.length} sync tasks started.`);
 			}),
-			this.on('taskCompleted', ({ key, name }) => {
-				const thisSync = this.getThisSync();
+			on('taskCompleted', ({ key, name }) => {
+				const thisSync = getThisSync();
 				if (!thisSync.succeededTasks) thisSync.succeededTasks = 1;
 				else thisSync.succeededTasks += 1;
-				this.putLog(`Task \`${name}\` of \`${key}\` succeeded.`);
+				putLog(`Task \`${name}\` of \`${key}\` succeeded.`);
 			}),
-			this.on('taskFailed', ({ key, name, error }) => {
-				const thisSync = this.getThisSync();
+			on('taskFailed', ({ key, name, error }) => {
+				const thisSync = getThisSync();
 				if (!thisSync.failedTasks) thisSync.failedTasks = 1;
 				else thisSync.failedTasks += 1;
-				this.putLog(
-					`Task \`${name}\` of \`${key}\` failed with error: \`${error}\`.`,
-					'error',
-				);
+				putLog(`Task \`${name}\` of \`${key}\` failed with error: \`${error}\`.`, 'error');
 			}),
-			this.on('tasksConfirmed', (tasks) => this.putLog(`Confirmed ${tasks.length} tasks.`)),
-			this.on('syncCanceled', () => this.putLog('Sync is forced to stop.')),
-			this.on('deleteConfirmed', ({ reupload, delete: D }) =>
-				this.putLog(
-					`Confirmed to delete ${D.length} files, reupload ${reupload.length} files.`,
-				),
+			on('tasksConfirmed', (tasks) => putLog(`Confirmed ${tasks.length} tasks.`)),
+			on('syncCanceled', () => putLog('Sync is forced to stop.')),
+			on('deleteConfirmed', ({ reupload, delete: { length } }) =>
+				putLog(`Confirmed to delete ${length} files, reupload ${reupload.length} files.`),
 			),
-			this.on('syncTerminate', (reason) => {
+			on('syncTerminated', (reason) => {
 				const { result } = reason;
-				const thisSync = this.getThisSync();
+				const thisSync = getThisSync();
 				thisSync.outcome = result;
 				thisSync.ended = Date.now();
 				if (result === 'failed')
-					this.putLog(`Sync ended with error: \`${reason.error}\`.`, 'error');
-				else this.putLog(`Sync ended with result: \`${result}\`.`);
-				this.isIdle(true);
+					putLog(`Sync ended with error: \`${reason.error}\`.`, 'error');
+				else putLog(`Sync ended with result: \`${result}\`.`);
+				isIdle(true);
 			}),
+			on('moduleUpdateStarted', () => isIdle(false)),
+			on('moduleUpdateTerminated', () => isIdle(true)),
 		);
 	}
 

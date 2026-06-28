@@ -37,7 +37,7 @@ export default class Encryption {
 					if (!password) throw new Error('Please configure encryption password!');
 					return encryptionWrapper(fs, { memoryDB: typedMemoryDB, password });
 				},
-				order: 6919,
+				order: 7919,
 			}),
 		);
 	};

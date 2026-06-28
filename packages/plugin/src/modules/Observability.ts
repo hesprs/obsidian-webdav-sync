@@ -121,7 +121,7 @@ export default class Observability {
 					total: totalSyncTasks,
 				});
 			}),
-			ctx.on('syncTerminate', (reason) => {
+			ctx.on('syncTerminated', (reason) => {
 				const { result } = reason;
 				if (mobileSyncNotice)
 					if (result === 'failed') {
@@ -245,8 +245,8 @@ export default class Observability {
 						void exportLogs(this.ctx.getLogs(), this.ctx.app);
 					} catch (error) {
 						const message = toErrorMessage(error);
-						new Notice(this.t('exportLogsFailed', { message }));
-						this.ctx.dispatch('log', `Export log failed: \`${message}\`.`);
+						new Notice(`${this.t('exportLogsFailed')}: ${message}`);
+						this.ctx.dispatch('error', `Export log failed: \`${message}\`.`);
 					}
 				},
 				icon: 'scroll-text',

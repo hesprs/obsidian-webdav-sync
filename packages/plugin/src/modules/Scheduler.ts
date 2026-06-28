@@ -2,7 +2,7 @@ import type { App, EventRef, TAbstractFile } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { GlobMatchOptions, TogglableValue } from '@/types';
 import { buildRules, needIncludeFromGlobRules } from '@/utils/glob-match';
-import { waitUntil } from '@/utils/sleep';
+import { untilTrue } from '@/utils/sleep';
 import type { SyncStage } from './Observability';
 import type { SyncTrigger } from './Sync';
 
@@ -13,7 +13,6 @@ type SyncRequest = {
 
 export default class Scheduler {
 	private readonly pendingRequests: Array<SyncRequest> = [];
-	private isFlushing = false;
 	private isScheduling = false;
 	private realtimeSyncTimer?: number;
 	private scheduledSyncTimer?: number;
@@ -25,6 +24,7 @@ export default class Scheduler {
 			executeSync: (trigger: SyncTrigger) => Promise<void>;
 			registerEvent: (ref: EventRef) => void;
 			app: App;
+			isIdle: Ref<boolean>;
 		},
 	) {}
 
@@ -115,7 +115,7 @@ export default class Scheduler {
 	private readonly scheduleFlush = async () => {
 		if (this.pendingRequests.length === 0 || this.isScheduling) return;
 		this.isScheduling = true;
-		if (this.isFlushing) await waitUntil(() => !this.isFlushing);
+		await untilTrue(this.ctx.isIdle);
 		void this.flush();
 		this.isScheduling = false;
 	};
@@ -134,14 +134,9 @@ export default class Scheduler {
 	};
 
 	private readonly flush = async () => {
-		this.isFlushing = true;
-		const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
-		try {
-			await this.ctx.executeSync(this.reduceBatch(batch));
-			for (const request of batch) request.resolve();
-		} finally {
-			this.isFlushing = false;
-		}
+		const batch = this.pendingRequests.splice(0);
+		await this.ctx.executeSync(this.reduceBatch(batch));
+		for (const request of batch) request.resolve();
 	};
 
 	root = {

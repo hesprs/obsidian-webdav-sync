@@ -57,7 +57,7 @@ export default class Sync {
 	declare readonly events: {
 		syncStarted: { isCancelled: () => boolean; trigger: SyncTrigger };
 		remoteWalkProgress: Progress;
-		syncTerminate: SyncTerminateReason;
+		syncTerminated: SyncTerminateReason;
 		requestConfirmDelete: Array<RemoveLocal>;
 		requestConfirmTasks: Array<BaseTask>;
 		syncCanceled: undefined;
@@ -168,7 +168,7 @@ export default class Sync {
 				taskFactory,
 			});
 			if (tasks.length === 0) {
-				this.dispatch('syncTerminate', { result: 'noop' });
+				this.dispatch('syncTerminated', { result: 'noop' });
 				return;
 			}
 			this.dispatch('log', `Planning finished with ${tasks.length} tasks.`);
@@ -222,14 +222,15 @@ export default class Sync {
 			);
 
 			if (failedCount)
-				this.dispatch('syncTerminate', {
+				this.dispatch('syncTerminated', {
 					error: `Execution of ${failedCount} tasks failed.`,
 					result: 'failed',
 				});
-			else this.dispatch('syncTerminate', { result: 'completed' });
+			else this.dispatch('syncTerminated', { result: 'completed' });
 		} catch (error) {
-			if (cancelled) this.dispatch('syncTerminate', { result: 'cancelled' });
-			else this.dispatch('syncTerminate', { error: toErrorMessage(error), result: 'failed' });
+			if (cancelled) this.dispatch('syncTerminated', { result: 'cancelled' });
+			else
+				this.dispatch('syncTerminated', { error: toErrorMessage(error), result: 'failed' });
 		}
 	};
 

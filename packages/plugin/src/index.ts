@@ -90,6 +90,7 @@ export default class SyncEngine extends Plugin {
 		maxMemoryConsumption: { enabled: true, value: 100 * 1024 ** 2 },
 		maxRequestConcurrency: { enabled: true, value: 50 },
 		minRequestInterval: { enabled: false, value: 0 },
+		moduleAutoUpdate: { enabled: true, value: 10_000 },
 		moduleSources: [],
 		modules: {},
 		noticeStatusOnMobile: true,

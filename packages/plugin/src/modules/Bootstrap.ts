@@ -125,7 +125,7 @@ export default class Bootstrap {
 				this.isCancelled = isCancelled;
 				this.hangingOperations.length = this.memoryConsumption = 0;
 			}),
-			on('syncTerminate', () => {
+			on('syncTerminated', () => {
 				this.isCancelled = () => false;
 			}),
 		);

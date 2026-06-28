@@ -1,11 +1,17 @@
+import type { Ref } from 'synthkernel';
+
 export async function sleep(ms: number) {
 	await new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
-export async function waitUntil<T>(condition: () => T, duration = 100) {
-	while (true) {
-		const result = await Promise.resolve(condition());
-		if (result) return result;
-		await sleep(duration);
-	}
+export function untilTrue(ref: Ref<boolean>) {
+	if (ref()) return;
+	return new Promise<void>((resolve) => {
+		const unsub = ref.subscribe((isTrue) => {
+			if (isTrue) {
+				unsub();
+				resolve();
+			}
+		});
+	});
 }

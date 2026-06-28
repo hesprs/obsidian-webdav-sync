@@ -1,4 +1,4 @@
-## File System Wrappers
+# File System Wrappers
 
 A wrapper is a factory function around a `RemoteFs` instance that intercepts the behavior of the original class. A wrapper function receives the original class in the first argument and returns a `RemoteFs`. Infinite layers of wrappers can be applied to the same FS instance.
 
@@ -9,7 +9,7 @@ There are two kinds of wrappers:
 - **Injection wrapper**: only changes some methods of the original FS by directly re-assigning some public members in the root file system. Does not produce new layers.
 - **Overlay wrapper**: most common, applies a new layer of wrapper at the top of original FS.
 
-### Base Dir Wrapper
+## Base Dir Wrapper
 
 Target: `RemoteFs`
 Type: overlay wrapper
@@ -20,7 +20,7 @@ Instantiates a new class wrappings around the remote FS to make a specific path 
 
 All other methods: prepend the base dir to the received key, relay to the original class method. If the method returns `Stat` or `Array<Stat>`, pre-strip all base dirs in the `key` in it.
 
-### Retry Wrapper
+## Retry Wrapper
 
 Target: `RemoteFs`
 Type: injection wrapper
@@ -29,7 +29,7 @@ Auto-retry requests. Receives an options object including `maxRetry` (number) an
 
 Only re-assigns the `request` method in the original class by obtaining it, wrapping with retry logic, and assigning back.
 
-### Rate Limiter Wrapper
+## Rate Limiter Wrapper
 
 Target: `RemoteFs`
 Type: injection wrapper
@@ -38,7 +38,7 @@ Limit the max concurrency and request interval of remote requests. Receives `max
 
 Only re-assigns the `request` method in the original class by obtaining it, wrapping with a newly instantiated API limiter composable, and assigning back.
 
-### Memory Control Wrapper
+## Memory Control Wrapper
 
 Target: `RemoteFs` & `LocalFs`
 Type: overlay wrapper
@@ -53,7 +53,7 @@ Only intercept `read`, `readStream`, `write`, `writeStream` calls:
 2. When `write` arrives and finishes, or `writeStream` (`LocalFs` only) arrives and the stream is fully consumed, or either of the `write()`, `writeStream()` fails, decrement the consumption, check the pool, resume reads when memory allows.
 3. Inspect whether a stream is fully consumed by create a new `TransformStream` and pipe the original stream through.
 
-### Encryption Wrapper
+## Encryption Wrapper
 
 Target: `RemoteFs`
 Type: overlay wrapper
@@ -82,7 +82,7 @@ Type: overlay wrapper
 
 Similar to Common FS Optimization Wrapper, the only difference if that it coalesces `delete()`, `mkdir()`, `write()`, and `writeStream()` calls.
 
-## Context Wrapper
+### Context Wrapper
 
 Target: `LocalFs` & `RemoteFs`
 Type: overlay wrapper
