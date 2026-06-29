@@ -6,6 +6,8 @@ import CreateLocalDir from '../tasks/CreateLocalDir';
 import CreateRemoteDir from '../tasks/CreateRemoteDir';
 import Download from '../tasks/Donwload';
 import Merge from '../tasks/Merge';
+import MoveLocal from '../tasks/MoveLocal';
+import MoveRemote from '../tasks/MoveRemote';
 import RemoveLocal from '../tasks/RemoveLocal';
 import RemoveRecord from '../tasks/RemoveRecord';
 import RemoveRemote from '../tasks/RemoveRemote';
@@ -52,6 +54,16 @@ export type OptionsWithBothFileStatsAndSettings = {
 	settings: Settings;
 } & TaskOptions;
 
+export type OptionsWithLocalStatAndOldKey = {
+	local: Stat;
+	oldKey: string;
+} & TaskOptions;
+
+export type OptionsWithRemoteStatAndOldKey = {
+	remote: Stat;
+	oldKey: string;
+} & TaskOptions;
+
 export type TaskOptionsMap = {
 	download: OptionsWithRemoteFileStat;
 	upload: OptionsWithLocalFileStat;
@@ -62,6 +74,8 @@ export type TaskOptionsMap = {
 	createRemoteDir: OptionsWithLocalFolderStat;
 	removeRecord: TaskOptions;
 	addRecord: OptionsWithBothStats;
+	moveLocal: OptionsWithRemoteStatAndOldKey;
+	moveRemote: OptionsWithLocalStatAndOldKey;
 };
 export const taskMap = {
 	addRecord: AddRecord,
@@ -69,6 +83,8 @@ export const taskMap = {
 	createRemoteDir: CreateRemoteDir,
 	download: Download,
 	merge: Merge,
+	moveLocal: MoveLocal,
+	moveRemote: MoveRemote,
 	removeLocal: RemoveLocal,
 	removeRecord: RemoveRecord,
 	removeRemote: RemoveRemote,

@@ -131,12 +131,12 @@ export default class Sync {
 			this.on('syncCanceled', () => (cancelled = true));
 			const { record, localFs, remoteFs } = await this.ctx.initializeSync();
 			const [localList, remoteList] = await Promise.all([
-				localFs.listAll('/'),
+				localFs.list('/'),
 				this.settings.realtimeSyncFastMode && trigger === 'realtime'
 					? Promise.resolve(undefined)
 					: (async () => {
 							try {
-								return await remoteFs.listAll('/', (progress) =>
+								return await remoteFs.list('/', (progress) =>
 									this.dispatch('remoteWalkProgress', progress),
 								);
 							} catch (error) {

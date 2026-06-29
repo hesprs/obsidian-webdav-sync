@@ -49,16 +49,17 @@ class EncryptionRemoteFs implements WrappedRemoteFs {
 		public readonly original: RemoteFs,
 		private readonly options: EncryptionWrapperOptions,
 	) {
-		const marker = `${this.original.getUid()}~${this.options.password}`;
+		const { password, memoryDB } = options;
+		const marker = `${original.getUid()}~${password}`;
 		this.pathStores = {
-			decryptedToEncrypted: this.options.memoryDB.getStore('decryptedToEncrypted'),
-			encryptedToDecrypted: this.options.memoryDB.getStore('encryptedToDecrypted'),
+			decryptedToEncrypted: memoryDB.getStore('decryptedToEncrypted'),
+			encryptedToDecrypted: memoryDB.getStore('encryptedToDecrypted'),
 		};
-		if (this.options.memoryDB.getMeta('lastEncryptionUid') !== marker) {
+		if (memoryDB.getMeta('lastEncryptionUid') !== marker) {
 			this.pathStores.decryptedToEncrypted.clear();
 			this.pathStores.encryptedToDecrypted.clear();
-			this.options.memoryDB.setMeta('encryptionKeys', undefined);
-			this.options.memoryDB.setMeta('lastEncryptionUid', marker);
+			memoryDB.setMeta('encryptionKeys', undefined);
+			memoryDB.setMeta('lastEncryptionUid', marker);
 		}
 	}
 
@@ -100,6 +101,10 @@ class EncryptionRemoteFs implements WrappedRemoteFs {
 		return this.original.delete(await this.encryptKey(key));
 	}
 
+	async move(oldKey: string, newKey: string) {
+		return this.original.move(await this.encryptKey(oldKey), await this.encryptKey(newKey));
+	}
+
 	async mkdir(key: string, recursive?: boolean) {
 		return this.original.mkdir(await this.encryptKey(key), recursive);
 	}
@@ -114,15 +119,9 @@ class EncryptionRemoteFs implements WrappedRemoteFs {
 		return this.original.exists(await this.encryptKey(key));
 	}
 
-	async list(key: string) {
+	async list(key: string, progress?: (prog: Progress) => void) {
 		const encryptedKey = await this.encryptKey(key);
-		const stats = await this.original.list(encryptedKey);
-		return this.decryptStats(stats);
-	}
-
-	async listAll(key: string, progress?: (prog: Progress) => void) {
-		const encryptedKey = await this.encryptKey(key);
-		const stats = await this.original.listAll(encryptedKey, progress);
+		const stats = await this.original.list(encryptedKey, progress);
 		return this.decryptStats(stats);
 	}
 

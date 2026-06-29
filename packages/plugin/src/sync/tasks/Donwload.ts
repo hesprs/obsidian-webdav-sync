@@ -17,7 +17,7 @@ export default class Download extends BaseTask<OptionsWithRemoteFileStat> {
 			localUid = await this.localFs.write(this.key, remoteContent);
 		}
 
-		await this.record.upsertRecords({
+		await this.record.upsertRecord({
 			baseText:
 				isMergeablePath(this.key) && remoteContent
 					? arrayBufferToText(remoteContent)

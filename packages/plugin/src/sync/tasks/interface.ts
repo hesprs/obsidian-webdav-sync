@@ -18,7 +18,9 @@ export type TaskNames =
 	| 'merge'
 	| 'removeLocal'
 	| 'removeRemote'
-	| 'upload';
+	| 'upload'
+	| 'moveLocal'
+	| 'moveRemote';
 
 export abstract class BaseTask<T extends TaskOptions = TaskOptions> {
 	constructor(readonly options: BaseTaskOptions & T) {
@@ -79,6 +81,10 @@ export function getTaskIcon(taskName: TaskNames): string {
 		case 'removeRemote': {
 			return 'archive-x';
 		}
+		case 'moveLocal':
+		case 'moveRemote': {
+			return 'file-output';
+		}
 		default: {
 			return 'refresh-cw';
 		}
@@ -94,10 +100,6 @@ export function getTaskColor(taskName: TaskNames): string {
 		case 'removeRemote': {
 			return RED_COLOR;
 		}
-		case 'createRemoteDir':
-		case 'createLocalDir':
-		case 'download':
-		case 'upload':
 		default: {
 			return BLUE_COLOR;
 		}

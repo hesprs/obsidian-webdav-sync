@@ -8,7 +8,7 @@ type DigOriginalResult<
 export default function digOriginal<
 	FS extends RootRemoteFs | RootLocalFs | undefined = undefined,
 	WrappedFs extends RemoteFs | LocalFs = RemoteFs,
->(wrapped: WrappedFs): DigOriginalResult<FS, WrappedFs> {
+>(wrapped: WrappedFs) {
 	let original: RemoteFs | LocalFs = wrapped;
 	while ('original' in original) original = original.original;
 	return original as DigOriginalResult<FS, WrappedFs>;

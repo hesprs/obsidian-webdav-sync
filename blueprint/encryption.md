@@ -27,8 +27,6 @@ The plugin uploads encrypted files to remote, download and decrypt back to local
   - obfuscate file size or modification time
   - obfuscate total file number
   - obfuscate remote root directory name
-  - obfuscate file name equality (will be achieved in plugin v3)
-  - obfuscate tree structure (will be achieved in plugin v3)
 
 ### Algorithms
 
@@ -159,7 +157,7 @@ Receives the memory database instance and _user password_ in the second argument
 
 `stat()`: encrypt the key before relaying, decrypt the `key` in `Stat` when original returns.
 
-`list()`, `listAll()`: encrypt the key before relaying, decrypt the `key` in `Array<Stat>` when original returns.
+`list()`: encrypt the key before relaying, decrypt the `key` in `Array<Stat>` when original returns.
 
 Path segments and derived keys are cached, persistent beyond sync runs. The cache is based on Uni-KV `memoryDB` obtained from context, similar to [Context Wrapper](./file-system-wrappers.md), the cache is reset only when signals changed:
 

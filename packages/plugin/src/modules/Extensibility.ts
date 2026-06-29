@@ -179,6 +179,15 @@ export default class Extensibility {
 		}
 	};
 
+	private readonly deleteModule = async (name: string) => {
+		const version = this.discoveredModules.get(name);
+		if (!version) return;
+		this.unloadModule(name);
+		await this.ctx.app.vault.adapter.remove(this.getModulePath(name));
+		this.discoveredModules.delete(name);
+		delete this.settings.modules[name];
+	};
+
 	private readonly fetchSources = async (cached = true) => {
 		const { dispatch, translate } = this.ctx;
 		const { moduleSources } = this.settings;
@@ -253,6 +262,7 @@ export default class Extensibility {
 	};
 
 	readonly root = {
+		deleteModule: this.deleteModule,
 		discoveredModules: this.discoveredModules,
 		downloadModule: this.downloadModule,
 		fetchSources: this.fetchSources,

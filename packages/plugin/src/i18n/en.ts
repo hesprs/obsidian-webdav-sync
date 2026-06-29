@@ -25,6 +25,8 @@ const en: Translations = {
 	failedToLoadModule: 'Failed to load module "{{name}}"',
 	hide: 'Hide',
 	merge: 'Merge',
+	moveLocal: 'Move local',
+	moveRemote: 'Move remote',
 	none: 'None',
 	removeLocal: 'Remove local',
 	removeRecord: 'Remove record',

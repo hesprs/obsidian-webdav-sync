@@ -74,6 +74,7 @@ test('vault memory wrapper releases budget only after writeStream fully drains',
 	const local = localFs();
 	const wrapper = localMemoryControlWrapper(local.fs, state);
 	const continueDrain = deferred<void>();
+	const firstChunkRead = deferred<void>();
 
 	await wrapper.read('held.md', 4);
 	const pendingRead = wrapper.read('later.md', 5);
@@ -82,8 +83,8 @@ test('vault memory wrapper releases budget only after writeStream fully drains',
 		const reader = source.getReader();
 		const firstChunk = await reader.read();
 		expect(firstChunk.done).toBe(false);
+		firstChunkRead.resolve();
 
-		continueDrain.resolve();
 		await continueDrain.promise;
 
 		const secondChunk = await reader.read();
@@ -94,11 +95,13 @@ test('vault memory wrapper releases budget only after writeStream fully drains',
 	};
 
 	const pendingWriteStream = wrapper.writeStream('stream.md', stream(['ab', 'cd']));
+	await firstChunkRead.promise;
 
 	await flush();
 	expect(local.calls.read).toStrictEqual([['held.md', 4]]);
 	expect(state.memoryConsumption).toBe(4);
 
+	continueDrain.resolve();
 	await pendingWriteStream;
 	await flush();
 

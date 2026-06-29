@@ -63,10 +63,8 @@ export default class Webdav {
 				prettyName: translate('webdav'),
 			}),
 			registerRemoteFsWrapper({
-				apply: (fs) =>
-					this.settings.remoteFs === 'webdav'
-						? baseDirWrapper(fs, this.moduleSettings.baseDirectory)
-						: fs,
+				apply: (fs) => baseDirWrapper(fs, this.moduleSettings.baseDirectory),
+				fsBind: 'webdav',
 				order: 6318,
 			}),
 		);

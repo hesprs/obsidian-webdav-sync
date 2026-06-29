@@ -1,12 +1,14 @@
 This is the monorepo for an extensible Obsidian syncing plugin to sync vault files between Obsidian and various backends. The plugin itself and modules are in `packages/`.
 
+`blueprint/` at the project root contains the canonical spec of this project. Read this when touching sophisticated parts.
+
 ## Commands
 
 - `bun lint`: format and fix fixable lint errors (always run before `bun check`).
 - `bun check`: check types, lint and format (no file change).
 - `bun dev`: fast build for daily debug.
-- `bun tests`: run all tests.
-- `bun test <test path>`: run tests in specific file.
+- `bun tests`: run all tests (do not use `bun test`).
+- `bun tests -F <package-name> -- <test path>`: run tests in specific file.
 - `bun <command> -F <package-name>`: run command targeting a specific package.
 
 ## Packages

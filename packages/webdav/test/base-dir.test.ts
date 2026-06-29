@@ -12,15 +12,15 @@ test('base-dir shim rewrites keys relative to its base', async () => {
 
 	const rootStat = await shim.stat('/');
 	const stat = await shim.stat('note.md');
-	const listAll = await shim.listAll('/');
+	const list = await shim.list('/');
 	await shim.readStream('note.md', 42);
 
 	expect(remote.calls.stat).toStrictEqual(['base/', 'base/note.md']);
 	expect(rootStat).toStrictEqual({ isDir: true, key: '/' });
 	expect(stat).toStrictEqual({ isDir: false, key: 'note.md', mtime: 10, size: 5, uid: 'uid' });
-	expect(remote.calls.listAll).toStrictEqual(['base/']);
+	expect(remote.calls.list).toStrictEqual(['base/']);
 	expect(remote.calls.readStream).toStrictEqual([['base/note.md', 42]]);
-	expect(listAll).toStrictEqual([
+	expect(list).toStrictEqual([
 		{ isDir: true, key: 'folder/' },
 		{ isDir: false, key: 'folder/note.md', mtime: 12, size: 7, uid: 'note-2' },
 	]);

@@ -1,4 +1,5 @@
 import type { requestUrl } from 'obsidian';
+import type { Progress } from '@/types';
 import { syncCancelledError } from '@/sync';
 import type { LocalFs, RemoteFs, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 import digOriginal from '../utils/dig-original';
@@ -50,6 +51,12 @@ class CancellationRemoteFs implements WrappedRemoteFs {
 		return guardCancellation(this.isCancelled, 'both', () => this.original.delete(key));
 	}
 
+	move(oldKey: string, newKey: string) {
+		return guardCancellation(this.isCancelled, 'both', () =>
+			this.original.move(oldKey, newKey),
+		);
+	}
+
 	mkdir(key: string, recursive?: boolean) {
 		return guardCancellation(this.isCancelled, 'both', () =>
 			this.original.mkdir(key, recursive),
@@ -64,14 +71,8 @@ class CancellationRemoteFs implements WrappedRemoteFs {
 		return guardCancellation(this.isCancelled, 'both', () => this.original.exists(key));
 	}
 
-	list(key: string) {
-		return guardCancellation(this.isCancelled, 'both', () => this.original.list(key));
-	}
-
-	listAll(key: string, progress?: Parameters<RemoteFs['listAll']>[1]) {
-		return guardCancellation(this.isCancelled, 'both', () =>
-			this.original.listAll(key, progress),
-		);
+	list(key: string, progress?: (prog: Progress) => void) {
+		return guardCancellation(this.isCancelled, 'both', () => this.original.list(key, progress));
 	}
 }
 
@@ -117,8 +118,8 @@ class CancellationLocalFs implements WrappedLocalFs {
 		return guardCancellation(this.isCancelled, 'both', () => this.original.stat(key));
 	}
 
-	listAll(key: string) {
-		return guardCancellation(this.isCancelled, 'both', () => this.original.listAll(key));
+	list(key: string) {
+		return guardCancellation(this.isCancelled, 'both', () => this.original.list(key));
 	}
 }
 

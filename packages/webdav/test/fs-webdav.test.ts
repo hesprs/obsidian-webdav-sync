@@ -7,6 +7,7 @@ import WebdavFs from '@/webdav/fs';
 import createWebDAVReadStream from '@/webdav/read-stream';
 
 const { collectStream, deferred, flush } = testKit;
+const sharedDate = new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf();
 
 type RequestUrlParam = {
 	body?: string | ArrayBuffer;
@@ -128,7 +129,7 @@ test('stat parses dav fields and prefers etag for uid', async () => {
 	expect(stat).toStrictEqual({
 		isDir: false,
 		key: 'Notes/file.md',
-		mtime: new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf(),
+		mtime: sharedDate,
 		size: 12,
 		uid: 'etag-123',
 	});
@@ -168,52 +169,7 @@ test('mkdir recursively creates parent folders in order', async () => {
 	]);
 });
 
-test('list excludes the queried folder and normalizes descendant keys', async () => {
-	setXmlResponse([
-		{
-			href: 'https://dav.example.com/dav/Notes/',
-			propstat: {
-				prop: { resourcetype: { collection: {} } },
-				status: 'HTTP/1.1 200 OK',
-			},
-		},
-		{
-			href: 'https://dav.example.com/dav/Notes/Folder%20A/',
-			propstat: {
-				prop: { resourcetype: { collection: {} } },
-				status: 'HTTP/1.1 200 OK',
-			},
-		},
-		{
-			href: 'https://dav.example.com/dav/Notes/Project%20Plan.md',
-			propstat: {
-				prop: {
-					getcontentlength: '9',
-					getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
-					resourcetype: {},
-				},
-				status: 'HTTP/1.1 200 OK',
-			},
-		},
-	]);
-
-	const webdav = createWebdavFs({ endpoint: 'https://dav.example.com/dav' });
-
-	const list = await webdav.fs.list('Notes/');
-
-	expect(list).toStrictEqual([
-		{ isDir: true, key: 'Notes/Folder A/' },
-		{
-			isDir: false,
-			key: 'Notes/Project Plan.md',
-			mtime: new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf(),
-			size: 9,
-			uid: String(new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf()),
-		},
-	]);
-});
-
-test('listAll uses infinity when enabled', async () => {
+test('list uses infinity when enabled', async () => {
 	setXmlResponse([
 		{
 			href: 'https://dav.example.com/dav/Notes/',
@@ -239,7 +195,7 @@ test('listAll uses infinity when enabled', async () => {
 
 	let storedProgress: Progress = { completed: 0, total: 0 };
 	const progress = (prog: Progress) => (storedProgress = prog);
-	const list = await webdav.fs.listAll('Notes/', progress);
+	const list = await webdav.fs.list('Notes/', progress);
 
 	expect(webdav.calls[0]).toStrictEqual(
 		expect.objectContaining({
@@ -251,15 +207,15 @@ test('listAll uses infinity when enabled', async () => {
 		{
 			isDir: false,
 			key: 'Notes/file.md',
-			mtime: new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf(),
+			mtime: sharedDate,
 			size: 3,
-			uid: String(new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf()),
+			uid: `${sharedDate}~3`,
 		},
 	]);
 	expect(storedProgress).toStrictEqual({ completed: 1, total: 1 });
 });
 
-test('listAll bfs updates progress when infinity is disabled', async () => {
+test('list bfs updates progress when infinity is disabled', async () => {
 	const rootItems = [
 		{
 			href: 'https://dav.example.com/dav/Notes/',
@@ -312,16 +268,16 @@ test('listAll bfs updates progress when infinity is disabled', async () => {
 
 	let storedProgress: Progress = { completed: 0, total: 0 };
 	const progress = (prog: Progress) => (storedProgress = prog);
-	const list = await webdav.fs.listAll('Notes/', progress);
+	const list = await webdav.fs.list('Notes/', progress);
 
 	expect(list).toStrictEqual([
 		{ isDir: true, key: 'Notes/Folder A/' },
 		{
 			isDir: false,
 			key: 'Notes/Folder A/file.md',
-			mtime: new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf(),
+			mtime: sharedDate,
 			size: 7,
-			uid: String(new Date('Mon, 01 Jan 2024 00:00:00 GMT').valueOf()),
+			uid: `${sharedDate}~7`,
 		},
 	]);
 	expect(storedProgress).toStrictEqual({ completed: 2, current: 'Notes/Folder A/', total: 2 });

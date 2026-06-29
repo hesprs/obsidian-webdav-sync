@@ -55,6 +55,13 @@ class BaseDirRemoteFs implements WrappedRemoteFs {
 		return this.original.delete(joinUnifiedKey(this.baseDir, key));
 	}
 
+	move(oldKey: string, newKey: string) {
+		return this.original.move(
+			joinUnifiedKey(this.baseDir, oldKey),
+			joinUnifiedKey(this.baseDir, newKey),
+		);
+	}
+
 	mkdir(key: string, recursive?: boolean) {
 		return this.original.mkdir(joinUnifiedKey(this.baseDir, key), recursive);
 	}
@@ -69,15 +76,9 @@ class BaseDirRemoteFs implements WrappedRemoteFs {
 		return this.original.exists(joinUnifiedKey(this.baseDir, key));
 	}
 
-	async list(key: string) {
-		return Promise.resolve(this.original.list(joinUnifiedKey(this.baseDir, key))).then(
-			(stats) => stripBaseDirFromStats(this.baseDir, stats),
-		);
-	}
-
-	async listAll(key: string, progress?: (prog: Progress) => void) {
+	async list(key: string, progress?: (prog: Progress) => void) {
 		return Promise.resolve(
-			this.original.listAll(joinUnifiedKey(this.baseDir, key), progress),
+			this.original.list(joinUnifiedKey(this.baseDir, key), progress),
 		).then((stats) => stripBaseDirFromStats(this.baseDir, stats));
 	}
 }

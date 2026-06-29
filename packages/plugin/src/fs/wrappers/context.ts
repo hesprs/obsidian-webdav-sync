@@ -1,6 +1,6 @@
 import type { DatabaseSync, StoreSync } from 'uni-kv';
 import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Storage';
-import type { Stat } from '@/types';
+import type { MaybePromise, Progress, Stat } from '@/types';
 import type { LocalFs, RemoteFs, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 
 type DB = DatabaseSync<MemoryDBSchema, MemoryDBMeta>;
@@ -11,19 +11,28 @@ function getCachedReadSize(store: StoreSync<Stat>, key: string) {
 	return stat.size;
 }
 
-async function cacheStat(store: StoreSync<Stat>, stat: Promise<Stat> | Stat) {
+function upsertFileStat(store: StoreSync<Stat>, key: string, uid: string, size: number) {
+	store.set(key, { isDir: false, key, mtime: 0, size, uid });
+}
+
+function upsertFolderStat(store: StoreSync<Stat>, key: string) {
+	store.set(key, { isDir: true, key });
+}
+
+function moveCachedStat(store: StoreSync<Stat>, oldKey: string, newKey: string) {
+	const stat = store.get(oldKey);
+	if (stat === undefined) return;
+	store.delete(oldKey);
+	store.set(newKey, { ...stat, key: newKey });
+}
+
+async function cacheStat(store: StoreSync<Stat>, stat: MaybePromise<Stat>) {
 	const resolvedStat = await stat;
 	store.set(resolvedStat.key, resolvedStat);
 	return resolvedStat;
 }
 
-async function cacheStats(store: StoreSync<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
-	const resolvedStats = await stats;
-	for (const stat of resolvedStats) store.set(stat.key, stat);
-	return resolvedStats;
-}
-
-async function replaceStats(store: StoreSync<Stat>, stats: Promise<Array<Stat>> | Array<Stat>) {
+async function replaceStats(store: StoreSync<Stat>, stats: MaybePromise<Array<Stat>>) {
 	const resolvedStats = await stats;
 	store.clear();
 	for (const stat of resolvedStats) store.set(stat.key, stat);
@@ -61,16 +70,25 @@ class ContextRemoteFs implements WrappedRemoteFs {
 		return await this.original.readStream(key, size ?? getCachedReadSize(this.statStore, key));
 	}
 
-	write(key: string, value: ArrayBuffer) {
-		return this.original.write(key, value);
+	async write(key: string, value: ArrayBuffer) {
+		const uid = await this.original.write(key, value);
+		upsertFileStat(this.statStore, key, uid, value.byteLength);
+		return uid;
 	}
 
-	delete(key: string) {
-		return this.original.delete(key);
+	async delete(key: string) {
+		await this.original.delete(key);
+		this.statStore.delete(key);
 	}
 
-	mkdir(key: string, recursive?: boolean) {
-		return this.original.mkdir(key, recursive);
+	async mkdir(key: string, recursive?: boolean) {
+		await this.original.mkdir(key, recursive);
+		upsertFolderStat(this.statStore, key);
+	}
+
+	async move(oldKey: string, newKey: string) {
+		await this.original.move(oldKey, newKey);
+		moveCachedStat(this.statStore, oldKey, newKey);
 	}
 
 	async stat(key: string) {
@@ -81,12 +99,8 @@ class ContextRemoteFs implements WrappedRemoteFs {
 		return this.original.exists(key);
 	}
 
-	async list(key: string) {
-		return await cacheStats(this.statStore, this.original.list(key));
-	}
-
-	async listAll(key: string, progress?: Parameters<RemoteFs['listAll']>[1]) {
-		return await replaceStats(this.statStore, this.original.listAll(key, progress));
+	async list(key: string, progress?: (prog: Progress) => void) {
+		return await replaceStats(this.statStore, this.original.list(key, progress));
 	}
 }
 
@@ -113,32 +127,39 @@ class ContextLocalFs implements WrappedLocalFs {
 		return await this.original.read(key, size ?? getCachedReadSize(this.statStore, key));
 	}
 
-	write(key: string, value: ArrayBuffer) {
-		return this.original.write(key, value);
+	async write(key: string, value: ArrayBuffer) {
+		const uid = await this.original.write(key, value);
+		upsertFileStat(this.statStore, key, uid, value.byteLength);
+		return uid;
 	}
 
-	writeStream(key: string, value: ReadableStream<ArrayBuffer>) {
-		return this.original.writeStream(key, value);
+	async writeStream(key: string, value: ReadableStream<ArrayBuffer>) {
+		const uid = await this.original.writeStream(key, value);
+		upsertFileStat(this.statStore, key, uid, 0);
+		return uid;
 	}
 
-	delete(key: string) {
-		return this.original.delete(key);
+	async delete(key: string) {
+		await this.original.delete(key);
+		this.statStore.delete(key);
 	}
 
-	move(oldKey: string, newKey: string) {
-		return this.original.move(oldKey, newKey);
+	async move(oldKey: string, newKey: string) {
+		await this.original.move(oldKey, newKey);
+		moveCachedStat(this.statStore, oldKey, newKey);
 	}
 
-	mkdir(key: string) {
-		return this.original.mkdir(key);
+	async mkdir(key: string) {
+		await this.original.mkdir(key);
+		upsertFolderStat(this.statStore, key);
 	}
 
 	async stat(key: string) {
 		return await cacheStat(this.statStore, this.original.stat(key));
 	}
 
-	async listAll(key: string) {
-		return await replaceStats(this.statStore, this.original.listAll(key));
+	async list(key: string) {
+		return await replaceStats(this.statStore, this.original.list(key));
 	}
 }
 

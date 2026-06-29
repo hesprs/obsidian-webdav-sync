@@ -1,6 +1,6 @@
 import type { Vault, requestUrl } from 'obsidian';
 import type { RootLocalFs, RootRemoteFs } from '@/fs/interface';
-import type { MaybePromise, Stat } from '@/types';
+import type { MaybePromise, Progress, Stat } from '@/types';
 
 type ConnectionResult = { success: true } | { success: false; reason: string };
 
@@ -15,7 +15,6 @@ type FsCalls = {
 	delete: Array<string>;
 	exists: Array<string>;
 	list: Array<string>;
-	listAll: Array<string>;
 	mkdir: Array<string>;
 	move: Array<[string, string]>;
 	read: Array<[string, number | undefined]>;
@@ -29,8 +28,7 @@ type FsControl = {
 	checkConnection: () => MaybePromise<ConnectionResult>;
 	delete: (key: string) => MaybePromise<void>;
 	exists: (key: string) => MaybePromise<boolean>;
-	list: (key: string) => MaybePromise<Array<Stat>>;
-	listAll: (key: string, progress?: unknown) => MaybePromise<Array<Stat>>;
+	list: (key: string, progress?: unknown) => MaybePromise<Array<Stat>>;
 	mkdir: (key: string, recursive?: boolean) => MaybePromise<void>;
 	move: (oldKey: string, newKey: string) => MaybePromise<void>;
 	read: (key: string, size?: number) => MaybePromise<ArrayBuffer>;
@@ -146,7 +144,6 @@ function createCalls(): FsCalls {
 		delete: [],
 		exists: [],
 		list: [],
-		listAll: [],
 		mkdir: [],
 		move: [],
 		read: [],
@@ -163,10 +160,6 @@ function createControl(overrides: Partial<FsControl> = {}): FsControl {
 		delete: async () => undefined,
 		exists: async () => false,
 		list: async (key: string) => [
-			folder(`${key}folder/`),
-			file(`${key}note.md`, { mtime: 11, size: 6, uid: 'note' }),
-		],
-		listAll: async (key: string) => [
 			defaultStat(key),
 			folder(`${key}folder/`),
 			file(`${key}folder/note.md`, { mtime: 12, size: 7, uid: 'note-2' }),
@@ -202,17 +195,17 @@ function remoteFs(options: RemoteHarnessOptions = {}): StubFsHarness<RootRemoteF
 			return await control.exists(key);
 		},
 		getUid: () => options.uid ?? 'remote',
-		list: async (key: string) => {
+		list: async (key: string, progress?: (prog: Progress) => void) => {
 			calls.list.push(key);
-			return await control.list(key);
-		},
-		listAll: async (key: string, progress?: Parameters<RootRemoteFs['listAll']>[1]) => {
-			calls.listAll.push(key);
-			return await control.listAll(key, progress);
+			return await control.list(key, progress);
 		},
 		mkdir: async (key: string, recursive?: boolean) => {
 			calls.mkdir.push(key);
 			return await control.mkdir(key, recursive);
+		},
+		move: async (oldKey: string, newKey: string) => {
+			calls.move.push([oldKey, newKey]);
+			return await control.move(oldKey, newKey);
 		},
 		read: async (key: string, size?: number) => {
 			calls.read.push([key, size]);
@@ -253,9 +246,9 @@ function localFs(options: LocalHarnessOptions = {}): StubFsHarness<RootLocalFs> 
 			return await control.delete(key);
 		},
 		getUid: () => options.uid ?? 'vault',
-		listAll: async (key: string) => {
-			calls.listAll.push(key);
-			return await control.listAll(key);
+		list: async (key: string) => {
+			calls.list.push(key);
+			return await control.list(key);
 		},
 		mkdir: async (key: string) => {
 			calls.mkdir.push(key);

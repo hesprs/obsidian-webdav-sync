@@ -84,25 +84,7 @@ test('stat caches returned file stat', async () => {
 	expect(getLocalStore().get('local.md')).toStrictEqual(localResult);
 });
 
-test('remote list upserts returned stats without clearing unrelated context', async () => {
-	const remote = remoteFs();
-	const remoteWrapper = remoteContextWrapper(remote.fs, db);
-	const preserved = file('preserved.md', { size: 3, uid: 'preserved' });
-	const listedFolder = folder('folder/');
-	const listedFile = file('folder/note.md', { size: 8, uid: 'listed' });
-	getRemoteStore().set(preserved.key, preserved);
-	remote.control.list = async () => [listedFolder, listedFile];
-
-	await remoteWrapper.list('folder/');
-
-	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({
-		'folder/': listedFolder,
-		'folder/note.md': listedFile,
-		'preserved.md': preserved,
-	});
-});
-
-test('listAll replaces previous context snapshot', async () => {
+test('list replaces previous context snapshot', async () => {
 	const remote = remoteFs();
 	const local = localFs();
 	const remoteWrapper = remoteContextWrapper(remote.fs, db);
@@ -117,11 +99,11 @@ test('listAll replaces previous context snapshot', async () => {
 	];
 	getRemoteStore().set('old-remote.md', file('old-remote.md'));
 	getLocalStore().set('old-local.md', file('old-local.md'));
-	remote.control.listAll = async () => remoteStats;
-	local.control.listAll = async () => localStats;
+	remote.control.list = async () => remoteStats;
+	local.control.list = async () => localStats;
 
-	await remoteWrapper.listAll('/');
-	await localWrapper.listAll('/');
+	await remoteWrapper.list('/');
+	await localWrapper.list('/');
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({
 		'remote/': remoteStats[0],
@@ -201,50 +183,97 @@ test('stat and traversal failures do not mutate context', async () => {
 	remote.control.list = async () => {
 		throw new Error('remote list failed');
 	};
-	remote.control.listAll = async () => {
-		throw new Error('remote listAll failed');
-	};
 	local.control.stat = async () => {
 		throw new Error('local stat failed');
 	};
-	local.control.listAll = async () => {
-		throw new Error('local listAll failed');
+	local.control.list = async () => {
+		throw new Error('local list failed');
 	};
 
 	expect(remoteWrapper.stat('remote.md')).rejects.toThrow('remote stat failed');
 	expect(remoteWrapper.list('/')).rejects.toThrow('remote list failed');
-	expect(remoteWrapper.listAll('/')).rejects.toThrow('remote listAll failed');
 	expect(localWrapper.stat('local.md')).rejects.toThrow('local stat failed');
-	expect(localWrapper.listAll('/')).rejects.toThrow('local listAll failed');
+	expect(localWrapper.list('/')).rejects.toThrow('local list failed');
 
 	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'seed-remote.md': remoteSeed });
 	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'seed-local.md': localSeed });
 });
 
-test('mutating calls do not update or clear context', async () => {
+test('write upserts synthesized file stat', async () => {
 	const remote = remoteFs();
 	const local = localFs();
 	const remoteWrapper = remoteContextWrapper(remote.fs, db);
 	const localWrapper = localContextWrapper(local.fs, db);
-	const remoteSeed = file('remote.md', { size: 3, uid: 'remote-seed' });
-	const localSeed = file('local.md', { size: 4, uid: 'local-seed' });
-	getRemoteStore().set(remoteSeed.key, remoteSeed);
-	getLocalStore().set(localSeed.key, localSeed);
-	db.setMeta('lastRemoteContextUid', remote.fs.getUid());
-	db.setMeta('lastLocalContextUid', local.fs.getUid());
-	local.control.writeStream = async () => 'stream-write-uid';
 
 	await remoteWrapper.write('remote-write.md', bytes('123'));
-	await remoteWrapper.delete('remote-delete.md');
-	await remoteWrapper.mkdir('remote-folder/', true);
 	await localWrapper.write('local-write.md', bytes('1234'));
-	await localWrapper.writeStream('local-stream.md', stream());
+
+	expect(getRemoteStore().get('remote-write.md')).toStrictEqual(
+		file('remote-write.md', { mtime: 0, size: 3, uid: 'write-uid' }),
+	);
+	expect(getLocalStore().get('local-write.md')).toStrictEqual(
+		file('local-write.md', { mtime: 0, size: 4, uid: 'write-uid' }),
+	);
+});
+
+test('writeStream upserts synthesized file stat', async () => {
+	const local = localFs();
+	const localWrapper = localContextWrapper(local.fs, db);
+
+	await localWrapper.writeStream('local-stream.md', stream(['ab', 'cd']));
+
+	expect(getLocalStore().get('local-stream.md')).toStrictEqual(
+		file('local-stream.md', { mtime: 0, size: 0, uid: 'stream-uid' }),
+	);
+});
+
+test('delete removes cached record', async () => {
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	getRemoteStore().set('remote-delete.md', file('remote-delete.md'));
+	getLocalStore().set('local-delete.md', file('local-delete.md'));
+
+	await remoteWrapper.delete('remote-delete.md');
 	await localWrapper.delete('local-delete.md');
-	await localWrapper.move('old.md', 'new.md');
+
+	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({});
+	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({});
+});
+
+test('move rewrites cached stat key', async () => {
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+	const remoteStat = file('remote-old.md', { mtime: 2, size: 6, uid: 'remote-old' });
+	const localStat = file('local-old.md', { mtime: 3, size: 7, uid: 'local-old' });
+	getRemoteStore().set(remoteStat.key, remoteStat);
+	getLocalStore().set(localStat.key, localStat);
+
+	await remoteWrapper.move('remote-old.md', 'remote-new.md');
+	await localWrapper.move('local-old.md', 'local-new.md');
+
+	expect(getRemoteStore().get('remote-new.md')).toStrictEqual(
+		file('remote-new.md', { mtime: 2, size: 6, uid: 'remote-old' }),
+	);
+	expect(getLocalStore().get('local-new.md')).toStrictEqual(
+		file('local-new.md', { mtime: 3, size: 7, uid: 'local-old' }),
+	);
+	expect(getRemoteStore().get('remote-old.md')).toBeUndefined();
+	expect(getLocalStore().get('local-old.md')).toBeUndefined();
+});
+
+test('mkdir upserts folder record', async () => {
+	const remote = remoteFs();
+	const local = localFs();
+	const remoteWrapper = remoteContextWrapper(remote.fs, db);
+	const localWrapper = localContextWrapper(local.fs, db);
+
+	await remoteWrapper.mkdir('remote-folder/', true);
 	await localWrapper.mkdir('local-folder/');
 
-	expect(getStoreSnapshot(getRemoteStore())).toStrictEqual({ 'remote.md': remoteSeed });
-	expect(getStoreSnapshot(getLocalStore())).toStrictEqual({ 'local.md': localSeed });
-	expect(db.getMeta('lastRemoteContextUid')).toBe(remote.fs.getUid());
-	expect(db.getMeta('lastLocalContextUid')).toBe(local.fs.getUid());
+	expect(getRemoteStore().get('remote-folder/')).toStrictEqual(folder('remote-folder/'));
+	expect(getLocalStore().get('local-folder/')).toStrictEqual(folder('local-folder/'));
 });

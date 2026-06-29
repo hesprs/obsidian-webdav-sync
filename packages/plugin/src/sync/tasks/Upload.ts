@@ -14,7 +14,7 @@ export default class Upload extends BaseTask<OptionsWithLocalFileStat> {
 		}
 		const remoteUid = await this.remoteFs.write(this.key, localContent);
 
-		await this.record.upsertRecords({
+		await this.record.upsertRecord({
 			baseText: isMergeablePath(this.key) ? arrayBufferToText(localContent) : undefined,
 			key: this.key,
 			record: { isDir: false, local: this.local.uid, remote: remoteUid },

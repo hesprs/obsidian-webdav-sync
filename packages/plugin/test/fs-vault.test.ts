@@ -165,7 +165,7 @@ test('stat should normalize root, file, and folder keys', async () => {
 		key: 'note.md',
 		mtime: 123,
 		size: 9,
-		uid: '123',
+		uid: '123~9',
 	});
 	expect(await vault.fs.stat('folder/')).toEqual({ isDir: true, key: 'folder/' });
 });
@@ -178,7 +178,7 @@ test('write should return refreshed file uid from stat', async () => {
 	});
 	const data = textToArrayBuffer('hello');
 
-	expect(await vault.fs.write('note.md', data)).toBe('456');
+	expect(await vault.fs.write('note.md', data)).toBe('456~11');
 	expect(vault.calls.writeBinary).toStrictEqual([['note.md', 'hello']]);
 	expect(vault.calls.stat).toStrictEqual(['note.md']);
 });
@@ -192,7 +192,7 @@ test('writeStream should append to temp file then rename into place', async () =
 
 	const uid = await vault.fs.writeStream('note.md', stream(['ab', 'cdef']));
 
-	expect(uid).toBe('999');
+	expect(uid).toBe('999~6');
 	expect(vault.calls.writeBinary).toStrictEqual([]);
 	expect(vault.calls.appendBinary).toHaveLength(2);
 	expect(vault.calls.appendBinary[0]?.[0]).toStartWith('.trash/sync-engine-temp/');
@@ -220,7 +220,7 @@ test('delete should follow Obsidian trash fallback policy', async () => {
 	expect(fallbackVault.calls.trashLocal).toStrictEqual(['note.md']);
 });
 
-test('listAll should BFS descendants and exclude queried root', async () => {
+test('list should BFS descendants and exclude queried root', async () => {
 	const vault = createVaultStub({
 		list: {
 			'/': { files: ['root.md'], folders: ['folder'] },
@@ -236,7 +236,7 @@ test('listAll should BFS descendants and exclude queried root', async () => {
 		},
 	});
 
-	const stats = await vault.fs.listAll('/');
+	const stats = await vault.fs.list('/');
 
 	expect(stats.map((stat) => stat.key)).toStrictEqual([
 		'root.md',

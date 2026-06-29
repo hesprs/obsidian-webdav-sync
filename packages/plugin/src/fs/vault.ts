@@ -15,16 +15,10 @@ function toVaultPath(key: string) {
 
 function toStat(
 	nativePath: string,
-	stat: { type: 'file' | 'folder'; mtime: number; size?: number },
+	{ type, mtime, size }: { type: 'file' | 'folder'; mtime: number; size: number },
 ): Stat {
-	if (stat.type === 'folder') return { isDir: true, key: toKey(nativePath, true) };
-	return {
-		isDir: false,
-		key: toKey(nativePath, false),
-		mtime: stat.mtime,
-		size: stat.size ?? 0,
-		uid: String(stat.mtime),
-	};
+	if (type === 'folder') return { isDir: true, key: toKey(nativePath, true) };
+	return { isDir: false, key: toKey(nativePath, false), mtime, size, uid: `${mtime}~${size}` };
 }
 
 async function ensureKeyDir(vault: Vault, key: string): Promise<void> {
@@ -89,6 +83,7 @@ class VaultFs implements RootLocalFs {
 			await this.vault.adapter.rename(tempPath, nativePath);
 			return getFileUid(this, key);
 		} catch (error) {
+			await reader.cancel().catch(() => {});
 			await removeVaultFileIfExists(this.vault, tempPath);
 			throw error;
 		} finally {
@@ -124,34 +119,22 @@ class VaultFs implements RootLocalFs {
 		return toStat(nativePath, stat);
 	}
 
-	async listAll(key: string): Promise<Array<Stat>> {
-		const rootKey = toVaultPath(key);
-		const queue = [rootKey];
+	async list(key: string): Promise<Array<Stat>> {
 		const result: Array<Stat> = [];
-
-		while (queue.length > 0) {
-			const currentLevelKeys = queue.splice(0);
-			const currentLevelResults = await Promise.all(
-				currentLevelKeys.map(async (currentKey) => {
-					const currentNativePath = currentKey === '/' ? '/' : currentKey.slice(0, -1);
-					const contents = await this.vault.adapter.list(currentNativePath);
-					return await Promise.all(
-						[...contents.files, ...contents.folders].map(async (path) => {
-							const stat = await this.vault.adapter.stat(path);
-							if (!stat) throw new Error(`Stat of ${path} not found!`);
-							return toStat(path, stat);
-						}),
-					);
+		const visit = async (dir: string) => {
+			const path = dir === '/' ? '/' : dir.slice(0, -1);
+			const { files, folders } = await this.vault.adapter.list(path);
+			await Promise.all(
+				[...files, ...folders].map(async (p) => {
+					const stat = await this.vault.adapter.stat(p);
+					if (!stat) throw new Error(`Stat of ${p} not found!`);
+					const s = toStat(p, stat);
+					result.push(s);
+					if (s.isDir) await visit(s.key);
 				}),
 			);
-
-			for (const currentLevelItems of currentLevelResults)
-				for (const unifiedStat of currentLevelItems) {
-					result.push(unifiedStat);
-					if (unifiedStat.isDir) queue.push(unifiedStat.key);
-				}
-		}
-
+		};
+		await visit(toVaultPath(key));
 		return result;
 	}
 }

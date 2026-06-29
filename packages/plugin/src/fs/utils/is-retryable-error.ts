@@ -31,30 +31,23 @@ function hasRetryableMessage(message: string): boolean {
 export default function isRetryableError(error: unknown): boolean {
 	const queue: Array<unknown> = [error];
 	const visited = new Set<object>();
-
 	while (queue.length > 0) {
 		const current = queue.shift();
 		if (!current) continue;
-
 		if (typeof current === 'string') {
 			if (hasRetryableMessage(current)) return true;
 			continue;
 		}
-
 		if (typeof current !== 'object') continue;
 		if (visited.has(current)) continue;
 		visited.add(current);
-
 		const errorLike = current as ErrorLike;
 		const statusCode = getStatus(errorLike);
 		if (statusCode && RETRYABLE_STATUS_CODES.has(statusCode)) return true;
-
 		if (typeof errorLike.message === 'string')
 			if (hasRetryableMessage(errorLike.message)) return true;
-
 		if (errorLike.cause) queue.push(errorLike.cause);
 		if (errorLike.error) queue.push(errorLike.error);
 	}
-
 	return false;
 }

@@ -1,10 +1,10 @@
-export { default as commonOptimizationWrapper } from './wrappers/optimization/common-optimization';
+export { remoteOptimizationWrapper, localOptimizationWrapper } from './wrappers/optimization';
 export { remoteContextWrapper, localContextWrapper } from './wrappers/context';
 export { localCancellationWrapper, remoteCancellationWrapper } from './wrappers/cancellation';
 export { remoteMemoryControlWrapper, localMemoryControlWrapper } from './wrappers/memory-control';
 export { default as rateLimiterWrapper } from './wrappers/rate-limiter';
 export { default as retryWrapper } from './wrappers/retry';
-export { default as localOptimizationWrapper } from './wrappers/optimization/vault-optimization';
 export { default as VaultFs } from './vault';
+export { default as hierarchalOptimizer } from './hierarchal-optimizer';
 export type { MemoryControlSharedState } from './wrappers/memory-control';
 export type * from './interface';

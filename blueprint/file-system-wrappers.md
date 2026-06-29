@@ -50,8 +50,7 @@ Separate wrappers for `RootRemoteFs` and `RootLocalFs`, both check and modify sh
 Only intercept `read`, `readStream`, `write`, `writeStream` calls:
 
 1. When `read()` and `readStream()` (`RemoteFs` only) arrives, check if spare memory allows the digestion (`read` has size passed in arguments, `readStream` has fixed size 4 MiB). If allows, let it pass through and increment the consumption by the size. If memory is full, move it into the pool and delay the promise. When `read()` or `readStream()` fails, decrement the memory consumption back, check the pool, resume reads.
-2. When `write` arrives and finishes, or `writeStream` (`LocalFs` only) arrives and the stream is fully consumed, or either of the `write()`, `writeStream()` fails, decrement the consumption, check the pool, resume reads when memory allows.
-3. Inspect whether a stream is fully consumed by create a new `TransformStream` and pipe the original stream through.
+2. When `write()` or `writeStream()` (`LocalFs` only) finishes, or either of the `write()`, `writeStream()` fails, decrement the consumption (fixed 4 MiB for `writeStream()`), check the pool, resume reads when memory allows.
 
 ## Encryption Wrapper
 
@@ -62,34 +61,46 @@ Apply client-side encryption / decryption directly at file system level.
 
 Detail see `./encryption.md`.
 
-## Common FS Optimization Wrapper
+## Optimization Wrapper
 
-Target: `RemoteFs`
+Target: `RemoteFs` & `LocalFs`
 Type: overlay wrapper
+Mechanism: Microtask-batched atom queue
 
-This is an optimization wrapper targeting all folder-hierarchy sensitive backends. Coalesce `delete()`, `mkdir()`, `write()` in each microtask drain cycle, other methods slip through directly, principles:
+### Backend-Dependent Optimization
 
-1. Merge and execute `delete()` calls to the shallowest parent that is also deleted, all concurrently.
-2. Sort and reorder `mkdir()`, execute from shallowest to deepest sequentially, each level concurrently.
-3. `write()` go last concurrently.
-4. If only one call is coalesced, let go directly.
-5. Special case: if `write()` call arrives while some `mkdir()` or `delete()` calls are being delayed / executed by the wrapper, must delay the write call until deletes and directory creation are done.
+Sync routines must remain backend-independent, but optimal execution strategies vary (e.g., WebDAV requires sequential parent directory creation; S3 allows concurrent uploads). This wrapper decouples logic from optimization by intercepting FS API calls at the root layer to reorder, batch, or schedule execution within promises.
 
-## Local FS Optimization Wrapper
+Backends may extend `RootRemoteFs`. Optimizers access these extensions via `digOriginal<SpecialFs>(fs)` to apply backend-specific optimizations without polluting core sync logic.
 
-Target: `LocalFs`
-Type: overlay wrapper
+### Operation Coalescing
 
-Similar to Common FS Optimization Wrapper, the only difference if that it coalesces `delete()`, `mkdir()`, `write()`, and `writeStream()` calls.
+Coalescing exploits the JS event loop: raw tasks initiate in parallel, but their synchronous setup executes within the same microtask drain cycle before hitting the first unresolved promise. Since the wrapper ensures only file operations are pending at this boundary, it captures the full operation set immediately upon microtask flush.
+
+**Interception Rules**:
+
+1. Mutations (`delete`, `mkdir`, `move`): Enqueued as `InputAtom`s.
+2. Reads (`read`, `readStream`): Keys pushed to shared pools (`remotePool` for `RemoteFs`, `localPool` for `LocalFs`). Pools are injected by `Bootstrap` and shared across wrappers.
+3. Writes (`write`, `writeStream`):
+   - Reuses deferred execution if a pending anticipated write exists for the key.
+   - Passes through otherwise.
+   - Note: `readStream` is `RemoteFs`-only; `writeStream` is `LocalFs`-only.
+4. Pass-through: `checkConnection`, `getUid`, `stat`, `exists`, `list` bypass interception.
+
+**Execution**:
+
+On microtask flush, the wrapper drains queued atoms and anticipates opposite-side pool keys into synthetic `write` atoms. These are passed to the injected `batchOptimizer`. Single-atom queues execute directly without batching. Queued atoms share real execution and deferred promises via `createCachedPromise()`.
 
 ### Context Wrapper
 
 Target: `LocalFs` & `RemoteFs`
 Type: overlay wrapper
 
-Intercepts `list()` (`RemoteFS` only), `listAll()`, and `stat()` calls, obtain file & folder stats, and builds a copy of latest stat result in memory KV store using `uni-kv` that survives sync runs. Also completes the `size?` argument in `read()` or `readStream()` (`RemoteFS` only) calls.
+Intercepts `list()`, `stat()`, `write()`, `writeStream()` (`LocalFS` only), `delete()`, `move()`, and `mkdir()` calls, obtain file & folder stats, and builds a copy of best-effort known stat in memory KV store using `uni-kv` that survives sync runs.
 
-Constants (defined in `src/types.ts` and `src/consts.ts`):
+Also completes the `size` optional argument in `read()` or `readStream()` (`RemoteFS` only) calls.
+
+Constants (defined in `packages/plugin/src/types.ts` and `packages/plugin/src/consts.ts`):
 
 - Database name: `STORAGE_NAME`
 - Store meta: `MemoryDBMeta`
@@ -98,11 +109,15 @@ Constants (defined in `src/types.ts` and `src/consts.ts`):
 
 Behavior:
 
-- Eavesdrop on stat operations (`list()`, `listAll()`, `stat()`)
-- On `list()` or `stat()`, upsert the returned stat into the KV store
+- On `stat()`, upsert the returned stat into the KV store
 - On `listAll()`, clear the store and reset according to list result
+- On `write()` or `writeStream()`, upsert stat. `mtime` use 0; `size` for `write()` uses actual size, for `writeStream()` use 0.
+- On `delete()`, delete the record.
+- On `move()`, get and delete original, upsert to new key, also modify the `key` field in the original record.
+- On `mkdir()`, upsert folder record.
+- All memory database mutation should only happen when original operation succeeds and returns.
 - Only once when the wrapper is activated: check if store meta `lastLocalContextUid` or `lastRemoteContextUid` is aligned with the current FS uid. If not, clear target store, and update the meta to the current uid.
-- Intercept `read()` and `readStream()` (`RemoteFs` only) calls, when finding the optional `size?: number` argument is not defined, try to retrieve the size from the store and pass it down. If file even not found in store, keep undefined.
+- Intercept `read()` and `readStream()` calls, when finding the optional `size?: number` argument is not defined, try to retrieve the size from the store and pass it down. If file even not found in store, keep undefined.
 
 ## Cancellation Wrapper
 

@@ -1,3 +1,4 @@
+import type { Progress } from '@/types';
 import type { LocalFs, RemoteFs, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 
 type HangingOperation = {
@@ -83,53 +84,6 @@ async function writeThroughMemory(
 	}
 }
 
-function createReleasingReadableStream(source: ReadableStream<ArrayBuffer>, release: () => void) {
-	let reader: ReadableStreamDefaultReader<ArrayBuffer> | undefined;
-	let released = false;
-
-	const releaseOnce = () => {
-		if (released) return;
-		released = true;
-		release();
-	};
-
-	return new ReadableStream<ArrayBuffer>({
-		async cancel(reason) {
-			releaseOnce();
-			if (!reader) {
-				await source.cancel(reason);
-				return;
-			}
-			try {
-				await reader.cancel(reason);
-			} finally {
-				reader.releaseLock();
-			}
-		},
-		async pull(controller) {
-			const currentReader = reader;
-			if (!currentReader) return;
-			try {
-				const { value, done } = await currentReader.read();
-				if (done) {
-					releaseOnce();
-					currentReader.releaseLock();
-					controller.close();
-					return;
-				}
-				controller.enqueue(value);
-			} catch (error) {
-				releaseOnce();
-				currentReader.releaseLock();
-				controller.error(error);
-			}
-		},
-		start() {
-			reader = source.getReader();
-		},
-	});
-}
-
 async function resolveReadSize(fs: RemoteFs | LocalFs, key: string, size?: number) {
 	if (typeof size === 'number') return size;
 	const stat = await fs.stat(key);
@@ -158,10 +112,7 @@ class MemoryControlRemoteFs implements WrappedRemoteFs {
 	async readStream(key: string, size?: number) {
 		await reserveMemory(this.state, STREAM_RESERVATION_SIZE);
 		try {
-			const source = await this.original.readStream(key, size);
-			return createReleasingReadableStream(source, () =>
-				releaseMemory(this.state, STREAM_RESERVATION_SIZE),
-			);
+			return await this.original.readStream(key, size);
 		} catch (error) {
 			releaseMemory(this.state, STREAM_RESERVATION_SIZE);
 			throw error;
@@ -176,6 +127,10 @@ class MemoryControlRemoteFs implements WrappedRemoteFs {
 		return this.original.delete(key);
 	}
 
+	move(oldKey: string, newKey: string) {
+		return this.original.move(oldKey, newKey);
+	}
+
 	mkdir(key: string, recursive?: boolean) {
 		return this.original.mkdir(key, recursive);
 	}
@@ -188,12 +143,8 @@ class MemoryControlRemoteFs implements WrappedRemoteFs {
 		return this.original.exists(key);
 	}
 
-	list(key: string) {
-		return this.original.list(key);
-	}
-
-	listAll(key: string, progress?: Parameters<RemoteFs['listAll']>[1]) {
-		return this.original.listAll(key, progress);
+	list(key: string, progress?: (prog: Progress) => void) {
+		return this.original.list(key, progress);
 	}
 }
 
@@ -216,20 +167,10 @@ class MemoryControlVaultFs implements WrappedLocalFs {
 	}
 
 	async writeStream(key: string, value: ReadableStream<ArrayBuffer>) {
-		let consumedBytes = 0;
-		const relayedValue = value.pipeThrough(
-			new TransformStream<ArrayBuffer, ArrayBuffer>({
-				transform(chunk, controller) {
-					consumedBytes += chunk.byteLength;
-					controller.enqueue(chunk);
-				},
-			}),
-		);
-
 		try {
-			return await this.original.writeStream(key, relayedValue);
+			return await this.original.writeStream(key, value);
 		} finally {
-			releaseMemory(this.state, consumedBytes);
+			releaseMemory(this.state, STREAM_RESERVATION_SIZE);
 		}
 	}
 
@@ -249,8 +190,8 @@ class MemoryControlVaultFs implements WrappedLocalFs {
 		return this.original.stat(key);
 	}
 
-	listAll(key: string) {
-		return this.original.listAll(key);
+	list(key: string) {
+		return this.original.list(key);
 	}
 }
 

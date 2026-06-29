@@ -1,5 +1,4 @@
 import type { StoreAsync } from 'uni-kv';
-import { isSub } from '@repo/shared';
 import type { RecordStat, RecordStatsMap } from '@/types';
 import type { StorageDatabase } from './database';
 import {
@@ -32,18 +31,7 @@ export default class SyncRecord {
 		]);
 	}
 
-	async removeRecordSubtree(path: string): Promise<void> {
-		const [stateStore, baseTextStore] = await Promise.all([
-			this.getSyncRecordStorePromise,
-			this.getBaseTextStorePromise,
-		]);
-		await Promise.all([
-			this.removeSubtree(stateStore, path),
-			this.removeSubtree(baseTextStore, path),
-		]);
-	}
-
-	async upsertRecords({
+	async upsertRecord({
 		key,
 		record,
 		baseText,
@@ -61,6 +49,31 @@ export default class SyncRecord {
 			baseText === undefined
 				? Promise.resolve()
 				: baseTextStore.set(this.getKey(key), baseText),
+		]);
+	}
+
+	async moveRecord({ key, oldKey }: { key: string; oldKey: string }): Promise<void> {
+		const [stateStore, baseTextStore] = await Promise.all([
+			this.getSyncRecordStorePromise,
+			this.getBaseTextStorePromise,
+		]);
+		const [record, baseText] = await Promise.all([
+			stateStore.get(oldKey),
+			baseTextStore.get(oldKey),
+		]);
+		await Promise.all([
+			baseText === undefined
+				? Promise.resolve()
+				: baseTextStore.batch([
+						{ key, type: 'set', value: baseText },
+						{ key: oldKey, type: 'delete' },
+					]),
+			record === undefined
+				? Promise.resolve()
+				: stateStore.batch([
+						{ key, type: 'set', value: record },
+						{ key: oldKey, type: 'delete' },
+					]),
 		]);
 	}
 
@@ -93,14 +106,5 @@ export default class SyncRecord {
 
 	private getKey(path: string) {
 		return `${this.namespace}~${path}`;
-	}
-
-	private async removeSubtree<T>(store: StoreAsync<T>, path: string) {
-		const keys = (await store.keys()).filter((key) => {
-			const parsed = parseKey(key);
-			return parsed.namespace === this.namespace && isSub(path, parsed.path, true);
-		});
-		if (keys.length === 0) return;
-		await store.batch(keys.map((key) => ({ key, type: 'delete' })));
 	}
 }

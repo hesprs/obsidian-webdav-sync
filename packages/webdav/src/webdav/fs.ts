@@ -144,7 +144,7 @@ function toStat(endpoint: string, item: WebDAVResponseItem): Stat | undefined {
 
 	const mtime = new Date(getDavText(validPropstat.prop.getlastmodified) ?? '').valueOf();
 	const size = Number.parseInt(getDavText(validPropstat.prop.getcontentlength) ?? '0', 10);
-	const uid = getDavText(validPropstat.prop.getetag) ?? mtime.toString();
+	const uid = getDavText(validPropstat.prop.getetag) ?? `${mtime}~${size}`;
 
 	return { isDir: false, key, mtime, size, uid };
 }
@@ -187,7 +187,7 @@ function toDescendantStats(key: string, endpoint: string, items: Array<WebDAVRes
 }
 
 function getFileUid(stat: Stat, key: string) {
-	if (stat.isDir) throw new Error(`WebDAV write returned a folder stat for ${key}`);
+	if (stat.isDir) throw new Error(`WebDAV write returned a folder stat for ${key}.`);
 	return stat.uid;
 }
 
@@ -294,6 +294,14 @@ class WebdavFs implements RootRemoteFs {
 		}
 	}
 
+	async move(oldKey: string, newKey: string) {
+		await this.request({
+			headers: { Authorization: this.auth, Destination: buildUrl(this.endpoint, newKey) },
+			method: 'MOVE',
+			url: buildUrl(this.endpoint, oldKey),
+		});
+	}
+
 	async mkdir(key: string, recursive = false) {
 		const directoryKeys = recursive ? getRecursiveKeys(key) : [key];
 
@@ -305,7 +313,7 @@ class WebdavFs implements RootRemoteFs {
 					url: buildUrl(this.endpoint, directoryKey),
 				});
 			} catch (error) {
-				if (recursive && getStatus(error) === 405) continue;
+				if (getStatus(error) === 405) continue;
 				throw error;
 			}
 	}
@@ -338,52 +346,36 @@ class WebdavFs implements RootRemoteFs {
 		}
 	}
 
-	async list(key: string) {
+	private async listShallow(key: string) {
 		const items = await propfind(this.request, this.auth, this.endpoint, { depth: '1', key });
 		return toDescendantStats(key, this.options.endpoint, items);
 	}
 
-	async listAll(key: string, progress?: (progress: Progress) => void) {
+	async list(key: string, progress?: (progress: Progress) => void) {
 		if (this.options.useInfinity) {
 			const items = await propfind(this.request, this.auth, this.endpoint, {
 				depth: 'infinity',
 				key,
 			});
 			const result = toDescendantStats(key, this.options.endpoint, items);
-
 			progress?.({ completed: 1, total: 1 });
 			return result;
 		}
-
 		const result: Array<Stat> = [];
-		const queue = [key];
 		let completed = 0;
-
-		progress?.({ completed: 0, current: key, total: 1 });
-
-		while (queue.length > 0) {
-			const currentLevelKeys = queue.splice(0);
-			const nextLevelKeys: Array<string> = [];
-
-			await Promise.all(
-				currentLevelKeys.map(async (currentKey) => {
-					const items = await this.list(currentKey);
-					for (const item of items) {
-						if (item.isDir) nextLevelKeys.push(item.key);
-						result.push(item);
-					}
-					completed++;
-					progress?.({
-						completed,
-						current: currentKey,
-						total: completed + nextLevelKeys.length + queue.length,
-					});
-					return items;
-				}),
-			);
-			queue.push(...nextLevelKeys);
-		}
-
+		let total = 1;
+		progress?.({ completed: 0, current: key, total });
+		const visit = async (dir: string) => {
+			const items = await this.listShallow(dir);
+			for (const item of items) {
+				result.push(item);
+				if (item.isDir) total++;
+			}
+			completed++;
+			progress?.({ completed, current: dir, total });
+			await Promise.all(items.filter((i) => i.isDir).map((d) => visit(d.key)));
+		};
+		await visit(key);
 		return result;
 	}
 }

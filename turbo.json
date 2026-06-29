@@ -23,6 +23,6 @@
 		"tests": {
 			"dependsOn": ["^dev"],
 			"cache": true
-		},
+		}
 	}
 }

@@ -183,14 +183,11 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] v2.4: Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
 - [x] v2.4, v2.5.5: Refurbish sync selection UI
 - [x] v2.5: Implement encryption like the one in Remotely Save
-- [ ] v3.0: Rewrite entirely, dynamic module loading, module store, asymmetric storage, and rebrand
+- [x] v3.0: Rewrite entirely, dynamic module loading, module store, asymmetric storage, and rebrand
 
-## License, Copyright, and Originality
+## License
 
-Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on universality, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
+The source code of Sync Engine and modules in this repository are licensed under the [MIT License](https://mit-license.org/).<br>
+The documents in `blueprint/` directory are licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) license.
 
-<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 103124, ratio contributed: 32% -->
-
-Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 28% (till June 12 2026) of the effort is contributed by Nutstore.
-
-Copyright ©️ 2026 Hesprs (Hēsperus), 2025-2026 Nutstore
+Copyright ©️ 2026 Hēsperus and all contributors

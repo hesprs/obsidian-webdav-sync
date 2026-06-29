@@ -219,28 +219,14 @@ test('Stat decrypts returned key and preserves metadata', async () => {
 	expect(remote.calls.stat[0]).not.toBe('Folder/file.md');
 });
 
-test('List and listAll decrypt returned descendant keys', async () => {
+test('List decrypts returned descendant keys', async () => {
 	const folderKey = await captureEncryptedKey('Folder/folder/', 'mkdir');
 	const fileKey = await captureEncryptedKey('Folder/note.md');
 
 	const listRemote = remoteFs({ uid: DEFAULT_REMOTE_UID });
 	const listShim = encryptionWrapper(listRemote.fs, { memoryDB, password: PASSWORD });
-	listRemote.control.list = async () => [
-		{ isDir: true, key: folderKey } as never,
-		{ isDir: false, key: fileKey, mtime: 11, size: 6, uid: 'note' } as never,
-	];
-
-	const list = await listShim.list('Folder/');
-
-	expect(list).toStrictEqual([
-		{ isDir: true, key: 'Folder/folder/' },
-		{ isDir: false, key: 'Folder/note.md', mtime: 11, size: 6, uid: 'note' },
-	]);
-
-	const listAllRemote = remoteFs({ uid: DEFAULT_REMOTE_UID });
-	const listAllShim = encryptionWrapper(listAllRemote.fs, { memoryDB, password: PASSWORD });
 	let forwardedProgress: unknown;
-	listAllRemote.control.listAll = async (_key, progress) => {
+	listRemote.control.list = async (_key, progress) => {
 		forwardedProgress = progress;
 		return [
 			{ isDir: true, key: folderKey } as never,
@@ -249,14 +235,13 @@ test('List and listAll decrypt returned descendant keys', async () => {
 	};
 
 	const progress = () => {};
-	const listAll = await listAllShim.listAll('Folder/', progress);
+	const list = await listShim.list('Folder/', progress);
 
-	expect(listAll).toStrictEqual([
+	expect(list).toStrictEqual([
 		{ isDir: true, key: 'Folder/folder/' },
 		{ isDir: false, key: 'Folder/note.md', mtime: 12, size: 7, uid: 'note-2' },
 	]);
 	expect(listRemote.calls.list[0]).not.toBe('Folder/');
-	expect(listAllRemote.calls.listAll[0]).not.toBe('Folder/');
 	expect(forwardedProgress).toBe(progress);
 });
 

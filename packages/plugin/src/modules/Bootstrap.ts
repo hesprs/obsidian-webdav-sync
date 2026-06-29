@@ -1,17 +1,19 @@
 import type { Events, Translations } from '@';
 import type { DatabaseSync } from 'uni-kv';
+import type { LocalFs, BatchOptimizer, RemoteFs } from '@/fs';
 import type { TogglableValue } from '@/types';
 import {
-	commonOptimizationWrapper,
 	localCancellationWrapper,
 	localContextWrapper,
 	localMemoryControlWrapper,
 	localOptimizationWrapper,
 	rateLimiterWrapper,
 	remoteCancellationWrapper,
+	remoteOptimizationWrapper,
 	remoteContextWrapper,
 	remoteMemoryControlWrapper,
 	retryWrapper,
+	hierarchalOptimizer,
 } from '@/fs';
 import en from '@/i18n/en';
 import { bidirectionalDecider } from '@/sync';
@@ -35,6 +37,9 @@ export default class Bootstrap {
 	private isCancelled = () => false;
 	private memoryConsumption = 0;
 
+	private readonly localPool: Array<string> = [];
+	private readonly remotePool: Array<string> = [];
+
 	declare readonly i18n: {
 		bidirectional: string;
 	};
@@ -54,6 +59,10 @@ export default class Bootstrap {
 			registerRemoteFs: (id: string, entry: RemoteFsEntry) => void;
 			registerRemoteFsWrapper: (entry: RemoteFsWrapperEntry) => void;
 			translate: Translate<Translations>;
+			getLocalOptimizer: () => BatchOptimizer<LocalFs>;
+			getRemoteOptimizer: () => BatchOptimizer<RemoteFs>;
+			registerLocalOptimizer: (optimizer: BatchOptimizer<LocalFs>) => void;
+			registerRemoteOptimizer: (optimizer: BatchOptimizer<RemoteFs>) => void;
 		},
 	) {
 		ctx.registerI18n('en', en);
@@ -67,6 +76,8 @@ export default class Bootstrap {
 			memoryDB,
 			registerDecider,
 			translate: t,
+			registerLocalOptimizer,
+			registerRemoteOptimizer,
 		} = this.ctx;
 		const { maxMemoryConsumption, maxRequestConcurrency, minRequestInterval } = this.settings;
 
@@ -76,6 +87,8 @@ export default class Bootstrap {
 			maxRequestConcurrency.enabled ? maxRequestConcurrency.value : Infinity;
 		const getMinInterval = () => (minRequestInterval.enabled ? minRequestInterval.value : 0);
 
+		registerLocalOptimizer(hierarchalOptimizer);
+		registerRemoteOptimizer(hierarchalOptimizer);
 		registerLocalFsWrapper({
 			apply: (fs) =>
 				localMemoryControlWrapper(fs, {
@@ -85,7 +98,15 @@ export default class Bootstrap {
 				}),
 			order: 1000,
 		});
-		registerLocalFsWrapper({ apply: (fs) => localOptimizationWrapper(fs), order: 2000 });
+		registerLocalFsWrapper({
+			apply: (fs) =>
+				localOptimizationWrapper(fs, {
+					batchOptimizer: this.ctx.getLocalOptimizer(),
+					localPool: this.localPool,
+					remotePool: this.remotePool,
+				}),
+			order: 2000,
+		});
 		registerLocalFsWrapper({
 			apply: (fs) => localCancellationWrapper(fs, this.isCancelled),
 			order: 3000,
@@ -101,7 +122,15 @@ export default class Bootstrap {
 				}),
 			order: 1000,
 		});
-		registerRemoteFsWrapper({ apply: (fs) => commonOptimizationWrapper(fs), order: 2000 });
+		registerRemoteFsWrapper({
+			apply: (fs) =>
+				remoteOptimizationWrapper(fs, {
+					batchOptimizer: this.ctx.getRemoteOptimizer(),
+					localPool: this.localPool,
+					remotePool: this.remotePool,
+				}),
+			order: 2000,
+		});
 		registerRemoteFsWrapper({
 			apply: (fs) => remoteCancellationWrapper(fs, this.isCancelled),
 			order: 3000,
@@ -124,6 +153,7 @@ export default class Bootstrap {
 			on('syncStarted', ({ isCancelled }) => {
 				this.isCancelled = isCancelled;
 				this.hangingOperations.length = this.memoryConsumption = 0;
+				this.localPool.length = this.remotePool.length = 0;
 			}),
 			on('syncTerminated', () => {
 				this.isCancelled = () => false;

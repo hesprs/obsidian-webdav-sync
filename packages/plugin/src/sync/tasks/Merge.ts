@@ -20,7 +20,7 @@ export default class Merge extends BaseTask<OptionsWithBothFileStatsAndSettings>
 		}
 
 		if (arrayBufferEquals(localBuffer, remoteBuffer)) {
-			await this.record.upsertRecords({
+			await this.record.upsertRecord({
 				baseText: arrayBufferToText(localBuffer),
 				key: this.key,
 				record: toRecordStat(this.local, this.remote),
@@ -41,7 +41,7 @@ export default class Merge extends BaseTask<OptionsWithBothFileStatsAndSettings>
 		});
 
 		if (mergeResult.isIdentical) {
-			await this.record.upsertRecords({
+			await this.record.upsertRecord({
 				baseText: localText,
 				key: this.key,
 				record: toRecordStat(this.local, this.remote),
@@ -68,7 +68,7 @@ export default class Merge extends BaseTask<OptionsWithBothFileStatsAndSettings>
 				: Promise.resolve(this.local.uid),
 		]);
 
-		await this.record.upsertRecords({
+		await this.record.upsertRecord({
 			baseText: mergedText,
 			key: this.key,
 			record: { isDir: false, local: localUid, remote: remoteUid },
