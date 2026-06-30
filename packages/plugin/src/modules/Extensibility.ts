@@ -3,7 +3,7 @@ import type { App } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import obsidian, { Notice, requestUrl } from 'obsidian';
 import type { General, TogglableValue } from '@/types';
-import { untilTrue } from '@/utils/sleep';
+import { untilTrue } from '@/utils/wait';
 import type { Dispatch } from './EventBus';
 import type { Translate } from './I18n';
 import { toErrorMessage } from './Sync';

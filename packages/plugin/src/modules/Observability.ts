@@ -7,7 +7,7 @@ import type { Progress } from '@/types';
 import { formatTime } from '@/utils/unit-converter';
 import type { Dispatch, On } from './EventBus';
 import type { Translate } from './I18n';
-import type { SyncTrigger, TaskInfo } from './Sync';
+import type { TaskInfo } from './Sync';
 import { toErrorMessage } from './Sync';
 
 export type SyncStage =
@@ -81,7 +81,7 @@ export default class Observability {
 			translate: Translate<Translations>;
 			isIdle: Ref<boolean>;
 			dispatch: Dispatch<Events>;
-			requestSync: (trigger: SyncTrigger) => Promise<void>;
+			requestSync: (trigger: string) => Promise<void>;
 			showProgress: () => void;
 			addCommand: (command: Command) => Command;
 			addRibbonIcon: AddRibbonIcon;

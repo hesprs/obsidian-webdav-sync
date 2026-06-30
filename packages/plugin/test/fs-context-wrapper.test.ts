@@ -1,6 +1,6 @@
 import { beforeEach, expect, test } from 'bun:test';
 import { openMemoryDB } from 'uni-kv';
-import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Storage';
+import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Registrar';
 import type { Stat } from '@/types';
 import { STORAGE_NAME } from '@/consts';
 import { localContextWrapper, remoteContextWrapper } from '@/fs';

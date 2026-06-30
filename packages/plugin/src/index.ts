@@ -13,9 +13,9 @@ import Extensibility from './modules/Extensibility';
 import I18n from './modules/I18n';
 import Observability from './modules/Observability';
 import ProgressModal from './modules/ProgressModal';
+import Registrar from './modules/Registrar';
 import Scheduler from './modules/Scheduler';
 import SettingsModule from './modules/Settings';
-import Storage from './modules/Storage';
 import Sync from './modules/Sync';
 
 function createGlobMatchOptions(expr: string) {
@@ -31,7 +31,7 @@ const internalModules = [
 	EventBus,
 	Extensibility,
 	SettingsModule,
-	Storage,
+	Registrar,
 	I18n,
 	Sync,
 	Observability,
@@ -62,6 +62,7 @@ export default class SyncEngine extends Plugin {
 	context?: Context;
 	readonly allModules = new Set(internalModules);
 	readonly settings: Settings = {
+		asymmetricStorage: true,
 		confirmDeleteInAutoSync: true,
 		confirmTasksInSync: true,
 		conflictStrategy: ConflictStrategy.DiffMatchPatch,

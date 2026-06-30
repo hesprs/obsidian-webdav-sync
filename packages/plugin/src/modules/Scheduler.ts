@@ -2,12 +2,12 @@ import type { App, EventRef, TAbstractFile } from 'obsidian';
 import type { Ref } from 'synthkernel';
 import type { GlobMatchOptions, TogglableValue } from '@/types';
 import { buildRules, needIncludeFromGlobRules } from '@/utils/glob-match';
-import { untilTrue } from '@/utils/sleep';
+import { untilTrue } from '@/utils/wait';
 import type { SyncStage } from './Observability';
-import type { SyncTrigger } from './Sync';
+import type { SyncTriggerEntry } from './Registrar';
 
 type SyncRequest = {
-	trigger: SyncTrigger;
+	trigger: string;
 	resolve: () => void;
 };
 
@@ -21,10 +21,12 @@ export default class Scheduler {
 	constructor(
 		private readonly ctx: {
 			syncStage: Ref<SyncStage>;
-			executeSync: (trigger: SyncTrigger) => Promise<void>;
+			executeSync: (trigger: string) => Promise<void>;
 			registerEvent: (ref: EventRef) => void;
 			app: App;
 			isIdle: Ref<boolean>;
+			reduceSyncTrigger: (batch: Array<string>) => string;
+			registerSyncTrigger: (trigger: string, entry: SyncTriggerEntry) => void;
 		},
 	) {}
 
@@ -36,7 +38,7 @@ export default class Scheduler {
 		inclusionRules: Array<GlobMatchOptions>;
 	};
 
-	private readonly requestSync = (trigger: SyncTrigger): Promise<void> =>
+	private readonly requestSync = (trigger: string): Promise<void> =>
 		new Promise((resolve) => {
 			this.pendingRequests.push({ resolve, trigger });
 			void this.scheduleFlush();
@@ -120,22 +122,11 @@ export default class Scheduler {
 		this.isScheduling = false;
 	};
 
-	private readonly reduceBatch = (batch: Array<SyncRequest>): SyncTrigger => {
-		const triggerPriority: Array<SyncTrigger> = [
-			'manual',
-			'nonInteractiveManual',
-			'startup',
-			'interval',
-			'realtime',
-		];
-		const trigger =
-			triggerPriority.find((t) => batch.some((r) => r.trigger === t)) ?? 'realtime';
-		return trigger;
-	};
-
 	private readonly flush = async () => {
 		const batch = this.pendingRequests.splice(0);
-		await this.ctx.executeSync(this.reduceBatch(batch));
+		await this.ctx.executeSync(
+			this.ctx.reduceSyncTrigger(batch.map((request) => request.trigger)),
+		);
 		for (const request of batch) request.resolve();
 	};
 

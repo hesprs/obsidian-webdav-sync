@@ -9,13 +9,13 @@ import { testKit } from '@/sdk';
 import { syncCancelledError } from '@/sync';
 
 const { remoteFs, localFs, deferred, flush, stream, bytes } = testKit;
-const sleepMock = mock(() => Promise.resolve());
-void mock.module('@/utils/sleep', () => ({
-	sleep: sleepMock,
+const waitMock = mock(() => Promise.resolve());
+void mock.module('@/utils/wait', () => ({
+	sleep: waitMock,
 }));
 
 test('retry shim retries matching request statuses and waits between attempts', async () => {
-	sleepMock.mockReset();
+	waitMock.mockReset();
 	const remote = remoteFs();
 	remote.control.request = async () => {
 		if (remote.state.requestCalls.length < 3) throw { res: { status: 503 } };
@@ -31,13 +31,13 @@ test('retry shim retries matching request statuses and waits between attempts', 
 	await remote.fs.read('retry.md');
 
 	expect(remote.state.requestCalls).toStrictEqual(['retry.md', 'retry.md', 'retry.md']);
-	expect(sleepMock).toHaveBeenCalledTimes(2);
-	expect(sleepMock).toHaveBeenNthCalledWith(1, 25);
-	expect(sleepMock).toHaveBeenNthCalledWith(2, 25);
+	expect(waitMock).toHaveBeenCalledTimes(2);
+	expect(waitMock).toHaveBeenNthCalledWith(1, 25);
+	expect(waitMock).toHaveBeenNthCalledWith(2, 25);
 });
 
 test('retry shim stops after max retry count and ignores other statuses', async () => {
-	sleepMock.mockReset();
+	waitMock.mockReset();
 	const remote = remoteFs();
 	remote.control.request = async () => {
 		throw { res: { status: 404 } };
@@ -51,7 +51,7 @@ test('retry shim stops after max retry count and ignores other statuses', async 
 
 	expect(remote.fs.read('missing.md')).rejects.toStrictEqual({ res: { status: 404 } });
 	expect(remote.state.requestCalls).toStrictEqual(['missing.md']);
-	expect(sleepMock).not.toHaveBeenCalled();
+	expect(waitMock).not.toHaveBeenCalled();
 });
 
 test('remote pre-call read guard throws before delegation', async () => {

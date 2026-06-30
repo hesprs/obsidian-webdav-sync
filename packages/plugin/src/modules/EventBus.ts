@@ -5,7 +5,6 @@ import type { General } from '@/types';
 import { VERSION } from '@/consts';
 import { formatDateTime } from '@/utils/format-date';
 import { formatTime } from '@/utils/unit-converter';
-import type { SyncTrigger } from './Sync';
 
 // oxlint-disable-next-line sort-keys
 const OS = {
@@ -27,7 +26,7 @@ export type On<O extends object> = <K extends keyof O>(
 	callback: (payload: O[K]) => void,
 ) => () => void;
 type SyncStats = {
-	trigger: SyncTrigger;
+	trigger: string;
 	started: number;
 	outcome?: 'noop' | 'completed' | 'cancelled' | 'failed';
 	ended?: number;

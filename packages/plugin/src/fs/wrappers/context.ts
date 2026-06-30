@@ -1,5 +1,5 @@
 import type { DatabaseSync, StoreSync } from 'uni-kv';
-import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Storage';
+import type { MemoryDBMeta, MemoryDBSchema } from '@/modules/Registrar';
 import type { MaybePromise, Progress, Stat } from '@/types';
 import type { LocalFs, RemoteFs, WrappedLocalFs, WrappedRemoteFs } from '../interface';
 

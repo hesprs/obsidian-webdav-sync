@@ -1,7 +1,7 @@
 import type { Ref } from 'synthkernel';
 
-export async function sleep(ms: number) {
-	await new Promise((resolve) => window.setTimeout(resolve, ms));
+export function sleep(ms: number) {
+	return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
 export function untilTrue(ref: Ref<boolean>) {

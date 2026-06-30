@@ -72,7 +72,8 @@
 		"unicorn/number-literal-case": "off",
 		"eslint/no-multi-assign": "off",
 		"react/jsx-handler-names": "off",
-		"typescript/method-signature-style": ["warn", "property"]
+		"typescript/method-signature-style": ["warn", "property"],
+		"eslint/no-constant-condition": ["warn", { "checkLoops": "none" }]
 	},
 	"env": {
 		"builtin": true,

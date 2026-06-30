@@ -27,6 +27,8 @@ export type {
 	RemoteFsEntry,
 	LocalFsWrapperEntry,
 	RemoteFsWrapperEntry,
-} from '@/modules/Storage';
+	SyncTriggerEntry,
+	RemoteListGetter,
+} from '@/modules/Registrar';
 export type * from '@/fs/interface';
 export type SelectFromContext<O extends object> = Context extends O ? O : never;

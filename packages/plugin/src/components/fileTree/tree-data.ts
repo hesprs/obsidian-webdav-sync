@@ -27,20 +27,31 @@ function getPathSegments(path: string): Array<string> {
 }
 
 function isFolderTask(task: BaseTask): boolean {
-	if (task.name === 'createLocalDir' || task.name === 'createRemoteDir') return true;
-	if (task.name === 'removeLocal') return task.local?.isDir === true;
-	if (task.name === 'removeRemote') return task.remote?.isDir === true;
+	const { name, local, remote } = task;
+	if (name === 'createLocalDir' || name === 'createRemoteDir') return true;
+	if (name === 'removeLocal') return local?.isDir === true;
+	if (name === 'removeRemote') return remote?.isDir === true;
+	if (name === 'moveLocal') return remote?.isDir === true;
+	if (name === 'moveRemote') return local?.isDir === true;
 	return false;
 }
 
 function isCreateFolderTask(task: BaseTask): boolean {
-	return task.name === 'createLocalDir' || task.name === 'createRemoteDir';
+	const { name, local, remote } = task;
+	return (
+		name === 'createLocalDir' ||
+		name === 'createRemoteDir' ||
+		(name === 'moveLocal' && remote?.isDir === true) ||
+		(name === 'moveRemote' && local?.isDir === true)
+	);
 }
 
 function isDeleteFolderTask(task: BaseTask): boolean {
-	if (task.name === 'removeLocal') return task.local?.isDir === true;
-	if (task.name === 'removeRemote') return task.remote?.isDir === true;
-	return false;
+	const { name, local, remote } = task;
+	return (
+		(name === 'removeLocal' && local?.isDir === true) ||
+		(name === 'removeRemote' && remote?.isDir === true)
+	);
 }
 
 function createNode(input: {

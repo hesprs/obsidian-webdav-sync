@@ -24,9 +24,7 @@ export default function hierarchalOptimizer({ atoms, executeAtom }: OptimizerInp
 
 	const dependencies = new Map<InputAtom, Set<InputAtom>>();
 	const umbrellas = new Map<InputAtom, InputAtom>();
-
 	for (const atom of atoms) dependencies.set(atom, new Set());
-
 	const writePathsMap = new Map<string, InputAtom>();
 	for (const atom of atoms) {
 		const paths = getPaths(atom);
@@ -46,9 +44,7 @@ export default function hierarchalOptimizer({ atoms, executeAtom }: OptimizerInp
 					: currentPath;
 				const slashIdx = pathToCheck.lastIndexOf('/');
 				currentPath = slashIdx === -1 ? '/' : pathToCheck.substring(0, slashIdx + 1);
-
 				if (currentPath === '/') break; // Reached root
-
 				const creator = writePathsMap.get(currentPath);
 				if (creator && creator !== A) {
 					dependencies.get(A)!.add(creator);
@@ -61,37 +57,30 @@ export default function hierarchalOptimizer({ atoms, executeAtom }: OptimizerInp
 	// 2. Rule: Rename Sequencing & Namespace Clearance
 	for (const A of atoms) {
 		const pathsA = getPaths(A);
-
 		for (const B of atoms) {
 			if (A === B) continue;
 			const pathsB = getPaths(B);
-
 			// Rename Sequencing
 			if (B.type === 'move') {
 				// Pre-Rename: Operations on descendants of the source must happen before the move
 				if (pathsA.read && isSub(pathsA.read, B.oldKey)) dependencies.get(B)!.add(A);
 				if (pathsA.write && isSub(pathsA.write, B.oldKey)) dependencies.get(B)!.add(A);
-
 				// Post-Rename: Operations on descendants of the target must happen after the move
 				if (pathsA.read && isSub(pathsA.read, B.newKey)) dependencies.get(A)!.add(B);
 				if (pathsA.write && isSub(pathsA.write, B.newKey)) dependencies.get(A)!.add(B);
 			}
-
 			// Namespace Clearance (File vs Folder name collisions)
 			if (A.type === 'delete' && pathsB.write)
 				if (`${pathsA.read}/` === pathsB.write || `${pathsB.write}/` === pathsA.read)
 					dependencies.get(B)!.add(A);
-
 			if (B.type === 'delete' && pathsA.write)
 				if (`${pathsB.read}/` === pathsA.write || `${pathsA.write}/` === pathsB.read)
 					dependencies.get(A)!.add(B);
 		}
-
 		// Umbrella Subsumption: Redundant Descendant Deletions
 		if (A.type === 'delete') {
 			let currentUmbrella: InputAtom | undefined;
 			let maxDepth = -1;
-
 			for (const B of atoms)
 				if (B.type === 'delete' && B !== A)
 					if (isSub(A.key, B.key)) {
@@ -101,7 +90,6 @@ export default function hierarchalOptimizer({ atoms, executeAtom }: OptimizerInp
 							currentUmbrella = B;
 						}
 					}
-
 			if (currentUmbrella) umbrellas.set(A, currentUmbrella);
 		}
 	}

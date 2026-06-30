@@ -3,7 +3,7 @@ import { hash } from '@repo/shared';
 import { deleteMemoryDB, openIndexedDB, openMemoryDB } from 'uni-kv';
 import type { BatchOptimizer, LocalFs, RemoteFs, RootRemoteFs } from '@/fs';
 import type { Decider } from '@/sync';
-import type { RecordStat, Stat } from '@/types';
+import type { MaybePromise, RecordStat, Stat } from '@/types';
 import { STORAGE_NAME } from '@/consts';
 import { VaultFs } from '@/fs';
 import { SyncRecord } from '@/storage';
@@ -38,11 +38,16 @@ export type RemoteFsWrapperEntry = {
 };
 export type RemoteFsEntry = { instantiate: () => RootRemoteFs; prettyName: string };
 export type DeciderEntry = { decider: Decider; prettyName: string };
+export type RemoteListGetter = (fs: RemoteFs) => MaybePromise<Array<Stat> | undefined>;
+export type SyncTriggerEntry = {
+	getRemoteList?: RemoteListGetter;
+	priority: number;
+};
 type RemoteOptimizerEntry = { optimizer: BatchOptimizer<RemoteFs>; fsBind?: string };
 
-export type Infras = Awaited<ReturnType<Storage['initializeSync']>>;
+export type Infras = { localFs: LocalFs; remoteFs: RemoteFs; record: SyncRecord };
 
-export default class Storage {
+export default class Registrar {
 	private readonly memoryDB = openMemoryDB<MemoryDBSchema, MemoryDBMeta>(STORAGE_NAME);
 	private readonly indexedDB = openIndexedDB<IndexedDBSchema, IndexedDBMeta>(STORAGE_NAME);
 
@@ -52,6 +57,7 @@ export default class Storage {
 	private readonly remoteOptimizerRegistry = new Set<RemoteOptimizerEntry>();
 	private readonly remoteFsRegistry = new Map<string, RemoteFsEntry>();
 	private readonly deciderRegistry = new Map<string, DeciderEntry>();
+	private readonly syncTriggerRegistry = new Map<string, SyncTriggerEntry>();
 	declare readonly settings: { remoteFs: string; decider: string };
 
 	constructor(private readonly ctx: { app: App }) {}
@@ -83,6 +89,10 @@ export default class Storage {
 	private readonly registerLocalOptimizer = (optimizer: BatchOptimizer<LocalFs>) => {
 		this.localOptimizerRegistry.add(optimizer);
 		return () => this.localOptimizerRegistry.delete(optimizer);
+	};
+	private readonly registerSyncTrigger = (id: string, entry: SyncTriggerEntry) => {
+		this.syncTriggerRegistry.set(id, entry);
+		return () => this.syncTriggerRegistry.delete(id);
 	};
 
 	private readonly createLocalFs = () => {
@@ -133,6 +143,22 @@ export default class Storage {
 		return remote;
 	};
 
+	private readonly reduceSyncTrigger = (triggers: Array<string>) => {
+		let maxPriority = -Infinity;
+		let trigger: string | undefined;
+		for (const id of triggers) {
+			const entry = this.syncTriggerRegistry.get(id);
+			if (entry && entry.priority >= maxPriority) {
+				maxPriority = entry.priority;
+				trigger = id;
+			}
+		}
+		return trigger ?? 'unknown';
+	};
+
+	private readonly getRemoteListGetter = (trigger: string) =>
+		this.syncTriggerRegistry.get(trigger)?.getRemoteList;
+
 	private readonly initializeSync = async () => {
 		const localFs = this.createLocalFs();
 		const remoteFs = this.createRemoteFs();
@@ -146,16 +172,19 @@ export default class Storage {
 		createRemoteFs: this.createRemoteFs,
 		getDecider: this.getDecider,
 		getLocalOptimizer: this.getLocalOptimizer,
+		getRemoteListGetter: this.getRemoteListGetter,
 		getRemoteOptimizer: this.getRemoteOptimizer,
 		indexedDB: this.indexedDB,
 		initializeSync: this.initializeSync,
 		memoryDB: this.memoryDB,
+		reduceSyncTrigger: this.reduceSyncTrigger,
 		registerDecider: this.registerDecider,
 		registerLocalFsWrapper: this.registerLocalFsWrapper,
 		registerLocalOptimizer: this.registerLocalOptimizer,
 		registerRemoteFs: this.registerRemoteFs,
 		registerRemoteFsWrapper: this.registerRemoteFsWrapper,
 		registerRemoteOptimizer: this.registerRemoteOptimizer,
+		registerSyncTrigger: this.registerSyncTrigger,
 	};
 
 	dispose() {

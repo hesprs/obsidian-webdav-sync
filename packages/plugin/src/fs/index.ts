@@ -1,4 +1,5 @@
 export { remoteOptimizationWrapper, localOptimizationWrapper } from './wrappers/optimization';
+export { default as asymmetricStorageWrapper } from './wrappers/asymmetric-storage';
 export { remoteContextWrapper, localContextWrapper } from './wrappers/context';
 export { localCancellationWrapper, remoteCancellationWrapper } from './wrappers/cancellation';
 export { remoteMemoryControlWrapper, localMemoryControlWrapper } from './wrappers/memory-control';

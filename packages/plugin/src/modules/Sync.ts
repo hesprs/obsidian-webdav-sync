@@ -5,7 +5,6 @@ import type {
 	ConflictStrategy,
 	GlobMatchOptions,
 	Progress,
-	RecordStatsMap,
 	Stat,
 	StatsMap,
 	TogglableValue,
@@ -25,7 +24,7 @@ import {
 import type { Dispatch, On } from './EventBus';
 import type { Translate } from './I18n';
 import type { DeleteConfirmReturn } from './ProgressModal';
-import type { Infras } from './Storage';
+import type { Infras, RemoteListGetter } from './Registrar';
 
 type SyncTerminateReason =
 	| { result: 'cancelled' }
@@ -33,7 +32,6 @@ type SyncTerminateReason =
 	| { result: 'failed'; error: string }
 	| { result: 'noop' };
 
-export type SyncTrigger = 'manual' | 'nonInteractiveManual' | 'startup' | 'interval' | 'realtime';
 export type TaskInfo = { name: TaskNames; key: string; prettyName: string };
 export type FailedTaskInfo = TaskInfo & { error: string };
 
@@ -48,6 +46,7 @@ export default class Sync {
 			getDecider: () => Decider;
 			on: On<Events>;
 			translate: Translate<Translations>;
+			getRemoteListGetter: (trigger: string) => RemoteListGetter | undefined;
 		},
 	) {
 		this.dispatch = ctx.dispatch;
@@ -55,7 +54,7 @@ export default class Sync {
 	}
 
 	declare readonly events: {
-		syncStarted: { isCancelled: () => boolean; trigger: SyncTrigger };
+		syncStarted: { isCancelled: () => boolean; trigger: string };
 		remoteWalkProgress: Progress;
 		syncTerminated: SyncTerminateReason;
 		requestConfirmDelete: Array<RemoveLocal>;
@@ -66,7 +65,6 @@ export default class Sync {
 		executionStarted: Array<BaseTask>;
 	};
 	declare readonly settings: {
-		realtimeSyncFastMode: boolean;
 		maxFileSize: TogglableValue;
 		exclusionRules: Array<GlobMatchOptions>;
 		inclusionRules: Array<GlobMatchOptions>;
@@ -121,7 +119,7 @@ export default class Sync {
 			this.dispatch('requestConfirmDelete', tasks);
 		});
 
-	private readonly executeSync = async (trigger: SyncTrigger) => {
+	private readonly executeSync = async (trigger: string) => {
 		let cancelled = false;
 		let failedCount = 0;
 		let tasks: Array<BaseTask>;
@@ -129,27 +127,30 @@ export default class Sync {
 		try {
 			this.dispatch('syncStarted', { isCancelled, trigger });
 			this.on('syncCanceled', () => (cancelled = true));
+
 			const { record, localFs, remoteFs } = await this.ctx.initializeSync();
-			const [localList, remoteList] = await Promise.all([
-				localFs.list('/'),
-				this.settings.realtimeSyncFastMode && trigger === 'realtime'
-					? Promise.resolve(undefined)
-					: (async () => {
-							try {
-								return await remoteFs.list('/', (progress) =>
-									this.dispatch('remoteWalkProgress', progress),
-								);
-							} catch (error) {
-								if (await remoteFs.exists('/')) throw error;
-								this.dispatch('log', 'Remote root deleted, recreating.');
-								await Promise.all([remoteFs.mkdir('/', true), record.drop()]);
-								return [];
-							}
-						})(),
-			]);
+			const traverseRemote = async () => {
+				try {
+					return await remoteFs.list('/', (progress) =>
+						this.dispatch('remoteWalkProgress', progress),
+					);
+				} catch (error) {
+					if (await remoteFs.exists('/')) throw error;
+					this.dispatch('log', 'Remote root deleted, recreating.');
+					await Promise.all([remoteFs.mkdir('/', true), record.drop()]);
+					return [];
+				}
+			};
+			const getRemoteList = async () => {
+				const list = await (this.ctx.getRemoteListGetter(trigger)?.(remoteFs) ??
+					traverseRemote());
+				if (list) return list;
+				return await traverseRemote();
+			};
+			const [localList, remoteList] = await Promise.all([localFs.list('/'), getRemoteList()]);
 			const records = await record.getRecords();
 			const localStats = this.postProcess(localList);
-			const remoteStats = this.postProcess(remoteList ?? extractRemoteRecords(records));
+			const remoteStats = this.postProcess(remoteList);
 			this.dispatch(
 				'log',
 				`Local ${localStats.size} items, remote ${remoteStats.size} items, record ${records.size} items.`,
@@ -287,17 +288,6 @@ function partition<T, U extends T>(
 
 function toTaskInfo(task: BaseTask): TaskInfo {
 	return { key: task.key, name: task.name, prettyName: task.prettyName };
-}
-
-function extractRemoteRecords(records: RecordStatsMap): Array<Stat> {
-	const res: Array<Stat> = [];
-	for (const [key, record] of records)
-		res.push(
-			record.isDir
-				? { isDir: true, key }
-				: { isDir: false, key, mtime: 0, size: 0, uid: record.remote },
-		);
-	return res;
 }
 
 export function toErrorMessage(error: unknown) {

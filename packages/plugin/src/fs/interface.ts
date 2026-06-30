@@ -71,7 +71,7 @@ export type OutputAtom = InputAtom | CustomAtom;
 export type OptimizerInput<Fs extends RemoteFs | LocalFs> = {
 	atoms: Array<InputAtom>;
 	fs: Fs;
-	executeAtom: <A extends OutputAtom>(atom: A) => ReturnType<A['execute']>;
+	executeAtom: (atom: OutputAtom) => MaybePromise<void | string>;
 };
 
 // Batch optimizer works by wrapping each atom's `execute()` to await for the resolve of other dependency atoms' `execute()`. It may also add / delete atoms.

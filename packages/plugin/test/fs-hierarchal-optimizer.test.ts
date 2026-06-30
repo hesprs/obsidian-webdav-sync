@@ -1,23 +1,24 @@
 import { expect, test } from 'bun:test';
-import type { InputAtom } from '@/fs';
-import hierarchalOptimizer from '@/fs/hierarchal-optimizer';
+import type { InputAtom, OutputAtom } from '@/fs';
+import type { MaybePromise } from '@/sdk';
+import { hierarchalOptimizer } from '@/fs';
 import { testKit } from '@/sdk';
 
 const { deferred, flush } = testKit;
 
 function runOptimizer(atoms: Array<InputAtom>) {
-	const started = new WeakMap<InputAtom, Promise<unknown>>();
-	const executeAtom = ((atom: InputAtom) => {
+	const started = new WeakMap<OutputAtom, MaybePromise<string | void>>();
+	const executeAtom = (atom: OutputAtom) => {
 		const pending = started.get(atom);
 		if (pending) return pending;
 		const result = Promise.resolve(atom.execute());
 		started.set(atom, result);
 		return result;
-	}) as unknown as <A extends InputAtom>(atom: A) => ReturnType<A['execute']>;
+	};
 
 	return {
 		executeAtom,
-		optimized: hierarchalOptimizer({ atoms, executeAtom, fs: {} as never } as any),
+		optimized: hierarchalOptimizer({ atoms, executeAtom, fs: {} as never }),
 	};
 }
 
@@ -25,7 +26,7 @@ test('mkdir chain waits for ancestor mkdir', async () => {
 	const logs: Array<string> = [];
 	const root = deferred<void>();
 	const nested = deferred<void>();
-	const atoms = [
+	const atoms: Array<InputAtom> = [
 		{
 			execute: async () => {
 				logs.push('mkdir:folder/');
@@ -50,7 +51,7 @@ test('mkdir chain waits for ancestor mkdir', async () => {
 			key: 'folder/nested/file.md',
 			type: 'write',
 		},
-	] satisfies Array<InputAtom>;
+	];
 	const { executeAtom, optimized } = runOptimizer(atoms);
 	const pending = Promise.all(optimized.map(executeAtom));
 
@@ -75,7 +76,7 @@ test('mkdir chain waits for ancestor mkdir', async () => {
 test('move waits for source descendants and gates target descendants', async () => {
 	const logs: Array<string> = [];
 	const move = deferred<void>();
-	const atoms = [
+	const atoms: Array<InputAtom> = [
 		{
 			execute: async () => {
 				logs.push('write:folder/src/note.md');
@@ -101,7 +102,7 @@ test('move waits for source descendants and gates target descendants', async () 
 			key: 'folder/dst/note.md',
 			type: 'write',
 		},
-	] satisfies Array<InputAtom>;
+	];
 	const { executeAtom, optimized } = runOptimizer(atoms);
 	const pending = Promise.all(optimized.map(executeAtom));
 
@@ -122,7 +123,7 @@ test('move waits for source descendants and gates target descendants', async () 
 test('delete blocks folder/file collision write', async () => {
 	const logs: Array<string> = [];
 	const release = deferred<void>();
-	const atoms = [
+	const atoms: Array<InputAtom> = [
 		{
 			execute: async () => {
 				logs.push('delete:folder/');
@@ -139,7 +140,7 @@ test('delete blocks folder/file collision write', async () => {
 			key: 'folder',
 			type: 'write',
 		},
-	] satisfies Array<InputAtom>;
+	];
 	const { executeAtom, optimized } = runOptimizer(atoms);
 	const pending = Promise.all(optimized.map(executeAtom));
 

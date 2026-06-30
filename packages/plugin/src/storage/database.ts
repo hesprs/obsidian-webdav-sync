@@ -1,6 +1,6 @@
 import type { DatabaseAsync, StoreAsync } from 'uni-kv';
 import { openIndexedDB } from 'uni-kv';
-import type { IndexedDBMeta, IndexedDBSchema } from '@/modules/Storage';
+import type { IndexedDBMeta, IndexedDBSchema } from '@/modules/Registrar';
 import type { RecordStat, Stat } from '@/types';
 import { STORAGE_NAME } from '@/consts';
 

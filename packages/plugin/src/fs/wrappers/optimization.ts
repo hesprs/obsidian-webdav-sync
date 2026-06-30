@@ -129,7 +129,7 @@ class OptimizationRemoteFs implements WrappedRemoteFs {
 			const atoms = [...this.queue.splice(0), ...writeAtoms];
 			const optimizedAtoms = this.options.batchOptimizer({
 				atoms,
-				executeAtom: (atom) => atom.execute() as never,
+				executeAtom: (atom) => atom.execute(),
 				fs: this.original,
 			});
 			await Promise.all(optimizedAtoms.map((atom) => atom.execute()));

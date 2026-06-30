@@ -36,7 +36,7 @@
 
 Obsidian WebDAV Sync is a general-purpose syncing plugin for Obsidian via a WebDAV server.
 
-There's already a lot of plugins to sync your notes between devices. But when we have a look at the syncing plugin landscape, we can clearly see that each plugin has its own disadvantages that prevents you from using it:
+There's already a lot of plugins to sync your notes between devices. But when we have a look at the syncing plugin landscape, we can clearly see that each plugin has its own disadvantages that prevent you from using it:
 
 - [Remotely Save](https://github.com/remotely-save/remotely-save): full-featured syncing plugin, but currently unmaintained and full of bugs (like [deleted files come back](https://github.com/remotely-save/remotely-save/issues/985)).
 - [Syncthing Integration](https://github.com/LBF38/obsidian-syncthing-integration): a great way of P2P syncing, but requires both of your devices to be online, not 24/7.

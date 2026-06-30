@@ -14,6 +14,7 @@ import {
 	remoteMemoryControlWrapper,
 	retryWrapper,
 	hierarchalOptimizer,
+	asymmetricStorageWrapper,
 } from '@/fs';
 import en from '@/i18n/en';
 import { bidirectionalDecider } from '@/sync';
@@ -26,7 +27,8 @@ import type {
 	MemoryDBSchema,
 	RemoteFsEntry,
 	RemoteFsWrapperEntry,
-} from './Storage';
+	SyncTriggerEntry,
+} from './Registrar';
 
 export default class Bootstrap {
 	private readonly cleanupCallbacks: Array<() => void> = [];
@@ -47,6 +49,8 @@ export default class Bootstrap {
 		maxMemoryConsumption: TogglableValue;
 		maxRequestConcurrency: TogglableValue;
 		minRequestInterval: TogglableValue;
+		realtimeSyncFastMode: boolean;
+		asymmetricStorage: boolean;
 	};
 
 	constructor(
@@ -63,6 +67,7 @@ export default class Bootstrap {
 			getRemoteOptimizer: () => BatchOptimizer<RemoteFs>;
 			registerLocalOptimizer: (optimizer: BatchOptimizer<LocalFs>) => void;
 			registerRemoteOptimizer: (optimizer: BatchOptimizer<RemoteFs>) => void;
+			registerSyncTrigger: (trigger: string, entry: SyncTriggerEntry) => void;
 		},
 	) {
 		ctx.registerI18n('en', en);
@@ -78,6 +83,7 @@ export default class Bootstrap {
 			translate: t,
 			registerLocalOptimizer,
 			registerRemoteOptimizer,
+			registerSyncTrigger,
 		} = this.ctx;
 		const { maxMemoryConsumption, maxRequestConcurrency, minRequestInterval } = this.settings;
 
@@ -86,6 +92,19 @@ export default class Bootstrap {
 		const getMaxConcurrency = () =>
 			maxRequestConcurrency.enabled ? maxRequestConcurrency.value : Infinity;
 		const getMinInterval = () => (minRequestInterval.enabled ? minRequestInterval.value : 0);
+
+		registerSyncTrigger('manual', { priority: 5000 });
+		registerSyncTrigger('nonInteractiveManual', { priority: 4000 });
+		registerSyncTrigger('startup', { priority: 3000 });
+		registerSyncTrigger('interval', { priority: 2000 });
+		registerSyncTrigger('realtime', {
+			getRemoteList: () => {
+				if (this.settings.realtimeSyncFastMode) return;
+				const stats = memoryDB.getStore('remoteStatContext').values();
+				return stats.length ? stats : undefined;
+			},
+			priority: 1000,
+		});
 
 		registerLocalOptimizer(hierarchalOptimizer);
 		registerRemoteOptimizer(hierarchalOptimizer);
@@ -148,6 +167,16 @@ export default class Bootstrap {
 			apply: (fs) => remoteContextWrapper(fs, memoryDB),
 			order: 10_000,
 		});
+		registerRemoteFsWrapper({
+			apply: (fs) =>
+				this.settings.asymmetricStorage ? asymmetricStorageWrapper(fs, memoryDB) : fs,
+			order: 11_000,
+		});
+
+		registerDecider('bidirectional', {
+			decider: bidirectionalDecider,
+			prettyName: t('bidirectional'),
+		});
 
 		this.cleanupCallbacks.push(
 			on('syncStarted', ({ isCancelled }) => {
@@ -159,11 +188,6 @@ export default class Bootstrap {
 				this.isCancelled = () => false;
 			}),
 		);
-
-		registerDecider('bidirectional', {
-			decider: bidirectionalDecider,
-			prettyName: t('bidirectional'),
-		});
 	};
 
 	readonly dispose = () => {
