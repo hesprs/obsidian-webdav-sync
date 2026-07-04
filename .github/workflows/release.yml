@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Bun
         uses: oven-sh/setup-bun@v2
@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Attest plugin artifacts
-        uses: actions/attest@v4.1.0
+        uses: actions/attest@v4.1.1
         with:
           subject-path: |
             dist/main.js
