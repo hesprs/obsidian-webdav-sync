@@ -48,11 +48,11 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 
 ## Notices
 
-### 📢 V3 is Coming
+### 📢 V3 is Beta Testing
 
-An **extremely huge update** V3 is [being actively developed](https://github.com/hesprs/obsidian-webdav-sync/pull/155) and will released soon. It is completely rewritten and will achieve noticeably better sync performance, much shorter load time, and revolutionary extensibility. More crucially, the support for other cloud services such as S3 and GDrive would become effortless in the new paradigm.
+V3 rewrite is a generational milestone of this plugin, it has had multiple breakthroughs in both performance and modularity. The most revolutionary part is the module system, v3 allows you and your AI agents to write your own module and load into the plugin to extend the plugin's functionality.
 
-**However, the plugin in V3 is fundamentally incompatible with current V2. Existing users may suffer breakage when updating.** A guide will be written later, before the release of V3, to elaborate the changes and how to safely upgrade from V2 to V3.
+Now v3 is feature complete and in beta testing. If you feel interested, head to [`feat/fs`](https://github.com/hesprs/obsidian-webdav-sync/tree/feat/fs) branch for more detail.
 
 ### 📢 Here is a Voting
 
@@ -183,7 +183,7 @@ Below is a list of planned features and improvements, the faster this plugin is 
 - [x] v2.4: Implement auto load balancer and download chunking to prevent Obsidian crash on large size files
 - [x] v2.4, v2.5.5: Refurbish sync selection UI
 - [x] v2.5: Implement encryption like the one in Remotely Save
-- [ ] v3.0: Rewrite entirely, dynamic module loading, module store, asymmetric storage, and rebrand
+- [x] v3.0: Rewrite entirely, dynamic module loading, module store, asymmetric storage, and rebrand
 
 ## License, Copyright, and Originality
 
