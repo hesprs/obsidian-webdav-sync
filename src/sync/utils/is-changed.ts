@@ -1,5 +1,6 @@
 import type { RecordStatsMap, StatsMap } from '~/types';
 import isSub from '~/utils/is-sub';
+import logger from '~/utils/logger';
 import type { BaseTask } from '../tasks/task.interface';
 import MergeTask from '../tasks/merge.task';
 import PullTask from '../tasks/pull.task';
@@ -25,8 +26,13 @@ export default function isChanged({
 	// Unable to compare between directories and files
 	if (target.isDir !== thisRecord.isDir) return true;
 	// Compare files
-	if (!target.isDir && !thisRecord.isDir) return !isSameTime(target.mtime, thisRecord.mtime);
-	else {
+	if (!target.isDir && !thisRecord.isDir) {
+		const result = !isSameTime(target.mtime, thisRecord.mtime);
+		logger.debug(
+			`Compare ${source} file ${target.path}: target mtime ${target.mtime} size ${target.size}, record mtime ${thisRecord.mtime} size ${thisRecord.size}, is changed: ${result}.`,
+		);
+		return result;
+	} else {
 		// Compare folders
 		if (tasks)
 			// Reuse tracked file changes

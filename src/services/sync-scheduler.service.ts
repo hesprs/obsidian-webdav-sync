@@ -1,9 +1,10 @@
-import type { TAbstractFile } from 'obsidian';
 import type WebDAVSyncPlugin from '~';
+import { TAbstractFile, TFile } from 'obsidian';
 import type { SyncTrigger } from '~/events';
 import { syncRun } from '~/events';
 import { SyncRunKind } from '~/types';
 import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
+import logger from '~/utils/logger';
 import waitUntil from '~/utils/wait-until';
 import type {
 	default as SyncExecutorService,
@@ -52,7 +53,13 @@ export default class SyncSchedulerService {
 		this.plugin.app.workspace.onLayoutReady(() => {
 			this.plugin.registerEvent(this.plugin.app.vault.on('create', this.onChange));
 			this.plugin.registerEvent(this.plugin.app.vault.on('delete', this.onChange));
-			this.plugin.registerEvent(this.plugin.app.vault.on('modify', this.onChange));
+			this.plugin.registerEvent(
+				this.plugin.app.vault.on('modify', (file) => {
+					this.onChange(file);
+					const mtime = file instanceof TFile ? file.stat.mtime : undefined;
+					logger.debug(`File ${file.path} modified, new mtime: ${mtime}.`);
+				}),
+			);
 			this.plugin.registerEvent(this.plugin.app.vault.on('rename', this.onChange));
 		});
 		const schedule = () => {

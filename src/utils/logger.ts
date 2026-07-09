@@ -32,6 +32,7 @@ const OS = {
 	macOS: Platform.isMacOS,
 	Windows: Platform.isWin,
 };
+const isIndexedDBAvailable = typeof window !== 'undefined' && 'indexedDB' in window;
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
 	return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -126,6 +127,7 @@ class Logger {
 			`Plugin version: ${VERSION}`,
 			`Obsidian API version: ${apiVersion}`,
 			`Operating system: ${operatingSystem}`,
+			`IndexedDB supported: ${isIndexedDBAvailable}`,
 			'',
 		];
 
