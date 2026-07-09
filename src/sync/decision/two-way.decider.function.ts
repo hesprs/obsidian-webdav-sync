@@ -146,17 +146,12 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 					: 'RECORD_NOREMOTE_LOCAL_REMOVE';
 			}
 		} else if (remote)
-			if (local) {
-				localChanged = isChanged({
-					currentStats: localStats,
-					path,
-					records,
-					source: 'local',
-				});
-				caseName = localChanged
-					? 'NORECORD_REMOTE_LOCAL_RECORD'
-					: 'NORECORD_REMOTE_LOCAL_CONFLICT';
-			} else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
+			if (local)
+				caseName =
+					local.size === remote.size
+						? 'NORECORD_REMOTE_LOCAL_RECORD'
+						: 'NORECORD_REMOTE_LOCAL_CONFLICT';
+			else caseName = 'NORECORD_REMOTE_NOLOCAL_PULL';
 		else if (local) caseName = 'NORECORD_NOREMOTE_LOCAL_PUSH';
 
 		const operations = {
