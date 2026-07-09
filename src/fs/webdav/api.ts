@@ -11,9 +11,10 @@ import sleep from '~/utils/sleep';
 type WebDAVProp = {
 	displayname?: string;
 	resourcetype?: { collection?: unknown } | string;
-	getlastmodified?: string;
+	getlastmodified?: string | { '#text': string };
 	getcontentlength?: string;
 	getcontenttype?: string;
+	getetag?: string | { '#text': string };
 };
 
 type WebDAVPropstat = {
@@ -91,7 +92,7 @@ function buildItemUrl(serverUrl: string, _path: string): string {
 function convertToFileStat(
 	stripPrefixes: Array<string>,
 	item: WebDAVResponseItem,
-): StatModel | undefined {
+): { etag?: string; stat: StatModel } | undefined {
 	const props = getValidProps(item);
 	if (!props) return undefined;
 
@@ -112,28 +113,38 @@ function convertToFileStat(
 		typeof lastModResp === 'string'
 			? lastModResp
 			: typeof lastModResp === 'object'
-				? (lastModResp as { '#text': string })['#text']
+				? lastModResp['#text']
 				: '';
+	const etag =
+		typeof props.getetag === 'string'
+			? props.getetag
+			: typeof props.getetag === 'object'
+				? props.getetag['#text']
+				: undefined;
 
-	return isDir
-		? { isDir, path: filename }
-		: {
-				isDir,
-				mtime: new Date(lastMod).valueOf(),
-				path: filename,
-				size: props.getcontentlength ? parseInt(props.getcontentlength) : 0,
-			};
+	return {
+		etag,
+		stat: isDir
+			? { isDir, path: filename }
+			: {
+					isDir,
+					mtime: new Date(lastMod).valueOf(),
+					path: filename,
+					size: props.getcontentlength ? parseInt(props.getcontentlength) : 0,
+				},
+	};
 }
 
 const PROPFIND_BODY = `<?xml version="1.0" encoding="utf-8"?>
 <propfind xmlns="DAV:">
-  <prop>
-    <displayname/>
-    <resourcetype/>
-    <getlastmodified/>
-    <getcontentlength/>
-    <getcontenttype/>
-  </prop>
+	  <prop>
+	    <displayname/>
+	    <resourcetype/>
+	    <getlastmodified/>
+	    <getcontentlength/>
+	    <getetag/>
+	    <getcontenttype/>
+	  </prop>
 </propfind>`;
 
 // oxlint-disable-next-line max-params
@@ -188,6 +199,15 @@ export async function getStat(
 	path: string,
 	customHeaders: Record<string, string> = {},
 ): Promise<StatModel> {
+	return (await getStatWithEtag(endpoint, token, path, customHeaders)).stat;
+}
+
+export async function getStatWithEtag(
+	endpoint: string,
+	token: string,
+	path: string,
+	customHeaders: Record<string, string> = {},
+): Promise<{ etag?: string; stat: StatModel }> {
 	const { items, stripPrefixes } = await propfind(
 		endpoint,
 		token,
@@ -200,7 +220,7 @@ export async function getStat(
 	for (const item of items) {
 		const stat = convertToFileStat(stripPrefixes, item);
 		if (!stat) continue;
-		if (normalizeRemotePath(stat.path) === normalizedTargetPath) return stat;
+		if (normalizeRemotePath(stat.stat.path) === normalizedTargetPath) return stat;
 	}
 
 	throw new Error(`WebDAV stat not found for ${path}`);
@@ -231,7 +251,8 @@ export async function getDirectoryContents(
 			const parsedItems = items
 				.slice(1)
 				.map((item) => convertToFileStat(stripPrefixes, item))
-				.filter((item): item is StatModel => item !== undefined);
+				.filter((item): item is { etag?: string; stat: StatModel } => item !== undefined)
+				.map((item) => item.stat);
 
 			contents.push(...parsedItems);
 

@@ -10,13 +10,8 @@ This is a general-purpose Obsidian syncing plugin to sync notes between Obsidian
 
 ## Code Quality
 
-- No non-null assertion (use `as` assertion)
-- No explicit `any`
 - For mobile compatibility, using any Node API is prohibited.
 - Use sentence case for UI text.
-- Don't export helpers or types that is only used within a file.
-- Tests should only test exported items.
-- Avoid over-defensive validation. If something is sure to be validated / normalized at least once at call site, do not validate / normalize again.
 - All Obsidian API mock go `test/mocks/obsidian.ts`.
 
 ## Repository Map

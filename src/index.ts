@@ -4,6 +4,7 @@ import type { PluginSettings, GlobMatchOptions } from './settings';
 import type { SyncEncryptionContext } from './utils/encryption';
 import SyncRibbonManager from './components/SyncRibbonManager';
 import { syncCancel } from './events';
+import V3MigrationService from './migration';
 import { normalizeBaseDir } from './platform/path';
 import setupCommands from './services/command.setup';
 import ObservabilityService from './services/observability.service';
@@ -36,6 +37,8 @@ function createGlobMatchOptions(expr: string) {
 
 export default class WebDAVSyncPlugin extends Plugin {
 	public isSyncing = false;
+	public isV3MigrationRunning = false;
+	public v3MigrationService!: V3MigrationService;
 	private syncEncryptionContext: SyncEncryptionContext | undefined;
 	public settings: PluginSettings = {
 		account: '',
@@ -87,6 +90,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 			enabled: false,
 			value: 0,
 		},
+		neverShowV3Migration: false,
 		realtimeSync: {
 			enabled: false,
 			value: 5000,
@@ -109,6 +113,7 @@ export default class WebDAVSyncPlugin extends Plugin {
 		token: '',
 		unmergeableStrategy: UnmergeableStrategy.LatestTimeStamp,
 		useGitStyle: false,
+		v3Exists: false,
 	};
 
 	public syncStateStore = new IndexedDbSyncStateStore();
@@ -130,9 +135,12 @@ export default class WebDAVSyncPlugin extends Plugin {
 		setupCommands(this);
 		this.syncSchedulerService.start();
 		patchWebDav();
+		this.v3MigrationService = new V3MigrationService(this);
+		this.v3MigrationService.checkAndPromptOnStartup();
 	}
 
 	onunload() {
+		this.v3MigrationService?.dispose();
 		setPluginInstance(this);
 		void this.syncStateStore.unload();
 		void this.baseTextStore.unload();

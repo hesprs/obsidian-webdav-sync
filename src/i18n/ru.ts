@@ -195,6 +195,48 @@ const translation: typeof en = {
 			desc: 'Использовать маркеры <<<<<<< и >>>>>>> для конфликтов вместо HTML-тегов',
 			name: 'Использовать маркеры конфликтов в стиле Git',
 		},
+		v3Migration: {
+			button: 'Мигрировать сейчас',
+			desc: 'Скопировать текущие настройки и хранилище в Sync Engine.',
+			failure: {
+				body: 'Миграция не удалась: {{error}}',
+				close: 'Закрыть',
+				partialCleanup: 'Очистка исходных данных могла уже начаться.',
+				rolledBack: 'Целевые артефакты были откатаны.',
+				title: 'Миграция не удалась',
+			},
+			name: 'Мигрировать в Sync Engine',
+			progress: {
+				stats: '{{completed}} / {{total}}',
+				step: 'Прогресс',
+				title: 'Миграция в Sync Engine',
+			},
+			prompt: {
+				body: 'Это скопирует текущие настройки и хранилище в Sync Engine. Можно отменить, скрыть это сообщение или продолжить.',
+				cancel: 'Отмена',
+				dontShowAgain: 'Больше не показывать',
+				proceed: 'Продолжить',
+				title: 'Sync Engine доступен',
+			},
+			steps: {
+				cleanupSource: 'Очистка данных WebDAV Sync',
+				completed: 'Миграция завершена',
+				downloadModule: 'Скачивание {{name}}',
+				downloadModules: 'Скачивание модулей',
+				fetchCatalog: 'Получение каталога модулей',
+				migrateStorage: 'Перенос хранилища',
+				prepSync: 'Запуск предварительной синхронизации',
+				resolveModules: 'Определение нужных модулей',
+				writePluginData: 'Запись данных Sync Engine',
+			},
+			success: {
+				body: 'Установите или скачайте Sync Engine, отключите и удалите WebDAV Sync.',
+				close: 'Закрыть',
+				encryptionBody:
+					'Шифрование было включено. Сбросьте удалённые данные и выполните повторную синхронизацию.',
+				title: 'Миграция завершена',
+			},
+		},
 	},
 	sync: {
 		alreadyUpToDate: '✅ Актуальная версия',

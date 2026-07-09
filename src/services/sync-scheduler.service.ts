@@ -7,6 +7,7 @@ import { buildRules, needIncludeFromGlobRules } from '~/utils/glob-match';
 import waitUntil from '~/utils/wait-until';
 import type {
 	default as SyncExecutorService,
+	SyncExecutionResult,
 	SyncExecutionRequest,
 	SyncOptions,
 } from './sync-executor.service';
@@ -14,7 +15,7 @@ import type {
 type SyncRequest = {
 	requestedAt: number;
 	source: SyncTrigger;
-	resolve: (value: boolean) => void;
+	resolve: (value: SyncExecutionResult) => void;
 	reject: (reason?: unknown) => void;
 } & SyncOptions;
 
@@ -35,8 +36,11 @@ export default class SyncSchedulerService {
 		return this.plugin.settings;
 	}
 
-	requestSync(options: SyncOptions & { source: SyncTrigger }): Promise<boolean> {
-		return new Promise<boolean>((resolve, reject) => {
+	requestSync(options: SyncOptions & { source: SyncTrigger }): Promise<SyncExecutionResult> {
+		if (this.plugin.isV3MigrationRunning && options.source !== 'manual')
+			return Promise.resolve({ executed: false });
+
+		return new Promise<SyncExecutionResult>((resolve, reject) => {
 			this.pendingRequests.push({
 				...options,
 				reject,
@@ -71,7 +75,7 @@ export default class SyncSchedulerService {
 	unload() {
 		while (this.pendingRequests.length > 0) {
 			const request = this.pendingRequests.shift();
-			request?.resolve(false);
+			request?.resolve({ executed: false });
 		}
 		if (this.realtimeSyncTimer) {
 			window.clearTimeout(this.realtimeSyncTimer);
@@ -104,6 +108,7 @@ export default class SyncSchedulerService {
 	}
 
 	private readonly onChange = (file: TAbstractFile, old?: string) => {
+		if (this.plugin.isV3MigrationRunning) return;
 		if (syncRun()?.stage === 'executing') return;
 		const { fastRealtimeSync, realtimeSync, filterRules } = this.settings;
 		if (!realtimeSync.enabled) return;
@@ -131,8 +136,11 @@ export default class SyncSchedulerService {
 		if (this.pendingRequests.length === 0 || this.isScheduling) return;
 
 		this.isScheduling = true;
-		if (this.isFlushing || this.plugin.isSyncing)
-			await waitUntil(() => !this.isFlushing && !this.plugin.isSyncing);
+		if (this.isFlushing || this.plugin.isSyncing || this.plugin.isV3MigrationRunning)
+			await waitUntil(
+				() =>
+					!this.isFlushing && !this.plugin.isSyncing && !this.plugin.isV3MigrationRunning,
+			);
 
 		void this.flush();
 		this.isScheduling = false;
@@ -162,7 +170,7 @@ export default class SyncSchedulerService {
 		const batch = this.pendingRequests.splice(0, this.pendingRequests.length);
 		try {
 			const result = await this.syncExecutor.executeSync(this.reduceBatch(batch));
-			for (const request of batch) request.resolve(result.executed);
+			for (const request of batch) request.resolve(result);
 		} catch (error) {
 			for (const request of batch) request.reject(error);
 		} finally {

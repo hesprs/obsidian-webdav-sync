@@ -31,6 +31,20 @@ export default class DevelopmentSettings extends BaseSettings {
 					void this.saveLogsToNote();
 				});
 			});
+
+		if (this.plugin.settings.v3Exists)
+			new Setting(this.containerEl)
+				.setName(t('settings.v3Migration.name'))
+				.setDesc(t('settings.v3Migration.desc'))
+				.setDisabled(this.plugin.isSyncing || this.plugin.isV3MigrationRunning)
+				.addButton((button) =>
+					button
+						.setButtonText(t('settings.v3Migration.button'))
+						.setDisabled(this.plugin.isSyncing || this.plugin.isV3MigrationRunning)
+						.onClick(() =>
+							this.plugin.v3MigrationService.openMigrationModal('development'),
+						),
+				);
 	}
 
 	private async clearVaultRecords() {

@@ -61,6 +61,8 @@ export type PluginSettings = {
 	minWebDAVRequestInterval: ToggleNumericSettingsField; // Value is min
 	startupSync: ToggleNumericSettingsField; // Value is delay
 	scheduledSync: ToggleNumericSettingsField; // Value is interval
+	v3Exists: boolean;
+	neverShowV3Migration: boolean;
 };
 
 export class SyncSettingTab extends PluginSettingTab {
