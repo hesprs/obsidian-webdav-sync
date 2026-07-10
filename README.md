@@ -42,7 +42,6 @@ There's already a lot of plugins to sync your notes between devices. But when we
 - [Syncthing Integration](https://github.com/LBF38/obsidian-syncthing-integration): a great way of P2P syncing, but requires both of your devices to be online, not 24/7.
 - [Live Sync](https://github.com/vrtmrz/obsidian-livesync): most robust solution in the room, but requires custom server setup.
 - [Git Integration](https://github.com/Vinzent03/obsidian-git): ideal for production-level collaboration and provenance, but not suitable for daily usage.
-- Vendor-specific Syncing Plugin (like [Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync)): tailored experiences, but locked to a single vendor.
 
 Acknowledging that WebDAV would be the most convenient DIY solution for syncing, this plugin comes to provide a balanced experience of day-to-day convenience, easy setup, and the robustness that doesn't make your notes into a chaos.
 
@@ -53,12 +52,6 @@ Acknowledging that WebDAV would be the most convenient DIY solution for syncing,
 V3 rewrite is a generational milestone of this plugin, it has had multiple breakthroughs in both performance and modularity. The most revolutionary part is the module system, v3 allows you and your AI agents to write your own module and load into the plugin to extend the plugin's functionality.
 
 Now v3 is feature complete and in beta testing. If you feel interested, head to [`feat/fs`](https://github.com/hesprs/obsidian-webdav-sync/tree/feat/fs) branch for more detail.
-
-### 📢 Here is a Voting
-
-Here's ongoing polling about new directions in development! I recommend **everyone who sees this** participate in the 5-second anonymous polling to allow developers to obtain a fair result.
-
-- 🗳️ [Is `Smart Merge` worth the overhead?](https://github.com/hesprs/obsidian-webdav-sync/discussions/117)
 
 ## Features
 
@@ -189,7 +182,7 @@ Below is a list of planned features and improvements, the faster this plugin is 
 
 Obsidian WebDAV Sync is forked from [Obsidian Nutstore Sync](https://github.com/nutstore/obsidian-nutstore-sync) and has undergone significant overhaul with focuses on universality, performance, and stability, licensed under the [AGPL-3.0 License](hhttps://www.gnu.org/licenses/agpl-3.0.en.html).
 
-<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 103124, ratio contributed: 32% -->
+<!-- Aggregated code line changes: Nutstore = 49577, Hesprs + collaborators = 103124, ratio contributed: 28% -->
 
 Although this project is not affiliated with Nutstore, thanks to Nutstore for their prototype and opensource. About 28% (till June 12 2026) of the effort is contributed by Nutstore.
 
