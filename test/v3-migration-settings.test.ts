@@ -49,7 +49,7 @@ test('buildV3PluginData maps v2 settings into v3 payload', () => {
 	expect(data).toStrictEqual({
 		Encryption: { enabled: true, password: 'secret-ref' },
 		WebDAV: {
-			baseDirectory: '/remote/base/',
+			baseDirectory: 'remote/base/',
 			depthInfinity: true,
 			endpoint: 'https://dav.example.com///',
 			password: 'token-value',
@@ -58,7 +58,7 @@ test('buildV3PluginData maps v2 settings into v3 payload', () => {
 		asymmetricStorage: true,
 		confirmDeleteInAutoSync: false,
 		confirmTasksInSync: true,
-		conflictStrategy: 'keepRemote' as PluginSettings['conflictStrategy'],
+		conflictResolver: 'keepRemote',
 		customHeaders: [
 			{ key: 'Authorization', type: 'plaintext', value: 'Bearer token' },
 			{ key: 'X-Trace', type: 'plaintext', value: 'trace-value' },
@@ -79,25 +79,60 @@ test('buildV3PluginData maps v2 settings into v3 payload', () => {
 		remoteFs: 'webdav',
 		scheduledSync: { enabled: true, value: 30 },
 		startupSync: { enabled: true, value: 45 },
-		unmergeableStrategy: 'skip' as PluginSettings['unmergeableStrategy'],
-		useGitStyle: true,
 	});
+	expect(data).not.toHaveProperty('Smart Merge');
 });
 
-test('buildV3PluginData toggles modules correctly', () => {
+test('buildV3PluginData includes Smart Merge only for diffMatchPatch', () => {
 	const data = buildV3PluginData({
 		locale: 'zh-TW',
 		localeModuleNames: [' I18n British English ', 'I18n British English', 'I18n 繁體中文', ''],
 		settings: {
 			...buildSettings(),
+			conflictStrategy: 'diffMatchPatch' as PluginSettings['conflictStrategy'],
 			encryption: { enabled: false, value: 'secret-ref' },
+			useGitStyle: true,
 		},
 	});
 
 	expect(data.modules).toStrictEqual({
 		'I18n British English': true,
 		'I18n 繁體中文': true,
+		'Smart Merge': true,
 		WebDAV: true,
 	});
+	expect(data).toHaveProperty('Smart Merge', {
+		conflictAEnd: '===',
+		conflictAStart: '<<<<<<<',
+		conflictBEnd: '>>>>>>>',
+		conflictBStart: '===',
+		deletionEnd: '</mark>',
+		deletionStart: '<mark class="conflict deleted">',
+	});
+	expect(data.conflictResolver).toBe('smartMerge');
+	expect(data).not.toHaveProperty('Encryption');
+});
+
+test('buildV3PluginData uses html markers when git style is disabled', () => {
+	const data = buildV3PluginData({
+		locale: 'en',
+		localeModuleNames: [],
+		settings: {
+			...buildSettings(),
+			conflictStrategy: 'diffMatchPatch' as PluginSettings['conflictStrategy'],
+			encryption: { enabled: false, value: 'secret-ref' },
+			useGitStyle: false,
+		},
+	});
+
+	expect(data).toHaveProperty('Smart Merge', {
+		conflictAEnd: '</mark>',
+		conflictAStart: '<mark class="conflict ours">',
+		conflictBEnd: '</mark>',
+		conflictBStart: '<mark class="conflict theirs">',
+		deletionEnd: '</mark>',
+		deletionStart: '<mark class="conflict deleted">',
+	});
+	expect(data.modules).toStrictEqual({ 'Smart Merge': true, WebDAV: true });
 	expect(data).not.toHaveProperty('Encryption');
 });

@@ -303,3 +303,61 @@ test('runMigration keeps target artifacts when source cleanup fails after settin
 		memoryDatabases.clear();
 	}
 });
+
+test('runMigration skips v3 IndexedDB migration for encrypted vaults', async () => {
+	memoryDatabases.clear();
+	requestUrlBehavior = async (options) => {
+		const url = getUrl(options);
+		if (url.endsWith('/modules.json'))
+			return {
+				headers: {},
+				text: JSON.stringify([
+					{
+						description: 'webdav',
+						main: 'https://cdn.example.com/webdav.js',
+						name: 'WebDAV',
+						version: '1.0.0',
+					},
+					{
+						description: 'encryption',
+						main: 'https://cdn.example.com/encryption.js',
+						name: 'Encryption',
+						version: '1.0.0',
+					},
+				]),
+			};
+		return { headers: {}, text: 'module code' };
+	};
+
+	try {
+		const { default: V3MigrationService } = await migrationModule;
+		const { plugin } = createPlugin({
+			executed: true,
+			run: { stage: 'completed' },
+		});
+		plugin.settings.encryption.enabled = true;
+		const sourceNamespace = getSyncStateKey({
+			account: plugin.settings.account,
+			remoteBaseDir: plugin.settings.remoteDir,
+			serverUrl: plugin.settings.serverUrl,
+			vaultName: plugin.app.vault.getName(),
+		});
+		seedSourceStorage(sourceNamespace);
+		getStoreMap('obsidian-webdav-sync', 'base-text').set(
+			`base-text:${sourceNamespace}:/note.md`,
+			'note text',
+		);
+		const progress: Array<{ step: string }> = [];
+
+		const result = await new V3MigrationService(plugin as never).runMigration((update) =>
+			progress.push({ step: update.step }),
+		);
+
+		expect(result).toStrictEqual({ encryptionEnabled: true, ok: true });
+		expect(memoryDatabases.has('sync-engine')).toBe(false);
+		expect(memoryDatabases.has('obsidian-webdav-sync')).toBe(false);
+		expect(progress.map((item) => item.step)).not.toContain('migrateStorage');
+	} finally {
+		memoryDatabases.clear();
+	}
+});

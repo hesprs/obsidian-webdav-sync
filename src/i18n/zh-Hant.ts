@@ -197,26 +197,103 @@ const zhHant: typeof en = {
 		},
 		v3Migration: {
 			button: '立即遷移',
-			desc: '將目前設定與儲存複製到 Sync Engine。',
+			desc: 'WebDAV Sync v3（現已重新命名為 Sync Engine）已正式發布。此版本完全重新編寫，帶來了更卓越的效能與擴充性。此選項可讓您以最低的轉換阻礙，將外掛程式設定與紀錄從 v2 遷移至 v3。',
 			failure: {
 				body: '遷移失敗：{{error}}',
 				close: '關閉',
 				partialCleanup: '來源資料清理可能已經開始。',
-				rolledBack: '目標產物已回滾。',
+				rolledBack: '遷移已還原，未毀損任何資料。',
 				title: '遷移失敗',
 			},
-			name: '遷移到 Sync Engine',
+			name: '遷移至 v3',
 			progress: {
 				stats: '{{completed}} / {{total}}',
 				step: '進度',
-				title: '正在遷移到 Sync Engine',
+				title: '正在遷移至 Sync Engine',
 			},
 			prompt: {
-				body: '這將把目前設定與儲存複製到 Sync Engine。你可以取消、隱藏此提示，或繼續。',
+				bottom: `除了第一步之外，不會修改或刪除任何 vault 檔案。遷移程序不可逆。要立即開始遷移嗎？`,
 				cancel: '取消',
 				dontShowAgain: '不再顯示',
+				middleEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: '遷移將執行以下步驟：',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: '啟動一般同步，以確保本機擁有儲存庫檔案的最新複本。',
+					});
+					ol.createEl('li', {
+						text: '將您的設定轉換為 v3 格式，並儲存至 Sync Engine 外掛程式資料夾。',
+					});
+					ol.createEl('li', {
+						text: '安裝必要的 Sync Engine 模組並儲存至外掛程式資料夾，以確保 v2 與 v3 之間的使用體驗一致。',
+					});
+					ol.createEl('li', {
+						text: '清理此儲存庫舊有的 v2 紀錄儲存空間。',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: '遷移完成後，您需要解除安裝 WebDAV Sync 外掛程式，並從 Obsidian 外掛程式商店安裝並啟用 ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: '。Sync Engine 將會自動讀取您的資料與設定。',
+					});
+					const p3 = frag.createEl('p');
+					p3.createEl('strong', {
+						text: '注意：由於您啟用了加密功能，且 v3 的加密演算法有所變更，您需要在安裝 Sync Engine 後，手動刪除 WebDAV 根目錄並重新上傳您的儲存庫。',
+					});
+				},
+				middleNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: '遷移將執行以下步驟：',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: '啟動一般同步，以確保本機擁有儲存庫檔案的最新複本。',
+					});
+					ol.createEl('li', {
+						text: '將您的設定轉換為 v3 格式，並儲存至 Sync Engine 外掛程式資料夾。',
+					});
+					ol.createEl('li', {
+						text: '安裝必要的 Sync Engine 模組並儲存至外掛程式資料夾，以確保 v2 與 v3 之間的使用體驗一致。',
+					});
+					ol.createEl('li', {
+						text: '執行唯讀的 WebDAV 掃描以收集必要資訊，並儲存至 v3 紀錄儲存空間。',
+					});
+					ol.createEl('li', {
+						text: '清理此儲存庫舊有的 v2 紀錄儲存空間。',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: '遷移完成後，您需要解除安裝 WebDAV Sync 外掛程式，並從 Obsidian 外掛程式商店安裝並啟用 ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: '。Sync Engine 將會自動讀取您的資料與設定。',
+					});
+				},
 				proceed: '繼續',
-				title: 'Sync Engine 已可用',
+				title: 'WebDAV Sync v3 更新',
+				top: (frag: DocumentFragment) => {
+					const p1 = frag.createEl('p');
+					p1.createEl('strong', { text: 'WebDAV Sync v3' });
+					p1.createSpan({ text: '（現已重新命名為 ' });
+					p1.createEl('strong', { text: 'Sync Engine' });
+					p1.createSpan({
+						text: '）已正式發布至 Obsidian 外掛程式商店。此版本完全重新編寫，不僅效能大幅提升，還能透過模組輕鬆擴充。歡迎造訪 ',
+					});
+					p1.createEl('a', {
+						attr: { href: 'https://sync.consensia.cc' },
+						text: 'Sync Engine 官方網站',
+					});
+					p1.createSpan({ text: ' 以了解更多關於本次更新的資訊。' });
+
+					frag.createEl('p', {
+						text: '與 v2 相比，Sync Engine 使用了完全不同的設定與儲存架構。為了讓現有使用者能以最低的流暢度摩擦換用 Sync Engine，需要將既有的設定與紀錄遷移至新格式。',
+					});
+				},
 			},
 			steps: {
 				cleanupSource: '正在清理 WebDAV Sync 資料',
@@ -224,15 +301,50 @@ const zhHant: typeof en = {
 				downloadModule: '正在下載 {{name}}',
 				downloadModules: '正在下載模組',
 				fetchCatalog: '正在取得模組目錄',
-				migrateStorage: '正在遷移儲存',
-				prepSync: '正在執行前置同步',
-				resolveModules: '正在解析所需模組',
+				migrateStorage: '正在遷移儲存空間',
+				prepSync: '正在執行必要的前置同步',
+				resolveModules: '正在剖析所需的模組',
 				writePluginData: '正在寫入 Sync Engine 資料',
 			},
 			success: {
-				body: '請安裝或下載 Sync Engine，停用並刪除 WebDAV Sync。',
+				bodyEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: '現在請執行以下步驟：',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: '解除安裝 WebDAV Sync。',
+					});
+					ol.createEl('li', {
+						text: '前往您的 WebDAV 檔案管理介面，手動刪除原先用來儲存加密儲存庫檔案的資料夾。',
+					});
+					const li3 = ol.createEl('li');
+					li3.createSpan({ text: '從 Obsidian 外掛程式商店安裝並啟用 ' });
+					li3.createEl('strong', { text: 'Sync Engine' });
+					li3.createSpan({ text: '。' });
+					ol.createEl('li', {
+						text: '啟動全新同步以將您的儲存庫上傳至同一個資料夾，新上傳的檔案將會保持加密。（如果您啟用了啟動時同步，此同步程序將會自動執行）',
+					});
+					frag.createEl('p', {
+						text: '執行完上述四個步驟後，遷移即告完成。如果您先前已經遷移過 WebDAV 檔案，則可以跳過步驟 2 與步驟 4。',
+					});
+				},
+				bodyNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: '現在請執行以下步驟：',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', { text: '解除安裝 WebDAV Sync。' });
+					const li2 = ol.createEl('li');
+					li2.createSpan({ text: '從 Obsidian 外掛程式商店安裝並啟用 ' });
+					li2.createEl('strong', { text: 'Sync Engine' });
+					li2.createSpan({ text: '。' });
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: '執行完上述兩個步驟後，遷移即告完成。注意：為了確保無縫遷移，v3 外掛程式的「非對稱儲存（Asymmetric Storage）」功能目前為停用狀態。啟用此功能雖可大幅加快同步速度，但需要遷移 WebDAV 上的檔案結構。',
+					});
+				},
 				close: '關閉',
-				encryptionBody: '已啟用加密。請重設遠端資料並重新同步。',
 				title: '遷移完成',
 			},
 		},

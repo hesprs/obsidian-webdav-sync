@@ -15,6 +15,12 @@ const catalog = [
 		version: '1.0.0',
 	},
 	{
+		description: 'smart merge',
+		main: 'https://cdn.example.com/smart-merge.js',
+		name: 'Smart Merge',
+		version: '1.0.0',
+	},
+	{
 		description: 'british',
 		main: 'https://cdn.example.com/en-GB.js',
 		name: 'I18n British English',
@@ -52,18 +58,31 @@ const catalog = [
 	},
 ];
 
-test('resolveMigrationModules requires WebDAV and optional Encryption', () => {
+test('resolveMigrationModules requires WebDAV, optional Encryption, and gated Smart Merge', () => {
 	expect(
-		resolveMigrationModules({ catalog, encryptionEnabled: true, locale: 'en' }).map(
-			(module) => module.name,
-		),
-	).toStrictEqual(['WebDAV', 'Encryption']);
+		resolveMigrationModules({
+			catalog,
+			encryptionEnabled: true,
+			locale: 'en',
+			smartMergeEnabled: true,
+		}).map((module) => module.name),
+	).toStrictEqual(['WebDAV', 'Encryption', 'Smart Merge']);
 
 	expect(
 		resolveMigrationModules({
 			catalog: catalog.slice(0, 1),
 			encryptionEnabled: false,
 			locale: 'en',
+			smartMergeEnabled: false,
+		}).map((module) => module.name),
+	).toStrictEqual(['WebDAV']);
+
+	expect(
+		resolveMigrationModules({
+			catalog,
+			encryptionEnabled: false,
+			locale: 'en',
+			smartMergeEnabled: false,
 		}).map((module) => module.name),
 	).toStrictEqual(['WebDAV']);
 
@@ -72,6 +91,7 @@ test('resolveMigrationModules requires WebDAV and optional Encryption', () => {
 			catalog: catalog.slice(1),
 			encryptionEnabled: false,
 			locale: 'en',
+			smartMergeEnabled: false,
 		}),
 	).toThrow('Required module not found: WebDAV');
 });
@@ -90,8 +110,11 @@ test('resolveMigrationModules selects locale modules from native-name catalog en
 
 	for (const { expected, locale } of cases)
 		expect(
-			resolveMigrationModules({ catalog, encryptionEnabled: false, locale }).map(
-				(module) => module.name,
-			),
+			resolveMigrationModules({
+				catalog,
+				encryptionEnabled: false,
+				locale,
+				smartMergeEnabled: false,
+			}).map((module) => module.name),
 		).toStrictEqual(expected);
 });

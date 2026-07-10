@@ -247,43 +247,34 @@ test('migrateCurrentNamespaceStorage copies current namespace and preserves unre
 			toV3Key: toV3UnifiedKey,
 		});
 
-		const targetBaseText = await openStore('sync-engine', 'base-text');
-		const targetSyncState = await openStore('sync-engine', 'sync-state');
-		const targetMeta = await openStore('sync-engine', '__uni-kv-meta__');
+		const targetBaseText = await openStore('sync-engine', `base-text-${targetNamespace}`);
+		const targetSyncState = await openStore('sync-engine', targetNamespace);
 		const sourceSyncState = await openStore('obsidian-webdav-sync', 'sync-state');
 		const sourceBaseText = await openStore('obsidian-webdav-sync', 'base-text');
 		const sourceFileChunk = await openStore('obsidian-webdav-sync', 'file-chunk');
 
 		try {
-			expect(
-				(await targetSyncState.getItem(`${targetNamespace}~Folder/`)) as any,
-			).toStrictEqual({
+			expect((await targetSyncState.getItem('Folder/')) as any).toStrictEqual({
 				isDir: true,
 			});
-			expect(
-				(await targetSyncState.getItem(`${targetNamespace}~Folder/note.md`)) as any,
-			).toStrictEqual({
+			expect((await targetSyncState.getItem('Folder/note.md')) as any).toStrictEqual({
 				isDir: false,
 				local: '101~12',
 				remote: 'etag-note',
 			});
-			expect(
-				(await targetSyncState.getItem(`${targetNamespace}~Folder/second.md`)) as any,
-			).toStrictEqual({
+			expect((await targetSyncState.getItem('Folder/second.md')) as any).toStrictEqual({
 				isDir: false,
 				local: '301~21',
 				remote: '401~21',
 			});
-			expect((await targetBaseText.getItem(`${targetNamespace}~Folder/note.md`)) as any).toBe(
-				'note text',
-			);
-			expect(
-				(await targetBaseText.getItem(`${targetNamespace}~Folder/second.md`)) as any,
-			).toBe('second text');
-			expect(
-				(await targetBaseText.getItem(`${targetNamespace}~Folder/`)) as any,
-			).toBeUndefined();
-			expect((await targetMeta.getItem('version')) as any).toBe(1);
+			expect((await targetBaseText.getItem('Folder/note.md')) as any).toBe('note text');
+			expect((await targetBaseText.getItem('Folder/second.md')) as any).toBe('second text');
+			expect((await targetBaseText.getItem('Folder/')) as any).toBeUndefined();
+
+			const targetDatabase = memoryDatabases.get('sync-engine');
+			expect(targetDatabase?.has('sync-state')).toBe(false);
+			expect(targetDatabase?.has('base-text')).toBe(false);
+			expect(targetDatabase?.has('__uni-kv-meta__')).toBe(false);
 
 			expect((await sourceSyncState.keys()).sort()).toStrictEqual([
 				'sync-state:other-namespace:/Other/keep.md',
@@ -292,13 +283,14 @@ test('migrateCurrentNamespaceStorage copies current namespace and preserves unre
 				'base-text:other-namespace:/Other/keep.md',
 			]);
 			expect((await sourceFileChunk.keys()).sort()).toStrictEqual([
+				'file-chunk:b08c8cd4:12:0:12:Folder/note.md',
+				'file-chunk:b08c8cd4:21:0:21:Folder/second.md',
 				'file-chunk:other-namespace:7:0:7:Other/keep.md',
 			]);
 		} finally {
 			await Promise.all([
 				targetBaseText.destroy(),
 				targetSyncState.destroy(),
-				targetMeta.destroy(),
 				sourceSyncState.destroy(),
 				sourceBaseText.destroy(),
 				sourceFileChunk.destroy(),
@@ -347,8 +339,8 @@ test('migrateCurrentNamespaceStorage leaves source data intact when target write
 		expect(migrationError).toBeInstanceOf(Error);
 		expect((migrationError as Error).message).toBe('remote uid unavailable');
 
-		const targetBaseText = await openStore('sync-engine', 'base-text');
-		const targetSyncState = await openStore('sync-engine', 'sync-state');
+		const targetBaseText = await openStore('sync-engine', `base-text-${targetNamespace}`);
+		const targetSyncState = await openStore('sync-engine', targetNamespace);
 		const sourceSyncState = await openStore('obsidian-webdav-sync', 'sync-state');
 		const sourceBaseText = await openStore('obsidian-webdav-sync', 'base-text');
 		const sourceFileChunk = await openStore('obsidian-webdav-sync', 'file-chunk');
@@ -356,6 +348,7 @@ test('migrateCurrentNamespaceStorage leaves source data intact when target write
 		try {
 			expect((await targetSyncState.keys()) as any).toStrictEqual([]);
 			expect((await targetBaseText.keys()) as any).toStrictEqual([]);
+			expect(memoryDatabases.get('sync-engine')?.has('__uni-kv-meta__')).toBe(false);
 			expect((await sourceSyncState.keys()) as any).toStrictEqual([
 				`sync-state:${sourceNamespace}:/Folder/`,
 				`sync-state:${sourceNamespace}:/Folder/note.md`,

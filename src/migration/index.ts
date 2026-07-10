@@ -10,7 +10,12 @@ import type { V3ModuleMeta } from './modules';
 import { resolveMigrationModules } from './modules';
 import { getRemoteUidStat } from './remote-stat';
 import { buildV3PluginData } from './settings';
-import { buildV3Namespace, migrateCurrentNamespaceStorage, toV3UnifiedKey } from './storage';
+import {
+	buildV3Namespace,
+	cleanupCurrentNamespaceStorage,
+	migrateCurrentNamespaceStorage,
+	toV3UnifiedKey,
+} from './storage';
 
 export type V3MigrationProgressStep =
 	| 'prepSync'
@@ -39,6 +44,8 @@ const TARGET_MODULES_DIR = `${TARGET_PLUGIN_DIR}/modules`;
 const TARGET_DATA_PATH = `${TARGET_PLUGIN_DIR}/data.json`;
 const TARGET_DATABASE_NAME = 'sync-engine';
 const MIGRATION_PROGRESS_TOTAL = 8;
+const SMART_MERGE_CONFLICT_STRATEGY =
+	'diffMatchPatch' as WebDAVSyncPlugin['settings']['conflictStrategy'];
 
 function normalizeError(error: unknown): Error {
 	if (error instanceof Error) return error;
@@ -69,13 +76,16 @@ async function ensureDirectory(adapter: WebDAVSyncPlugin['app']['vault']['adapte
 	}
 }
 
-async function rollbackTargetArtifacts(plugin: WebDAVSyncPlugin): Promise<boolean> {
+async function rollbackTargetArtifacts(
+	plugin: WebDAVSyncPlugin,
+	deleteTargetDatabase: boolean,
+): Promise<boolean> {
 	const adapter = plugin.app.vault.adapter;
 	const targetPluginPath = `${plugin.app.vault.configDir}/${TARGET_PLUGIN_DIR}`;
 
 	try {
 		if (await adapter.exists(targetPluginPath)) await adapter.rmdir(targetPluginPath, true);
-		await deleteIndexedDatabase(TARGET_DATABASE_NAME);
+		if (deleteTargetDatabase) await deleteIndexedDatabase(TARGET_DATABASE_NAME);
 		return true;
 	} catch {
 		return false;
@@ -169,12 +179,7 @@ export default class V3MigrationService {
 			serverUrl: this.plugin.settings.serverUrl,
 			vaultName: this.plugin.app.vault.getName(),
 		});
-		const targetNamespace = buildV3Namespace({
-			baseDirectory: this.plugin.settings.remoteDir,
-			endpoint: this.plugin.settings.serverUrl,
-			username: this.plugin.settings.account,
-			vaultName: this.plugin.app.vault.getName(),
-		});
+		const encryptionEnabled = this.plugin.settings.encryption.enabled;
 
 		onProgress({
 			completed: 0,
@@ -185,7 +190,7 @@ export default class V3MigrationService {
 
 		const syncResult = await this.plugin.syncSchedulerService.requestSync({
 			runKind: SyncRunKind.normal,
-			source: 'manual',
+			source: 'migration',
 		});
 
 		if (!syncResult.executed || !syncResult.run)
@@ -217,8 +222,10 @@ export default class V3MigrationService {
 
 			const resolvedModules = resolveMigrationModules({
 				catalog,
-				encryptionEnabled: this.plugin.settings.encryption.enabled,
+				encryptionEnabled,
 				locale: getLanguage(),
+				smartMergeEnabled:
+					this.plugin.settings.conflictStrategy === SMART_MERGE_CONFLICT_STRATEGY,
 			});
 			const localeModuleNames = resolvedModules
 				.filter((module) => module.name.startsWith('I18n '))
@@ -243,7 +250,7 @@ export default class V3MigrationService {
 					moduleResponse.text,
 				);
 				onProgress({
-					completed: 3 + (index + 1) / resolvedModules.length,
+					completed: Math.round((3 + (index + 1) / resolvedModules.length) * 100) / 100,
 					detail: t('settings.v3Migration.steps.downloadModule', {
 						name: moduleMeta.name,
 					}),
@@ -270,52 +277,68 @@ export default class V3MigrationService {
 				JSON.stringify(pluginData, undefined, 2),
 			);
 
-			onProgress({
-				completed: 5,
-				detail: t('settings.v3Migration.steps.migrateStorage'),
-				step: 'migrateStorage',
-				total: MIGRATION_PROGRESS_TOTAL,
-			});
-
 			const migrationPhase: { current: 'targetWrite' | 'sourceCleanup' } = {
 				current: 'targetWrite',
 			};
+			const beforeSourceCleanup = async () => {
+				const previousNeverShow = this.plugin.settings.neverShowV3Migration;
+				this.plugin.settings.neverShowV3Migration = true;
+				try {
+					await this.plugin.saveSettings();
+					migrationPhase.current = 'sourceCleanup';
+				} catch (error) {
+					this.plugin.settings.neverShowV3Migration = previousNeverShow;
+					throw error;
+				}
+			};
 			try {
-				await migrateCurrentNamespaceStorage({
-					beforeSourceCleanup: async () => {
-						const previousNeverShow = this.plugin.settings.neverShowV3Migration;
-						this.plugin.settings.neverShowV3Migration = true;
-						try {
-							await this.plugin.saveSettings();
-							migrationPhase.current = 'sourceCleanup';
-						} catch (error) {
-							this.plugin.settings.neverShowV3Migration = previousNeverShow;
-							throw error;
-						}
-					},
-					resolveRemoteUid: async (path) => {
-						const stat = await getRemoteUidStat(this.plugin, path);
-						if (stat.isDir) return '';
-						return stat.etag ?? `${stat.mtime ?? 0}~${stat.size ?? 0}`;
-					},
-					sourceNamespace,
-					targetNamespace,
-					toV3Key: toV3UnifiedKey,
-				});
+				if (encryptionEnabled) {
+					onProgress({
+						completed: 7,
+						detail: t('settings.v3Migration.steps.cleanupSource'),
+						step: 'cleanupSource',
+						total: MIGRATION_PROGRESS_TOTAL,
+					});
+					await cleanupCurrentNamespaceStorage({ beforeSourceCleanup, sourceNamespace });
+				} else {
+					onProgress({
+						completed: 5,
+						detail: t('settings.v3Migration.steps.migrateStorage'),
+						step: 'migrateStorage',
+						total: MIGRATION_PROGRESS_TOTAL,
+					});
+					await migrateCurrentNamespaceStorage({
+						beforeSourceCleanup,
+						resolveRemoteUid: async (path) => {
+							const stat = await getRemoteUidStat(this.plugin, path);
+							if (stat.isDir) return '';
+							return stat.etag ?? `${stat.mtime ?? 0}~${stat.size ?? 0}`;
+						},
+						sourceNamespace,
+						targetNamespace: buildV3Namespace({
+							baseDirectory: this.plugin.settings.remoteDir,
+							endpoint: this.plugin.settings.serverUrl,
+							username: this.plugin.settings.account,
+							vaultName: this.plugin.app.vault.getName(),
+						}),
+						toV3Key: toV3UnifiedKey,
+					});
+				}
 			} catch (error) {
 				if (migrationPhase.current === 'sourceCleanup')
 					return { error: normalizeError(error), ok: false, rolledBack: false };
 
-				const rolledBack = await rollbackTargetArtifacts(this.plugin);
+				const rolledBack = await rollbackTargetArtifacts(this.plugin, !encryptionEnabled);
 				return { error: normalizeError(error), ok: false, rolledBack };
 			}
 
-			onProgress({
-				completed: 7,
-				detail: t('settings.v3Migration.steps.cleanupSource'),
-				step: 'cleanupSource',
-				total: MIGRATION_PROGRESS_TOTAL,
-			});
+			if (!encryptionEnabled)
+				onProgress({
+					completed: 7,
+					detail: t('settings.v3Migration.steps.cleanupSource'),
+					step: 'cleanupSource',
+					total: MIGRATION_PROGRESS_TOTAL,
+				});
 
 			onProgress({
 				completed: 8,
@@ -325,11 +348,11 @@ export default class V3MigrationService {
 			});
 
 			return {
-				encryptionEnabled: this.plugin.settings.encryption.enabled,
+				encryptionEnabled,
 				ok: true,
 			};
 		} catch (error) {
-			const rolledBack = await rollbackTargetArtifacts(this.plugin);
+			const rolledBack = await rollbackTargetArtifacts(this.plugin, !encryptionEnabled);
 			return { error: normalizeError(error), ok: false, rolledBack };
 		} finally {
 			this.plugin.isV3MigrationRunning = false;

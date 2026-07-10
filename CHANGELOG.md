@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.12 - 2026-07-10
+
+- Added support for custom headers by @brycepollack.
+- Fixed the bug that causes independently and separately created same-name files on two devices fail to sync by @hesprs.
+- Prepare for v3 update by @hesprs.
+
 ## Obsidian WebDAV Sync v2.5.11 - 2026-06-02
 
 - Fixed the bug that causes smart merge to fail due to undefined iterator.

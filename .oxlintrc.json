@@ -78,7 +78,8 @@
 	"globals": {
 		"activeDocument": "readonly",
 		"Bun": "readonly",
-		"process": "readonly"
+		"process": "readonly",
+		"createFragment": "readonly"
 	},
 	"overrides": [
 		{

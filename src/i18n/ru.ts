@@ -197,43 +197,154 @@ const translation: typeof en = {
 		},
 		v3Migration: {
 			button: 'Мигрировать сейчас',
-			desc: 'Скопировать текущие настройки и хранилище в Sync Engine.',
+			desc: 'Вышла версия WebDAV Sync v3 (переименована в Sync Engine). Она была переписана с нуля, благодаря чему удалось добиться значительно более высокой производительности и расширяемости. Эта опция позволяет перенести настройки и записи вашего плагина из версии v2 в v3 с минимальными трудностями.',
 			failure: {
-				body: 'Миграция не удалась: {{error}}',
+				body: 'Сбой миграции: {{error}}',
 				close: 'Закрыть',
-				partialCleanup: 'Очистка исходных данных могла уже начаться.',
-				rolledBack: 'Целевые артефакты были откатаны.',
-				title: 'Миграция не удалась',
+				partialCleanup: 'Возможно, очистка исходных данных уже началась.',
+				rolledBack: 'Процесс миграции отменен, данные не затронуты.',
+				title: 'Сбой миграции',
 			},
-			name: 'Мигрировать в Sync Engine',
+			name: 'Миграция на v3',
 			progress: {
 				stats: '{{completed}} / {{total}}',
-				step: 'Прогресс',
-				title: 'Миграция в Sync Engine',
+				step: 'Выполнение',
+				title: 'Миграция на Sync Engine',
 			},
 			prompt: {
-				body: 'Это скопирует текущие настройки и хранилище в Sync Engine. Можно отменить, скрыть это сообщение или продолжить.',
+				bottom: `Никакие файлы хранилища не будут изменены или удалены, за исключением первого шага. Миграция необратима. Начать миграцию?`,
 				cancel: 'Отмена',
 				dontShowAgain: 'Больше не показывать',
+				middleEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Миграция будет выполнена в следующие шаги:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Запуск обычной синхронизации для обновления локальной копии файлов хранилища.',
+					});
+					ol.createEl('li', {
+						text: 'Преобразование ваших настроек в формат v3 и их сохранение в папку плагина Sync Engine.',
+					});
+					ol.createEl('li', {
+						text: 'Установка необходимых модулей Sync Engine и их сохранение в папку плагина для обеспечения стабильной работы при переходе с v2 на v3.',
+					});
+					ol.createEl('li', {
+						text: 'Очистка устаревших хранилищ записей v2 для этого хранилища.',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'После завершения миграции вам потребуется удалить плагин WebDAV Sync, а затем установить и включить ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: ' из магазина плагинов Obsidian. Sync Engine автоматически подгрузит ваши данные и настройки.',
+					});
+					const p3 = frag.createEl('p');
+					p3.createEl('strong', {
+						text: 'Примечание: поскольку у вас было включено шифрование, а алгоритм в v3 изменился, вам потребуется вручную удалить корневой каталог WebDAV и повторно загрузить хранилище после установки Sync Engine.',
+					});
+				},
+				middleNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Миграция будет выполнена в следующие шаги:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Запуск обычной синхронизации для обновления локальной копии файлов хранилища.',
+					});
+					ol.createEl('li', {
+						text: 'Преобразование ваших настроек в формат v3 и их сохранение в папку плагина Sync Engine.',
+					});
+					ol.createEl('li', {
+						text: 'Установка необходимых модулей Sync Engine и их сохранение в папку плагина для обеспечения стабильной работы при переходе с v2 на v3.',
+					});
+					ol.createEl('li', {
+						text: 'Выполнение сканирования WebDAV в режиме «только чтение» для сбора необходимой информации и её сохранения в хранилище записей v3.',
+					});
+					ol.createEl('li', {
+						text: 'Очистка устаревших хранилищ записей v2 для этого хранилища.',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'После завершения миграции вам потребуется удалить плагин WebDAV Sync, а затем установить и включить ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: ' из магазина плагинов Obsidian. Sync Engine автоматически подгрузит ваши данные и настройки.',
+					});
+				},
 				proceed: 'Продолжить',
-				title: 'Sync Engine доступен',
+				title: 'Доступна версия WebDAV Sync v3',
+				top: (frag: DocumentFragment) => {
+					const p1 = frag.createEl('p');
+					p1.createEl('strong', { text: 'WebDAV Sync v3' });
+					p1.createSpan({ text: ' (теперь переименован в ' });
+					p1.createEl('strong', { text: 'Sync Engine' });
+					p1.createSpan({
+						text: ') уже доступен в магазине плагинов Obsidian. Плагин был переписан с нуля, стал работать значительно быстрее и теперь поддерживает простое расширение с помощью модулей. Посетите ',
+					});
+					p1.createEl('a', {
+						attr: { href: 'https://sync.consensia.cc' },
+						text: 'сайт Sync Engine',
+					});
+					p1.createSpan({ text: ', чтобы узнать больше об этом обновлении.' });
+
+					frag.createEl('p', {
+						text: 'Sync Engine использует совершенно иную схему настроек и хранения данных по сравнению с v2. Для максимально плавного перехода текущим пользователям необходимо перенести свои настройки и записи в новый формат.',
+					});
+				},
 			},
 			steps: {
 				cleanupSource: 'Очистка данных WebDAV Sync',
 				completed: 'Миграция завершена',
-				downloadModule: 'Скачивание {{name}}',
-				downloadModules: 'Скачивание модулей',
+				downloadModule: 'Загрузка {{name}}',
+				downloadModules: 'Загрузка модулей',
 				fetchCatalog: 'Получение каталога модулей',
-				migrateStorage: 'Перенос хранилища',
-				prepSync: 'Запуск предварительной синхронизации',
-				resolveModules: 'Определение нужных модулей',
+				migrateStorage: 'Миграция хранилища',
+				prepSync: 'Выполнение предварительной синхронизации',
+				resolveModules: 'Проверка необходимых модулей',
 				writePluginData: 'Запись данных Sync Engine',
 			},
 			success: {
-				body: 'Установите или скачайте Sync Engine, отключите и удалите WebDAV Sync.',
+				bodyEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Теперь выполните следующие шаги:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Удалите WebDAV Sync.',
+					});
+					ol.createEl('li', {
+						text: 'Перейдите в интерфейс управления файлами WebDAV и вручную удалите папку, в которой хранились зашифрованные файлы вашего хранилища.',
+					});
+					const li3 = ol.createEl('li');
+					li3.createSpan({ text: 'Установите и включите ' });
+					li3.createEl('strong', { text: 'Sync Engine' });
+					li3.createSpan({ text: ' из магазина плагинов Obsidian.' });
+					ol.createEl('li', {
+						text: 'Запустите чистую синхронизацию, чтобы загрузить ваше хранилище в ту же папку. Вновь загруженные файлы останутся зашифрованными. (Если у вас включена синхронизация при запуске, этот процесс начнется автоматически)',
+					});
+					frag.createEl('p', {
+						text: 'Миграция будет полностью завершена после выполнения этих четырех шагов. Если вы уже перенесли файлы WebDAV, шаги 2 и 4 можно пропустить.',
+					});
+				},
+				bodyNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Now perform the following steps:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', { text: 'Удалите WebDAV Sync.' });
+					const li2 = ol.createEl('li');
+					li2.createSpan({ text: 'Установите и включите ' });
+					li2.createEl('strong', { text: 'Sync Engine' });
+					li2.createSpan({ text: ' из магазина плагинов Obsidian.' });
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'Миграция будет полностью завершена после выполнения этих двух шагов. Примечание: для обеспечения беспрепятственного переноса данных функция асимметричного хранения (Asymmetric Storage) в версии v3 отключена. Её активация может значительно ускорить синхронизацию, однако потребует изменения структуры файлов на стороне WebDAV.',
+					});
+				},
 				close: 'Закрыть',
-				encryptionBody:
-					'Шифрование было включено. Сбросьте удалённые данные и выполните повторную синхронизацию.',
 				title: 'Миграция завершена',
 			},
 		},

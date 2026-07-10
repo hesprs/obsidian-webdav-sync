@@ -9,6 +9,7 @@ export type ResolveMigrationModulesOptions = {
 	catalog: Array<V3ModuleMeta>;
 	encryptionEnabled: boolean;
 	locale: string;
+	smartMergeEnabled: boolean;
 };
 
 const OBSIDIAN_LANGUAGE_CODES = new Set([
@@ -195,6 +196,7 @@ export function resolveMigrationModules({
 	catalog,
 	encryptionEnabled,
 	locale,
+	smartMergeEnabled,
 }: ResolveMigrationModulesOptions): Array<V3ModuleMeta> {
 	const catalogByName = new Map<string, V3ModuleMeta>();
 	for (const moduleMeta of catalog) {
@@ -208,6 +210,7 @@ export function resolveMigrationModules({
 		resolvedModules.push(getRequiredModule(catalogByName, requiredModuleName));
 
 	if (encryptionEnabled) resolvedModules.push(getRequiredModule(catalogByName, 'Encryption'));
+	if (smartMergeEnabled) resolvedModules.push(getRequiredModule(catalogByName, 'Smart Merge'));
 
 	for (const localeCode of getLocaleCandidateCodes(locale)) {
 		const nativeName = getLocaleNativeName(localeCode);

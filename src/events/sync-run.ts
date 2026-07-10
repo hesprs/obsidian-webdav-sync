@@ -2,7 +2,7 @@ import type { TaskNames } from '~/sync/tasks/task.interface';
 import type { SyncRunKind } from '~/types';
 import { hook, ref } from '.';
 
-export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime';
+export type SyncTrigger = 'manual' | 'startup' | 'interval' | 'realtime' | 'migration';
 export type SyncRunStage =
 	| 'queued'
 	| 'pre_connecting'

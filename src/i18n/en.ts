@@ -195,26 +195,103 @@ const en = {
 		},
 		v3Migration: {
 			button: 'Migrate now',
-			desc: 'Copy current settings and storage into Sync Engine.',
+			desc: 'WebDAV Sync v3 (renamed to Sync Engine) has been released. It is rewritten from scratch and achieves far better performance and extensibility. This option allows you to migrate your plugin settings and records from v2 to v3 with minimal friction.',
 			failure: {
 				body: 'Migration failed: {{error}}',
 				close: 'Close',
 				partialCleanup: 'Source cleanup may already have started.',
-				rolledBack: 'Target artifacts were rolled back.',
+				rolledBack: 'The migration is reverted, nothing is destroyed.',
 				title: 'Migration failed',
 			},
-			name: 'Migrate to Sync Engine',
+			name: 'Migrate to v3',
 			progress: {
 				stats: '{{completed}} / {{total}}',
 				step: 'Progress',
 				title: 'Migrating to Sync Engine',
 			},
 			prompt: {
-				body: 'This will copy your current settings and storage into Sync Engine. You can cancel, hide this prompt, or continue.',
+				bottom: `No vault files will be modified or deleted except in the first step. Migration is irreversible. Start migration now?`,
 				cancel: 'Cancel',
 				dontShowAgain: "Don't show again",
+				middleEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'The migration will perform the following steps:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Launch a normal sync to ensure local has latest copy of vault files.',
+					});
+					ol.createEl('li', {
+						text: 'Convert your settings into v3 format, and save it to Sync Engine plugin folder.',
+					});
+					ol.createEl('li', {
+						text: 'Install necessary Sync Engine modules and save to the plugin folder to ensure consistent experience between v2 and v3.',
+					});
+					ol.createEl('li', {
+						text: 'Clean up legacy v2 record storage for this vault.',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'After migration, you need to uninstall WebDAV Sync plugin, install and enable ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: ' from Obsidian plugin store. Sync Engine will automatically pick up your data and settings.',
+					});
+					const p3 = frag.createEl('p');
+					p3.createEl('strong', {
+						text: 'Note: since you enabled encryption, but the algorithm changed in v3, you need to manually delete your WebDAV base directory and re-upload your vault after installing Sync Engine.',
+					});
+				},
+				middleNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'The migration will perform the following steps:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Launch a normal sync to ensure local has latest copy of vault files.',
+					});
+					ol.createEl('li', {
+						text: 'Convert your settings into v3 format, and save it to Sync Engine plugin folder.',
+					});
+					ol.createEl('li', {
+						text: 'Install necessary Sync Engine modules and save to the plugin folder to ensure consistent experience between v2 and v3.',
+					});
+					ol.createEl('li', {
+						text: 'Perform a read-only WebDAV scan to gather necessary information and save to v3 record storage.',
+					});
+					ol.createEl('li', {
+						text: 'Clean up legacy v2 record storage for this vault.',
+					});
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'After migration, you need to uninstall WebDAV Sync plugin and install and enable ',
+					});
+					p2.createEl('strong', { text: 'Sync Engine' });
+					p2.createSpan({
+						text: ' from Obsidian plugin store. Sync Engine will automatically pick up your data and settings.',
+					});
+				},
 				proceed: 'Proceed',
-				title: 'Sync Engine is available',
+				title: 'WebDAV Sync v3 is available',
+				top: (frag: DocumentFragment) => {
+					const p1 = frag.createEl('p');
+					p1.createEl('strong', { text: 'WebDAV Sync v3' });
+					p1.createSpan({ text: ' (now renamed to ' });
+					p1.createEl('strong', { text: 'Sync Engine' });
+					p1.createSpan({
+						text: ') has been released to Obsidian plugin store. Rewritten from scratch, it now achieves far better performance and allows easy extension via modules. Access ',
+					});
+					p1.createEl('a', {
+						attr: { href: 'https://sync.consensia.cc' },
+						text: 'Sync Engine Website',
+					});
+					p1.createSpan({ text: ' for more about the update.' });
+
+					frag.createEl('p', {
+						text: 'Sync Engine uses a completely different setting and storage schema compared with v2. To adapt Sync Engine with minimum friction, existing users need to migrate settings and records to the new format.',
+					});
+				},
 			},
 			steps: {
 				cleanupSource: 'Cleaning up WebDAV Sync data',
@@ -228,9 +305,44 @@ const en = {
 				writePluginData: 'Writing Sync Engine data',
 			},
 			success: {
-				body: 'Install or download Sync Engine, disable and delete WebDAV Sync.',
+				bodyEncrypted: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Now perform the following steps:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', {
+						text: 'Uninstall WebDAV Sync.',
+					});
+					ol.createEl('li', {
+						text: 'Go to your WebDAV file management UI, manually delete the folder that you used to store your encrypted vault files.',
+					});
+					const li3 = ol.createEl('li');
+					li3.createSpan({ text: 'Install and enable ' });
+					li3.createEl('strong', { text: 'Sync Engine' });
+					li3.createSpan({ text: ' from Obsidian plugin store.' });
+					ol.createEl('li', {
+						text: 'Launch a fresh sync to upload your vault to the same folder, newly uploaded files will remain encrypted. (If you enabled startup sync, this sync will happen automatically)',
+					});
+					frag.createEl('p', {
+						text: 'Migration is done after performing above four steps. If you have migrated your WebDAV files, you can skip step 2 and 4.',
+					});
+				},
+				bodyNormal: (frag: DocumentFragment) => {
+					frag.createEl('p', {
+						text: 'Now perform the following steps:',
+					});
+					const ol = frag.createEl('ol');
+					ol.createEl('li', { text: 'Uninstall WebDAV Sync.' });
+					const li2 = ol.createEl('li');
+					li2.createSpan({ text: 'Install and enable ' });
+					li2.createEl('strong', { text: 'Sync Engine' });
+					li2.createSpan({ text: ' from Obsidian plugin store.' });
+					const p2 = frag.createEl('p');
+					p2.createSpan({
+						text: 'Migration is done after performing above two steps. Note: for seamless migration, Asymmetric Storage feature of plugin v3 is disabled. Enabling it could drastically accelerate syncing, but requires migrating the file structure on WebDAV.',
+					});
+				},
 				close: 'Close',
-				encryptionBody: 'Encryption was enabled. Reset remote data and re-sync.',
 				title: 'Migration completed',
 			},
 		},

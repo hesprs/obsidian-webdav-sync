@@ -1,4 +1,5 @@
 import type { PluginSettings } from '~/settings';
+import { normalizeV3BaseDir } from './storage';
 
 export type V3ModuleToggleMap = Record<string, boolean>;
 
@@ -12,7 +13,7 @@ export type V3PluginData = {
 	asymmetricStorage: boolean;
 	confirmDeleteInAutoSync: boolean;
 	confirmTasksInSync: boolean;
-	conflictStrategy: PluginSettings['conflictStrategy'];
+	conflictResolver: 'smartMerge' | 'latestSurvive' | 'keepLocal' | 'keepRemote' | 'skip';
 	customHeaders: Array<V3CustomHeader>;
 	decider: 'bidirectional';
 	exclusionRules: PluginSettings['filterRules']['exclusionRules'];
@@ -30,8 +31,14 @@ export type V3PluginData = {
 	remoteFs: 'webdav';
 	scheduledSync: PluginSettings['scheduledSync'];
 	startupSync: PluginSettings['startupSync'];
-	unmergeableStrategy: PluginSettings['unmergeableStrategy'];
-	useGitStyle: boolean;
+	'Smart Merge'?: {
+		conflictAEnd: string;
+		conflictAStart: string;
+		conflictBEnd: string;
+		conflictBStart: string;
+		deletionEnd: string;
+		deletionStart: string;
+	};
 	WebDAV: {
 		baseDirectory: string;
 		depthInfinity: boolean;
@@ -51,6 +58,8 @@ export type BuildV3PluginDataOptions = {
 	localeModuleNames: Array<string>;
 };
 
+const SMART_MERGE_CONFLICT_STRATEGY = 'diffMatchPatch' as PluginSettings['conflictStrategy'];
+
 export function buildV3PluginData({
 	settings,
 	locale,
@@ -59,25 +68,36 @@ export function buildV3PluginData({
 	void locale;
 
 	const modules: V3ModuleToggleMap = { WebDAV: true };
+	const smartMergeEnabled = settings.conflictStrategy === SMART_MERGE_CONFLICT_STRATEGY;
+	const conflictResolverMap = {
+		diffMatchPatch: 'smartMerge',
+		keepLocal: 'keepLocal',
+		keepRemote: 'keepRemote',
+		latestTimestamp: 'latestSurvive',
+		skip: 'skip',
+	} as const;
 
 	if (settings.encryption.enabled) modules.Encryption = true;
 	for (const localeModuleName of new Set(
 		localeModuleNames.map((moduleName) => moduleName.trim()).filter(Boolean),
 	))
 		modules[localeModuleName] = true;
+	if (smartMergeEnabled) modules['Smart Merge'] = true;
+
+	const conflictResolver = conflictResolverMap[settings.conflictStrategy];
 
 	return {
 		WebDAV: {
-			baseDirectory: settings.remoteDir,
+			baseDirectory: normalizeV3BaseDir(settings.remoteDir),
 			depthInfinity: settings.exhaustiveRemoteTraversal,
 			endpoint: settings.serverUrl,
 			password: settings.token,
 			username: settings.account,
 		},
-		asymmetricStorage: true,
+		asymmetricStorage: settings.encryption.enabled, // Encrypted users will be prompted to re-upload the entire vault, remote compatibility is not in consideration, so this can keep enabled
 		confirmDeleteInAutoSync: settings.confirmBeforeDeleteInAutoSync,
 		confirmTasksInSync: settings.confirmBeforeSync,
-		conflictStrategy: settings.conflictStrategy,
+		conflictResolver,
 		customHeaders: Object.entries(settings.customHeaders).map(([key, value]) => ({
 			key,
 			type: 'plaintext',
@@ -99,8 +119,22 @@ export function buildV3PluginData({
 		remoteFs: 'webdav',
 		scheduledSync: settings.scheduledSync,
 		startupSync: settings.startupSync,
-		unmergeableStrategy: settings.unmergeableStrategy,
-		useGitStyle: settings.useGitStyle,
+		...(smartMergeEnabled
+			? {
+					'Smart Merge': {
+						conflictAEnd: settings.useGitStyle ? '===' : '</mark>',
+						conflictAStart: settings.useGitStyle
+							? '<<<<<<<'
+							: '<mark class="conflict ours">',
+						conflictBEnd: settings.useGitStyle ? '>>>>>>>' : '</mark>',
+						conflictBStart: settings.useGitStyle
+							? '==='
+							: '<mark class="conflict theirs">',
+						deletionEnd: '</mark>',
+						deletionStart: '<mark class="conflict deleted">',
+					},
+				}
+			: {}),
 		...(settings.encryption.enabled
 			? {
 					Encryption: {

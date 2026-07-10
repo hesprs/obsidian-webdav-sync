@@ -5,7 +5,6 @@ import { hash } from '~/platform/crypto';
 import { normalizeRemotePath } from '~/platform/path';
 import {
 	BASE_TEXT_STORE_NAME,
-	FILE_CHUNK_STORE_NAME,
 	STORAGE_NAME as SOURCE_STORAGE_NAME,
 	parseKey,
 } from '~/storage/store.interface';
@@ -15,7 +14,6 @@ export type V2NamespaceSnapshot = {
 	namespace: string;
 	syncStateKeys: Array<string>;
 	baseTextKeys: Array<string>;
-	fileChunkKeys: Array<string>;
 };
 
 export type MigrateStorageOptions = {
@@ -25,6 +23,11 @@ export type MigrateStorageOptions = {
 	resolveRemoteUid: (path: string) => Promise<string>;
 	beforeSourceCleanup?: () => Promise<void>;
 };
+
+export type CleanupStorageOptions = Pick<
+	MigrateStorageOptions,
+	'sourceNamespace' | 'beforeSourceCleanup'
+>;
 
 export type BuildV3NamespaceOptions = {
 	vaultName: string;
@@ -47,7 +50,6 @@ type SourceNamespaceText = {
 
 type SourceNamespaceSnapshot = {
 	baseText: Array<SourceNamespaceText>;
-	fileChunkKeys: Array<string>;
 	syncState: Array<SourceNamespaceRecord>;
 };
 
@@ -55,10 +57,6 @@ type TargetRecordStatModel = { isDir: true } | { isDir: false; local: string; re
 
 const TARGET_STORAGE_NAME = 'sync-engine';
 const TARGET_SYNC_STATE_STORE_NAME = 'sync-state';
-const TARGET_BASE_TEXT_STORE_NAME = 'base-text';
-const TARGET_META_STORE_NAME = '__uni-kv-meta__';
-const TARGET_META_VERSION_KEY = 'version';
-const TARGET_META_VERSION_VALUE = 1;
 
 function createStore(storeName: string, databaseName: string): LocalSpaceInstance {
 	return localspace.createInstance({
@@ -69,19 +67,6 @@ function createStore(storeName: string, databaseName: string): LocalSpaceInstanc
 	});
 }
 
-function parseFileChunkKey(key: string) {
-	const i = key.indexOf(':');
-	const j = key.indexOf(':', i + 1);
-	const k = key.indexOf(':', j + 1);
-	const l = key.indexOf(':', k + 1);
-	const m = key.indexOf(':', l + 1);
-
-	return {
-		namespace: key.slice(i + 1, j),
-		path: key.slice(m + 1),
-	};
-}
-
 function loadSourceStore(databaseName: string, storeName: string) {
 	return createStore(storeName, databaseName);
 }
@@ -90,12 +75,16 @@ function loadTargetStore(storeName: string) {
 	return createStore(storeName, TARGET_STORAGE_NAME);
 }
 
+function getSmartMergeBaseTextStoreName(namespace: string): string {
+	return `base-text-${namespace}`;
+}
+
 function normalizeV2Path(path: string): string {
 	if (path === '/') return '/';
 	return normalizeRemotePath(path);
 }
 
-function normalizeV3BaseDir(path: string): string {
+export function normalizeV3BaseDir(path: string): string {
 	const normalized = path
 		.split('/')
 		.filter((segment) => segment !== '')
@@ -113,13 +102,11 @@ async function snapshotSourceNamespace(
 	stores: {
 		syncState: LocalSpaceInstance;
 		baseText: LocalSpaceInstance;
-		fileChunk: LocalSpaceInstance;
 	},
 ): Promise<SourceNamespaceSnapshot> {
-	const [syncStateKeys, baseTextKeys, fileChunkKeys] = await Promise.all([
+	const [syncStateKeys, baseTextKeys] = await Promise.all([
 		stores.syncState.keys(),
 		stores.baseText.keys(),
-		stores.fileChunk.keys(),
 	]);
 
 	const filteredSyncStateKeys = syncStateKeys.filter(
@@ -127,9 +114,6 @@ async function snapshotSourceNamespace(
 	);
 	const filteredBaseTextKeys = baseTextKeys.filter(
 		(key) => parseKey(key).namespace === sourceNamespace,
-	);
-	const filteredFileChunkKeys = fileChunkKeys.filter(
-		(key) => parseFileChunkKey(key).namespace === sourceNamespace,
 	);
 
 	const [syncStateEntries, baseTextEntries] = await Promise.all([
@@ -145,7 +129,6 @@ async function snapshotSourceNamespace(
 				path: parseKey(key).path,
 				value: value as string,
 			})),
-		fileChunkKeys: filteredFileChunkKeys,
 		syncState: syncStateEntries
 			.filter(({ value }) => !isNil(value))
 			.map(({ key, value }) => ({
@@ -178,7 +161,6 @@ export function toV3UnifiedKey(v2Path: string, isDir: boolean) {
 
 async function writeTargetNamespace(
 	stores: {
-		meta: LocalSpaceInstance;
 		baseText: LocalSpaceInstance;
 		syncState: LocalSpaceInstance;
 	},
@@ -190,14 +172,12 @@ async function writeTargetNamespace(
 	await Promise.all([
 		stores.syncState.setItems(entries.syncState),
 		stores.baseText.setItems(entries.baseText),
-		stores.meta.setItem(TARGET_META_VERSION_KEY, TARGET_META_VERSION_VALUE),
 	]);
 }
 
 async function cleanupSourceNamespace(
 	stores: {
 		baseText: LocalSpaceInstance;
-		fileChunk: LocalSpaceInstance;
 		syncState: LocalSpaceInstance;
 	},
 	namespaceSnapshot: V2NamespaceSnapshot,
@@ -205,26 +185,48 @@ async function cleanupSourceNamespace(
 	const cleanupOperations = [
 		stores.syncState.removeItems(namespaceSnapshot.syncStateKeys),
 		stores.baseText.removeItems(namespaceSnapshot.baseTextKeys),
-		stores.fileChunk.removeItems(namespaceSnapshot.fileChunkKeys),
 	];
 	await Promise.all(cleanupOperations);
 }
 
 async function sourceNamespaceIsEmpty(stores: {
 	baseText: LocalSpaceInstance;
-	fileChunk: LocalSpaceInstance;
 	syncState: LocalSpaceInstance;
 }): Promise<boolean> {
-	const [syncStateKeys, baseTextKeys, fileChunkKeys] = await Promise.all([
+	const [syncStateKeys, baseTextKeys] = await Promise.all([
 		stores.syncState.keys(),
 		stores.baseText.keys(),
-		stores.fileChunk.keys(),
 	]);
-	return syncStateKeys.length === 0 && baseTextKeys.length === 0 && fileChunkKeys.length === 0;
+	return syncStateKeys.length === 0 && baseTextKeys.length === 0;
 }
 
 async function destroyStores(stores: Array<LocalSpaceInstance>) {
 	await Promise.all(stores.map((store) => store.destroy()));
+}
+
+export async function cleanupCurrentNamespaceStorage({
+	sourceNamespace,
+	beforeSourceCleanup,
+}: CleanupStorageOptions): Promise<void> {
+	const sourceStores = {
+		baseText: loadSourceStore(SOURCE_STORAGE_NAME, BASE_TEXT_STORE_NAME),
+		syncState: loadSourceStore(SOURCE_STORAGE_NAME, TARGET_SYNC_STATE_STORE_NAME),
+	};
+
+	try {
+		await Promise.all([sourceStores.baseText.ready(), sourceStores.syncState.ready()]);
+		const snapshot = await snapshotSourceNamespace(sourceNamespace, sourceStores);
+		await beforeSourceCleanup?.();
+		await cleanupSourceNamespace(sourceStores, {
+			baseTextKeys: snapshot.baseText.map(({ key }) => key),
+			namespace: sourceNamespace,
+			syncStateKeys: snapshot.syncState.map(({ key }) => key),
+		});
+		if (await sourceNamespaceIsEmpty(sourceStores))
+			await sourceStores.syncState.dropInstance({ name: SOURCE_STORAGE_NAME });
+	} finally {
+		await destroyStores([sourceStores.baseText, sourceStores.syncState]);
+	}
 }
 
 export async function migrateCurrentNamespaceStorage({
@@ -236,22 +238,18 @@ export async function migrateCurrentNamespaceStorage({
 }: MigrateStorageOptions): Promise<void> {
 	const sourceStores = {
 		baseText: loadSourceStore(SOURCE_STORAGE_NAME, BASE_TEXT_STORE_NAME),
-		fileChunk: loadSourceStore(SOURCE_STORAGE_NAME, FILE_CHUNK_STORE_NAME),
 		syncState: loadSourceStore(SOURCE_STORAGE_NAME, TARGET_SYNC_STATE_STORE_NAME),
 	};
 	const targetStores = {
-		baseText: loadTargetStore(TARGET_BASE_TEXT_STORE_NAME),
-		meta: loadTargetStore(TARGET_META_STORE_NAME),
-		syncState: loadTargetStore(TARGET_SYNC_STATE_STORE_NAME),
+		baseText: loadTargetStore(getSmartMergeBaseTextStoreName(targetNamespace)),
+		syncState: loadTargetStore(targetNamespace),
 	};
 
 	try {
 		await Promise.all([
 			sourceStores.baseText.ready(),
-			sourceStores.fileChunk.ready(),
 			sourceStores.syncState.ready(),
 			targetStores.baseText.ready(),
-			targetStores.meta.ready(),
 			targetStores.syncState.ready(),
 		]);
 
@@ -263,13 +261,13 @@ export async function migrateCurrentNamespaceStorage({
 				const targetKey = toV3Key(path, value.local.isDir || value.remote.isDir);
 				if (value.local.isDir || value.remote.isDir)
 					return {
-						key: `${targetNamespace}~${targetKey}`,
+						key: targetKey,
 						value: { isDir: true } as const,
 					};
 
 				const remoteUid = await resolveRemoteUid(targetKey);
 				return {
-					key: `${targetNamespace}~${targetKey}`,
+					key: targetKey,
 					value: {
 						isDir: false,
 						local: `${value.local.mtime}~${value.local.size}`,
@@ -287,7 +285,7 @@ export async function migrateCurrentNamespaceStorage({
 					: !isDirectoryPath(path);
 			})
 			.map(({ path, value }) => ({
-				key: `${targetNamespace}~${toV3Key(path, false)}`,
+				key: toV3Key(path, false),
 				value,
 			}));
 
@@ -299,7 +297,6 @@ export async function migrateCurrentNamespaceStorage({
 
 		const cleanupSnapshot: V2NamespaceSnapshot = {
 			baseTextKeys: snapshot.baseText.map(({ key }) => key),
-			fileChunkKeys: snapshot.fileChunkKeys,
 			namespace: sourceNamespace,
 			syncStateKeys: snapshot.syncState.map(({ key }) => key),
 		};
@@ -310,10 +307,8 @@ export async function migrateCurrentNamespaceStorage({
 	} finally {
 		await destroyStores([
 			sourceStores.baseText,
-			sourceStores.fileChunk,
 			sourceStores.syncState,
 			targetStores.baseText,
-			targetStores.meta,
 			targetStores.syncState,
 		]);
 	}

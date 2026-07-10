@@ -20,7 +20,7 @@ export default class V3MigrationModal extends Modal {
 	private currentProgress?: V3MigrationProgress;
 
 	constructor(
-		plugin: WebDAVSyncPlugin,
+		private readonly plugin: WebDAVSyncPlugin,
 		private readonly callbacks: V3MigrationModalCallbacks,
 	) {
 		super(plugin.app);
@@ -33,9 +33,17 @@ export default class V3MigrationModal extends Modal {
 		this.progressStats = undefined;
 		this.contentEl.empty();
 		this.setTitle(t('settings.v3Migration.prompt.title'));
+		this.contentEl.appendChild(t('settings.v3Migration.prompt.top'));
+		this.contentEl.appendChild(
+			t(
+				this.plugin.settings.encryption.enabled
+					? 'settings.v3Migration.prompt.middleEncrypted'
+					: 'settings.v3Migration.prompt.middleNormal',
+			),
+		);
 		this.contentEl.createEl('p', {
 			cls: 'whitespace-pre-wrap',
-			text: t('settings.v3Migration.prompt.body'),
+			text: t('settings.v3Migration.prompt.bottom'),
 		});
 
 		new Setting(this.contentEl)
@@ -106,15 +114,13 @@ export default class V3MigrationModal extends Modal {
 		this.progressStats = undefined;
 		this.contentEl.empty();
 		this.setTitle(t('settings.v3Migration.success.title'));
-		this.contentEl.createEl('p', {
-			cls: 'whitespace-pre-wrap',
-			text: t('settings.v3Migration.success.body'),
-		});
-		if (encryptionEnabled)
-			this.contentEl.createEl('p', {
-				cls: 'whitespace-pre-wrap',
-				text: t('settings.v3Migration.success.encryptionBody'),
-			});
+		this.contentEl.append(
+			t(
+				encryptionEnabled
+					? 'settings.v3Migration.success.bodyEncrypted'
+					: 'settings.v3Migration.success.bodyNormal',
+			),
+		);
 		new Setting(this.contentEl).addButton((button) =>
 			button
 				.setButtonText(t('settings.v3Migration.success.close'))
