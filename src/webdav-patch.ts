@@ -52,7 +52,7 @@ export default function patchWebDav() {
 			delete transformedHeaders.host;
 			delete transformedHeaders['content-length'];
 
-			const reqContentType = transformedHeaders.accept ?? transformedHeaders['content-type'];
+			const reqContentType = transformedHeaders['content-type'] ?? transformedHeaders.accept;
 
 			const retractedHeaders = { ...transformedHeaders };
 			if ('authorization' in retractedHeaders) retractedHeaders.authorization = '<retracted>';
