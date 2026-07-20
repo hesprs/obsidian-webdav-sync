@@ -54,9 +54,6 @@ export default function patchWebDav() {
 
 			const reqContentType = transformedHeaders['content-type'];
 
-			const retractedHeaders = { ...transformedHeaders };
-			if ('authorization' in retractedHeaders) retractedHeaders.authorization = '<retracted>';
-
 			const p: RequestUrlParam = {
 				body: requestOptions.data as string | ArrayBuffer,
 				contentType: reqContentType,
