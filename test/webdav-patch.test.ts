@@ -29,27 +29,30 @@ beforeEach(() => {
 	patchWebDav();
 });
 
-test('prefers the content-type header over accept when deriving the requestUrl contentType', async () => {
+test('uses the content-type header when present, ignoring accept', async () => {
 	await getPatcher().execute('request', {
 		headers: {
 			accept: 'text/plain,application/xml',
 			'content-type': 'application/xml; charset=utf-8',
 		},
-		method: 'PROPFIND',
-		url: 'https://webdav.mc.gmx.net/Notes',
+		method: 'PUT',
+		url: 'https://webdav.mc.gmx.net/Notes/file.md',
 	});
 
 	expect(lastCall?.contentType).toBe('application/xml; charset=utf-8');
 });
 
-test('falls back to the accept header when no content-type is present', async () => {
+test('leaves contentType unset for body-less PROPFIND requests that only send accept', async () => {
+	// Mirrors the webdav library's stat()/exists() calls, which only set an
+	// Accept header (a comma list, invalid as Content-Type) and no body
 	await getPatcher().execute('request', {
 		headers: {
-			accept: 'text/plain,application/xml',
+			Accept: 'text/plain,application/xml',
+			Depth: '0',
 		},
-		method: 'GET',
-		url: 'https://webdav.mc.gmx.net/Notes/file.md',
+		method: 'PROPFIND',
+		url: 'https://webdav.mc.gmx.net/',
 	});
 
-	expect(lastCall?.contentType).toBe('text/plain,application/xml');
+	expect(lastCall?.contentType).toBeUndefined();
 });
