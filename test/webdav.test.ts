@@ -16,6 +16,7 @@ let requestUrlResponse: RequestUrlResponse;
 let parsedResponse: ParsedResponse;
 const requestUrlMock = mock(async () => requestUrlResponse);
 const parseXMLMock = mock(() => parsedResponse);
+const sleepMock = mock(async (_ms: number) => undefined);
 
 void mock.module('~/utils/request-url', () => ({
 	default: requestUrlMock,
@@ -23,10 +24,17 @@ void mock.module('~/utils/request-url', () => ({
 void mock.module('~/composable/parse-xml', () => ({
 	default: parseXMLMock,
 }));
+void mock.module('~/utils/sleep', () => ({
+	default: sleepMock,
+}));
 
 const webdavApi = import('../src/fs/webdav/api');
 
 beforeEach(() => {
+	requestUrlMock.mockClear();
+	parseXMLMock.mockClear();
+	parseXMLMock.mockImplementation(() => parsedResponse);
+	sleepMock.mockClear();
 	requestUrlResponse = {
 		headers: {},
 		text: '',
@@ -49,6 +57,65 @@ function mockDirectoryResponse(xml: string, responses: Array<unknown>): void {
 		},
 	};
 }
+
+function fileStatResponse(path: string): ParsedResponse {
+	return {
+		multistatus: {
+			response: [
+				{
+					href: path,
+					propstat: {
+						prop: {
+							getcontentlength: '12',
+							getlastmodified: 'Mon, 01 Jan 2024 00:00:00 GMT',
+							resourcetype: {},
+						},
+						status: 'HTTP/1.1 200 OK',
+					},
+				},
+			],
+		},
+	};
+}
+
+test('retries a post-write stat until the file becomes visible', async () => {
+	const { getStatAfterWrite } = await webdavApi;
+	parseXMLMock
+		.mockReturnValueOnce({ multistatus: { response: [] } })
+		.mockReturnValueOnce({ multistatus: { response: [] } })
+		.mockReturnValue(fileStatResponse('/dav/Notes/file.md'));
+
+	const stat = await getStatAfterWrite('https://dav.example.com/dav', 'token', '/Notes/file.md');
+
+	expect(stat.path).toBe('/Notes/file.md');
+	expect(requestUrlMock).toHaveBeenCalledTimes(3);
+	expect(sleepMock.mock.calls).toStrictEqual([[250], [500]]);
+});
+
+test('bounds post-write stat retries when the file stays invisible', async () => {
+	const { getStatAfterWrite, WebDAVStatNotFoundError } = await webdavApi;
+
+	expect(
+		getStatAfterWrite('https://dav.example.com/dav', 'token', '/Notes/file.md'),
+	).rejects.toBeInstanceOf(WebDAVStatNotFoundError);
+
+	expect(requestUrlMock).toHaveBeenCalledTimes(6);
+	expect(sleepMock.mock.calls).toStrictEqual([[250], [500], [1000], [2000], [4000]]);
+});
+
+test('does not retry unrelated post-write stat errors', async () => {
+	const { getStatAfterWrite } = await webdavApi;
+	parseXMLMock.mockImplementationOnce(() => {
+		throw new Error('Malformed WebDAV response');
+	});
+
+	expect(
+		getStatAfterWrite('https://dav.example.com/dav', 'token', '/Notes/file.md'),
+	).rejects.toThrow('Malformed WebDAV response');
+
+	expect(requestUrlMock).toHaveBeenCalledTimes(1);
+	expect(sleepMock).not.toHaveBeenCalled();
+});
 
 test('parses absolute href responses from Nextcloud', async () => {
 	const { getDirectoryContents } = await webdavApi;

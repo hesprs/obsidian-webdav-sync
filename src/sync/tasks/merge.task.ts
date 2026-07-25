@@ -1,7 +1,10 @@
 import type { OptionsWithBothFileStats } from '~/sync/decision/sync-decision.interface';
 import type { StatModel } from '~/types';
 import { getContent as getLocalContent, statItem as statVaultItem } from '~/fs/vault';
-import { getContent as getRemoteContent, statItem as statWebDAVItem } from '~/fs/webdav';
+import {
+	getContent as getRemoteContent,
+	statItemAfterWrite as statWebDAVItemAfterWrite,
+} from '~/fs/webdav';
 import t from '~/i18n';
 import { arrayBufferEquals, arrayBufferToText } from '~/platform/binary';
 import { useSettings } from '~/settings';
@@ -93,7 +96,7 @@ export default class MergeTask extends BaseTask<OptionsWithBothFileStats> {
 					},
 				);
 				if (!putResult) throw new Error(t('sync.error.failedToUploadMerged'));
-				const fetchedRemoteStat = await statWebDAVItem(
+				const fetchedRemoteStat = await statWebDAVItemAfterWrite(
 					executionRemotePath,
 					this.remotePath,
 				);

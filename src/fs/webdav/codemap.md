@@ -9,8 +9,11 @@ WebDAV-backed filesystem access for the sync engine. This folder handles remote 
 - `api.ts` builds raw WebDAV `PROPFIND` requests, parses XML responses, and converts DAV records into internal `StatModel` values.
 - Path handling is normalized through `normalizeRemotePath`, `normalizePathToRelative`, and remote URL builders so returned stats match vault-style paths.
 - Requests retry on retryable network errors with a fixed sleep/backoff loop.
+- Post-write stat lookups use a bounded backoff so eventually consistent servers can expose a
+  successful write before sync records are updated.
 - `traverse.ts` walks the remote tree using settings-driven traversal mode: either exhaustive listing or breadth-first directory exploration.
-- `utils.ts` keeps thin wrappers around the WebDAV client: stat lookup, content download, and recursive mkdir.
+- `utils.ts` keeps thin wrappers around the WebDAV client: stat lookup, bounded post-write stat
+  verification, content download, and recursive mkdir.
 - `index.ts` re-exports the public WebDAV API for consumers.
 
 ## Flow

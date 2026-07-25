@@ -27,6 +27,15 @@ type WebDAVResponseItem = {
 	propstat?: WebDAVPropstat | Array<WebDAVPropstat>;
 };
 
+const POST_WRITE_STAT_RETRY_DELAYS = [250, 500, 1000, 2000, 4000] as const;
+
+export class WebDAVStatNotFoundError extends Error {
+	constructor(readonly path: string) {
+		super(`WebDAV stat not found for ${path}`);
+		this.name = 'WebDAVStatNotFoundError';
+	}
+}
+
 function normalizePath(path: string) {
 	return normalizeRemotePath(extractPathname(path));
 }
@@ -202,6 +211,32 @@ export async function getStat(
 	return (await getStatWithEtag(endpoint, token, path, customHeaders)).stat;
 }
 
+export async function getStatAfterWrite(
+	endpoint: string,
+	token: string,
+	path: string,
+	customHeaders: Record<string, string> = {},
+): Promise<StatModel> {
+	let retry = 0;
+	while (true)
+		try {
+			return await getStat(endpoint, token, path, customHeaders);
+		} catch (error) {
+			if (
+				!(error instanceof WebDAVStatNotFoundError) ||
+				retry >= POST_WRITE_STAT_RETRY_DELAYS.length
+			)
+				throw error;
+
+			const delay = POST_WRITE_STAT_RETRY_DELAYS[retry++];
+			logger.warn('WebDAV stat not visible after write, retrying...', {
+				delay,
+				retry,
+			});
+			await sleep(delay);
+		}
+}
+
 export async function getStatWithEtag(
 	endpoint: string,
 	token: string,
@@ -223,7 +258,7 @@ export async function getStatWithEtag(
 		if (normalizeRemotePath(stat.stat.path) === normalizedTargetPath) return stat;
 	}
 
-	throw new Error(`WebDAV stat not found for ${path}`);
+	throw new WebDAVStatNotFoundError(path);
 }
 
 // oxlint-disable-next-line max-params

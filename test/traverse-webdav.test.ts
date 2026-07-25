@@ -7,6 +7,7 @@ const getDirectoryContentsMock = mock(() =>
 void mock.module('~/fs/webdav/api', () => ({
 	getDirectoryContents: getDirectoryContentsMock,
 	getStat: mock(() => Promise.resolve({} as never)),
+	getStatAfterWrite: mock(() => Promise.resolve({} as never)),
 }));
 
 const { traverseWebDAV } = await import('~/fs/webdav');

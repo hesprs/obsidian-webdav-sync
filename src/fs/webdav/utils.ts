@@ -2,12 +2,27 @@ import type { WebDAVClient } from 'webdav';
 import type { BinaryLike } from '~/platform/binary';
 import { toArrayBuffer } from '~/platform/binary';
 import { usePlugin } from '~/settings';
-import { getStat } from './api';
+import { getStat, getStatAfterWrite } from './api';
 
 export async function statItem(path: string, statPath = path) {
 	const plugin = await usePlugin();
 	return Object.assign(
 		await getStat(
+			plugin.settings.serverUrl,
+			plugin.getToken(),
+			path,
+			plugin.settings.customHeaders,
+		),
+		{
+			statPath,
+		},
+	);
+}
+
+export async function statItemAfterWrite(path: string, statPath = path) {
+	const plugin = await usePlugin();
+	return Object.assign(
+		await getStatAfterWrite(
 			plugin.settings.serverUrl,
 			plugin.getToken(),
 			path,

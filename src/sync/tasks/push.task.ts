@@ -1,6 +1,6 @@
 import type { OptionsWithLocalFileStat } from '~/sync/decision/sync-decision.interface';
 import { getContent } from '~/fs/vault';
-import { statItem } from '~/fs/webdav';
+import { statItemAfterWrite } from '~/fs/webdav';
 import { arrayBufferToText } from '~/platform/binary';
 import { encryptContentForRemoteFile, resolveRemoteExecutionPath } from '~/utils/encryption';
 import logger from '~/utils/logger';
@@ -28,7 +28,7 @@ export default class PushTask extends BaseTask<OptionsWithLocalFileStat> {
 			});
 			if (!res) throw new Error('Upload failed');
 
-			const remote = await statItem(executionRemotePath, this.remotePath);
+			const remote = await statItemAfterWrite(executionRemotePath, this.remotePath);
 			if (!remote || remote.isDir)
 				throw new Error(`failed to read remote file stat after push: ${this.localPath}`);
 
