@@ -13,9 +13,7 @@ export async function statItem(path: string, statPath = path) {
 			path,
 			plugin.settings.customHeaders,
 		),
-		{
-			statPath,
-		},
+		{ path: statPath },
 	);
 }
 
