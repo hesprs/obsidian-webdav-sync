@@ -40,21 +40,9 @@ function buildSettings(): PluginSettings {
 }
 
 test('buildV3PluginData maps v2 settings into v3 payload', () => {
-	const data = buildV3PluginData({
-		locale: 'en',
-		localeModuleNames: [],
-		settings: buildSettings(),
-	});
+	const data = buildV3PluginData({ settings: buildSettings() });
 
 	expect(data).toStrictEqual({
-		Encryption: { enabled: true, password: 'secret-ref' },
-		WebDAV: {
-			baseDirectory: 'remote/base/',
-			depthInfinity: true,
-			endpoint: 'https://dav.example.com///',
-			password: 'token-value',
-			username: 'alice',
-		},
 		asymmetricStorage: true,
 		confirmDeleteInAutoSync: false,
 		confirmTasksInSync: true,
@@ -72,7 +60,17 @@ test('buildV3PluginData maps v2 settings into v3 payload', () => {
 		minRequestInterval: { enabled: true, value: 2 },
 		moduleAutoUpdate: true,
 		moduleSources: ['https://sync.consensia.cc/modules.json'],
-		modules: { Encryption: true, WebDAV: true },
+		modules: {
+			encryption: { enabled: true, password: 'secret-ref' },
+			webdav: {
+				baseDirectory: 'remote/base/',
+				chunkedUpload: false,
+				depthInfinity: true,
+				endpoint: 'https://dav.example.com///',
+				password: 'token-value',
+				username: 'alice',
+			},
+		},
 		noticeStatusOnMobile: true,
 		realtimeSync: { enabled: true, value: 15 },
 		realtimeSyncFastMode: false,
@@ -81,12 +79,12 @@ test('buildV3PluginData maps v2 settings into v3 payload', () => {
 		startupSync: { enabled: true, value: 45 },
 	});
 	expect(data).not.toHaveProperty('Smart Merge');
+	expect(data).not.toHaveProperty('WebDAV');
+	expect(data).not.toHaveProperty('Encryption');
 });
 
-test('buildV3PluginData includes Smart Merge only for diffMatchPatch', () => {
+test('buildV3PluginData includes smart-merge only for diffMatchPatch', () => {
 	const data = buildV3PluginData({
-		locale: 'zh-TW',
-		localeModuleNames: [' I18n British English ', 'I18n British English', 'I18n 繁體中文', ''],
 		settings: {
 			...buildSettings(),
 			conflictStrategy: 'diffMatchPatch' as PluginSettings['conflictStrategy'],
@@ -96,27 +94,29 @@ test('buildV3PluginData includes Smart Merge only for diffMatchPatch', () => {
 	});
 
 	expect(data.modules).toStrictEqual({
-		'I18n British English': true,
-		'I18n 繁體中文': true,
-		'Smart Merge': true,
-		WebDAV: true,
-	});
-	expect(data).toHaveProperty('Smart Merge', {
-		conflictAEnd: '===',
-		conflictAStart: '<<<<<<<',
-		conflictBEnd: '>>>>>>>',
-		conflictBStart: '===',
-		deletionEnd: '</mark>',
-		deletionStart: '<mark class="conflict deleted">',
+		'smart-merge': {
+			conflictAEnd: '===',
+			conflictAStart: '<<<<<<<',
+			conflictBEnd: '>>>>>>>',
+			conflictBStart: '===',
+			deletionEnd: '</mark>',
+			deletionStart: '<mark class="conflict deleted">',
+		},
+		webdav: {
+			baseDirectory: 'remote/base/',
+			chunkedUpload: false,
+			depthInfinity: true,
+			endpoint: 'https://dav.example.com///',
+			password: 'token-value',
+			username: 'alice',
+		},
 	});
 	expect(data.conflictResolver).toBe('smartMerge');
-	expect(data).not.toHaveProperty('Encryption');
+	expect(data.modules).not.toHaveProperty('encryption');
 });
 
 test('buildV3PluginData uses html markers when git style is disabled', () => {
 	const data = buildV3PluginData({
-		locale: 'en',
-		localeModuleNames: [],
 		settings: {
 			...buildSettings(),
 			conflictStrategy: 'diffMatchPatch' as PluginSettings['conflictStrategy'],
@@ -125,7 +125,7 @@ test('buildV3PluginData uses html markers when git style is disabled', () => {
 		},
 	});
 
-	expect(data).toHaveProperty('Smart Merge', {
+	expect(data.modules['smart-merge']).toStrictEqual({
 		conflictAEnd: '</mark>',
 		conflictAStart: '<mark class="conflict ours">',
 		conflictBEnd: '</mark>',
@@ -133,6 +133,5 @@ test('buildV3PluginData uses html markers when git style is disabled', () => {
 		deletionEnd: '</mark>',
 		deletionStart: '<mark class="conflict deleted">',
 	});
-	expect(data.modules).toStrictEqual({ 'Smart Merge': true, WebDAV: true });
-	expect(data).not.toHaveProperty('Encryption');
+	expect(data.modules).not.toHaveProperty('encryption');
 });

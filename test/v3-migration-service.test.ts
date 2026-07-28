@@ -1,4 +1,5 @@
 import { expect, mock, test } from 'bun:test';
+import { hash } from '~/platform/crypto';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 
 type RequestUrlInput = string | { url: string };
@@ -166,6 +167,16 @@ function createPlugin(syncResult: unknown): any {
 	};
 }
 
+function makeCatalogEntry(id: string, name: string): Record<string, string> {
+	return {
+		description: `${id} module`,
+		id,
+		main: `https://cdn.example.com/${id}.js`,
+		name,
+		version: '1.0.0',
+	};
+}
+
 test('runMigration aborts when prerequisite sync is not executed', async () => {
 	const { default: V3MigrationService } = await migrationModule;
 	const { plugin, adapter, baseTextStore, fileChunkStore, syncStateStore } = createPlugin({
@@ -215,6 +226,7 @@ test('runMigration aborts when prerequisite sync is cancelled or failed', async 
 });
 
 test('runMigration rolls back target artifacts on fatal failure before source cleanup', async () => {
+	memoryDatabases.clear();
 	requestUrlBehavior = async () => {
 		throw new Error('catalog unavailable');
 	};
@@ -252,6 +264,7 @@ test('runMigration rolls back target artifacts on fatal failure before source cl
 		expect(syncStateStore.store.removeItems.mock.calls).toHaveLength(0);
 	} finally {
 		(globalThis as any).indexedDB = previousIndexedDb;
+		memoryDatabases.clear();
 	}
 });
 
@@ -263,14 +276,7 @@ test('runMigration keeps target artifacts when source cleanup fails after settin
 		if (url.endsWith('/modules.json'))
 			return {
 				headers: {},
-				text: JSON.stringify([
-					{
-						description: 'webdav',
-						main: 'https://cdn.example.com/webdav.js',
-						name: 'WebDAV',
-						version: '1.0.0',
-					},
-				]),
+				text: JSON.stringify([makeCatalogEntry('webdav', 'WebDAV')]),
 			};
 		return { headers: {}, text: 'module code' };
 	};
@@ -298,13 +304,17 @@ test('runMigration keeps target artifacts when source cleanup fails after settin
 		expect(plugin.settings.neverShowV3Migration).toBe(true);
 		expect(adapter.rmdir.mock.calls).toHaveLength(0);
 		expect(adapter.write.mock.calls).toHaveLength(2);
+
+		const writeCalls = adapter.write.mock.calls as Array<[string, string]>;
+		expect(writeCalls[0][0]).toBe('.obsidian/plugins/sync-engine/modules/webdav.js');
+		expect(writeCalls[1][0]).toBe('.obsidian/plugins/sync-engine/data.json');
 	} finally {
 		throwOnSourceCleanup = false;
 		memoryDatabases.clear();
 	}
 });
 
-test('runMigration skips v3 IndexedDB migration for encrypted vaults', async () => {
+test('runMigration skips v3 IndexedDB storage migration for encrypted vaults', async () => {
 	memoryDatabases.clear();
 	requestUrlBehavior = async (options) => {
 		const url = getUrl(options);
@@ -312,18 +322,8 @@ test('runMigration skips v3 IndexedDB migration for encrypted vaults', async () 
 			return {
 				headers: {},
 				text: JSON.stringify([
-					{
-						description: 'webdav',
-						main: 'https://cdn.example.com/webdav.js',
-						name: 'WebDAV',
-						version: '1.0.0',
-					},
-					{
-						description: 'encryption',
-						main: 'https://cdn.example.com/encryption.js',
-						name: 'Encryption',
-						version: '1.0.0',
-					},
+					makeCatalogEntry('webdav', 'WebDAV'),
+					makeCatalogEntry('encryption', 'Encryption'),
 				]),
 			};
 		return { headers: {}, text: 'module code' };
@@ -331,7 +331,7 @@ test('runMigration skips v3 IndexedDB migration for encrypted vaults', async () 
 
 	try {
 		const { default: V3MigrationService } = await migrationModule;
-		const { plugin } = createPlugin({
+		const { plugin, adapter } = createPlugin({
 			executed: true,
 			run: { stage: 'completed' },
 		});
@@ -354,9 +354,27 @@ test('runMigration skips v3 IndexedDB migration for encrypted vaults', async () 
 		);
 
 		expect(result).toStrictEqual({ encryptionEnabled: true, ok: true });
-		expect(memoryDatabases.has('sync-engine')).toBe(false);
+
+		// Module store written to sync-engine database
+		expect(memoryDatabases.has('sync-engine')).toBe(true);
+		const syncEngineDb = memoryDatabases.get('sync-engine')!;
+		const expectedStoreName = `modules-${hash('Vault')}`;
+		expect(syncEngineDb.has(expectedStoreName)).toBe(true);
+		const moduleStore = syncEngineDb.get(expectedStoreName)!;
+		expect(moduleStore.has('webdav')).toBe(true);
+		expect(moduleStore.has('encryption')).toBe(true);
+
+		// Source database cleaned up
 		expect(memoryDatabases.has('obsidian-webdav-sync')).toBe(false);
 		expect(progress.map((item) => item.step)).not.toContain('migrateStorage');
+
+		// Verify module file names use <id>.js convention
+		const writePaths = (adapter.write.mock.calls as Array<[string, string]>).map(
+			([path]) => path,
+		);
+		expect(writePaths).toContain('.obsidian/plugins/sync-engine/modules/webdav.js');
+		expect(writePaths).toContain('.obsidian/plugins/sync-engine/modules/encryption.js');
+		expect(writePaths).toContain('.obsidian/plugins/sync-engine/data.json');
 	} finally {
 		memoryDatabases.clear();
 	}

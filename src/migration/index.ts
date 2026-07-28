@@ -1,7 +1,10 @@
+import type { LocalSpaceInstance } from 'localspace';
 import type WebDAVSyncPlugin from '~';
+import localspace from 'localspace';
 import { getLanguage } from 'obsidian';
 import V3MigrationModal from '~/components/V3MigrationModal';
 import t from '~/i18n';
+import { hash, sha256Hex } from '~/platform/crypto';
 import { SyncRunKind } from '~/types';
 import { getSyncStateKey } from '~/utils/get-sync-state-key';
 import requestUrl from '~/utils/request-url';
@@ -76,16 +79,13 @@ async function ensureDirectory(adapter: WebDAVSyncPlugin['app']['vault']['adapte
 	}
 }
 
-async function rollbackTargetArtifacts(
-	plugin: WebDAVSyncPlugin,
-	deleteTargetDatabase: boolean,
-): Promise<boolean> {
+async function rollbackTargetArtifacts(plugin: WebDAVSyncPlugin): Promise<boolean> {
 	const adapter = plugin.app.vault.adapter;
 	const targetPluginPath = `${plugin.app.vault.configDir}/${TARGET_PLUGIN_DIR}`;
 
 	try {
 		if (await adapter.exists(targetPluginPath)) await adapter.rmdir(targetPluginPath, true);
-		if (deleteTargetDatabase) await deleteIndexedDatabase(TARGET_DATABASE_NAME);
+		await deleteIndexedDatabase(TARGET_DATABASE_NAME);
 		return true;
 	} catch {
 		return false;
@@ -105,16 +105,42 @@ async function fetchModuleCatalog(): Promise<Array<V3ModuleMeta>> {
 
 	return payload.map((entry): V3ModuleMeta => {
 		if (!entry || typeof entry !== 'object') throw new Error('Invalid module catalog entry.');
-		const { description, main, name, version } = entry as Record<string, unknown>;
+		const { description, main, name, version, id, icon, minPluginVersion } = entry as Record<
+			string,
+			unknown
+		>;
 		if (
+			typeof id !== 'string' ||
 			typeof name !== 'string' ||
 			typeof version !== 'string' ||
 			typeof description !== 'string' ||
 			typeof main !== 'string'
 		)
 			throw new Error('Invalid module catalog entry.');
-		return { description, main, name, version };
+		const meta: V3ModuleMeta = { description, id, main, name, version };
+		if (typeof icon === 'string') meta.icon = icon;
+		if (typeof minPluginVersion === 'string') meta.minPluginVersion = minPluginVersion;
+		return meta;
 	});
+}
+
+async function writeModuleStore(
+	vaultName: string,
+	entries: Array<{ key: string; value: Record<string, unknown> }>,
+): Promise<void> {
+	const storeName = `modules-${hash(vaultName)}`;
+	const store: LocalSpaceInstance = localspace.createInstance({
+		coalesceWrites: false,
+		driver: [localspace.INDEXEDDB],
+		name: TARGET_DATABASE_NAME,
+		storeName,
+	});
+	try {
+		await store.ready();
+		await store.setItems(entries);
+	} finally {
+		await store.destroy();
+	}
 }
 
 export default class V3MigrationService {
@@ -227,9 +253,6 @@ export default class V3MigrationService {
 				smartMergeEnabled:
 					this.plugin.settings.conflictStrategy === SMART_MERGE_CONFLICT_STRATEGY,
 			});
-			const localeModuleNames = resolvedModules
-				.filter((module) => module.name.startsWith('I18n '))
-				.map((module) => module.name);
 
 			onProgress({
 				completed: 3,
@@ -242,13 +265,36 @@ export default class V3MigrationService {
 			const configDir = this.plugin.app.vault.configDir;
 			await ensureDirectory(adapter, `${configDir}/${TARGET_MODULES_DIR}`);
 
+			const moduleStoreEntries: Array<{ key: string; value: Record<string, unknown> }> = [];
+
 			for (let index = 0; index < resolvedModules.length; index++) {
 				const moduleMeta = resolvedModules[index];
 				const moduleResponse = await requestUrl(moduleMeta.main);
+				const integrity = await sha256Hex(moduleResponse.text);
+
 				await adapter.write(
-					`${configDir}/${TARGET_MODULES_DIR}/${moduleMeta.name}~${moduleMeta.version}.js`,
+					`${configDir}/${TARGET_MODULES_DIR}/${moduleMeta.id}.js`,
 					moduleResponse.text,
 				);
+
+				moduleStoreEntries.push({
+					key: moduleMeta.id,
+					value: {
+						description: moduleMeta.description,
+						enabled: true,
+						icon: moduleMeta.icon ?? 'puzzle',
+						id: moduleMeta.id,
+						integrity,
+						main: moduleMeta.main,
+						name: moduleMeta.name,
+						source: MODULE_CATALOG_URL,
+						version: moduleMeta.version,
+						...(moduleMeta.minPluginVersion
+							? { minPluginVersion: moduleMeta.minPluginVersion }
+							: {}),
+					},
+				});
+
 				onProgress({
 					completed: Math.round((3 + (index + 1) / resolvedModules.length) * 100) / 100,
 					detail: t('settings.v3Migration.steps.downloadModule', {
@@ -259,6 +305,8 @@ export default class V3MigrationService {
 				});
 			}
 
+			await writeModuleStore(this.plugin.app.vault.getName(), moduleStoreEntries);
+
 			onProgress({
 				completed: 4,
 				detail: t('settings.v3Migration.steps.writePluginData'),
@@ -266,11 +314,7 @@ export default class V3MigrationService {
 				total: MIGRATION_PROGRESS_TOTAL,
 			});
 
-			const pluginData = buildV3PluginData({
-				locale: getLanguage(),
-				localeModuleNames,
-				settings: this.plugin.settings,
-			});
+			const pluginData = buildV3PluginData({ settings: this.plugin.settings });
 			await ensureDirectory(adapter, `${configDir}/${TARGET_PLUGIN_DIR}`);
 			await adapter.write(
 				`${configDir}/${TARGET_DATA_PATH}`,
@@ -328,7 +372,7 @@ export default class V3MigrationService {
 				if (migrationPhase.current === 'sourceCleanup')
 					return { error: normalizeError(error), ok: false, rolledBack: false };
 
-				const rolledBack = await rollbackTargetArtifacts(this.plugin, !encryptionEnabled);
+				const rolledBack = await rollbackTargetArtifacts(this.plugin);
 				return { error: normalizeError(error), ok: false, rolledBack };
 			}
 
@@ -352,7 +396,7 @@ export default class V3MigrationService {
 				ok: true,
 			};
 		} catch (error) {
-			const rolledBack = await rollbackTargetArtifacts(this.plugin, !encryptionEnabled);
+			const rolledBack = await rollbackTargetArtifacts(this.plugin);
 			return { error: normalizeError(error), ok: false, rolledBack };
 		} finally {
 			this.plugin.isV3MigrationRunning = false;

@@ -1,8 +1,6 @@
 import type { PluginSettings } from '~/settings';
 import { normalizeV3BaseDir } from './storage';
 
-export type V3ModuleToggleMap = Record<string, boolean>;
-
 export type V3CustomHeader = {
 	key: string;
 	value: string;
@@ -24,50 +22,22 @@ export type V3PluginData = {
 	minRequestInterval: PluginSettings['minWebDAVRequestInterval'];
 	moduleAutoUpdate: boolean;
 	moduleSources: Array<string>;
-	modules: V3ModuleToggleMap;
+	modules: Record<string, object>;
 	noticeStatusOnMobile: boolean;
 	realtimeSync: PluginSettings['realtimeSync'];
 	realtimeSyncFastMode: boolean;
 	remoteFs: 'webdav';
 	scheduledSync: PluginSettings['scheduledSync'];
 	startupSync: PluginSettings['startupSync'];
-	'Smart Merge'?: {
-		conflictAEnd: string;
-		conflictAStart: string;
-		conflictBEnd: string;
-		conflictBStart: string;
-		deletionEnd: string;
-		deletionStart: string;
-	};
-	WebDAV: {
-		baseDirectory: string;
-		depthInfinity: boolean;
-		endpoint: string;
-		password: string;
-		username: string;
-	};
-	Encryption?: {
-		enabled: boolean;
-		password: string;
-	};
 };
 
 export type BuildV3PluginDataOptions = {
 	settings: PluginSettings;
-	locale: string;
-	localeModuleNames: Array<string>;
 };
 
 const SMART_MERGE_CONFLICT_STRATEGY = 'diffMatchPatch' as PluginSettings['conflictStrategy'];
 
-export function buildV3PluginData({
-	settings,
-	locale,
-	localeModuleNames,
-}: BuildV3PluginDataOptions): V3PluginData {
-	void locale;
-
-	const modules: V3ModuleToggleMap = { WebDAV: true };
+export function buildV3PluginData({ settings }: BuildV3PluginDataOptions): V3PluginData {
 	const smartMergeEnabled = settings.conflictStrategy === SMART_MERGE_CONFLICT_STRATEGY;
 	const conflictResolverMap = {
 		diffMatchPatch: 'smartMerge',
@@ -77,27 +47,35 @@ export function buildV3PluginData({
 		skip: 'skip',
 	} as const;
 
-	if (settings.encryption.enabled) modules.Encryption = true;
-	for (const localeModuleName of new Set(
-		localeModuleNames.map((moduleName) => moduleName.trim()).filter(Boolean),
-	))
-		modules[localeModuleName] = true;
-	if (smartMergeEnabled) modules['Smart Merge'] = true;
-
-	const conflictResolver = conflictResolverMap[settings.conflictStrategy];
-
-	return {
-		WebDAV: {
+	const modules: Record<string, object> = {
+		webdav: {
 			baseDirectory: normalizeV3BaseDir(settings.remoteDir),
+			chunkedUpload: false,
 			depthInfinity: settings.exhaustiveRemoteTraversal,
 			endpoint: settings.serverUrl,
 			password: settings.token,
 			username: settings.account,
 		},
-		asymmetricStorage: settings.encryption.enabled, // Encrypted users will be prompted to re-upload the entire vault, remote compatibility is not in consideration, so this can keep enabled
+	};
+
+	if (settings.encryption.enabled)
+		modules.encryption = { enabled: true, password: settings.encryption.value };
+
+	if (smartMergeEnabled)
+		modules['smart-merge'] = {
+			conflictAEnd: settings.useGitStyle ? '===' : '</mark>',
+			conflictAStart: settings.useGitStyle ? '<<<<<<<' : '<mark class="conflict ours">',
+			conflictBEnd: settings.useGitStyle ? '>>>>>>>' : '</mark>',
+			conflictBStart: settings.useGitStyle ? '===' : '<mark class="conflict theirs">',
+			deletionEnd: '</mark>',
+			deletionStart: '<mark class="conflict deleted">',
+		};
+
+	return {
+		asymmetricStorage: settings.encryption.enabled,
 		confirmDeleteInAutoSync: settings.confirmBeforeDeleteInAutoSync,
 		confirmTasksInSync: settings.confirmBeforeSync,
-		conflictResolver,
+		conflictResolver: conflictResolverMap[settings.conflictStrategy],
 		customHeaders: Object.entries(settings.customHeaders).map(([key, value]) => ({
 			key,
 			type: 'plaintext',
@@ -119,29 +97,5 @@ export function buildV3PluginData({
 		remoteFs: 'webdav',
 		scheduledSync: settings.scheduledSync,
 		startupSync: settings.startupSync,
-		...(smartMergeEnabled
-			? {
-					'Smart Merge': {
-						conflictAEnd: settings.useGitStyle ? '===' : '</mark>',
-						conflictAStart: settings.useGitStyle
-							? '<<<<<<<'
-							: '<mark class="conflict ours">',
-						conflictBEnd: settings.useGitStyle ? '>>>>>>>' : '</mark>',
-						conflictBStart: settings.useGitStyle
-							? '==='
-							: '<mark class="conflict theirs">',
-						deletionEnd: '</mark>',
-						deletionStart: '<mark class="conflict deleted">',
-					},
-				}
-			: {}),
-		...(settings.encryption.enabled
-			? {
-					Encryption: {
-						enabled: true,
-						password: settings.encryption.value,
-					},
-				}
-			: {}),
 	};
 }

@@ -43,25 +43,12 @@ export default function twoWayDecider(input: SyncDecisionInput): Array<BaseTask>
 	new Set([...localStats.keys(), ...remoteStats.keys(), ...records.keys()]).forEach((path) => {
 		const remote = remoteStats.get(path);
 		const local = localStats.get(path);
-		if (!(local?.isDir || remote?.isDir))
-			files.push({
-				local,
-				path,
-				remote,
-			});
-		else if (!(remote?.isDir === false || local?.isDir === false))
-			folders.push({
-				local,
-				path,
-				remote,
-			});
-		else if (remote && local)
-			fileFolders.push({
-				local,
-				path,
-				remote,
-			});
-		else removeRecords.push(path);
+		if (!local && !remote) removeRecords.push(path);
+		else if (local?.isDir !== true && remote?.isDir !== true)
+			files.push({ local, path, remote });
+		else if (local?.isDir !== false && remote?.isDir !== false)
+			folders.push({ local, path, remote });
+		else if (remote && local) fileFolders.push({ local, path, remote });
 	});
 
 	const routeConflict = (params: {
