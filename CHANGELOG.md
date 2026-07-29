@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.13 - 2026-07-29
+
+- Fixed the bug that causes encrypted fast sync to fail and create duplicated files.
+- Fixed the bug that records are not cleared for files that are deleted at both local and remote side.
+- Adjusted migration script to match new v3 module contract.
+
 ## Obsidian WebDAV Sync v2.5.12 - 2026-07-10
 
 - Added support for custom headers by @brycepollack.
