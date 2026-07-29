@@ -78,7 +78,7 @@ Now v3 is feature complete and in beta testing. If you feel interested, head to 
 
 - This plugin supports encrypting your files before uploading.
 - It prevents unauthorized file access, and detects unintended file modification and movement at remote side.
-- The encryption pipeline assumes stricter threat model, and achieves **theoretically higher security, faster performance and smaller plugin size** than similar solutions (like Remotely Save), see detail in the [encryption specification](https://github.com/hesprs/obsidian-webdav-sync/blob/main/docs/encryption.md).
+- The encryption pipeline assumes stricter threat model, and achieves **theoretically higher security, faster performance and smaller plugin size** than similar solutions (like Remotely Save), see detail in the [encryption specification](https://github.com/hesprs/obsidian-webdav-sync/blob/main/blueprint/encryption.md).
 
 ⚡ **Maximum Performance**:
 
