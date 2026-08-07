@@ -38,7 +38,7 @@
     <a href="https://sync.consensia.cc">
         <strong>Documentation</strong>
     </a> • 
-    <a href="https://community.obsidian.md/plugins/webdav-sync">
+    <a href="https://community.obsidian.md/plugins/sync-engine">
         <strong>Plugin Store</strong>
     </a> • 
     <a href="#license-copyright-and-originality">
