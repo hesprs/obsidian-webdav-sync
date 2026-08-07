@@ -431,9 +431,8 @@ async function migrateModules({
 	const operations: Array<() => Promise<unknown>> = [
 		() =>
 			moduleStore.batch(
-				dbWrites.map(
-					(write): StoreOperations<AugmentedModuleMeta> =>
-						Object.assign(write, { type: 'set' } as const),
+				dbWrites.map((write): StoreOperations<AugmentedModuleMeta> =>
+					Object.assign(write, { type: 'set' } as const),
 				),
 			),
 	];

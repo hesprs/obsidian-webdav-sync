@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sync Engine v3.0.1 - 2026-08-07
+
+- Fixed plugin review failure cause by outdated log file.
+
 ## Sync Engine v3.0.0 - 2026-08-07
 
 ### Complete Rewrite from Ground Up

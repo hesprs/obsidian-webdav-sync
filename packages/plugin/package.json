@@ -1,6 +1,6 @@
 {
 	"name": "@hesprs/sync-engine-sdk",
-	"version": "3.0.0",
+	"version": "3.0.1",
 	"description": "Official SDK for developing modules targeting Sync Engine, the extensible Obsidian syncing plugin.",
 	"keywords": [
 		"obsidian-plugin",
@@ -56,12 +56,12 @@
 	"devDependencies": {
 		"@repo/shared": "workspace:*",
 		"@unocss/postcss": "^66.7.5",
-		"postcss-merge-rules": "^8.0.1",
+		"postcss-merge-rules": "^8.0.2",
 		"solid-js": "^1.9.13",
 		"synthkernel": "./synthkernel.tgz",
 		"uni-kv": "../../uni-kv.tgz",
 		"unocss": "^66.7.5",
 		"unplugin-solid": "^2.0.0",
-		"verkit": "^0.3.1"
+		"verkit": "^0.3.2"
 	}
 }

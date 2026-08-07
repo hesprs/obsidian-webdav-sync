@@ -14,11 +14,11 @@
 		"@json-canvas-viewer/vue": "^1.1.1",
 		"vitepress": "^2.0.0-alpha.17",
 		"vitepress-theme-trito": "^1.2.2",
-		"vue": "^3.5.39"
+		"vue": "^3.5.41"
 	},
 	"devDependencies": {
 		"typescript": "^6.0.0",
 		"vite-plugin-json-canvas": "^1.0.1",
-		"vue-tsc": "^3.3.6"
+		"vue-tsc": "^3.3.9"
 	}
 }
