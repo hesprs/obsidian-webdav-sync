@@ -3,6 +3,8 @@
 	--vp-c-brand-2: #6865ff !important;
 	--vp-c-brand-3: #1a90ff !important;
 	--vp-c-brand-soft: #9849ff20 !important;
+
+	--rose: oklch(64.5% 0.246 16.439);
 }
 
 html.dark {

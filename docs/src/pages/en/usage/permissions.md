@@ -42,7 +42,7 @@ Obsidian secret storage is shown as "Keychain" in Obsidian settings. Sync Engine
 - Plugin core: reads the configured [secret headers](./settings#custom-headers) at the start of a sync run
 - [WebDAV](../deep-dive/modules/webdav) module: reads the configured WebDAV token secret at the start of a sync run for service authentication
 - [S3](../deep-dive/modules/s3) module: reads the configured secret access key when resolving S3 credentials for connection checks or sync operations
-- [Encryption](../deep-dive/modules/encryption) core: reads the configured encryption password secret at the start of a sync run for later encryption and decryption
+- [Encryption](../deep-dive/modules/encryption) module: reads the configured encryption password secret at the start of a sync run for later encryption and decryption
 
 Sync Engine and official modules never read beyond what is provided by the user.
 

@@ -1,6 +1,6 @@
 # Migrate from V2
 
-The v3 version of Sync Engine is released at August 7, 2026, its former name is "WebDAV Sync", which has been in production for months. The v2 to v3 transition is a complete rewrite focusing on modularity and performance; many things, **including remote file structure, storage schema, encryption formula, and plugin settings have changed completely**. A migration is required for all users that are still using v2.
+The v3 version of Sync Engine is released on August 7, 2026, its former name is "WebDAV Sync", which has been in production for months. The v2 to v3 transition is a complete rewrite focusing on modularity and performance; many things, **including remote file structure, storage schema, encryption formula, and plugin settings have changed completely**. A migration is required for all users that are still using v2.
 
 ## Automatic Migration
 

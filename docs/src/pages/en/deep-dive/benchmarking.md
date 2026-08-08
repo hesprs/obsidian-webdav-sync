@@ -15,12 +15,13 @@ To ensure reproducibility, each benchmark must contain following metadata:
 - Benchmarked plugin version
 - Benchmarking machine operating system (due to benchmarking script assumption, Windows is not supported)
 - Benchmarking machine Geekbench 7 CPU single-core score (can search from [Geekbench website](https://browser.geekbench.com/) and estimate average)
-- Tested remote backend type
-- Tested remote service
+- Tested remote backend type and service
 - Average ping delay to tested service in milliseconds (use [Ping Tester](#ping-tester))
 - Average upload and download speed of the tested service in MiB/s.
 
 ### Test Cases
+
+**Plugin size**: Obtained from the GitHub release page of the corresponding version.
 
 **Startup speed**:
 

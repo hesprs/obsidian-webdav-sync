@@ -73,7 +73,7 @@ Sync Engine fits the gap: you want to choose your own storage, you want the plug
 - Custom headers.
 - You can extend most above features by writing modules.
 
-### Module-Extended
+### Module-Extended ([your can develop your own](#develop-a-module))
 
 - **Backends**: WebDAV, S3
 - **Features**: Encryption, Smart Merge Conflict Resolution
