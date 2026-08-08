@@ -1,6 +1,6 @@
 import type { DatabaseAsync, StoreAsync } from 'uni-kv';
 import { deleteMemoryDB, openIndexedDB, openMemoryDB } from 'uni-kv';
-import type { General, RecordStat } from '@/types';
+import type { General, MaybePromise, RecordStat } from '@/types';
 
 export type IndexedDBSchema = Record<string, RecordStat>;
 export type RecordStore = StoreAsync<RecordStat>;
@@ -17,15 +17,25 @@ export default class Storage {
 	private readonly getRecordStore = (namespace?: string) =>
 		this.indexedDB.getStore(namespace || this.ctx.getNamespace());
 
-	private readonly deleteRecordStore = (namespace?: string) =>
-		this.indexedDB.deleteStore(namespace || this.ctx.getNamespace());
+	private readonly deleteRecordStore = (namespace?: string): MaybePromise<void> => {
+		try {
+			namespace ??= this.ctx.getNamespace();
+		} catch {
+			return; // When the backend is not set, no need to delete
+		}
+		return this.indexedDB.deleteStore(namespace);
+	};
 
 	private readonly clearRecordStores = () => this.indexedDB.clearStores();
 
-	private readonly recordStoreExists = (namespace?: string) =>
-		this.indexedDB
-			.getStoreNames()
-			.then((names) => names.includes(namespace || this.ctx.getNamespace()));
+	private readonly recordStoreExists = (namespace?: string): MaybePromise<boolean> => {
+		try {
+			namespace ??= this.ctx.getNamespace();
+		} catch {
+			return false; // When the backend is not set, assume no store
+		}
+		return this.indexedDB.getStoreNames().then((names) => names.includes(namespace));
+	};
 
 	readonly root = {
 		clearRecordStores: this.clearRecordStores,

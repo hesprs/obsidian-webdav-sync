@@ -16,7 +16,7 @@ import { digOriginal, prefixWrapper } from '@hesprs/sync-engine-sdk';
 import type { UrlStyle } from '@/s3/sigv4';
 import type { S3Translations } from '@/setting';
 import { sigv4Middleware } from '@/s3/sigv4';
-import { en, zh } from './i18n';
+import { en, zh, zhTW, ru } from './i18n';
 import s3BatchDeleteOptimizer from './optimizer';
 import { checkConnection } from './s3/check-connection';
 import S3Fs from './s3/fs';
@@ -55,6 +55,8 @@ export default class S3 {
 	) {
 		ctx.registerI18n('en', en);
 		ctx.registerI18n('zh', zh);
+		ctx.registerI18n('zh-TW', zhTW);
+		ctx.registerI18n('ru', ru);
 	}
 
 	readonly moduleSettings: S3Settings = {

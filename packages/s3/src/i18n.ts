@@ -71,3 +71,74 @@ export const zh: S3Translations = {
 	urlStylePath: '路径样式（Path）',
 	urlStyleVirtualHosted: '虚拟主机样式（Virtual-hosted）',
 };
+
+export const ru: S3Translations = {
+	accessKeyId: 'Идентификатор ключа доступа',
+	accessKeyIdDescription: 'Введите ваш идентификатор ключа доступа S3.',
+	accessKeyIdPlaceholder: 'Например, AKIAI...',
+	bucket: 'Имя бакета',
+	bucketDescription: 'Введите имя вашего бакета S3.',
+	bucketPlaceholder: 'my-bucket',
+	endpoint: 'URL-адрес конечной точки',
+	endpointDescription: 'Введите URL-адрес конечной точки S3.',
+	endpointPlaceholder: 'Например, https://s3.us-east-1.amazonaws.com',
+	prefix: 'Префикс',
+	prefixDescription:
+		'Настройте префикс ключа, с которым будет синхронизироваться ваше хранилище. «/» обозначает корень бакета.',
+	prefixPlaceholder: 'Например, my-vault/',
+	proxyUrl: 'URL-адрес прокси',
+	proxyUrlDescription:
+		'Необязательный URL-адрес прокси для маршрутизации запросов S3. Оставьте пустым для прямого подключения.',
+	proxyUrlPlaceholder: 'Например, https://proxy.example.com',
+	region: 'Регион',
+	regionDescription: 'Введите регион вашего бакета S3.',
+	regionPlaceholder: 'Например, us-east-1',
+	s3: 'S3',
+	secretAccessKey: 'Секретный ключ доступа',
+	secretAccessKeyDescription:
+		'Введите ваш секретный ключ доступа S3. Он хранится в связке ключей Obsidian keychain.',
+	urlStyle: 'Стиль URL',
+	urlStyleDescription: (frag) => {
+		frag.appendText('Выберите стиль URL для вашего сервиса S3. Стиль виртуального хостинга: ');
+		frag.createEl('code', { text: 'https://bucket.s3.amazonaws.com' });
+		frag.appendText('. Путевой стиль: ');
+		frag.createEl('code', { text: 'https://s3.amazonaws.com/bucket' });
+		frag.appendText('. Некоторые S3-совместимые сервисы требуют использования путевого стиля.');
+	},
+	urlStylePath: 'Путевой стиль',
+	urlStyleVirtualHosted: 'Стиль виртуального хостинга',
+};
+
+export const zhTW: S3Translations = {
+	accessKeyId: '存取金鑰 ID',
+	accessKeyIdDescription: '輸入您的 S3 存取金鑰 ID。',
+	accessKeyIdPlaceholder: '例如 AKIAI...',
+	bucket: '儲存桶名稱',
+	bucketDescription: '輸入您的 S3 儲存桶名稱。',
+	bucketPlaceholder: 'my-bucket',
+	endpoint: '端點 URL',
+	endpointDescription: '輸入 S3 端點 URL',
+	endpointPlaceholder: '例如 https://s3.us-east-1.amazonaws.com',
+	prefix: '前綴路徑',
+	prefixDescription: '設定儲存庫同步目標的 Key 前綴路徑。「/」代表儲存桶的根目錄。',
+	prefixPlaceholder: '例如 my-vault/',
+	proxyUrl: '代理伺服器 URL',
+	proxyUrlDescription: '可選的代理伺服器 URL，用來轉發 S3 請求。若留空則為直連。',
+	proxyUrlPlaceholder: '例如 https://proxy.example.com',
+	region: '區域',
+	regionDescription: '輸入您 S3 儲存桶所在的區域。',
+	regionPlaceholder: '例如 us-east-1',
+	s3: 'S3',
+	secretAccessKey: '私密存取金鑰',
+	secretAccessKeyDescription: '輸入您的 S3 私密存取金鑰。其將儲存於 Obsidian 金鑰圈中。',
+	urlStyle: 'URL 樣式',
+	urlStyleDescription: (frag) => {
+		frag.appendText('選擇您 S3 服務的 URL 樣式。虛擬主機樣式（Virtual-hosted style）：');
+		frag.createEl('code', { text: 'https://bucket.s3.amazonaws.com' });
+		frag.appendText('。路徑樣式（Path style）：');
+		frag.createEl('code', { text: 'https://s3.amazonaws.com/bucket' });
+		frag.appendText('。某些相容 S3 的服務需要使用路徑樣式。');
+	},
+	urlStylePath: '路徑樣式',
+	urlStyleVirtualHosted: '虛擬主機樣式',
+};

@@ -4,7 +4,6 @@ const en: Translations = {
 	add: 'Add',
 	addRecord: 'Add record',
 	addSecretHeader: 'Add secret header',
-	allRecordsCleared: 'All records cleared',
 	asymmetricStorage: 'Asymmetric storage',
 	asymmetricStorageDescription: (frag) => {
 		frag.appendText('Use ');
@@ -59,11 +58,10 @@ const en: Translations = {
 	checkConnection: 'Check connection',
 	checkConnectionFailed: 'Check connection failed',
 	checkConnectionSuccess: 'Check connection succeeded',
-	clearAllRecords: 'Clear all records',
+	clear: 'Clear',
 	clearRecords: 'Clear records',
 	clearRecordsDescription:
-		'Sync Engine records sync states to resolve sync operations between local and remote files. This option allows you to selectively clear records. Warning: this action is likely to cause data loss.',
-	clearVaultRecords: 'Clear vault records',
+		'Sync Engine records sync states to resolve sync operations between local and remote files. This option allows you to clear records. Warning: this action is likely to cause changes in sync decisions.',
 	completed: 'Completed',
 	completedNoop: 'Already synced',
 	configurations: 'Configurations',
@@ -207,6 +205,7 @@ const en: Translations = {
 	realtimeSyncFastModeDescription:
 		'Reuse cached data and avoid unnecessary remote discovery during real-time sync to accelerate sync.',
 	realtimeSyncPlaceholder: 'Enter sync delay (e.g. 500ms, 5s)',
+	recordsCleared: 'Records cleared',
 	remoteMigration: 'Remote migration',
 	remove: 'Remove',
 	removeLocal: 'Remove local',
@@ -282,7 +281,6 @@ const en: Translations = {
 		'Set the module source from which this module receives updates. Leave empty to disable update.',
 	updateSourcePlaceholder: 'https://example.com/modules.json',
 	upload: 'Upload',
-	vaultRecordsCleared: 'Vault records cleared',
 	walkingRemote: 'Discovering remote files',
 };
 

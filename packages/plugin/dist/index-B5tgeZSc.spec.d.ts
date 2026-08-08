@@ -262,7 +262,7 @@ declare class Storage {
   private readonly recordStoreExists;
   readonly root: {
     clearRecordStores: () => Promise<void>;
-    deleteRecordStore: (namespace?: string) => Promise<void>;
+    deleteRecordStore: (namespace?: string) => MaybePromise<void>;
     getRecordStore: (namespace?: string) => {
       get(key: string): Promise<RecordStat | undefined>;
       set(key: string, value: RecordStat): Promise<void>;
@@ -292,7 +292,7 @@ declare class Storage {
       setMeta<T extends string | number | symbol>(key: T, value: any): void;
       dispose(): void;
     };
-    recordStoreExists: (namespace?: string) => Promise<boolean>;
+    recordStoreExists: (namespace?: string) => MaybePromise<boolean>;
   };
   readonly dispose: () => void;
 }
@@ -799,11 +799,9 @@ type ControlsSettingTranslations = {
 //#region src/settings/development.d.ts
 type DevelopmentSettingTranslations = {
   development: string;
-  vaultRecordsCleared: string;
-  clearVaultRecords: string;
-  clearAllRecords: string;
-  allRecordsCleared: string;
   clearRecords: string;
+  recordsCleared: string;
+  clear: string;
   clearRecordsDescription: string;
   export: string;
   exportLogsDescription: string;

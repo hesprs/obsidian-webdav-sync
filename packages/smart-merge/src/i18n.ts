@@ -37,3 +37,30 @@ export const zh: SmartMergeTranslations = {
 	smartMerge: '智能合并',
 	start: '开始',
 };
+
+export const ru: SmartMergeTranslations = {
+	conflictOursMarkers: 'Маркеры конфликта «Наши»',
+	conflictOursMarkersDescription:
+		'Укажите маркеры до и после области в конфликте слияния, которая содержит локальные изменения.',
+	conflictTheirsMarkers: 'Маркеры конфликта «Чужие»',
+	conflictTheirsMarkersDescription:
+		'Укажите маркеры до и после области в конфликте слияния, которая содержит удалённые изменения.',
+	deletionMarkers: 'Маркеры конфликта удаления',
+	deletionMarkersDescription:
+		'Укажите маркеры до и после области, которая была удалена с одной стороны, но изменена с другой.',
+	end: 'Конец',
+	smartMerge: 'Умное слияние',
+	start: 'Начало',
+};
+
+export const zhTW: SmartMergeTranslations = {
+	conflictOursMarkers: '「我方」衝突標記',
+	conflictOursMarkersDescription: '設定合併衝突中代表本地變更區域的前後標記。',
+	conflictTheirsMarkers: '「對方」衝突標記',
+	conflictTheirsMarkersDescription: '設定合併衝突中代表遠端變更區域的前後標記。',
+	deletionMarkers: '刪除衝突標記',
+	deletionMarkersDescription: '設定被一方刪除但被另一方修改的區域前後標記。',
+	end: '結束',
+	smartMerge: '智慧合併',
+	start: '開始',
+};

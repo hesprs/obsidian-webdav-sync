@@ -1,14 +1,12 @@
 import { Notice, Setting } from 'obsidian';
 import type { Translate } from '@/modules/I18n';
-import type { RecordStore } from '@/modules/Storage';
+import type { MaybePromise } from '@/sdk';
 
 export type DevelopmentSettingTranslations = {
 	development: string;
-	vaultRecordsCleared: string;
-	clearVaultRecords: string;
-	clearAllRecords: string;
-	allRecordsCleared: string;
 	clearRecords: string;
+	recordsCleared: string;
+	clear: string;
 	clearRecordsDescription: string;
 	export: string;
 	exportLogsDescription: string;
@@ -19,12 +17,11 @@ export default function developmentSettings(
 	el: HTMLElement,
 	ctx: {
 		translate: Translate<DevelopmentSettingTranslations>;
-		clearRecordStores: () => Promise<void>;
-		getRecordStore: (namespace?: string) => RecordStore;
+		deleteRecordStore: (namespace?: string) => MaybePromise<void>;
 		exportLogs: () => Promise<void>;
 	},
 ) {
-	const { translate, exportLogs } = ctx;
+	const { translate, exportLogs, deleteRecordStore } = ctx;
 	new Setting(el).setName(translate('development')).setHeading();
 
 	new Setting(el)
@@ -32,43 +29,18 @@ export default function developmentSettings(
 		.setDesc(translate('clearRecordsDescription'))
 		.addButton((button) =>
 			button
-				.setButtonText(translate('clearVaultRecords'))
+				.setButtonText(translate('clearRecords'))
 				.setWarning()
-				.onClick(() => void clearVaultRecords(ctx)),
-		)
-		.addButton((button) =>
-			button
-				.setButtonText(translate('clearAllRecords'))
-				.setWarning()
-				.onClick(() => void clearAllRecords(ctx)),
+				.onClick(async () => {
+					await deleteRecordStore();
+					new Notice(translate('recordsCleared'));
+				}),
 		);
 
 	new Setting(el)
 		.setName(translate('exportLogsToFile'))
 		.setDesc(translate('exportLogsDescription'))
 		.addButton((button) => {
-			button.setButtonText(translate('export')).onClick(() => void exportLogs());
+			button.setButtonText(translate('export')).onClick(exportLogs);
 		});
-}
-
-async function clearVaultRecords({
-	translate,
-	getRecordStore,
-}: {
-	getRecordStore: (namespace?: string) => RecordStore;
-	translate: Translate<DevelopmentSettingTranslations>;
-}) {
-	await getRecordStore().clear();
-	new Notice(translate('vaultRecordsCleared'));
-}
-
-async function clearAllRecords({
-	translate,
-	clearRecordStores,
-}: {
-	translate: Translate<DevelopmentSettingTranslations>;
-	clearRecordStores: () => Promise<void>;
-}) {
-	await clearRecordStores();
-	new Notice(translate('allRecordsCleared'));
 }

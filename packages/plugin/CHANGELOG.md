@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## Sync Engine v3.0.3 - 2026-08-08
+
+- Fixed the bug that when a backend is unselected, setting encryption or asymmetric storage does nothing.
+- Removed `Clear all records` button as it is confusing and dangerous.
+
 ## Sync Engine v3.0.2 - 2026-08-07
 
 - Animate status bar icon when a sync is running.

@@ -12,7 +12,7 @@ import type {
 } from '@hesprs/sync-engine-sdk';
 import type { SmartMergeTranslations } from './i18n';
 import type { SmartMergeSettings } from './setting';
-import { en, zh } from './i18n';
+import { en, zh, zhTW, ru } from './i18n';
 import smartMergeResolver from './resolver';
 import smartMergeSetting from './setting';
 import smartMergeBaseTextWrapper from './wrapper';
@@ -40,6 +40,8 @@ export default class SmartMerge {
 	) {
 		ctx.registerI18n('en', en);
 		ctx.registerI18n('zh', zh);
+		ctx.registerI18n('zh-TW', zhTW);
+		ctx.registerI18n('ru', ru);
 	}
 
 	readonly moduleSettings: SmartMergeSettings = {

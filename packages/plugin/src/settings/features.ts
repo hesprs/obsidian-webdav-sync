@@ -2,6 +2,7 @@ import type { Settings, Context } from '@';
 import { Setting } from 'obsidian';
 import type { MigrationModalTranslations } from '@/components/MigrationModal';
 import type { Fragment, Translate } from '@/modules/I18n';
+import type { MaybePromise } from '@/sdk';
 import setNeedMigration from '@/components/MigrationModal';
 import { generateSettingEntry } from './generate-entry';
 
@@ -32,7 +33,7 @@ export default function featuresSettings(
 		startScheduledSync: () => void;
 		stopScheduledSync: () => void;
 		settings: Settings;
-		recordStoreExists: () => Promise<boolean>;
+		recordStoreExists: () => MaybePromise<boolean>;
 	},
 ) {
 	const {
@@ -109,7 +110,7 @@ export default function featuresSettings(
 				},
 				content: (value) =>
 					translate('asymmetricStorageMigration', value ? 'enable' : 'disable'),
-				needMigration: () => recordStoreExists(),
+				needMigration: recordStoreExists,
 				toggle: toggle.setValue(settings.asymmetricStorage),
 			}),
 		);

@@ -1,5 +1,5 @@
 import type { EncryptionSettings } from '@';
-import type { Context, Fragment, Translate } from '@hesprs/sync-engine-sdk';
+import type { Context, Fragment, MaybePromise, Translate } from '@hesprs/sync-engine-sdk';
 import type { App } from 'obsidian';
 import { setNeedMigration } from '@hesprs/sync-engine-sdk';
 import { SecretComponent, Setting } from 'obsidian';
@@ -16,7 +16,7 @@ export default function encryptionSetting(
 		translate: Translate<EncryptionTranslations>;
 		app: App;
 		saveSettings: () => Promise<void>;
-		recordStoreExists: () => Promise<boolean>;
+		recordStoreExists: () => MaybePromise<boolean>;
 	},
 	settings: EncryptionSettings,
 ) {
@@ -38,7 +38,7 @@ export default function encryptionSetting(
 					void saveSettings();
 				},
 				content: (value) => translate('encryptionMigration', value ? 'enable' : 'disable'),
-				needMigration: () => recordStoreExists(),
+				needMigration: recordStoreExists,
 				toggle: toggle.setValue(settings.enabled),
 			}),
 		);

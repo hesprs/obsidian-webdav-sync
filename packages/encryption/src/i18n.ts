@@ -75,3 +75,93 @@ export const zh: EncryptionTranslations = {
 		}
 	},
 };
+
+export const zhTW: EncryptionTranslations = {
+	encryption: '加密',
+	encryptionDescription:
+		'在上傳前加密檔案，並在下載時解密檔案。加密密碼儲存於 Obsidian 金鑰圈中。',
+	encryptionMigration: (frag, mode) => {
+		if (mode === 'enable') {
+			frag.createEl('p', {
+				text: '⚠️ 在啟用加密前，請務必留意以下幾點：',
+			});
+			const ol = frag.createEl('ol');
+			ol.createEl('li', { text: '後續的所有上傳都將進行加密。' });
+			ol.createEl('li', { text: '請確保所有裝置皆已啟用加密。' });
+			ol.createEl('li', {
+				text: '若您先前曾於未加密的狀態下進行同步，則必須執行遷移。',
+			});
+			const li = ol.createEl('li', {
+				text: '您應確保所有裝置上的以下項目完全一致：',
+			});
+			const ul = li.createEl('ul');
+			const subItems = ['加密密碼', '伺服器 URL', '帳號名稱'];
+			subItems.forEach((item) => ul.createEl('li', { text: item }));
+			ol.createEl('li', {
+				text: '加密演算法會將解密金鑰與檔案位置及伺服器識別資訊綁定，這能提供極佳的安全性與資料完整性。但也意味著若您使用不同的伺服器，或在未透過相同演算法的情況下將檔案移動至不同位置，您將無法解密該檔案。',
+			});
+			ol.createEl('li', {
+				text: '請避免在伺服器端手動管理加密檔案。',
+			});
+		} else {
+			frag.createEl('p', {
+				text: '⚠️ 在停用加密前，請務必留意以下幾點：',
+			});
+			const ol = frag.createEl('ol');
+			ol.createEl('li', {
+				text: '後續的所有上傳都將以未加密的明文形式進行。',
+			});
+			ol.createEl('li', { text: '請確保所有裝置皆已停用加密。' });
+			ol.createEl('li', {
+				text: '若此儲存庫先前是在啟用加密的狀態下上傳，則必須執行遷移。',
+			});
+		}
+	},
+};
+
+export const ru: EncryptionTranslations = {
+	encryption: 'Шифрование',
+	encryptionDescription:
+		'Шифровать файлы перед загрузкой на сервер и расшифровывать их при скачивании. Пароль шифрования хранится в связке ключей Obsidian keychain.',
+	encryptionMigration: (frag, mode) => {
+		if (mode === 'enable') {
+			frag.createEl('p', {
+				text: '⚠️ Пожалуйста, будьте внимательны к следующим моментам перед включением шифрования:',
+			});
+			const ol = frag.createEl('ol');
+			ol.createEl('li', { text: 'Все последующие загрузки будут зашифрованы.' });
+			ol.createEl('li', {
+				text: 'Пожалуйста, убедитесь, что шифрование включено на всех устройствах.',
+			});
+			ol.createEl('li', {
+				text: 'Миграция необходима, если ранее вы синхронизировали данные без шифрования.',
+			});
+			const li = ol.createEl('li', {
+				text: 'Убедитесь, что следующие параметры совпадают на всех ваших устройствах:',
+			});
+			const ul = li.createEl('ul');
+			const subItems = ['пароль шифрования', 'URL-адрес сервера', 'имя аккаунта'];
+			subItems.forEach((item) => ul.createEl('li', { text: item }));
+			ol.createEl('li', {
+				text: 'Алгоритм шифрования привязывает ключ расшифровки к расположению файла и идентификатору сервера, что обеспечивает гораздо более высокую безопасность и целостность данных. Но это также означает, что при использовании другого сервера или перемещении файла в другое место без использования того же алгоритма вы не сможете его расшифровать.',
+			});
+			ol.createEl('li', {
+				text: 'Пожалуйста, избегайте ручного управления зашифрованными файлами на сервере.',
+			});
+		} else {
+			frag.createEl('p', {
+				text: '⚠️ Пожалуйста, будьте внимательны к следующим моментам перед отключением шифрования:',
+			});
+			const ol = frag.createEl('ol');
+			ol.createEl('li', {
+				text: 'Все последующие загрузки будут выполняться в открытом виде без шифрования.',
+			});
+			ol.createEl('li', {
+				text: 'Пожалуйста, убедитесь, что шифрование отключено на всех устройствах.',
+			});
+			ol.createEl('li', {
+				text: 'Миграция необходима, если это хранилище (vault) ранее загружалось с включённым шифрованием.',
+			});
+		}
+	},
+};

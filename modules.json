@@ -2,7 +2,7 @@
 	{
 		"id": "webdav",
 		"name": "WebDAV",
-		"version": "0.1.7",
+		"version": "0.1.8",
 		"description": "WebDAV backend support.",
 		"icon": "server",
 		"main": "https://sync.consensia.cc/modules/webdav.js",
@@ -11,7 +11,7 @@
 	{
 		"id": "s3",
 		"name": "S3",
-		"version": "0.0.1",
+		"version": "0.0.2",
 		"description": "S3 and S3-compatible backend support.",
 		"icon": "server",
 		"main": "https://sync.consensia.cc/modules/s3.js",
@@ -20,7 +20,7 @@
 	{
 		"id": "encryption",
 		"name": "Encryption",
-		"version": "0.1.0",
+		"version": "0.1.1",
 		"description": "Client-side encrypt vault files before uploading to backend.",
 		"icon": "key-round",
 		"main": "https://sync.consensia.cc/modules/encryption.js",
@@ -29,34 +29,34 @@
 	{
 		"id": "i18n-zh",
 		"name": "I18n 简体中文",
-		"version": "0.0.9",
+		"version": "0.0.10",
 		"description": "Simplified Chinese UI language pack. / 简体中文介面语言包。",
 		"icon": "languages",
 		"main": "https://sync.consensia.cc/modules/i18n-zh.js",
-		"minPluginVersion": "3.0.0"
+		"minPluginVersion": "3.0.3"
 	},
 	{
 		"id": "i18n-zh-TW",
 		"name": "I18n 繁體中文",
-		"version": "0.0.1",
+		"version": "0.0.2",
 		"description": "Traditional Chinese UI language pack. / 繁體中文介面語言包。",
 		"icon": "languages",
 		"main": "https://sync.consensia.cc/modules/i18n-zh-TW.js",
-		"minPluginVersion": "3.0.0"
+		"minPluginVersion": "3.0.3"
 	},
 	{
 		"id": "i18n-ru",
 		"name": "I18n Русский",
-		"version": "0.0.1",
+		"version": "0.0.2",
 		"description": "Russian UI language pack. / Пакет русского интерфейса.",
 		"icon": "languages",
 		"main": "https://sync.consensia.cc/modules/i18n-ru.js",
-		"minPluginVersion": "3.0.0"
+		"minPluginVersion": "3.0.3"
 	},
 	{
 		"id": "smart-merge",
 		"name": "Smart Merge",
-		"version": "0.0.5",
+		"version": "0.0.6",
 		"description": "Smart merge conflict resolution strategy that applies recursive three-way merge.",
 		"icon": "combine",
 		"main": "https://sync.consensia.cc/modules/smart-merge.js",

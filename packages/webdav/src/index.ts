@@ -13,7 +13,7 @@ import type {
 import type { App } from 'obsidian';
 import { digOriginal, prefixWrapper } from '@hesprs/sync-engine-sdk';
 import type { WebdavTranslations } from './setting';
-import { en, zh } from './i18n';
+import { en, zh, zhTW, ru } from './i18n';
 import webdavSetting from './setting';
 import { checkConnection } from './webdav/check-connection';
 import WebdavFs from './webdav/fs';
@@ -44,6 +44,8 @@ export default class Webdav {
 			this.moduleSettings.baseDirectory = `${ctx.app.vault.getName()}/`;
 		ctx.registerI18n('en', en);
 		ctx.registerI18n('zh', zh);
+		ctx.registerI18n('zh-TW', zhTW);
+		ctx.registerI18n('ru', ru);
 	}
 
 	readonly moduleSettings: WebdavSettings = {

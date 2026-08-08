@@ -9,7 +9,7 @@ import type {
 import type { App } from 'obsidian';
 import type { EncryptionDB } from '@/wrapper';
 import encryptionWrapper from '@/wrapper';
-import { en, zh } from './i18n';
+import { en, zh, ru, zhTW } from './i18n';
 import encryptionSetting from './setting';
 
 export type EncryptionSettings = {
@@ -31,6 +31,8 @@ export default class Encryption {
 	) {
 		ctx.registerI18n('en', en);
 		ctx.registerI18n('zh', zh);
+		ctx.registerI18n('ru', ru);
+		ctx.registerI18n('zh-TW', zhTW);
 	}
 
 	moduleSettings: EncryptionSettings = {

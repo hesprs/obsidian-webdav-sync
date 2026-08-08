@@ -114,7 +114,7 @@ export default class Registrar {
 	private readonly createRemoteFs = (remoteFs = this.settings.remoteFs) => {
 		const entry = this.remoteFsRegistry.get(remoteFs);
 		if (!entry) {
-			if (!remoteFs) throw new Error('Please install a backend!');
+			if (!remoteFs) throw new Error('Please set a backend!');
 			throw new Error(`Backend "${remoteFs}" is not installed!`);
 		}
 		return wrapInOrder(entry.instantiate(this.getRequest()), this.remoteFsWrapperRegistry);

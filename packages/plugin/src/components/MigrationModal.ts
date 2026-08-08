@@ -203,7 +203,7 @@ export default function setNeedMigration(
 			selfTrigger = false;
 			return;
 		}
-		void Promise.resolve(needMigration?.(value) ?? true).then((need) => {
+		const showMigration = async (need: boolean) => {
 			if (need) {
 				selfTrigger = true;
 				toggle.setValue(!value); // Revert UI back, not migrated yet
@@ -215,7 +215,10 @@ export default function setNeedMigration(
 					},
 					content: content(value),
 				}).open();
-			} else void apply(value);
-		});
+			} else await apply(value);
+		};
+		const need = needMigration?.(value) ?? true;
+		if (need instanceof Promise) void need.then(showMigration);
+		else void showMigration(need);
 	});
 }
