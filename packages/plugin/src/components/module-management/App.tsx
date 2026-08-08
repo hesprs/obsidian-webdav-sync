@@ -53,7 +53,7 @@ export default function App(props: {
 		const normalizedQuery = query().trim();
 		const filtered = mergedModules().filter((module) => {
 			if (!showInstalledOnly()) return true;
-			return module.enabled;
+			return module.id in installedModules();
 		});
 
 		if (!normalizedQuery) return filtered.sort(sortModulesAlphabetically);
