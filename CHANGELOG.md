@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## Obsidian WebDAV Sync v2.5.14 - 2026-08-08
+
+- Fixed the bug that hyper-concurrency leads to migration failure in step 5.
+
 ## Obsidian WebDAV Sync v2.5.13 - 2026-07-29
 
 - Fixed the bug that causes encrypted fast sync to fail and create duplicated files.

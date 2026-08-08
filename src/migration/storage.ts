@@ -8,7 +8,7 @@ import {
 	STORAGE_NAME as SOURCE_STORAGE_NAME,
 	parseKey,
 } from '~/storage/store.interface';
-import { isNil } from '~/utils/fns';
+import { chunk, isNil } from '~/utils/fns';
 
 export type V2NamespaceSnapshot = {
 	namespace: string;
@@ -22,6 +22,7 @@ export type MigrateStorageOptions = {
 	toV3Key: (v2Path: string, isDir: boolean) => string;
 	resolveRemoteUid: (path: string) => Promise<string>;
 	beforeSourceCleanup?: () => Promise<void>;
+	maxConcurrency: number;
 };
 
 export type CleanupStorageOptions = Pick<
@@ -235,6 +236,7 @@ export async function migrateCurrentNamespaceStorage({
 	toV3Key,
 	resolveRemoteUid,
 	beforeSourceCleanup,
+	maxConcurrency,
 }: MigrateStorageOptions): Promise<void> {
 	const sourceStores = {
 		baseText: loadSourceStore(SOURCE_STORAGE_NAME, BASE_TEXT_STORE_NAME),
@@ -256,26 +258,31 @@ export async function migrateCurrentNamespaceStorage({
 		const snapshot = await snapshotSourceNamespace(sourceNamespace, sourceStores);
 		const syncRecordMap = new Map(snapshot.syncState.map(({ path, value }) => [path, value]));
 
-		const targetSyncStateEntries = await Promise.all(
-			snapshot.syncState.map(async ({ path, value }) => {
-				const targetKey = toV3Key(path, value.local.isDir || value.remote.isDir);
-				if (value.local.isDir || value.remote.isDir)
-					return {
-						key: targetKey,
-						value: { isDir: true } as const,
-					};
+		const targetSyncStateEntries: Array<{ key: string; value: TargetRecordStatModel }> = [];
+		const chunked = chunk(snapshot.syncState, maxConcurrency);
+		for (const chunk of chunked)
+			targetSyncStateEntries.push(
+				...(await Promise.all(
+					chunk.map(async ({ path, value }) => {
+						const targetKey = toV3Key(path, value.local.isDir || value.remote.isDir);
+						if (value.local.isDir || value.remote.isDir)
+							return {
+								key: targetKey,
+								value: { isDir: true } as const,
+							};
 
-				const remoteUid = await resolveRemoteUid(targetKey);
-				return {
-					key: targetKey,
-					value: {
-						isDir: false,
-						local: `${value.local.mtime}~${value.local.size}`,
-						remote: remoteUid,
-					} as const,
-				};
-			}),
-		);
+						const remoteUid = await resolveRemoteUid(targetKey);
+						return {
+							key: targetKey,
+							value: {
+								isDir: false,
+								local: `${value.local.mtime}~${value.local.size}`,
+								remote: remoteUid,
+							} as const,
+						};
+					}),
+				)),
+			);
 
 		const targetBaseTextEntries = snapshot.baseText
 			.filter(({ path }) => {

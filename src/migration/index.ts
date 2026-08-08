@@ -366,6 +366,7 @@ export default class V3MigrationService {
 							vaultName: this.plugin.app.vault.getName(),
 						}),
 						toV3Key: toV3UnifiedKey,
+						maxConcurrency: this.plugin.settings.maxWebDAVConcurrency.value,
 					});
 				}
 			} catch (error) {
