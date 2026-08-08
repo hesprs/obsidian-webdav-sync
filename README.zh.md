@@ -29,7 +29,7 @@
     <a href="https://sync.consensia.cc">
         <strong>文档</strong>
     </a> • 
-    <a href="https://community.obsidian.md/plugins/webdav-sync">
+    <a href="https://community.obsidian.md/plugins/sync-engine">
         <strong>插件市场</strong>
     </a> • 
     <a href="#license-copyright-and-originality">
